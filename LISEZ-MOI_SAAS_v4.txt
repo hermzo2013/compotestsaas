@@ -1,0 +1,86 @@
+COMPOTEST SAAS v4 — BÊTA PRIVÉE À 0 FCFA
+========================================
+
+Cette version reprend le prototype CompoTest v3 et ajoute :
+- connexion Supabase Auth (e-mail + mot de passe), sans formulaire d'inscription public ;
+- liste blanche serveur des e-mails autorisés ;
+- sauvegarde en ligne des questionnaires et de l'historique de chaque utilisateur ;
+- isolation des données avec Supabase Row Level Security (RLS) ;
+- vérification de la session côté serveur avant les appels IA ;
+- limites applicatives indicatives : 5 générations de questionnaire et 10 demandes de correction IA par compte et par jour ;
+- clé IA côté serveur seulement, avec API compatible OpenAI configurée par défaut pour Groq ;
+- import initial facultatif des données locales après confirmation.
+
+IMPORTANT : le projet n'est pas publié et n'est pas encore configuré pour ton compte. Il faut effectuer les étapes ci-dessous. Ne partage pas l'URL de déploiement comme si la configuration était terminée.
+
+1. CRÉER LE PROJET SUPABASE
+---------------------------
+1. Crée un projet sur https://supabase.com/ (forfait Free).
+2. Dans Authentication > Providers / Sign In, garde l'authentification e-mail activée.
+3. Désactive les inscriptions publiques / « Allow new users to sign up » dans les réglages d'authentification. Le libellé peut varier.
+4. Dans Authentication > URL Configuration, ajoute les URLs de redirection autorisées : `http://localhost:3000/**` pour les tests locaux, puis l'URL HTTPS Render une fois créée. Renseigne aussi Site URL avec l'URL principale du site après déploiement.
+5. Dans Authentication > Users, utilise « Invite user » pour ajouter uniquement les amis autorisés. Après avoir cliqué sur le lien d'invitation, l'ami peut définir son mot de passe dans CompoTest via le bouton « Définir / changer le mot de passe ».
+6. Ouvre SQL Editor, colle le contenu de supabase_schema.sql, puis exécute-le.
+7. Dans Project Settings > API (ou Connect), copie Project URL et la clé anon/publishable. Ne copie JAMAIS la clé service_role/secret.
+8. Ouvre config.js et remplace les deux valeurs de démonstration par le Project URL et la clé anon/publishable.
+
+La clé anon/publishable peut être visible dans le navigateur : c'est normal si RLS est correctement activé. La clé service_role ne doit jamais être utilisée dans le navigateur.
+
+2. CONFIGURER L'IA GRATUITE
+---------------------------
+1. Crée un compte chez un fournisseur qui propose une offre gratuite d'API compatible OpenAI, par exemple https://console.groq.com/.
+2. Crée une clé API sur son tableau de bord.
+3. N'ajoute pas de moyen de paiement ni de facturation pour ce projet à 0 FCFA.
+4. Si le fournisseur exige une facturation pour continuer, ne l'active pas : laisse AI_API_KEY vide et CompoTest conservera les fonctions non-IA.
+
+Le serveur utilise par défaut :
+AI_BASE_URL=https://api.groq.com/openai/v1
+AI_MODEL=openai/gpt-oss-20b
+
+Les modèles, quotas et conditions de l'offre gratuite peuvent changer. L'offre gratuite peut être limitée, temporairement indisponible ou épuisée. La clé est envoyée uniquement au serveur; elle n'est pas incluse dans config.js.
+
+3. TESTER SUR TON ORDINATEUR
+----------------------------
+1. Installe Node.js 20 ou plus récent.
+2. Dans ce dossier, copie .env.example vers .env.
+3. Remplis SUPABASE_URL, SUPABASE_ANON_KEY et ALLOWED_USER_EMAILS avec les mêmes e-mails que ceux invités dans Supabase. ALLOWED_USER_EMAILS est une liste séparée par des virgules.
+4. Ajoute AI_API_KEY uniquement si tu as une clé d'offre gratuite valide. Ne remplis jamais cette valeur dans index.html ou config.js.
+5. Dans un terminal ouvert dans le dossier du projet, exécute :
+   npm install
+   npm start
+6. Ouvre http://localhost:3000 et connecte-toi avec un compte invité.
+
+4. DÉPLOYER GRATUITEMENT SUR RENDER
+-----------------------------------
+1. Mets le dossier du projet dans un dépôt GitHub privé. Vérifie que .env n'est pas envoyé. Le fichier .gitignore fourni exclut .env.
+2. Dans Render, crée un Web Service relié au dépôt privé.
+3. Build Command : npm install
+4. Start Command : npm start
+5. Choisis le forfait Free.
+6. Dans Environment, ajoute les mêmes variables que dans .env : SUPABASE_URL, SUPABASE_ANON_KEY, ALLOWED_USER_EMAILS, AI_API_KEY (si disponible), AI_BASE_URL et AI_MODEL.
+7. Déploie, puis ouvre l'URL HTTPS donnée par Render.
+
+Le plan gratuit Render peut mettre le serveur en veille après 15 minutes sans trafic et le réveil peut prendre environ une minute. Le système de fichiers local Render n'est pas persistant : c'est pourquoi les données utilisateur sont stockées dans Supabase, pas dans des fichiers locaux.
+
+5. SÉCURITÉ ET LIMITES
+----------------------
+- Invitation : désactive les inscriptions publiques dans Supabase ET maintiens ALLOWED_USER_EMAILS côté serveur. Les deux protections sont intentionnelles.
+- Données : RLS limite la table à la ligne du compte connecté. Ne supprime pas les politiques RLS.
+- Clés : seule la clé anon/publishable va dans config.js. La clé IA et les paramètres serveur restent dans les variables d'environnement Render / .env local.
+- Gratuité : Render et Supabase ont des quotas et conditions susceptibles d'évoluer. Supabase Free peut mettre en pause un projet peu utilisé ou limiter certaines ressources. Vérifie le tableau de bord du fournisseur.
+- IA : quota gratuit non garanti ; 5 générations et 10 demandes de correction par jour sont des plafonds applicatifs en mémoire, réinitialisés lors du redémarrage du serveur. Ils ne remplacent pas les limites du fournisseur et peuvent être réinitialisés si Render redémarre.
+- Aucune facturation automatique n'est intégrée. N'ajoute pas de moyen de paiement aux services pour garder l'objectif 0 FCFA. Si le fournisseur IA ne donne plus de quota gratuit, l'IA ne fonctionnera plus jusqu'à disponibilité d'une solution gratuite.
+- Confidentialité : le texte du cours est transmis au fournisseur IA lorsque l'utilisateur demande une génération ou une correction. N'envoie pas de PDF confidentiels ou de données personnelles sensibles.
+- Qualité : les réponses IA peuvent être fausses. Vérifie chaque question/réponse, notamment pour les matières médicales.
+- La version v4 ne propose pas encore de panneau d'administration dans CompoTest, de partage de quiz entre utilisateurs, de récupération de mot de passe personnalisée, de sauvegardes automatiques externes, ni de quotas persistants en base de données.
+
+FICHIERS IMPORTANTS
+-------------------
+- index.html : application CompoTest
+- server.js : serveur, authentification des requêtes API et appels IA
+- config.js : URL Supabase et clé publique anon/publishable
+- supabase_schema.sql : table cloud et politiques RLS
+- .env.example : modèle des variables serveur
+- .gitignore : empêche l'envoi du fichier .env
+
+Ne publie pas cette version avant d'avoir terminé la configuration Supabase, la liste blanche des e-mails et les tests de connexion/sauvegarde.
