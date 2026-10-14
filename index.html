@@ -25,8 +25,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#edf2ff;color:#244fc2}
 .badge.ok{background:#e9f8f1;color:#13734e}.badge.warn{background:#fff4d9;color:#805500}.badge.err{background:#fff0f0;color:#a51f2a}.badge.fsrs{background:#f3e8ff;color:#6b21a8}
-
-/* ==== NAVIGATION ONGLETS ==== */
 .tabs{display:flex;gap:4px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:16px;overflow-x:auto;box-shadow:0 2px 8px #18315b06}
 .tabs::-webkit-scrollbar{height:6px}.tabs::-webkit-scrollbar-thumb{background:#d5ddeb;border-radius:99px}
 .tab{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:9px;border:0;background:transparent;color:#34435c;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;transition:all .15s}
@@ -36,14 +34,10 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .tab .count{background:#e9f8f1;color:#13734e;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:800}
 .tab.active .count{background:rgba(255,255,255,.25);color:#fff}
 .tab-content{display:none}.tab-content.active{display:block}
-
-/* ==== HEADER ACTIONS ==== */
 .header-actions{float:right;display:flex;align-items:center;gap:8px;font-size:12px;flex-wrap:wrap}
 .header-actions button{padding:7px 11px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)}
 .header-actions button:hover{background:rgba(255,255,255,.25)}
 .header-actions span{color:rgba(255,255,255,.9)}
-
-/* ==== AUTH ==== */
 .auth-gate{max-width:460px;margin:40px auto;padding:26px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #18315b0a}
 .auth-gate h2{margin-top:0;font-size:22px}
 .auth-error{color:#a51f2a;font-size:13px;min-height:20px;margin-top:10px;white-space:pre-line}
@@ -53,31 +47,21 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .pw-help{font-size:11px;color:var(--muted);margin-top:4px}
 .pwd-wrap{position:relative}.pwd-wrap input{padding-right:44px}
 .pwd-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;font-size:18px;cursor:pointer;padding:6px 10px;color:#6c7890}
-
-/* ==== STATS ==== */
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
 .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
 .stat small{color:var(--muted);font-size:12px}
 .stat strong{display:block;font-size:24px;margin-top:5px}
-
-/* ==== QUESTION CARDS ==== */
 .question{border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px;background:#fff}
 .question strong{display:block;margin-bottom:10px;font-size:14px}
 .option{display:flex;gap:8px;align-items:flex-start;padding:9px;border:1px solid var(--line);border-radius:9px;margin:6px 0;cursor:pointer;font-size:13px}
 .option input{width:auto;margin-top:3px;flex-shrink:0}
 .qmeta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
-
-/* ==== ADMIN ==== */
 .admin-users{width:100%;border-collapse:collapse;font-size:13px}
 .admin-users th,.admin-users td{text-align:left;padding:9px;border-bottom:1px solid var(--line);vertical-align:top}
 .admin-users th{color:var(--muted);font-size:12px}
 .admin-actions{display:flex;gap:6px;flex-wrap:wrap}
-
-/* ==== FILE UPLOAD ==== */
 .filebox{border:1.5px dashed #a9bce7;border-radius:13px;padding:16px;background:#f8faff}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-
-/* ==== EXAM FULLSCREEN ==== */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:1000;overflow-y:auto}
 #examView .exam-header{background:linear-gradient(120deg,#132344,#2457d6);color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
 #examView .exam-header h2{margin:0;font-size:19px}
@@ -109,25 +93,17 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .result-hero p{margin:6px 0 0;font-size:14px;opacity:.9}
 .correct-block{background:#e9f8f1;border-left:4px solid #16865c;padding:9px 13px;border-radius:8px;margin-top:9px;font-size:13px}
 .explain-block{background:#f8faff;border-left:4px solid #a9bce7;padding:9px 13px;border-radius:8px;margin-top:7px;font-size:13px;color:#34435c}
-
-/* ==== FSRS ==== */
 .fsrs-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:10px}
 .fsrs-card h4{margin:0 0 6px;font-size:14px}
 .fsrs-meta{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
 .fsrs-due{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:#f3e8ff;color:#6b21a8}
 .fsrs-due.now{background:#ffe7c9;color:#7a4a00}
-.fsrs-due.future{background:#e0f0ff;color:#0b4a82}
 .fsrs-empty{text-align:center;padding:30px 20px;color:var(--muted)}
-.fsrs-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-.fsrs-actions button{padding:8px 12px;font-size:12px}
-.fsrs-btn-again{background:#ffe7c9;color:#7a4a00}
-.fsrs-btn-hard{background:#ffd6d6;color:#a51f2a}
-.fsrs-btn-good{background:#d4edda;color:#0e5e3f}
-.fsrs-btn-easy{background:#c4ecd5;color:#0e5e3f}
-.fsrs-grade-box{background:#f8faff;border:1px solid #d5ddeb;border-radius:10px;padding:12px;margin-top:10px;font-size:13px}
-.fsrs-grade-buttons{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.fsrs-grade-buttons button{flex:1;padding:10px;font-size:13px}
-
+.analysis-detail{background:#f8faff;border:1px solid #d5ddeb;border-radius:10px;padding:14px;margin-top:12px;font-size:13px}
+.analysis-detail h4{margin:0 0 8px;font-size:14px;color:var(--navy)}
+.analysis-detail .notion{padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
+.analysis-detail .notion:last-child{border-bottom:0}
+.analysis-detail .notion b{color:var(--blue)}
 @media(max-width:768px){
   .stats{grid-template-columns:1fr 1fr}
   .grid-2{grid-template-columns:1fr}
@@ -140,7 +116,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   .header-actions button{padding:6px 9px;font-size:11px}
   .wrap{padding:0 12px;margin-top:14px}
   .panel{padding:16px}
-  .fsrs-grade-buttons button{flex:1 1 45%}
   .exam-actions-bar{padding:10px 14px}
   .exam-actions-bar button{flex:1;font-size:12px}
   .exam-body{padding:0 12px 130px}
@@ -219,8 +194,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 </section>
 
 <nav class="tabs" role="tablist">
-  <button class="tab active" data-tab="import" role="tab"><span class="icon">📄</span> Importer</button>
-  <button class="tab" data-tab="generate" role="tab"><span class="icon">✨</span> Générer</button>
+  <button class="tab active" data-tab="import" role="tab"><span class="icon">📥</span> Importer & Générer</button>
   <button class="tab" data-tab="add" role="tab"><span class="icon">✏️</span> Ajouter</button>
   <button class="tab" data-tab="compose" role="tab"><span class="icon">🎯</span> Composer</button>
   <button class="tab" data-tab="review" role="tab"><span class="icon">⭐</span> Réviser <span class="count" id="fsrsDueCount">0</span></button>
@@ -228,11 +202,12 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   <button class="tab hide" data-tab="admin" id="adminTab" role="tab"><span class="icon">⚙️</span> Admin</button>
 </nav>
 
-<!-- ONGLET IMPORT -->
+<!-- ONGLET FUSIONNÉ : IMPORTER & GÉNÉRER -->
 <section class="tab-content active" data-content="import">
   <div class="panel">
-    <h2 style="margin-top:0">📄 Importer un document</h2>
-    <p class="muted">Formats supportés : PDF, Word (.docx), texte (.txt).</p>
+    <h2 style="margin-top:0">📥 Importer un document et générer un questionnaire</h2>
+    <p class="muted">Formats supportés : <b>PDF</b>, <b>Word (.docx)</b>, <b>texte (.txt)</b>. Le document peut être un <b>questionnaire numéroté</b> ou un <b>cours rédigé</b> — le site détecte automatiquement le type et s'adapte.</p>
+
     <div class="grid-2">
       <div>
         <label for="quizTitle">Titre du test</label>
@@ -243,38 +218,45 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
         <input id="quizSubject" placeholder="Ex. Pharmacologie">
       </div>
     </div>
+
     <div class="filebox" style="margin-top:12px">
       <input id="pdfFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
-      <div id="pdfStatus" class="small muted" style="margin-top:6px">PDF, Word (.docx) ou texte (.txt).</div>
+      <div id="pdfStatus" class="small muted" style="margin-top:6px">PDF, Word (.docx) ou texte (.txt) — max 60 000 caractères.</div>
       <div class="actions">
-        <button id="extractBtn" class="secondary">Extraire le texte</button>
-        <button id="analyzeBtn">Détecter les questions</button>
+        <button id="extractBtn" class="secondary">1. Extraire le texte</button>
+        <button id="analyzeBtn">2. Analyser le document</button>
       </div>
     </div>
+
+    <div id="docTypeBox" class="notice" style="display:none;margin-top:12px"></div>
+
     <label for="pdfText" style="margin-top:16px">Texte extrait (modifiable)</label>
-    <textarea id="pdfText" placeholder="Le texte du fichier apparaîtra ici. Tu peux aussi coller du texte." style="min-height:180px"></textarea>
+    <textarea id="pdfText" placeholder="Le texte du fichier apparaîtra ici. Tu peux aussi coller du texte." style="min-height:200px"></textarea>
+
     <div class="actions">
       <button id="parseTextBtn" class="secondary">Analyser le texte collé</button>
       <button id="aiBtn" class="ghost">Résoudre les réponses manquantes (IA)</button>
     </div>
-    <div id="analysisStatus" class="notice" style="display:none"></div>
-    <div id="draftList"></div>
-  </div>
-</section>
 
-<!-- ONGLET GÉNÉRER -->
-<section class="tab-content" data-content="generate">
-  <div class="panel">
-    <h2 style="margin-top:0">✨ Générer un questionnaire</h2>
-    <p class="muted">L'IA lit l'intégralité du texte extrait (onglet Importer) et génère des questions couvrant un maximum de notions.</p>
+    <div id="analysisStatus" class="notice" style="display:none"></div>
+    <div id="analysisDetail" class="analysis-detail" style="display:none"></div>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+
+    <h3 style="margin:0 0 6px;font-size:16px">✨ Générer un questionnaire depuis le cours</h3>
+    <p class="small muted" style="margin-top:0">L'IA lit l'intégralité du texte et génère des questions couvrant un maximum de notions. Fonctionne aussi sur les cours rédigés sans questions numérotées.</p>
+
     <label for="genCount">Nombre de questions</label>
     <input id="genCount" type="number" min="1" max="100" value="20">
     <div class="small muted" style="margin-top:6px">Répartition : 40% QCM · 30% QCM multi · 30% Vrai/Faux</div>
+
     <div class="actions">
       <button id="generateQuestionsBtn">Générer depuis le cours</button>
       <button id="startGeneratedExamBtn" class="success" style="display:none">📝 Traiter les exercices</button>
     </div>
     <div id="generationStatus" class="small muted" style="margin-top:10px"></div>
+
+    <div id="draftList"></div>
   </div>
 </section>
 
@@ -331,7 +313,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   </div>
 </section>
 
-<!-- ONGLET RÉVISER (FSRS) -->
+<!-- ONGLET RÉVISER -->
 <section class="tab-content" data-content="review">
   <div class="panel">
     <h2 style="margin-top:0">⭐ Réviser (Répétition espacée FSRS-5)</h2>
@@ -403,7 +385,7 @@ const INTERNAL_DOMAIN='comptest.local';
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let drafts=[], quizzes=JSON.parse(localStorage.getItem('compo_quizzes')||'[]'), historyData=JSON.parse(localStorage.getItem('compo_history')||'[]');
-let fsrsCards=JSON.parse(localStorage.getItem('compo_fsrs')||'{}'); // {cardKey: {state, due, stability, difficulty, reps, lapses, lastReview}}
+let fsrsCards=JSON.parse(localStorage.getItem('compo_fsrs')||'{}');
 let examTimer=null, secondsLeft=600;
 let isAdminUser=false;
 let activeUserId=null, cloudWriteChain=Promise.resolve();
@@ -426,28 +408,20 @@ function typeName(q){return ({mcq:'QCM',mcq_multi:'QCM multi',tf:'Vrai/Faux',sho
 function hasKey(q){return q.type==='tf'?typeof q.correct==='boolean':q.type==='short'?Boolean(q.expected):Array.isArray(q.correct)?q.correct.length>0:Number.isInteger(q.correct)}
 function correctLabel(q){if(q.type==='tf')return q.correct===true?'Vrai':q.correct===false?'Faux':'?';if(q.type==='short')return q.expected||'?';if(Array.isArray(q.correct))return q.correct.map(i=>q.options?.[i]).filter(Boolean).join(' ; ')||'?';return q.options?.[q.correct]||'?'}
 
-// ================== FSRS-5 SIMPLIFIÉ ==================
-// Implémentation fidèle de l'algorithme FSRS-5 avec 4 notes : Again(1), Hard(2), Good(3), Easy(4)
-// Paramètres par défaut (w[0..18]) officiels FSRS-5
+// ================== FSRS-5 ==================
 const FSRS_W = [
-  0.4072, 1.1829, 3.1262, 15.4722, // w0-w3 : stabilités initiales
-  7.2102, 0.5316, 1.0651, 0.0234,  // w4-w7
-  1.616, 0.1544, 1.0824, 1.9813,   // w8-w11
-  0.0953, 0.2975, 2.2042, 0.2407,  // w12-w15
-  2.9466, 0.5034, 0.6567            // w16-w18
+  0.4072, 1.1829, 3.1262, 15.4722,
+  7.2102, 0.5316, 1.0651, 0.0234,
+  1.616, 0.1544, 1.0824, 1.9813,
+  0.0953, 0.2975, 2.2042, 0.2407,
+  2.9466, 0.5034, 0.6567
 ];
 const FSRS_DESIRED_RETENTION = 0.9;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function fsrsInitStability(grade){
-  return Math.max(0.1, FSRS_W[grade - 1]);
-}
-function fsrsInitDifficulty(grade){
-  return Math.min(10, Math.max(1, FSRS_W[4] - (grade - 3) * FSRS_W[5]));
-}
-function fsrsRetrievability(elapsedDays, stability){
-  return Math.pow(1 + elapsedDays / (9 * stability), -1);
-}
+function fsrsInitStability(grade){return Math.max(0.1, FSRS_W[grade - 1])}
+function fsrsInitDifficulty(grade){return Math.min(10, Math.max(1, FSRS_W[4] - (grade - 3) * FSRS_W[5]))}
+function fsrsRetrievability(elapsedDays, stability){return Math.pow(1 + elapsedDays / (9 * stability), -1)}
 function fsrsNextInterval(stability){
   const interval = (stability / FSRS_W[16]) * (Math.pow(FSRS_DESIRED_RETENTION, 1/FSRS_W[17]) - 1) * FSRS_W[18];
   return Math.max(1, Math.round(interval));
@@ -465,135 +439,77 @@ function fsrsNextStability(difficulty, stability, retrievability, grade){
   return stability * (1 + Math.exp(FSRS_W[8]) * (11 - difficulty) * Math.pow(stability, -FSRS_W[9]) * (Math.exp(FSRS_W[10] * (1 - retrievability)) - 1) * hardPenalty * easyBonus);
 }
 function fsrsReview(card, grade){
-  // grade : 1=Again (raté), 2=Hard, 3=Good, 4=Easy
   const now = Date.now();
   if (!card || card.reps === 0) {
     const stability = fsrsInitStability(grade);
     const difficulty = fsrsInitDifficulty(grade);
-    return {
-      state: 'review',
-      stability,
-      difficulty,
-      reps: 1,
-      lapses: grade === 1 ? 1 : 0,
-      lastReview: now,
-      due: now + fsrsNextInterval(stability) * DAY_MS
-    };
+    return {state:'review', stability, difficulty, reps:1, lapses: grade === 1 ? 1 : 0, lastReview: now, due: now + fsrsNextInterval(stability) * DAY_MS};
   }
   const elapsedDays = (now - card.lastReview) / DAY_MS;
   const retrievability = fsrsRetrievability(elapsedDays, card.stability);
   const newDifficulty = fsrsNextDifficulty(card.difficulty, grade);
   const newStability = fsrsNextStability(card.difficulty, card.stability, retrievability, grade);
   const newLapses = grade === 1 ? (card.lapses || 0) + 1 : (card.lapses || 0);
-  return {
-    state: 'review',
-    stability: newStability,
-    difficulty: newDifficulty,
-    reps: (card.reps || 0) + 1,
-    lapses: newLapses,
-    lastReview: now,
-    due: now + fsrsNextInterval(newStability) * DAY_MS
-  };
+  return {state:'review', stability:newStability, difficulty:newDifficulty, reps:(card.reps||0)+1, lapses:newLapses, lastReview:now, due: now + fsrsNextInterval(newStability) * DAY_MS};
 }
-function fsrsCardKey(q){
-  return (q.text || '').toLowerCase().trim().slice(0, 200);
-}
+function fsrsCardKey(q){return (q.text || '').toLowerCase().trim().slice(0, 200)}
 function saveFsrs(){localStorage.setItem('compo_fsrs', JSON.stringify(fsrsCards))}
 function fsrsDueCards(){
   const now = Date.now();
   const cards = [];
-  for (const [key, c] of Object.entries(fsrsCards)) {
-    if (c.due <= now) cards.push({ key, ...c });
-  }
+  for (const [key, c] of Object.entries(fsrsCards)) if (c.due <= now) cards.push({key, ...c});
   cards.sort((a, b) => a.due - b.due);
   return cards;
 }
 function fsrsStats(){
   const all = Object.values(fsrsCards);
   const now = Date.now();
-  return {
-    total: all.length,
-    due: all.filter(c => c.due <= now).length,
-    learning: all.filter(c => c.reps < 3).length,
-    mature: all.filter(c => c.reps >= 3).length
-  };
+  return {total: all.length, due: all.filter(c => c.due <= now).length, learning: all.filter(c => c.reps < 3).length, mature: all.filter(c => c.reps >= 3).length};
 }
 function renderFsrsStats(){
   const s = fsrsStats();
-  $('fsrsStats').innerHTML = `
-    <div class="stats" style="margin:0">
-      <div class="stat"><small>Cartes totales</small><strong>${s.total}</strong></div>
-      <div class="stat"><small>À réviser maintenant</small><strong>${s.due}</strong></div>
-      <div class="stat"><small>En apprentissage</small><strong>${s.learning}</strong></div>
-    </div>`;
+  $('fsrsStats').innerHTML = `<div class="stats" style="margin:0"><div class="stat"><small>Cartes totales</small><strong>${s.total}</strong></div><div class="stat"><small>À réviser</small><strong>${s.due}</strong></div><div class="stat"><small>Matures</small><strong>${s.mature}</strong></div></div>`;
   $('fsrsDueCount').textContent = s.due;
   $('fsrsDueCount').style.display = s.due > 0 ? 'inline-block' : 'none';
 }
 function renderFsrsList(){
   const due = fsrsDueCards();
   if (!due.length) {
-    $('fsrsList').innerHTML = '<div class="fsrs-empty">Aucune carte à réviser pour le moment.<br>Fais un exercice pour créer des cartes automatiquement.</div>';
+    $('fsrsList').innerHTML = '<div class="fsrs-empty">Aucune carte à réviser.<br>Fais un exercice pour créer des cartes.</div>';
     return;
   }
-  const show = due.slice(0, 20);
-  $('fsrsList').innerHTML = '<h3 style="font-size:14px;margin:0 0 8px">Cartes à réviser aujourd\'hui (' + due.length + ')</h3>' +
-    show.map(c => {
+  $('fsrsList').innerHTML = '<h3 style="font-size:14px;margin:0 0 8px">Cartes à réviser (' + due.length + ')</h3>' +
+    due.slice(0, 20).map(c => {
       const overdue = Math.round((Date.now() - c.due) / DAY_MS);
       const overdueTxt = overdue > 0 ? `en retard de ${overdue}j` : "aujourd'hui";
-      return `<div class="fsrs-card">
-        <h4>${esc(c.key)}</h4>
-        <div class="fsrs-meta">
-          <span>Révisions : <b>${c.reps}</b></span>
-          <span>Échecs : <b>${c.lapses||0}</b></span>
-          <span>Stabilité : <b>${(c.stability||0).toFixed(1)}j</b></span>
-          <span class="fsrs-due now">${overdueTxt}</span>
-        </div>
-      </div>`;
+      return `<div class="fsrs-card"><h4>${esc(c.key)}</h4><div class="fsrs-meta"><span>Révisions : <b>${c.reps}</b></span><span>Échecs : <b>${c.lapses||0}</b></span><span>Stabilité : <b>${(c.stability||0).toFixed(1)}j</b></span><span class="fsrs-due now">${overdueTxt}</span></div></div>`;
     }).join('') +
-    (due.length > 20 ? `<div class="small muted" style="margin-top:8px">… et ${due.length - 20} autres cartes</div>` : '');
+    (due.length > 20 ? `<div class="small muted" style="margin-top:8px">… et ${due.length - 20} autres</div>` : '');
 }
 
-// ================== RÉVISION FSRS (session interactive) ==================
 let reviewSession = null;
 function startReviewSession(){
   const due = fsrsDueCards();
-  if (!due.length) {
-    alert('Aucune carte à réviser aujourd\'hui. Reviens demain !');
-    return;
-  }
-  // Retrouve les questions correspondantes dans quizzes
+  if (!due.length) { alert('Aucune carte à réviser aujourd\'hui.'); return; }
   const allQuestions = [];
   for (const q of quizzes) {
     for (const question of q.questions) {
       const key = fsrsCardKey(question);
       if (fsrsCards[key] && fsrsCards[key].due <= Date.now()) {
-        allQuestions.push({ ...question, _fsrsKey: key, _quizTitle: q.title });
+        allQuestions.push({...question, _fsrsKey: key, _quizTitle: q.title});
       }
     }
   }
-  if (!allQuestions.length) {
-    alert('Aucune question correspondante trouvée. Les cartes FSRS peuvent provenir de questionnaires supprimés.');
-    return;
-  }
-  reviewSession = {
-    questions: allQuestions,
-    current: 0,
-    answers: new Array(allQuestions.length).fill(null),
-    grades: new Array(allQuestions.length).fill(null),
-    submitted: false,
-    title: 'Révision FSRS',
-    subject: 'Répétition espacée'
-  };
+  if (!allQuestions.length) { alert('Aucune question correspondante. Les cartes proviennent peut-être de questionnaires supprimés.'); return; }
+  reviewSession = {questions: allQuestions, answers: new Array(allQuestions.length).fill(null), current: 0, submitted: false, title: 'Révision FSRS', subject: 'Répétition espacée'};
   openExamViewFromState(reviewSession, true);
 }
 
-// ================== FIN FSRS ==================
-
-// ================== SYNCHRONISATION CLOUD ==================
+// ================== CLOUD ==================
 async function apiFetch(url, options={}){
   const client = window.compTestAuth;
   const {data:{session}} = await client.auth.getSession();
-  if (!session) throw new Error('Connecte-toi à CompoTest puis réessaie.');
+  if (!session) throw new Error('Connecte-toi à CompoTest.');
   return fetch(url, {...options, headers:{...(options.headers||{}), Authorization:`Bearer ${session.access_token}`}});
 }
 window.apiFetch = apiFetch;
@@ -603,10 +519,9 @@ async function saveCloud(quizzesToSave, historyToSave){
   const uid = activeUserId;
   cloudWriteChain = cloudWriteChain.then(async()=>{
     if (activeUserId !== uid) return;
-    $('cloudStatus') && ($('cloudStatus').textContent='Synchronisation…');
     const {error} = await window.compTestAuth.from('comptest_data').upsert(
-      { user_id: uid, quizzes: quizzesToSave, history: historyToSave, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id' }
+      {user_id: uid, quizzes: quizzesToSave, history: historyToSave, updated_at: new Date().toISOString()},
+      {onConflict: 'user_id'}
     );
     if (error) throw error;
   }).catch(err => console.error('Sync:', err));
@@ -652,7 +567,6 @@ function setSignedOut(message=''){
   $('authUserLabel').textContent = 'Espace privé · Connexion requise';
   if (message) showAuthError(message);
 }
-
 function traduireErreurAuth(error){
   const msg = String(error?.message || '').toLowerCase();
   const code = String(error?.code || '').toLowerCase();
@@ -661,18 +575,17 @@ function traduireErreurAuth(error){
   if (msg.includes('invalid login credentials')||code==='invalid_credentials') return {texte:'Identifiant ou mot de passe incorrect.',diag};
   if (msg.includes('email not confirmed')) return {texte:'Ce compte existe mais son e-mail n’est pas confirmé.',diag};
   if (msg.includes('user not found')) return {texte:'Aucun compte trouvé.',diag};
-  if (msg.includes('email logins are disabled')||code==='email_provider_disabled') return {texte:'Les connexions par e-mail sont désactivées dans Supabase.',diag};
+  if (msg.includes('email logins are disabled')||code==='email_provider_disabled') return {texte:'Connexions e-mail désactivées dans Supabase.',diag};
   if (msg.includes('password')) return {texte:'Mot de passe trop court ou trop faible.',diag};
   return {texte:`Erreur : ${error?.message||'inconnue'}.`,diag};
 }
-
 async function initSaaS(){
   const cfg = window.COMPOSTEST_CONFIG || {};
   if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
     setSignedOut('Configuration Supabase manquante dans config.js.'); return;
   }
   const client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: true}
   });
   window.compTestAuth = client;
   client.auth.onAuthStateChange((_e, session) => setTimeout(() => activateSession(session), 0));
@@ -693,10 +606,8 @@ async function initSaaS(){
   $('forgotPasswordBtn').addEventListener('click', async () => {
     const email = identifierToEmail($('loginEmail').value);
     if (!email) { showAuthError('Saisis ton identifiant.'); return; }
-    if (email.endsWith('@' + INTERNAL_DOMAIN)) {
-      showAuthError('Identifiant interne. Contacte l’administrateur.'); return;
-    }
-    if (!confirm(`Envoyer un e-mail de réinitialisation à ${email} ?`)) return;
+    if (email.endsWith('@' + INTERNAL_DOMAIN)) { showAuthError('Identifiant interne. Contacte l’administrateur.'); return; }
+    if (!confirm(`Envoyer un e-mail à ${email} ?`)) return;
     const {error} = await client.auth.resetPasswordForEmail(email, {redirectTo: window.location.origin + '/index.html'});
     if (error) showAuthError('Envoi impossible : ' + error.message);
     else showAuthError('Si un compte existe, un e-mail a été envoyé.');
@@ -746,7 +657,6 @@ async function activateSession(session){
   $('logoutBtn').hidden = false;
   $('authUserLabel').textContent = emailToDisplay(session.user.email || 'Connecté');
 
-  // Détection admin via appel API
   isAdminUser = false;
   try {
     await adminApi('/api/admin/users');
@@ -759,7 +669,6 @@ async function activateSession(session){
     $('passwordPanelBtn').hidden = true;
   }
 
-  // Charge les données cloud
   try {
     const {data: cloudRow, error} = await window.compTestAuth.from('comptest_data').select('quizzes,history').eq('user_id', activeUserId).maybeSingle();
     if (error) { console.error(error); return; }
@@ -844,7 +753,7 @@ $('adminUsersList').addEventListener('click', async e => {
   } catch(err) { alert(err.message); }
 });
 
-// ================== RENDU ==================
+// ================== RENDER ==================
 function renderAll(){
   $('statTests').textContent = historyData.length;
   const avg = historyData.length ? historyData.reduce((a,x)=>a+x.score,0)/historyData.length : 0;
@@ -978,18 +887,99 @@ function setSubjectFromText(){
     if (m) $('quizSubject').value = m[1].trim();
   }
 }
-function parseAndDisplay(){
-  const raw = $('pdfText').value;
-  if (!raw.trim()) { $('analysisStatus').style.display = 'block'; $('analysisStatus').textContent = 'Aucun texte à analyser.'; return; }
-  const parsed = parseQuestions(raw);
-  if (!parsed.length) { $('analysisStatus').style.display = 'block'; $('analysisStatus').textContent = 'Aucune question numérotée reconnue.'; return; }
-  drafts = parsed; setSubjectFromText();
+
+// ================== ANALYSE INTELLIGENTE DU DOCUMENT ==================
+async function analyzeDocument(){
+  const raw = $('pdfText').value.trim();
+  if (!raw) { $('analysisStatus').style.display = 'block'; $('analysisStatus').textContent = 'Aucun texte à analyser.'; return; }
+  if (raw.length < 80) { $('analysisStatus').style.display = 'block'; $('analysisStatus').textContent = 'Texte trop court (min 80 caractères).'; return; }
+
+  const btn = $('analyzeBtn');
+  btn.disabled = true; const oldText = btn.textContent; btn.textContent = 'Analyse…';
   $('analysisStatus').style.display = 'block';
-  $('analysisStatus').textContent = `${parsed.length} question(s), ${parsed.filter(hasKey).length} avec réponse, ${parsed.filter(q=>!hasKey(q)).length} sans.`;
-  renderAll();
+  $('analysisStatus').textContent = 'Analyse en cours…';
+  $('docTypeBox').style.display = 'none';
+  $('analysisDetail').style.display = 'none';
+
+  try {
+    // 1) Détection locale du type de document
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    const numberPattern = /^\s*(?:[✓✔☑]\s*)?(\d{1,3})[.)]\s+\S/;
+    const optionPattern = /^\s*([✓✔☑]\s*)?([A-H])[.)]\s+\S/;
+    let numberedCount = 0, optionsCount = 0;
+    for (const line of lines) {
+      if (numberPattern.test(line)) numberedCount++;
+      if (optionPattern.test(line)) optionsCount++;
+    }
+    const numberedRatio = numberedCount / Math.max(1, lines.length);
+    const optionsRatio = optionsCount / Math.max(1, lines.length);
+
+    let docType = 'course';
+    let typeLabel = '📚 Cours rédigé (sans questions numérotées)';
+    if (numberedRatio > 0.05 && optionsRatio > 0.03) {
+      docType = 'numbered';
+      typeLabel = '📋 Questionnaire numéroté';
+    } else if (numberedCount >= 3) {
+      docType = 'mixed';
+      typeLabel = '📋 Document mixte (cours + quelques questions)';
+    }
+
+    $('docTypeBox').style.display = 'block';
+    $('docTypeBox').innerHTML = `<b>Type détecté :</b> ${typeLabel}<br><span class="small">${numberedCount} ligne(s) numérotée(s) · ${optionsCount} option(s) A/B/C/D</span>`;
+
+    // 2) Si document numéroté → parsing local
+    if (docType === 'numbered' || docType === 'mixed') {
+      const parsed = parseQuestions(raw);
+      const withKeys = parsed.filter(hasKey).length;
+      if (parsed.length >= 3) {
+        drafts = parsed; setSubjectFromText();
+        if (withKeys > 0) {
+          $('analysisStatus').textContent = `✅ ${parsed.length} question(s) détectée(s), ${withKeys} avec réponse, ${parsed.length - withKeys} sans. Clique sur « Résoudre les réponses manquantes » si besoin.`;
+        } else {
+          $('analysisStatus').textContent = `📋 ${parsed.length} question(s) détectée(s) sans réponse. Clique sur « Résoudre les réponses manquantes (IA) » pour que l'IA propose les corrections.`;
+        }
+        renderAll();
+        return;
+      }
+    }
+
+    // 3) Cours rédigé → analyse IA approfondie
+    const count = Math.max(10, Math.min(Number($('genCount').value) || 20, 50));
+    $('analysisStatus').textContent = `📚 Cours détecté. Analyse IA approfondie (${count} questions)… Cela peut prendre 30-60 secondes.`;
+
+    const r = await apiFetch('/api/analyze-course', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      subject: $('quizSubject').value.trim() || 'Matière non précisée',
+      title: $('quizTitle').value.trim() || 'Cours analysé',
+      sourceText: raw,
+      count
+    })});
+    const data = await r.json().catch(() => ({error:'Réponse illisible'}));
+    if (!r.ok) throw new Error(data.error || 'Erreur analyse');
+
+    drafts = (data.questions || []).map((q, i) => ({...q, number: i+1, source: 'ai-generated'}));
+
+    // Affiche les notions détectées
+    if (data.notions && data.notions.length) {
+      $('analysisDetail').style.display = 'block';
+      $('analysisDetail').innerHTML = `<h4>🧠 Notions extraites du cours (${data.notions.length})</h4>` +
+        (data.summary ? `<p class="muted small" style="margin:0 0 10px">${esc(data.summary)}</p>` : '') +
+        data.notions.slice(0, 15).map(n => `<div class="notion"><b>${esc(n.topic || 'Notion')}</b> — <span class="muted">${esc((n.detail || '').slice(0, 200))}${n.importance ? ' · ' + esc(n.importance) : ''}</span></div>`).join('') +
+        (data.notions.length > 15 ? `<div class="small muted" style="margin-top:6px">… et ${data.notions.length - 15} autres notions</div>` : '');
+    }
+
+    $('analysisStatus').textContent = `✅ ${drafts.length} question(s) générée(s) à partir du cours. ${data.coverage || ''}`;
+    if (!$('quizTitle').value.trim()) $('quizTitle').value = 'Questionnaire issu du cours';
+    $('startGeneratedExamBtn').style.display = 'inline-block';
+    renderAll();
+  } catch(e) {
+    $('analysisStatus').textContent = '❌ Erreur : ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = oldText;
+  }
 }
-$('analyzeBtn').onclick = parseAndDisplay;
-$('parseTextBtn').onclick = parseAndDisplay;
+
+$('analyzeBtn').onclick = analyzeDocument;
+$('parseTextBtn').onclick = analyzeDocument;
 
 $('generateQuestionsBtn').onclick = async () => {
   const sourceText = $('pdfText').value.trim();
@@ -1023,9 +1013,9 @@ $('startGeneratedExamBtn').onclick = () => {
 };
 
 $('aiBtn').onclick = async () => {
-  if (!drafts.length) parseAndDisplay();
+  if (!drafts.length) { await analyzeDocument(); }
   const pending = drafts.filter(q => !hasKey(q));
-  if (!pending.length) { $('analysisStatus').textContent = 'Toutes les questions ont une réponse.'; return; }
+  if (!pending.length) { $('analysisStatus').style.display = 'block'; $('analysisStatus').textContent = 'Toutes les questions ont une réponse.'; return; }
   const btn = $('aiBtn'); btn.disabled = true; btn.textContent = 'Analyse…';
   try {
     const r = await apiFetch('/api/answer-questions', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({subject: $('quizSubject').value.trim(), questions: pending.map((q,i) => ({id: String(q.number ?? i), type: q.type, text: q.text, options: q.options||[]}))})});
@@ -1043,6 +1033,7 @@ $('aiBtn').onclick = async () => {
       }
       if (hasKey(q)) { q.source = 'ai'; q.explanation = a.explanation || ''; q.confidence = a.confidence; }
     }
+    $('analysisStatus').textContent = 'Réponses IA ajoutées.';
     renderAll();
   } catch(e) { $('analysisStatus').style.display = 'block'; $('analysisStatus').textContent = 'Erreur IA : ' + e.message; }
   finally { btn.disabled = false; btn.textContent = 'Résoudre les réponses manquantes (IA)'; }
@@ -1063,6 +1054,7 @@ $('addQuestion').onclick = () => {
   drafts.push(q);
   $('qText').value = ''; $('qExplanation').value = '';
   renderAll();
+  alert('Question ajoutée. Va dans l\'onglet « Composer » pour la voir ou clique sur « Enregistrer le test ».');
 };
 
 $('saveQuiz').onclick = () => {
@@ -1075,7 +1067,7 @@ $('saveQuiz').onclick = () => {
   alert('Questionnaire enregistré.');
 };
 
-// ================== EXAM VIEW ==================
+// ================== EXAM ==================
 let examState = null;
 function openExamView(quiz){ openExamViewFromState({...quiz, answers: new Array(quiz.questions.length).fill(null), current: 0, submitted: false}, false); }
 function openExamViewFromState(state, isReview){
@@ -1105,13 +1097,8 @@ function renderExam(){
   let dotsHtml = '';
   for (let i=0; i<total; i++){
     let cls = 'dot';
-    if (isSubmitted) {
-      const ok = isAnswerCorrect(examState.questions[i], examState.answers[i]);
-      cls += ok ? ' correct' : ' wrong';
-    } else {
-      if (i === examState.current) cls += ' current';
-      if (examState.answers[i] !== null && !(Array.isArray(examState.answers[i]) && examState.answers[i].length === 0)) cls += ' answered';
-    }
+    if (isSubmitted) { const ok = isAnswerCorrect(examState.questions[i], examState.answers[i]); cls += ok ? ' correct' : ' wrong'; }
+    else { if (i === examState.current) cls += ' current'; if (examState.answers[i] !== null && !(Array.isArray(examState.answers[i]) && examState.answers[i].length === 0)) cls += ' answered'; }
     dotsHtml += `<button class="${cls}" type="button" data-goto="${i}">${i+1}</button>`;
   }
 
@@ -1148,22 +1135,17 @@ function renderExam(){
     $('examRestartBtn').onclick = () => { examState.answers = new Array(total).fill(null); examState.current = 0; examState.submitted = false; renderExam(); };
     $('examCloseBtn').onclick = closeExamView;
 
-    // Enregistre dans FSRS selon le score
-    if (examState.isReview) {
-      // Mise à jour FSRS déjà faite à la soumission pour les cartes de révision
-    } else if (!examState._fsrsSaved) {
+    if (!examState.isReview && !examState._fsrsSaved) {
       examState._fsrsSaved = true;
       const pct = scorable ? correctCount / scorable : 0;
-      // Note globale 1-4 selon le score
       let grade;
-      if (pct < 0.5) grade = 1; // Again
-      else if (pct < 0.75) grade = 2; // Hard
-      else if (pct < 0.95) grade = 3; // Good
-      else grade = 4; // Easy
+      if (pct < 0.5) grade = 1;
+      else if (pct < 0.75) grade = 2;
+      else if (pct < 0.95) grade = 3;
+      else grade = 4;
       for (const q of examState.questions) {
         const key = fsrsCardKey(q);
-        const existing = fsrsCards[key];
-        fsrsCards[key] = fsrsReview(existing, grade);
+        fsrsCards[key] = fsrsReview(fsrsCards[key], grade);
       }
       saveFsrs();
     }
@@ -1228,18 +1210,15 @@ function submitExam(){
   if (unanswered > 0 && !confirm(`${unanswered} sans réponse. Soumettre ?`)) return;
   examState.submitted = true;
 
-  // Met à jour FSRS pour chaque carte (notation 1-4 par question selon juste/faux)
   if (examState.isReview) {
     examState.questions.forEach((q, i) => {
       const key = q._fsrsKey || fsrsCardKey(q);
       const ok = isAnswerCorrect(q, examState.answers[i]);
-      const grade = ok ? 3 : 1; // 3=Good si bon, 1=Again si raté
-      const existing = fsrsCards[key];
-      fsrsCards[key] = fsrsReview(existing, grade);
+      const grade = ok ? 3 : 1;
+      fsrsCards[key] = fsrsReview(fsrsCards[key], grade);
     });
     saveFsrs();
   } else {
-    // Calcul du score global
     const scorable = examState.questions.filter(hasKey).length;
     const correctCount = examState.questions.reduce((a,q,i) => a + (hasKey(q) && isAnswerCorrect(q, examState.answers[i]) ? 1 : 0), 0);
     const score = scorable ? 20*correctCount/scorable : 0;
@@ -1252,22 +1231,21 @@ function submitExam(){
   renderExam();
 }
 
-// ================== REVIEW ==================
 $('startReviewBtn').onclick = startReviewSession;
 $('refreshReviewBtn').onclick = () => { renderFsrsStats(); renderFsrsList(); };
 
-// ================== DIVERS ==================
 $('shareQuiz').onclick = () => {
   const idx = Number($('quizPicker').value);
   if (!quizzes[idx]) { alert('Choisis un questionnaire.'); return; }
-  downloadJSON(quizzes[idx], 'compoTest-' + quizzes[idx].title.replace(/[^a-z0-9]/gi, '-') + '.json');
-};
-function downloadJSON(obj, name){
-  const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  const blob = new Blob([JSON.stringify(quizzes[idx], null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'compoTest-' + quizzes[idx].title.replace(/[^a-z0-9]/gi,'-') + '.json'; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
-}
-$('exportHistory').onclick = () => downloadJSON({quizzes, history: historyData}, 'compoTest-historique.json');
+};
+$('exportHistory').onclick = () => {
+  const blob = new Blob([JSON.stringify({quizzes, history: historyData}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'compoTest-historique.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+};
 $('clearData').onclick = () => {
   if (confirm('Effacer tous les tests, résultats et cartes FSRS ?')) {
     quizzes = []; historyData = []; drafts = []; fsrsCards = {};
@@ -1284,7 +1262,6 @@ $('startQuiz').onclick = () => {
   openExamView({title: quiz.title, subject: quiz.subject, questions: quiz.questions.map(q => ({...q, options: q.options ? [...q.options] : undefined}))});
 };
 
-// ================== LANCEMENT ==================
 renderAll();
 renderFsrsStats();
 renderFsrsList();
