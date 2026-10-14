@@ -15,9 +15,10 @@ h1{font-size:27px;margin:0 0 8px}p{line-height:1.5}.muted{color:var(--muted)}.he
 label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}input,select,textarea{width:100%;border:1px solid #d5ddeb;border-radius:10px;padding:11px;font:inherit;background:white;color:var(--ink)}textarea{min-height:95px;resize:vertical}
 button{border:0;border-radius:10px;background:var(--blue);color:white;font-weight:700;padding:11px 15px;cursor:pointer;font:inherit}button:hover{filter:brightness(.96)}button.secondary{background:#edf2ff;color:#244fc2}button.ghost{background:#f0f3f8;color:#34435c}button.danger{background:#fff0f0;color:#b82e36}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.filebox{border:1.5px dashed #a9bce7;border-radius:13px;padding:17px;background:#f8faff}.question{border:1px solid var(--line);border-radius:13px;padding:14px;margin-top:12px}.question strong{display:block;margin-bottom:10px}.option{display:flex;gap:8px;align-items:flex-start;padding:8px;border:1px solid var(--line);border-radius:9px;margin:6px 0;cursor:pointer}.option input{width:auto;margin-top:4px}.hide{display:none!important}.notice{padding:11px;border-radius:10px;background:#fff7df;color:#74500b;font-size:13px;margin-top:10px}.result{background:#edf9f2;border:1px solid #c4ecd5;padding:16px;border-radius:12px;margin-top:14px}.progress{height:8px;background:#e9edf5;border-radius:99px;overflow:hidden;margin-top:8px}.progress span{display:block;height:100%;background:#16865c;width:0}.history-item{padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}.history-item:last-child{border-bottom:0}.small{font-size:12px}.footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 @media(max-width:760px){.hero{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:1fr}.grid{grid-template-columns:1fr}h1{font-size:23px}.wrap{margin-top:15px}}
-
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#edf2ff;color:#244fc2}.badge.ok{background:#e9f8f1;color:#13734e}.badge.warn{background:#fff4d9;color:#805500}.badge.err{background:#fff0f0;color:#a51f2a}.qmeta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.question input[type=checkbox]{width:auto}.loading{opacity:.65;pointer-events:none}
-.admin-panel{margin:0 0 18px}.admin-users{width:100%;border-collapse:collapse;font-size:13px}.admin-users th,.admin-users td{text-align:left;padding:9px;border-bottom:1px solid var(--line);vertical-align:top}.admin-users th{color:var(--muted)}.admin-actions{display:flex;gap:6px;flex-wrap:wrap}.admin-panel input{max-width:100%}.auth-gate{max-width:520px;margin:30px auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #18315b0a}.auth-gate h2{margin-top:0}.auth-gate button{margin-top:12px}.auth-error{color:#a51f2a;font-size:13px;min-height:20px;margin-top:10px}.header-actions{float:right;display:flex;align-items:center;gap:10px;font-size:12px}.header-actions button{padding:7px 10px;background:#fff;color:#244fc2}.header-actions span{max-width:250px;overflow-wrap:anywhere}@media(max-width:760px){.header-actions{float:none;margin-top:12px;flex-wrap:wrap}}
+.admin-panel{margin:0 0 18px}.admin-users{width:100%;border-collapse:collapse;font-size:13px}.admin-users th,.admin-users td{text-align:left;padding:9px;border-bottom:1px solid var(--line);vertical-align:top}.admin-users th{color:var(--muted)}.admin-actions{display:flex;gap:6px;flex-wrap:wrap}.admin-panel input{max-width:100%}.auth-gate{max-width:520px;margin:30px auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #18315b0a}.auth-gate h2{margin-top:0}.auth-gate button{margin-top:12px}.auth-error{color:#a51f2a;font-size:13px;min-height:20px;margin-top:10px;white-space:pre-line}.header-actions{float:right;display:flex;align-items:center;gap:10px;font-size:12px}.header-actions button{padding:7px 10px;background:#fff;color:#244fc2}.header-actions span{max-width:250px;overflow-wrap:anywhere}@media(max-width:760px){.header-actions{float:none;margin-top:12px;flex-wrap:wrap}}
+.forgot-row{margin-top:10px;display:flex;justify-content:flex-end}.forgot-row button{background:none;color:#244fc2;font-weight:600;padding:4px;font-size:13px;text-decoration:underline}
+.diag-box{margin-top:14px;padding:10px;background:#f8faff;border:1px solid #d5ddeb;border-radius:9px;font-size:12px;color:#34435c;display:none;white-space:pre-line;font-family:ui-monospace,Menlo,Consolas,monospace}
 </style>
 </head><body>
 <header><div class="header-actions"><span id="authUserLabel">Espace privé · Connexion requise</span><button id="passwordPanelBtn" type="button" hidden>Définir / changer le mot de passe</button><button id="logoutBtn" type="button" hidden>Se déconnecter</button></div><div class="brand">Compo<span>Test</span></div><div class="tagline">Apprendre · Composer · Progresser</div></header>
@@ -25,7 +26,9 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 <h2>Connexion à CompoTest</h2>
 <p class="muted">Cet espace est privé et sans inscription publique. Si tu n’as pas encore de compte, contacte l’administrateur.</p>
 <form id="loginForm"><label for="loginEmail">Adresse e-mail</label><input id="loginEmail" type="email" autocomplete="username" required placeholder="toi@exemple.com"><label for="loginPassword">Mot de passe</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Ton mot de passe"><button id="loginBtn" type="submit">Se connecter</button></form>
+<div class="forgot-row"><button type="button" id="forgotPasswordBtn">Mot de passe oublié ?</button></div>
 <div id="authError" class="auth-error" role="status" aria-live="polite"></div>
+<div id="authDiag" class="diag-box" aria-live="polite"></div>
 <p class="small muted">Tes questionnaires et résultats sont associés à ton compte après connexion. N’utilise pas un appareil partagé sans te déconnecter.</p>
 </section>
 <main id="appMain" class="wrap" style="display:none">
@@ -82,7 +85,6 @@ function parseQuestions(raw){const lines=raw.replace(/\r/g,'').split('\n').map(s
 function setSubjectFromText(){if(!$('quizSubject').value.trim()){const m=$('pdfText').value.match(/(?:EXERCICE DE |COURS DE )([^\n]+)/i);if(m)$('quizSubject').value=m[1].trim()}}
 function parseAndDisplay(){const raw=$('pdfText').value;if(!raw.trim()){ $('analysisStatus').textContent='Aucun texte à analyser. Importe un PDF ou colle son texte.';return}const parsed=parseQuestions(raw);if(!parsed.length){$('analysisStatus').textContent='Aucune question numérotée reconnue. Le texte reste disponible pour inspection ; un format différent nécessite d’adapter le parseur.';return}drafts=parsed;setSubjectFromText();$('analysisStatus').textContent=`${parsed.length} question(s) reconnue(s), ${parsed.filter(hasKey).length} réponse(s) déjà marquée(s), ${parsed.filter(q=>!hasKey(q)).length} réponse(s) manquante(s). Vérifie le résultat avant d’enregistrer.`;renderAll()}
 $('analyzeBtn').onclick=parseAndDisplay;$('parseTextBtn').onclick=parseAndDisplay;
-
 $('generateQuestionsBtn').onclick=async()=>{
  const sourceText=$('pdfText').value.trim();
  const count=Number($('genCount').value);
@@ -100,7 +102,6 @@ $('generateQuestionsBtn').onclick=async()=>{
  }catch(e){$('generationStatus').textContent=`Échec : ${e.message}. Vérifie ta connexion, le serveur et le quota gratuit de l’IA.`}
  finally{btn.disabled=false;btn.textContent='Générer depuis le cours'}
 };
-
 $('aiBtn').onclick=async()=>{if(!drafts.length)parseAndDisplay();const pending=drafts.filter(q=>!hasKey(q));if(!pending.length){$('analysisStatus').textContent='Toutes les questions détectées possèdent déjà une réponse. Vérifie tout de même les réponses du document.';return}const btn=$('aiBtn');btn.disabled=true;btn.textContent='Analyse IA en cours…';try{const response=await apiFetch('/api/answer-questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:$('quizSubject').value.trim(),questions:pending.map((q,i)=>({id:String(q.number??i),number:q.number,type:q.type,text:q.text,options:q.options||[],section:q.section||''}))})});const data=await response.json().catch(()=>({error:'Réponse serveur illisible'}));if(!response.ok)throw new Error(data.error||`Erreur serveur (${response.status})`);for(const a of data.answers||[]){const q=drafts.find(x=>String(x.number)===String(a.id));if(!q)continue;if(q.type==='tf'&&typeof a.correct==='boolean')q.correct=a.correct;else if(q.type==='short'&&typeof a.correct==='string'&&a.correct.trim())q.expected=a.correct.trim();else if(q.type==='mcq'||q.type==='mcq_multi'){let c=a.correct;if(Array.isArray(c))q.correct=c.map(v=>typeof v==='number'?v:(q.options||[]).findIndex(o=>o===v)).filter(v=>v>=0);else if(Number.isInteger(c))q.correct=q.type==='mcq_multi'?[c]:c;else if(typeof c==='string')q.correct=q.type==='mcq_multi'?c.split(',').map(s=>Number(s.trim())).filter(Number.isInteger):Number(c);if(q.type==='mcq_multi'&&Array.isArray(q.correct)&&q.correct.length===1)q.correct=q.correct}if(hasKey(q)){q.source='ai';q.explanation=a.explanation||'';q.confidence=typeof a.confidence==='number'?Math.max(0,Math.min(1,a.confidence)):null;q.aiWarning=a.warning||''}}const unresolved=drafts.filter(q=>!hasKey(q)).length;$('analysisStatus').textContent=`Réponses IA reçues. ${drafts.filter(q=>q.source==='ai').length} proposition(s) ajoutée(s), ${unresolved} question(s) restent sans réponse. Vérifie chaque proposition avant utilisation.`;renderAll()}catch(e){$('analysisStatus').textContent=`Impossible de joindre l’IA : ${e.message}. Vérifie ta connexion, le serveur et le quota gratuit de l’IA. L’analyse locale reste disponible.`}finally{btn.disabled=false;btn.textContent='Résoudre les réponses manquantes avec l’IA'}};
 $('addQuestion').onclick=()=>{let text=$('qText').value.trim(),type=$('qType').value;if(!text){alert('Écris un énoncé.');return}let q={text,type,explanation:$('qExplanation').value.trim(),source:'manual'};if(type==='mcq'||type==='mcq_multi'){q.options=$('qOptions').value.split('\n').map(x=>x.trim()).filter(Boolean);let nums=$('qCorrect').value.split(',').map(x=>Number(x.trim())-1);if(q.options.length<2||nums.some(n=>n<0||n>=q.options.length)||!nums.length){alert('Ajoute au moins deux options et indique les bonnes réponses.');return}q.correct=type==='mcq_multi'?nums:[nums[0]];if(type==='mcq')q.correct=nums[0]}if(type==='tf')q.correct=$('qTF').value==='true';if(type==='short'){q.expected=$('qExpected').value.trim();if(!q.expected){alert('Indique la réponse attendue.');return}}drafts.push(q);$('qText').value='';$('qExplanation').value='';renderAll()};
 $('saveQuiz').onclick=()=>{let title=$('quizTitle').value.trim(),subject=$('quizSubject').value.trim();if(!title){alert('Donne un titre au test.');return}if(!drafts.length){alert('Analyse un document ou ajoute au moins une question.');return}quizzes.push({title,subject,questions:drafts.map(q=>({...q,options:q.options?[...q.options]:undefined})),created:new Date().toISOString()});drafts=[];persist();alert('Questionnaire enregistré dans ce navigateur. Vérifie les réponses IA avant de l’utiliser.');};
@@ -110,9 +111,13 @@ $('examForm').onsubmit=e=>{e.preventDefault();if(examTimer)clearInterval(examTim
 $('shareQuiz').onclick=()=>{let idx=Number($('quizPicker').value);if(!quizzes[idx]){alert('Choisis un questionnaire.');return}downloadJSON(quizzes[idx],'compoTest-'+quizzes[idx].title.replace(/[^a-z0-9]/gi,'-')+'.json')};function downloadJSON(obj,name){let blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 $('exportHistory').onclick=()=>downloadJSON({quizzes,history:historyData},'compoTest-historique.json');$('clearData').onclick=()=>{if(confirm('Effacer tous les tests et résultats de TON compte CompoTest ? Cette action sera synchronisée en ligne.')){quizzes=[];historyData=[];drafts=[];persist();$('examArea').innerHTML=''}};renderAll();
 
-// SaaS layer: invite-only Supabase Auth + row-level-secured cloud save.
+// ============ SaaS layer : Supabase Auth + cloud save ============
 let activeUserId=null, cloudWriteChain=Promise.resolve();
-function showAuthError(message){$('authError').textContent=message||''}
+function showAuthError(message,diag){
+  $('authError').textContent=message||'';
+  const box=$('authDiag');
+  if(diag){box.style.display='block';box.textContent=diag}else{box.style.display='none';box.textContent=''}
+}
 function setSignedOut(message=''){activeUserId=null;$('authGate').style.display='block';$('appMain').style.display='none';$('logoutBtn').hidden=true;$('passwordPanelBtn').hidden=true;$('authUserLabel').textContent='Espace privé · Connexion requise';if(message)showAuthError(message)}
 async function apiFetch(url, options={}){
  const client=window.compTestAuth;
@@ -138,7 +143,8 @@ async function activateSession(session){
  if(!session){setSignedOut();return}
  if(activeUserId===session.user.id)return;
  activeUserId=session.user.id;
- $('authGate').style.display='none';$('appMain').style.display='block';$('appMain').classList.add('loading');$('logoutBtn').hidden=false;$('passwordPanelBtn').hidden=false;$('authUserLabel').textContent=session.user.email||'Connecté';$('cloudStatus').textContent='Chargement des données du compte…';showAuthError('');$('adminPanel').style.display='none';try{await adminApi('/api/admin/users');$('adminPanel').style.display='block';loadAdminUsers()}catch{}
+ $('authGate').style.display='none';$('appMain').style.display='block';$('appMain').classList.add('loading');$('logoutBtn').hidden=false;$('passwordPanelBtn').hidden=false;$('authUserLabel').textContent=session.user.email||'Connecté';$('cloudStatus').textContent='Chargement des données du compte…';showAuthError('');$('adminPanel').style.display='none';
+ try{await adminApi('/api/admin/users');$('adminPanel').style.display='block';loadAdminUsers()}catch{}
  const {data:cloudRow,error}=await window.compTestAuth.from('comptest_data').select('quizzes,history').eq('user_id',activeUserId).maybeSingle();
  if(activeUserId!==session.user.id)return;
  if(error){$('cloudStatus').textContent='Erreur de lecture : exécute le fichier supabase_schema.sql dans Supabase.';console.error(error);return}
@@ -152,6 +158,24 @@ async function activateSession(session){
   }
  }
 }
+
+// Traduit les erreurs Supabase en messages clairs + diagnostics lisibles.
+function traduireErreurAuth(error){
+  const msg=String(error?.message||'').toLowerCase();
+  const code=String(error?.code||'').toLowerCase();
+  const status=error?.status;
+  const diag=`Détail technique :\n  message = ${error?.message||'(vide)'}\n  code = ${error?.code||'(vide)'}\n  status = ${status||'(vide)'}`;
+  if(msg.includes('invalid login credentials')||code==='invalid_credentials')return{texte:'E-mail ou mot de passe incorrect. Vérifie la casse, les majuscules et les espaces.',diag};
+  if(msg.includes('email not confirmed'))return{texte:'Ce compte existe mais son adresse e-mail n’est pas encore confirmée. Demande à l’administrateur de confirmer le compte dans Supabase (Authentication → Users → Confirm email).',diag};
+  if(msg.includes('user not found'))return{texte:'Aucun compte ne correspond à cette adresse e-mail. Vérifie l’orthographe ou demande la création du compte à l’administrateur.',diag};
+  if(msg.includes('invalid api key')||msg.includes('no api key'))return{texte:'La configuration Supabase (config.js) est invalide ou obsolète. Vérifie SUPABASE_URL et SUPABASE_ANON_KEY dans config.js.',diag};
+  if(msg.includes('email rate limit')||status===429)return{texte:'Trop de tentatives. Attends une minute puis réessaie.',diag};
+  if(msg.includes('network')||msg.includes('fetch'))return{texte:'Impossible de joindre Supabase. Vérifie ta connexion Internet.',diag};
+  if(msg.includes('user already registered'))return{texte:'Un compte existe déjà avec cette adresse e-mail.',diag};
+  if(msg.includes('password should be')||msg.includes('password is too short'))return{texte:'Mot de passe trop court. Utilise au moins 8 caractères.',diag};
+  return{texte:`Connexion refusée : ${error?.message||'erreur inconnue'}.`,diag};
+}
+
 async function initSaaS(){
  const cfg=window.COMPOSTEST_CONFIG||{};
  if(!window.supabase||!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY||cfg.SUPABASE_URL.includes('VOTRE-PROJET')||cfg.SUPABASE_ANON_KEY.includes('votre_cle')){
@@ -160,17 +184,53 @@ async function initSaaS(){
  const client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  window.compTestAuth=client;
  client.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>activateSession(session),0)});
+
  $('loginForm').addEventListener('submit',async e=>{
-  e.preventDefault();const btn=$('loginBtn');btn.disabled=true;btn.textContent='Connexion…';showAuthError('');
-  const {error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});
-  if(error)showAuthError('Connexion refusée. Vérifie l’e-mail, le mot de passe et que tu as accepté ton invitation.');
-  btn.disabled=false;btn.textContent='Se connecter';
+  e.preventDefault();
+  const btn=$('loginBtn');
+  btn.disabled=true;btn.textContent='Connexion…';showAuthError('');
+  const email=$('loginEmail').value.trim();
+  const password=$('loginPassword').value;
+  try{
+    const {data,error}=await client.auth.signInWithPassword({email,password});
+    if(error){
+      const t=traduireErreurAuth(error);
+      showAuthError(t.texte,t.diag);
+      btn.disabled=false;btn.textContent='Se connecter';
+      return;
+    }
+    if(!data?.session){
+      showAuthError('Connexion acceptée mais aucune session reçue. Recharge la page.');
+      btn.disabled=false;btn.textContent='Se connecter';
+      return;
+    }
+    // La session est valide : onAuthStateChange déclenchera activateSession().
+    $('loginPassword').value='';
+  }catch(err){
+    showAuthError('Erreur inattendue : '+(err?.message||err));
+  }finally{
+    btn.disabled=false;btn.textContent='Se connecter';
+  }
  });
+
+ // Mot de passe oublié : envoie un e-mail de réinitialisation Supabase.
+ $('forgotPasswordBtn').addEventListener('click',async()=>{
+  const email=$('loginEmail').value.trim();
+  if(!email){showAuthError('Saisis d’abord ton adresse e-mail dans le champ ci-dessus.');return}
+  if(!confirm(`Envoyer un e-mail de réinitialisation à ${email} ?\n\nCela fonctionne seulement si Supabase est configuré pour envoyer des e-mails (SMTP). Sinon, demande à l’administrateur de redéfinir ton mot de passe manuellement.`))return;
+  const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/index.html'});
+  if(error)showAuthError('Envoi impossible : '+error.message,`code = ${error.code||''}\nstatus = ${error.status||''}`);
+  else showAuthError('Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d’être envoyé. Vérifie aussi tes spams.');
+ });
+
  $('logoutBtn').addEventListener('click',async()=>{await client.auth.signOut();setSignedOut('Tu es déconnecté.');});
  $('passwordPanelBtn').addEventListener('click',()=>{$('passwordPanel').style.display=$('passwordPanel').style.display==='none'?'block':'none';$('passwordStatus').textContent='';});
  $('closePasswordPanel').addEventListener('click',()=>{$('passwordPanel').style.display='none';});
  $('passwordForm').addEventListener('submit',async e=>{e.preventDefault();const a=$('newPassword').value,b=$('newPasswordConfirm').value;if(a.length<8||a!==b){$('passwordStatus').textContent='Les deux mots de passe doivent être identiques et contenir au moins 8 caractères.';return}const {error}=await client.auth.updateUser({password:a});$('passwordStatus').textContent=error?'Impossible de modifier le mot de passe. Réessaie.':'Mot de passe enregistré. Garde-le secret et ne le réutilise pas ailleurs.';if(!error){$('newPassword').value='';$('newPasswordConfirm').value='';}});
- const {data:{session},error}=await client.auth.getSession();if(error)setSignedOut('Impossible de vérifier la session. Recharge la page.');else await activateSession(session);
+
+ const {data:{session},error}=await client.auth.getSession();
+ if(error)setSignedOut('Impossible de vérifier la session. Recharge la page.');
+ else await activateSession(session);
 }
 async function adminApi(url, options={}) {
  const response=await apiFetch(url,options);
