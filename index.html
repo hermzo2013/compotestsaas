@@ -29,12 +29,6 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 .history-item{padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}.history-item:last-child{border-bottom:0}
 .small{font-size:12px}
 .footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
-@media(max-width:760px){
-  .hero{align-items:flex-start;flex-direction:column}
-  .stats{grid-template-columns:1fr}
-  .grid{grid-template-columns:1fr}
-  h1{font-size:23px}.wrap{margin-top:15px}
-}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#edf2ff;color:#244fc2}
 .badge.ok{background:#e9f8f1;color:#13734e}.badge.warn{background:#fff4d9;color:#805500}.badge.err{background:#fff0f0;color:#a51f2a}
 .qmeta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
@@ -51,7 +45,6 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 .header-actions{float:right;display:flex;align-items:center;gap:10px;font-size:12px}
 .header-actions button{padding:7px 10px;background:#fff;color:#244fc2}
 .header-actions span{max-width:250px;overflow-wrap:anywhere}
-@media(max-width:760px){.header-actions{float:none;margin-top:12px;flex-wrap:wrap}}
 .forgot-row{margin-top:10px;display:flex;justify-content:flex-end}
 .forgot-row button{background:none;color:#244fc2;font-weight:600;padding:4px;font-size:13px;text-decoration:underline}
 .diag-box{margin-top:14px;padding:10px;background:#f8faff;border:1px solid #d5ddeb;border-radius:9px;font-size:12px;color:#34435c;display:none;white-space:pre-line;font-family:ui-monospace,Menlo,Consolas,monospace}
@@ -75,42 +68,69 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 .accordion-body{max-height:0;overflow:hidden;transition:max-height .35s ease;padding:0 18px}
 .accordion.open .accordion-body{max-height:20000px;padding:0 18px 20px 18px}
 .accordion-sub{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
-.accordion-count{display:inline-block;background:#e9f8f1;color:#13734e;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;margin-left:8px}
-/* Override des panneaux dans accordéons : pas de bordure ni fond */
 .accordion-body > .panel,.accordion-body > section.panel{border:0;padding:0;background:transparent;box-shadow:none;border-radius:0}
-/* Vue Exercices plein écran */
-#examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:1000;overflow-y:auto}
-#examView .exam-header{background:linear-gradient(120deg,#132344,#2457d6);color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
-#examView .exam-header h2{margin:0;font-size:20px}
-#examView .exam-header .meta{font-size:13px;opacity:.85}
-#examView .exam-body{max-width:860px;margin:24px auto;padding:0 18px 120px}
-.exam-q{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px;box-shadow:0 4px 14px #18315b0a}
-.exam-q .num{display:inline-block;background:#2457d6;color:#fff;font-weight:800;font-size:13px;padding:4px 10px;border-radius:999px;margin-right:8px}
-.exam-q h3{margin:6px 0 16px;font-size:17px;line-height:1.4}
-.exam-q .type-badge{font-size:11px;font-weight:700;background:#edf2ff;color:#244fc2;padding:3px 8px;border-radius:999px;margin-left:6px}
-.exam-opts{display:flex;flex-direction:column;gap:8px}
-.exam-opt{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border:1.5px solid var(--line);border-radius:11px;cursor:pointer;transition:all .12s}
-.exam-opt:hover{border-color:#a9bce7;background:#f8faff}
-.exam-opt input{margin-top:4px;width:auto;flex-shrink:0}
-.exam-opt.selected{border-color:#2457d6;background:#edf2ff}
-.exam-opt.correct{border-color:#16865c;background:#e9f8f1}
-.exam-opt.wrong{border-color:#b82e36;background:#fff0f0}
-.exam-opt span.choice{flex:1}
-.exam-nav{display:flex;justify-content:center;align-items:center;gap:12px;margin:20px 0;flex-wrap:wrap}
-.exam-nav .dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-.exam-nav .dot{width:30px;height:30px;border-radius:50%;background:#e1e7f0;color:#34435c;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;border:0;padding:0}
-.exam-nav .dot.answered{background:#c4ecd5;color:#0e5e3f}
-.exam-nav .dot.current{background:#2457d6;color:#fff;transform:scale(1.12)}
-.exam-nav .dot.correct{background:#16865c;color:#fff}
-.exam-nav .dot.wrong{background:#b82e36;color:#fff}
-.exam-actions-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 -4px 14px #18315b0a;z-index:20}
-.exam-actions-bar .progress-info{font-size:13px;color:var(--muted)}
-.exam-actions-bar .progress-info b{color:var(--ink)}
-.result-hero{background:linear-gradient(135deg,#16865c,#0e5e3f);color:#fff;padding:26px;border-radius:16px;margin-bottom:20px;text-align:center}
-.result-hero h1{margin:0;font-size:44px;font-weight:900}
-.result-hero p{margin:6px 0 0;font-size:15px;opacity:.9}
-.correct-block{background:#e9f8f1;border-left:4px solid #16865c;padding:10px 14px;border-radius:8px;margin-top:10px;font-size:13px}
-.explain-block{background:#f8faff;border-left:4px solid #a9bce7;padding:10px 14px;border-radius:8px;margin-top:8px;font-size:13px;color:#34435c}
+
+/* ====================== INDICATEUR DE TYPE D'APPAREIL ====================== */
+.device-indicator{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;background:#e1e7f0;color:#34435c;margin-left:8px;vertical-align:middle}
+body.device-mobile .device-indicator{background:#ffe7c9;color:#7a4a00}
+body.device-tablet .device-indicator{background:#e0f0ff;color:#0b4a82}
+body.device-desktop .device-indicator{background:#e9f8f1;color:#0e5e3f}
+
+/* ====================== AJUSTEMENTS MOBILE ====================== */
+body.device-mobile header{padding:16px 16px}
+body.device-mobile .brand{font-size:22px}
+body.device-mobile .tagline{font-size:12px}
+body.device-mobile .wrap{padding:0 12px;margin-top:14px}
+body.device-mobile .hero{padding:18px;border-radius:16px}
+body.device-mobile h1{font-size:21px}
+body.device-mobile .pill{font-size:11px;padding:6px 10px}
+body.device-mobile .stats{grid-template-columns:1fr 1fr;gap:10px}
+body.device-mobile .stat{padding:14px}
+body.device-mobile .stat strong{font-size:22px}
+body.device-mobile .grid{grid-template-columns:1fr}
+body.device-mobile .accordion-header{padding:14px 14px}
+body.device-mobile .accordion-header .title{font-size:14px}
+body.device-mobile .accordion-header .icon{width:28px;height:28px;font-size:14px}
+body.device-mobile .accordion-body{padding:0 14px}
+body.device-mobile .accordion.open .accordion-body{padding:0 14px 16px 14px}
+body.device-mobile button{padding:12px 16px;font-size:14px}
+body.device-mobile input,body.device-mobile select,body.device-mobile textarea{padding:12px;font-size:15px}
+body.device-mobile .btn-exam{width:100%}
+body.device-mobile .gen-actions{flex-direction:column}
+body.device-mobile .gen-actions button{width:100%}
+body.device-mobile .header-actions{float:none;margin-top:12px;flex-wrap:wrap;gap:6px}
+body.device-mobile .header-actions span{font-size:11px;max-width:100%}
+body.device-mobile .header-actions button{padding:8px 10px;font-size:12px}
+body.device-mobile .exam-body{padding:0 12px 140px}
+body.device-mobile .exam-q{padding:16px}
+body.device-mobile .exam-q h3{font-size:15px}
+body.device-mobile .exam-actions-bar{padding:10px 12px;flex-direction:column;gap:8px}
+body.device-mobile .exam-actions-bar > div{width:100%;justify-content:center}
+body.device-mobile .exam-actions-bar button{flex:1;font-size:13px;padding:10px}
+body.device-mobile .exam-nav .dot{width:26px;height:26px;font-size:11px}
+body.device-mobile .result-hero h1{font-size:36px}
+body.device-mobile .auth-gate{margin:16px;padding:18px}
+
+/* ====================== AJUSTEMENTS TABLETTE ====================== */
+body.device-tablet header{padding:20px 24px}
+body.device-tablet .wrap{padding:0 20px}
+body.device-tablet .stats{grid-template-columns:repeat(3,1fr)}
+body.device-tablet .grid{grid-template-columns:1fr}
+body.device-tablet .hero{padding:22px}
+body.device-tablet .accordion-header{padding:16px}
+body.device-tablet .exam-body{padding:0 20px 140px}
+
+/* ====================== AJUSTEMENTS ORDINATEUR ====================== */
+body.device-desktop .grid{grid-template-columns:1fr 1fr}
+body.device-desktop .stats{grid-template-columns:repeat(3,1fr)}
+
+/* ====================== FALLBACK MEDIA QUERY (si JS désactivé) ====================== */
+@media(max-width:760px){
+  .hero{align-items:flex-start;flex-direction:column}
+  .stats{grid-template-columns:1fr}
+  .grid{grid-template-columns:1fr}
+  h1{font-size:23px}
+}
 </style>
 </head><body>
 
@@ -134,7 +154,7 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
     <button id="passwordPanelBtn" type="button" hidden>🔑 Changer mon mot de passe</button>
     <button id="logoutBtn" type="button" hidden>Se déconnecter</button>
   </div>
-  <div class="brand">Compo<span>Test</span></div>
+  <div class="brand">Compo<span>Test</span> <span class="device-indicator" id="deviceIndicator" title="Type d'appareil détecté">…</span></div>
   <div class="tagline">Apprendre · Composer · Progresser</div>
 </header>
 
@@ -156,7 +176,6 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 
 <main id="appMain" class="wrap" style="display:none">
 
-<!-- Panneau mot de passe -->
 <section id="passwordPanel" class="panel" style="display:none;margin-bottom:16px">
   <h2>🔑 Changer mon mot de passe</h2>
   <p class="muted">Choisis ton nouveau mot de passe. Minimum 6 caractères.</p>
@@ -180,7 +199,6 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
   </form>
 </section>
 
-<!-- Panneau admin -->
 <section id="adminPanel" class="panel admin-panel collapsed" style="display:none">
   <button type="button" class="admin-toggle" id="adminToggle">
     <span>⚙️ Administration des comptes</span>
@@ -227,14 +245,10 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
   <div class="stat"><small>Meilleure note</small><strong id="statBest">—</strong></div>
 </section>
 
-<!-- ============ ACCORDÉON 1 : Import PDF ============ -->
 <div class="accordion" id="acc-pdf">
   <button type="button" class="accordion-header">
     <span class="icon">📄</span>
-    <span class="title">
-      ① Importer et analyser un PDF
-      <div class="accordion-sub">Détection des questions, réponses et options</div>
-    </span>
+    <span class="title">① Importer et analyser un PDF<div class="accordion-sub">Détection des questions, réponses et options</div></span>
     <span class="chev">▾</span>
   </button>
   <div class="accordion-body">
@@ -258,23 +272,19 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
       <button id="parseTextBtn" class="secondary">Analyser le texte collé</button>
       <button id="aiBtn" class="ghost">Résoudre les réponses manquantes avec l’IA</button>
     </div>
-    <div id="analysisStatus" class="notice">L’analyse locale reconnaît notamment les formats « ✓ Réponse correcte : VRAI/FAUX » et les options A–D précédées d’un ✓.</div>
+    <div id="analysisStatus" class="notice">L’analyse locale reconnaît les formats « ✓ Réponse correcte : VRAI/FAUX » et les options A–D précédées d’un ✓.</div>
     <div id="draftList"></div>
   </div>
 </div>
 
-<!-- ============ ACCORDÉON 2 : Générer depuis le cours ============ -->
 <div class="accordion" id="acc-gen">
   <button type="button" class="accordion-header">
     <span class="icon">✨</span>
-    <span class="title">
-      ② Générer un questionnaire à partir du cours
-      <div class="accordion-sub">IA : QCM, Vrai/Faux, questions mixtes</div>
-    </span>
+    <span class="title">② Générer un questionnaire à partir du cours<div class="accordion-sub">IA : QCM, Vrai/Faux, questions mixtes</div></span>
     <span class="chev">▾</span>
   </button>
   <div class="accordion-body">
-    <p class="small muted">Utilise le texte extrait (onglet ①) ou colle directement du texte de cours. Vérifie les réponses avant utilisation.</p>
+    <p class="small muted">Utilise le texte extrait (onglet ①) ou colle directement du texte de cours.</p>
     <label for="genCount">Nombre de questions</label>
     <input id="genCount" type="number" min="1" max="100" value="20">
     <div class="small muted">Formats : mélange QCM à réponse unique, QCM à réponses multiples et Vrai/Faux.</div>
@@ -286,14 +296,10 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
   </div>
 </div>
 
-<!-- ============ ACCORDÉON 3 : Ajouter une question ============ -->
 <div class="accordion" id="acc-add">
   <button type="button" class="accordion-header">
     <span class="icon">✏️</span>
-    <span class="title">
-      ③ Ajouter une question manuellement
-      <div class="accordion-sub">QCM, Vrai/Faux, réponse courte</div>
-    </span>
+    <span class="title">③ Ajouter une question manuellement<div class="accordion-sub">QCM, Vrai/Faux, réponse courte</div></span>
     <span class="chev">▾</span>
   </button>
   <div class="accordion-body">
@@ -329,14 +335,10 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
   </div>
 </div>
 
-<!-- ============ ACCORDÉON 4 : Composer un test ============ -->
 <div class="accordion" id="acc-compose">
   <button type="button" class="accordion-header">
     <span class="icon">🎯</span>
-    <span class="title">
-      ④ Composer un test
-      <div class="accordion-sub">Choisir un questionnaire enregistré et démarrer</div>
-    </span>
+    <span class="title">④ Composer un test<div class="accordion-sub">Choisir un questionnaire enregistré et démarrer</div></span>
     <span class="chev">▾</span>
   </button>
   <div class="accordion-body">
@@ -354,14 +356,10 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
   </div>
 </div>
 
-<!-- ============ ACCORDÉON 5 : Historique ============ -->
 <div class="accordion" id="acc-hist">
   <button type="button" class="accordion-header">
     <span class="icon">📊</span>
-    <span class="title">
-      ⑤ Visualiser mes notes (Historique)
-      <div class="accordion-sub">Résultats des tests passés</div>
-    </span>
+    <span class="title">⑤ Visualiser mes notes (Historique)<div class="accordion-sub">Résultats des tests passés</div></span>
     <span class="chev">▾</span>
   </button>
   <div class="accordion-body">
@@ -381,6 +379,57 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 'use strict';
+
+// ====================== DÉTECTION DU TYPE D'APPAREIL ======================
+function detectDevice(){
+  const ua = navigator.userAgent || '';
+  const width = window.innerWidth || document.documentElement.clientWidth;
+  const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  // Détection par User-Agent
+  const isIPad = /iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isTabletUA = /Tablet|PlayBook|Silk|Kindle|Android(?!.*Mobile)/i.test(ua) || isIPad;
+  const isMobileUA = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua) && !isTabletUA;
+
+  // Détection par taille d'écran (fallback)
+  let device;
+  if (isTabletUA || (isTouch && width >= 600 && width < 1024)) {
+    device = 'tablet';
+  } else if (isMobileUA || width < 600) {
+    device = 'mobile';
+  } else {
+    device = 'desktop';
+  }
+  return device;
+}
+
+function applyDeviceClass(){
+  const device = detectDevice();
+  document.body.classList.remove('device-mobile','device-tablet','device-desktop');
+  document.body.classList.add('device-' + device);
+  const ind = document.getElementById('deviceIndicator');
+  if (ind) {
+    ind.textContent = device === 'mobile' ? 'Mobile' : device === 'tablet' ? 'Tablette' : 'Ordinateur';
+    ind.title = 'Affichage adapté pour : ' + (device === 'mobile' ? 'téléphone mobile' : device === 'tablet' ? 'tablette' : 'ordinateur');
+  }
+  return device;
+}
+
+// Applique immédiatement au chargement (avant même que le reste du script démarre)
+applyDeviceClass();
+
+// Réagit aux changements (rotation du téléphone, redimensionnement de fenêtre)
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    applyDeviceClass();
+  }, 150);
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(applyDeviceClass, 200);
+});
+
 const $=id=>document.getElementById(id);
 let drafts=[], quizzes=JSON.parse(localStorage.getItem('compo_quizzes')||'[]'), historyData=JSON.parse(localStorage.getItem('compo_history')||'[]'), examTimer=null, secondsLeft=600;
 if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -402,17 +451,20 @@ function renderAll(){
 }
 window.removeDraft=i=>{drafts.splice(i,1);renderAll()};
 
-// ==== ACCORDÉONS ====
+// ==== ACCORDÉONS (comportement adapté au type d'appareil) ====
 function initAccordions(){
+  const device=detectDevice();
   document.querySelectorAll('.accordion').forEach(acc=>{
     const header=acc.querySelector('.accordion-header');
-    header.addEventListener('click',()=>{
-      acc.classList.toggle('open');
-    });
+    header.addEventListener('click',()=>{acc.classList.toggle('open')});
   });
-  // Ouvre par défaut le premier (Import PDF)
-  const first=$('acc-pdf');
-  if(first)first.classList.add('open');
+  // Sur mobile : tout fermé par défaut. Sur tablette/ordi : premier ouvert.
+  if(device==='mobile'){
+    // tous fermés
+  } else {
+    const first=$('acc-pdf');
+    if(first)first.classList.add('open');
+  }
 }
 initAccordions();
 
@@ -686,21 +738,11 @@ function submitExam(){
   const scorable=examState.questions.filter(hasKey).length;
   const correctCount=examState.questions.reduce((acc,q,i)=>acc+(hasKey(q)&&isAnswerCorrect(q,examState.answers[i])?1:0),0);
   const score=scorable?20*correctCount/scorable:0;
-  const entry={
-    title: examState.title,
-    subject: examState.subject,
-    score, correct: correctCount, total: scorable,
-    date: new Date().toLocaleString('fr-FR')
-  };
+  const entry={title:examState.title,subject:examState.subject,score,correct:correctCount,total:scorable,date:new Date().toLocaleString('fr-FR')};
   historyData.push(entry);
   const alreadyExists=quizzes.some(q=>q.title===examState.title);
   if(!alreadyExists){
-    quizzes.push({
-      title: examState.title,
-      subject: examState.subject,
-      questions: examState.questions.map(q=>({...q,options:q.options?[...q.options]:undefined})),
-      created: new Date().toISOString()
-    });
+    quizzes.push({title:examState.title,subject:examState.subject,questions:examState.questions.map(q=>({...q,options:q.options?[...q.options]:undefined})),created:new Date().toISOString()});
   }
   persist();
   renderExam();
