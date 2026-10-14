@@ -17,26 +17,20 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 @media(max-width:760px){.hero{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:1fr}.grid{grid-template-columns:1fr}h1{font-size:23px}.wrap{margin-top:15px}}
 
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#edf2ff;color:#244fc2}.badge.ok{background:#e9f8f1;color:#13734e}.badge.warn{background:#fff4d9;color:#805500}.badge.err{background:#fff0f0;color:#a51f2a}.qmeta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.question input[type=checkbox]{width:auto}.loading{opacity:.65;pointer-events:none}
-.auth-gate{max-width:520px;margin:30px auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #18315b0a}.auth-gate h2{margin-top:0}.auth-gate button{margin-top:12px}.auth-error{color:#a51f2a;font-size:13px;min-height:20px;margin-top:10px}.header-actions{float:right;display:flex;align-items:center;gap:10px;font-size:12px}.header-actions button{padding:7px 10px;background:#fff;color:#244fc2}.header-actions span{max-width:250px;overflow-wrap:anywhere}@media(max-width:760px){.header-actions{float:none;margin-top:12px;flex-wrap:wrap}}
+.admin-panel{margin:0 0 18px}.admin-users{width:100%;border-collapse:collapse;font-size:13px}.admin-users th,.admin-users td{text-align:left;padding:9px;border-bottom:1px solid var(--line);vertical-align:top}.admin-users th{color:var(--muted)}.admin-actions{display:flex;gap:6px;flex-wrap:wrap}.admin-panel input{max-width:100%}.auth-gate{max-width:520px;margin:30px auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #18315b0a}.auth-gate h2{margin-top:0}.auth-gate button{margin-top:12px}.auth-error{color:#a51f2a;font-size:13px;min-height:20px;margin-top:10px}.header-actions{float:right;display:flex;align-items:center;gap:10px;font-size:12px}.header-actions button{padding:7px 10px;background:#fff;color:#244fc2}.header-actions span{max-width:250px;overflow-wrap:anywhere}@media(max-width:760px){.header-actions{float:none;margin-top:12px;flex-wrap:wrap}}
 </style>
 </head><body>
 <header><div class="header-actions"><span id="authUserLabel">Espace privé · Connexion requise</span><button id="passwordPanelBtn" type="button" hidden>Définir / changer le mot de passe</button><button id="logoutBtn" type="button" hidden>Se déconnecter</button></div><div class="brand">Compo<span>Test</span></div><div class="tagline">Apprendre · Composer · Progresser</div></header>
 <section id="authGate" class="auth-gate">
 <h2>Connexion à CompoTest</h2>
-<p class="muted">Cet espace est réservé aux personnes invitées. Il n’y a pas d’inscription publique. Demande à l’administrateur de t’envoyer une invitation.</p>
+<p class="muted">Cet espace est privé et sans inscription publique. Si tu n’as pas encore de compte, contacte l’administrateur.</p>
 <form id="loginForm"><label for="loginEmail">Adresse e-mail</label><input id="loginEmail" type="email" autocomplete="username" required placeholder="toi@exemple.com"><label for="loginPassword">Mot de passe</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Ton mot de passe"><button id="loginBtn" type="submit">Se connecter</button></form>
-<button id="forgotPasswordBtn" type="button" class="ghost">Mot de passe oublié ?</button>
-<form id="resetRequestForm" style="display:none;margin-top:14px"><label for="resetEmail">Adresse e-mail de récupération</label><input id="resetEmail" type="email" autocomplete="email" required placeholder="toi@exemple.com"><button id="resetRequestBtn" type="submit">Envoyer le lien de réinitialisation</button><button id="cancelResetRequestBtn" type="button" class="ghost">Annuler</button><div id="resetRequestStatus" class="auth-error" role="status" aria-live="polite"></div></form>
 <div id="authError" class="auth-error" role="status" aria-live="polite"></div>
 <p class="small muted">Tes questionnaires et résultats sont associés à ton compte après connexion. N’utilise pas un appareil partagé sans te déconnecter.</p>
 </section>
-<section id="passwordRecoveryGate" class="auth-gate" style="display:none">
-<h2>Définir un nouveau mot de passe</h2>
-<p class="muted">Choisis un mot de passe unique d’au moins 8 caractères.</p>
-<form id="passwordRecoveryForm"><label for="recoveryPassword">Nouveau mot de passe</label><input id="recoveryPassword" type="password" minlength="8" autocomplete="new-password" required><label for="recoveryPasswordConfirm">Confirmer le mot de passe</label><input id="recoveryPasswordConfirm" type="password" minlength="8" autocomplete="new-password" required><button id="saveRecoveryPasswordBtn" type="submit">Enregistrer le nouveau mot de passe</button><div id="recoveryStatus" class="auth-error" role="status" aria-live="polite"></div></form>
-</section>
 <main id="appMain" class="wrap" style="display:none">
-<section id="passwordPanel" class="panel" style="display:none;margin-bottom:16px"><h2>Définir ou changer le mot de passe</h2><p class="muted">Utile après avoir accepté une invitation. Choisis un mot de passe unique d’au moins 8 caractères.</p><form id="passwordForm"><label for="newPassword">Nouveau mot de passe</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required><label for="newPasswordConfirm">Confirmer le mot de passe</label><input id="newPasswordConfirm" type="password" minlength="8" autocomplete="new-password" required><div class="actions"><button type="submit">Enregistrer le mot de passe</button><button id="closePasswordPanel" type="button" class="ghost">Fermer</button></div><div id="passwordStatus" class="small muted" role="status" aria-live="polite"></div></form></section>
+<section id="passwordPanel" class="panel" style="display:none;margin-bottom:16px"><h2>Définir ou changer le mot de passe</h2><p class="muted">Choisis un mot de passe unique d’au moins 8 caractères.</p><form id="passwordForm"><label for="newPassword">Nouveau mot de passe</label><input id="newPassword" type="password" minlength="8" autocomplete="new-password" required><label for="newPasswordConfirm">Confirmer le mot de passe</label><input id="newPasswordConfirm" type="password" minlength="8" autocomplete="new-password" required><div class="actions"><button type="submit">Enregistrer le mot de passe</button><button id="closePasswordPanel" type="button" class="ghost">Fermer</button></div><div id="passwordStatus" class="small muted" role="status" aria-live="polite"></div></form></section>
+<section id="adminPanel" class="panel admin-panel" style="display:none"><h2>Administration des comptes</h2><p class="muted">Réservé à l’administrateur. Les comptes sont créés directement dans Supabase, sans invitation par e-mail. Transmets le mot de passe provisoire à l’utilisateur par un canal privé et demande-lui de le changer après connexion.</p><form id="adminCreateForm"><div class="grid"><div><label for="adminNewName">Nom (facultatif)</label><input id="adminNewName" maxlength="100" placeholder="Nom de l’utilisateur"></div><div><label for="adminNewEmail">Adresse e-mail</label><input id="adminNewEmail" type="email" required placeholder="ami@exemple.com"></div><div><label for="adminNewPassword">Mot de passe provisoire (12 caractères minimum)</label><input id="adminNewPassword" type="password" minlength="12" autocomplete="new-password" required></div></div><div class="actions"><button type="submit" id="adminCreateBtn">Créer le compte</button><button type="button" class="secondary" id="adminRefreshBtn">Actualiser la liste</button></div><div id="adminStatus" class="small muted" role="status" aria-live="polite"></div></form><h3>Comptes existants</h3><div id="adminUsersList" class="small muted">Chargement…</div></section>
 <section class="hero"><div><h1>Prépare tes questionnaires plus vite</h1><p class="muted">Importe un PDF : CompoTest détecte les questions, les choix et les réponses marquées. Si une réponse manque, l’IA peut proposer une réponse, une explication et un niveau de confiance via un serveur configuré.</p></div><span class="pill">VERSION BÊTA WEB</span></section>
 <p id="cloudStatus" class="small muted" role="status" aria-live="polite">Connexion au stockage sécurisé…</p><section class="stats"><div class="stat"><small>Tests terminés</small><strong id="statTests">0</strong></div><div class="stat"><small>Moyenne générale</small><strong id="statAvg">—</strong></div><div class="stat"><small>Meilleure note</small><strong id="statBest">—</strong></div></section>
 <div class="grid">
@@ -119,8 +113,7 @@ $('exportHistory').onclick=()=>downloadJSON({quizzes,history:historyData},'compo
 // SaaS layer: invite-only Supabase Auth + row-level-secured cloud save.
 let activeUserId=null, cloudWriteChain=Promise.resolve();
 function showAuthError(message){$('authError').textContent=message||''}
-function setSignedOut(message=''){activeUserId=null;$('authGate').style.display='block';$('passwordRecoveryGate').style.display='none';$('appMain').style.display='none';$('logoutBtn').hidden=true;$('passwordPanelBtn').hidden=true;$('authUserLabel').textContent='Espace privé · Connexion requise';if(message)showAuthError(message)}
-function showPasswordRecoveryGate(){ $('authGate').style.display='none'; $('passwordRecoveryGate').style.display='block'; $('appMain').style.display='none'; $('logoutBtn').hidden=true; $('passwordPanelBtn').hidden=true; $('authUserLabel').textContent='Définir le mot de passe'; $('recoveryStatus').textContent=''; $('passwordRecoveryForm').style.display='block'; }
+function setSignedOut(message=''){activeUserId=null;$('authGate').style.display='block';$('appMain').style.display='none';$('logoutBtn').hidden=true;$('passwordPanelBtn').hidden=true;$('authUserLabel').textContent='Espace privé · Connexion requise';if(message)showAuthError(message)}
 async function apiFetch(url, options={}){
  const client=window.compTestAuth;
  const {data:{session}}=await client.auth.getSession();
@@ -145,7 +138,7 @@ async function activateSession(session){
  if(!session){setSignedOut();return}
  if(activeUserId===session.user.id)return;
  activeUserId=session.user.id;
- $('authGate').style.display='none';$('appMain').style.display='block';$('appMain').classList.add('loading');$('logoutBtn').hidden=false;$('passwordPanelBtn').hidden=false;$('authUserLabel').textContent=session.user.email||'Connecté';$('cloudStatus').textContent='Chargement des données du compte…';showAuthError('');
+ $('authGate').style.display='none';$('appMain').style.display='block';$('appMain').classList.add('loading');$('logoutBtn').hidden=false;$('passwordPanelBtn').hidden=false;$('authUserLabel').textContent=session.user.email||'Connecté';$('cloudStatus').textContent='Chargement des données du compte…';showAuthError('');$('adminPanel').style.display='none';try{await adminApi('/api/admin/users');$('adminPanel').style.display='block';loadAdminUsers()}catch{}
  const {data:cloudRow,error}=await window.compTestAuth.from('comptest_data').select('quizzes,history').eq('user_id',activeUserId).maybeSingle();
  if(activeUserId!==session.user.id)return;
  if(error){$('cloudStatus').textContent='Erreur de lecture : exécute le fichier supabase_schema.sql dans Supabase.';console.error(error);return}
@@ -164,32 +157,39 @@ async function initSaaS(){
  if(!window.supabase||!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY||cfg.SUPABASE_URL.includes('VOTRE-PROJET')||cfg.SUPABASE_ANON_KEY.includes('votre_cle')){
   setSignedOut('Configuration manquante : renseigne SUPABASE_URL et SUPABASE_ANON_KEY dans config.js.');return;
  }
- const authHashParams=new URLSearchParams(window.location.hash.replace(/^#/,''));
- const authQueryParams=new URLSearchParams(window.location.search);
- const authLinkType=authHashParams.get('type')||authQueryParams.get('type')||'';
- const hasAuthCode=authQueryParams.has('code');
  const client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  window.compTestAuth=client;
- client.auth.onAuthStateChange((event,session)=>{setTimeout(()=>{
-  const inviteOrRecoveryLink=['invite','recovery'].includes(authLinkType)||(hasAuthCode&&event==='SIGNED_IN');
-  if(session&&(event==='PASSWORD_RECOVERY'||(inviteOrRecoveryLink&&event==='SIGNED_IN'))){showPasswordRecoveryGate();return;}
-  activateSession(session);
- },0)});
+ client.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>activateSession(session),0)});
  $('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();const btn=$('loginBtn');btn.disabled=true;btn.textContent='Connexion…';showAuthError('');
   const {error}=await client.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});
   if(error)showAuthError('Connexion refusée. Vérifie l’e-mail, le mot de passe et que tu as accepté ton invitation.');
   btn.disabled=false;btn.textContent='Se connecter';
  });
- $('forgotPasswordBtn').addEventListener('click',()=>{const form=$('resetRequestForm');form.style.display=form.style.display==='none'?'block':'none';$('resetRequestStatus').textContent='';if($('loginEmail').value.trim())$('resetEmail').value=$('loginEmail').value.trim();});
- $('cancelResetRequestBtn').addEventListener('click',()=>{$('resetRequestForm').style.display='none';$('resetRequestStatus').textContent='';});
- $('resetRequestForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('resetRequestBtn');btn.disabled=true;btn.textContent='Envoi…';$('resetRequestStatus').textContent='';const email=$('resetEmail').value.trim();const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/'});if(error){$('resetRequestStatus').textContent='Impossible d’envoyer le lien. Vérifie la configuration e-mail et les URL de redirection Supabase.';console.error('Supabase resetPasswordForEmail:',error);}else{$('resetRequestStatus').textContent='Si cette adresse peut recevoir un lien, un e-mail de réinitialisation a été envoyé. Vérifie aussi les courriers indésirables.';}btn.disabled=false;btn.textContent='Envoyer le lien de réinitialisation';});
- $('passwordRecoveryForm').addEventListener('submit',async e=>{e.preventDefault();const a=$('recoveryPassword').value,b=$('recoveryPasswordConfirm').value;if(a.length<8||a!==b){$('recoveryStatus').textContent='Les deux mots de passe doivent être identiques et contenir au moins 8 caractères.';return;}const btn=$('saveRecoveryPasswordBtn');btn.disabled=true;btn.textContent='Enregistrement…';$('recoveryStatus').textContent='';const {error}=await client.auth.updateUser({password:a});if(error){$('recoveryStatus').textContent='Impossible de modifier le mot de passe. Le lien est peut-être expiré : demande un nouveau lien.';console.error('Supabase updateUser password:',error);btn.disabled=false;btn.textContent='Enregistrer le nouveau mot de passe';return;}$('recoveryStatus').textContent='Mot de passe enregistré. Tu peux maintenant te connecter.';$('passwordRecoveryForm').style.display='none';await client.auth.signOut();setSignedOut('Mot de passe enregistré. Connecte-toi avec ton nouveau mot de passe.');});
  $('logoutBtn').addEventListener('click',async()=>{await client.auth.signOut();setSignedOut('Tu es déconnecté.');});
  $('passwordPanelBtn').addEventListener('click',()=>{$('passwordPanel').style.display=$('passwordPanel').style.display==='none'?'block':'none';$('passwordStatus').textContent='';});
  $('closePasswordPanel').addEventListener('click',()=>{$('passwordPanel').style.display='none';});
  $('passwordForm').addEventListener('submit',async e=>{e.preventDefault();const a=$('newPassword').value,b=$('newPasswordConfirm').value;if(a.length<8||a!==b){$('passwordStatus').textContent='Les deux mots de passe doivent être identiques et contenir au moins 8 caractères.';return}const {error}=await client.auth.updateUser({password:a});$('passwordStatus').textContent=error?'Impossible de modifier le mot de passe. Réessaie.':'Mot de passe enregistré. Garde-le secret et ne le réutilise pas ailleurs.';if(!error){$('newPassword').value='';$('newPasswordConfirm').value='';}});
  const {data:{session},error}=await client.auth.getSession();if(error)setSignedOut('Impossible de vérifier la session. Recharge la page.');else await activateSession(session);
 }
+async function adminApi(url, options={}) {
+ const response=await apiFetch(url,options);
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(data.error||'Erreur pendant la gestion des comptes.');
+ return data;
+}
+function safeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function loadAdminUsers(){
+ const box=$('adminUsersList');box.textContent='Chargement des comptes…';
+ try{const data=await adminApi('/api/admin/users');if(!data.users?.length){box.textContent='Aucun compte trouvé.';return}
+ box.innerHTML='<table class="admin-users"><thead><tr><th>E-mail</th><th>Créé le</th><th>Dernière connexion</th><th>État</th><th>Actions</th></tr></thead><tbody>'+data.users.map(u=>{const banned=u.banned_until&&new Date(u.banned_until)>new Date();const status=u.is_admin?'Administrateur':banned?'Désactivé':u.email_confirmed_at?'Actif':'E-mail non confirmé';return `<tr><td>${safeHtml(u.email)}</td><td>${u.created_at?new Date(u.created_at).toLocaleDateString('fr-FR'):'—'}</td><td>${u.last_sign_in_at?new Date(u.last_sign_in_at).toLocaleDateString('fr-FR'):'Jamais'}</td><td>${status}</td><td>${u.is_admin?'<span class="muted">Compte protégé</span>':`<div class="admin-actions"><button class="secondary" data-admin-action="${banned?'enable':'disable'}" data-user-id="${safeHtml(u.id)}">${banned?'Réactiver':'Désactiver'}</button><button class="danger" data-admin-action="delete" data-user-id="${safeHtml(u.id)}">Supprimer</button></div>`}</td></tr>`}).join('')+'</tbody></table>';
+ }catch(e){box.textContent=e.message;}
+}
+function initAdminPanel(){
+ $('adminCreateForm').addEventListener('submit',async e=>{e.preventDefault();const btn=$('adminCreateBtn');btn.disabled=true;$('adminStatus').textContent='Création du compte…';try{const data=await adminApi('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('adminNewName').value,email:$('adminNewEmail').value,password:$('adminNewPassword').value})});$('adminStatus').textContent=`Compte créé : ${data.user.email}. Note le mot de passe provisoire et transmets-le en privé. Il ne sera pas affiché de nouveau.`;$('adminNewName').value='';$('adminNewEmail').value='';$('adminNewPassword').value='';await loadAdminUsers()}catch(err){$('adminStatus').textContent=err.message}finally{btn.disabled=false}});
+ $('adminRefreshBtn').addEventListener('click',loadAdminUsers);
+ $('adminUsersList').addEventListener('click',async e=>{const btn=e.target.closest('button[data-admin-action]');if(!btn)return;const id=btn.dataset.userId,action=btn.dataset.adminAction;if(action==='delete'&&!confirm('Supprimer définitivement ce compte Supabase ? Les données liées peuvent aussi être supprimées.'))return;if(action!=='delete'&&!confirm(action==='disable'?'Désactiver ce compte ?':'Réactiver ce compte ?'))return;btn.disabled=true;try{if(action==='delete')await adminApi('/api/admin/users/'+encodeURIComponent(id),{method:'DELETE'});else await adminApi('/api/admin/users/'+encodeURIComponent(id)+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({banned:action==='disable'})});await loadAdminUsers()}catch(err){alert(err.message);btn.disabled=false}});
+}
+initAdminPanel();
 initSaaS();
 </script></body></html>
