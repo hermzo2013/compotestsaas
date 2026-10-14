@@ -83,7 +83,7 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   const password = String(req.body?.password || '');
   if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'Adresse e-mail invalide.' });
   if (email === String(process.env.ADMIN_EMAIL || '').trim().toLowerCase()) return res.status(400).json({ error: 'Cette adresse est réservée au compte administrateur.' });
-  if (password.length < 12) return res.status(400).json({ error: 'Le mot de passe provisoire doit contenir au moins 12 caractères.' });
+  if (password.length < 6) return res.status(400).json({ error: 'Le mot de passe provisoire doit contenir au moins 6 caractères.' });
   try {
     const user = await supabaseAdmin('users', { method: 'POST', body: JSON.stringify({
       email, password, email_confirm: true,
@@ -109,6 +109,24 @@ app.patch('/api/admin/users/:id/status', requireAdmin, async (req, res) => {
   } catch (error) {
     console.error('Admin update user:', error.message);
     res.status(error.status || 502).json({ error: 'Impossible de modifier le statut du compte.' });
+  }
+});
+// Réinitialiser le mot de passe d'un utilisateur (admin uniquement, sans demander l'ancien mot de passe)
+app.patch('/api/admin/users/:id/password', requireAdmin, async (req, res) => {
+  const id = String(req.params.id || '');
+  const password = String(req.body?.password || '');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({ error: 'Identifiant de compte invalide.' });
+  if (password.length < 6) return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
+  try {
+    const current = await supabaseAdmin(`users/${encodeURIComponent(id)}`);
+    if (String(current.email || '').toLowerCase() === String(process.env.ADMIN_EMAIL || '').trim().toLowerCase()) {
+      return res.status(400).json({ error: 'Utilise le bouton « Changer mon mot de passe » dans l’en-tête pour modifier ton propre mot de passe administrateur.' });
+    }
+    await supabaseAdmin(`users/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify({ password }) });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin reset password:', error.message);
+    res.status(error.status || 502).json({ error: 'Impossible de modifier le mot de passe.' });
   }
 });
 app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
@@ -147,7 +165,7 @@ const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
   const client = aiClient();
-  if (!client) return res.status(503).json({ error: 'IA désactivée : ajoute une clé d’offre gratuite dans AI_API_KEY côté serveur. Aucune facturation n’est configurée par CompoTest.' });
+  if (!client) return res.status(503).json({ error: 'IA désactivée : ajoute une clé d’offre gratuite dans AI_API_KEY côté serveur.' });
   const { subject = 'Matière non précisée', questions } = req.body || {};
   if (!Array.isArray(questions) || questions.length === 0 || questions.length > 100) return res.status(400).json({ error: 'Fournis entre 1 et 100 questions.' });
   const safeQuestions = questions.map((q, i) => ({
@@ -183,11 +201,11 @@ app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
 
 app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
   const client = aiClient();
-  if (!client) return res.status(503).json({ error: 'IA désactivée : ajoute une clé d’offre gratuite dans AI_API_KEY côté serveur. Aucune facturation n’est configurée par CompoTest.' });
+  if (!client) return res.status(503).json({ error: 'IA désactivée : ajoute une clé d’offre gratuite dans AI_API_KEY côté serveur.' });
   const { subject = 'Matière non précisée', title = 'Cours importé', sourceText, count = 20 } = req.body || {};
   const text = typeof sourceText === 'string' ? sourceText.trim() : '';
   const n = Number(count);
-  if (text.length < 80) return res.status(400).json({ error: 'Le texte du cours est trop court. Importe un PDF et extrais son texte avant de générer les questions.' });
+  if (text.length < 80) return res.status(400).json({ error: 'Le texte du cours est trop court. Importe un document et extrais son texte avant de générer les questions.' });
   if (text.length > 40000) return res.status(413).json({ error: 'Le texte est trop long pour une seule génération (maximum 40 000 caractères). Essaie avec un extrait plus court du cours.' });
   if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Choisis un nombre de questions entre 1 et 100.' });
   try {
