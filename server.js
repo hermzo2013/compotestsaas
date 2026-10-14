@@ -12,9 +12,9 @@ app.use(express.json({ limit: '1mb' }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
-app.get('/api/health', (_req, res) => res.json({ ok: true, aiConfigured: Boolean(process.env.AI_API_KEY), authConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, aiConfigured: Boolean(process.env.AI_API_KEY), authConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY), adminConfigured: Boolean(process.env.ADMIN_EMAIL && process.env.SUPABASE_SERVICE_ROLE_KEY) }));
 
-// Verify each access token with Supabase Auth. The anon key is public; the service-role key is never used here.
+// Verify access tokens with Supabase Auth. The service-role key is only used by server-side admin routes.
 async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return res.status(401).json({ error: 'Connecte-toi à CompoTest pour utiliser cette fonction.' });
@@ -26,15 +26,104 @@ async function authenticate(req, res, next) {
     if (!response.ok) return res.status(401).json({ error: 'Session expirée. Reconnecte-toi.' });
     const user = await response.json();
     if (!user?.id || !user?.email) return res.status(401).json({ error: 'Session utilisateur invalide.' });
+    const email = String(user.email).toLowerCase();
+    const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
     const allowedEmails = (process.env.ALLOWED_USER_EMAILS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
-    if (!allowedEmails.includes(String(user.email).toLowerCase())) return res.status(403).json({ error: 'Ce compte ne figure pas dans la liste des personnes autorisées.' });
-    req.user = { id: user.id, email: user.email };
+    const hasAppAccess = user.app_metadata?.compotest_access === true;
+    if (email !== adminEmail && !allowedEmails.includes(email) && !hasAppAccess) return res.status(403).json({ error: 'Ce compte ne figure pas parmi les utilisateurs autorisés par l’administrateur.' });
+    req.user = { id: user.id, email: user.email, isAdmin: Boolean(adminEmail && email === adminEmail) };
     next();
   } catch {
     return res.status(503).json({ error: 'Vérification de session indisponible. Réessaie.' });
   }
 }
 app.use('/api', (req, res, next) => req.path === '/health' ? next() : authenticate(req, res, next));
+
+// Administration des comptes. La clé service_role reste exclusivement côté serveur (Render Environment).
+function requireAdmin(req, res, next) {
+  if (!req.user?.isAdmin) return res.status(403).json({ error: 'Accès réservé à l’administrateur CompoTest.' });
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return res.status(503).json({ error: 'La clé administrative Supabase manque dans les variables Render.' });
+  next();
+}
+async function supabaseAdmin(pathname, options = {}) {
+  const base = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
+  const response = await fetch(`${base}/auth/v1/admin/${pathname}`, {
+    ...options,
+    headers: {
+      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const err = new Error(body.msg || body.message || body.error_description || body.error || `Supabase Admin API (${response.status})`);
+    err.status = response.status;
+    throw err;
+  }
+  return body;
+}
+app.get('/api/admin/users', requireAdmin, async (_req, res) => {
+  try {
+    const data = await supabaseAdmin('users?page=1&per_page=100');
+    const users = (data.users || []).map(u => ({
+      id: u.id, email: u.email || '', created_at: u.created_at || null,
+      last_sign_in_at: u.last_sign_in_at || null, email_confirmed_at: u.email_confirmed_at || null,
+      banned_until: u.banned_until || null, is_admin: String(u.email || '').toLowerCase() === String(process.env.ADMIN_EMAIL || '').trim().toLowerCase()
+    }));
+    res.json({ users });
+  } catch (error) {
+    console.error('Admin list users:', error.message);
+    res.status(error.status || 502).json({ error: 'Impossible de charger les comptes Supabase.' });
+  }
+});
+app.post('/api/admin/users', requireAdmin, async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const password = String(req.body?.password || '');
+  if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'Adresse e-mail invalide.' });
+  if (email === String(process.env.ADMIN_EMAIL || '').trim().toLowerCase()) return res.status(400).json({ error: 'Cette adresse est réservée au compte administrateur.' });
+  if (password.length < 12) return res.status(400).json({ error: 'Le mot de passe provisoire doit contenir au moins 12 caractères.' });
+  try {
+    const user = await supabaseAdmin('users', { method: 'POST', body: JSON.stringify({
+      email, password, email_confirm: true,
+      app_metadata: { compotest_access: true, role: 'user' },
+      user_metadata: { full_name: String(req.body?.name || '').trim().slice(0, 100) }
+    }) });
+    res.status(201).json({ user: { id: user.id, email: user.email, created_at: user.created_at } });
+  } catch (error) {
+    console.error('Admin create user:', error.message);
+    const msg = /already|registered|exists/i.test(error.message) ? 'Un compte existe déjà avec cette adresse.' : 'Création impossible. Vérifie les paramètres Supabase et réessaie.';
+    res.status(error.status || 502).json({ error: msg });
+  }
+});
+app.patch('/api/admin/users/:id/status', requireAdmin, async (req, res) => {
+  const id = String(req.params.id || '');
+  const banned = req.body?.banned === true;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({ error: 'Identifiant de compte invalide.' });
+  try {
+    const current = await supabaseAdmin(`users/${encodeURIComponent(id)}`);
+    if (String(current.email || '').toLowerCase() === String(process.env.ADMIN_EMAIL || '').trim().toLowerCase()) return res.status(400).json({ error: 'Le compte administrateur ne peut pas être désactivé ici.' });
+    await supabaseAdmin(`users/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify({ ban_duration: banned ? '876000h' : 'none' }) });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin update user:', error.message);
+    res.status(error.status || 502).json({ error: 'Impossible de modifier le statut du compte.' });
+  }
+});
+app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
+  const id = String(req.params.id || '');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({ error: 'Identifiant de compte invalide.' });
+  try {
+    const user = await supabaseAdmin(`users/${encodeURIComponent(id)}`);
+    if (String(user.email || '').toLowerCase() === String(process.env.ADMIN_EMAIL || '').trim().toLowerCase()) return res.status(400).json({ error: 'Le compte administrateur ne peut pas être supprimé ici.' });
+    await supabaseAdmin(`users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Admin delete user:', error.message);
+    res.status(error.status || 502).json({ error: 'Impossible de supprimer ce compte.' });
+  }
+});
 
 // Best-effort per-user daily caps. They reset when this free server restarts; provider limits remain the final guardrail.
 const usage = new Map();
