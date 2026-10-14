@@ -32,7 +32,7 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 #examView .exam-header{background:linear-gradient(120deg,#132344,#2457d6);color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
 #examView .exam-header h2{margin:0;font-size:20px}
 #examView .exam-header .meta{font-size:13px;opacity:.85}
-#examView .exam-body{max-width:860px;margin:24px auto;padding:0 18px}
+#examView .exam-body{max-width:860px;margin:24px auto;padding:0 18px 120px}
 .exam-q{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px;box-shadow:0 4px 14px #18315b0a}
 .exam-q .num{display:inline-block;background:#2457d6;color:#fff;font-weight:800;font-size:13px;padding:4px 10px;border-radius:999px;margin-right:8px}
 .exam-q h3{margin:6px 0 16px;font-size:17px;line-height:1.4}
@@ -45,16 +45,14 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 .exam-opt.correct{border-color:#16865c;background:#e9f8f1}
 .exam-opt.wrong{border-color:#b82e36;background:#fff0f0}
 .exam-opt span.choice{flex:1}
-.exam-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 0;flex-wrap:wrap}
-.exam-nav .counter{font-weight:700;color:var(--muted)}
+.exam-nav{display:flex;justify-content:center;align-items:center;gap:12px;margin:20px 0;flex-wrap:wrap}
 .exam-nav .dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-.exam-nav .dot{width:30px;height:30px;border-radius:50%;background:#e1e7f0;color:#34435c;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;border:0}
+.exam-nav .dot{width:30px;height:30px;border-radius:50%;background:#e1e7f0;color:#34435c;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;cursor:pointer;border:0;padding:0}
 .exam-nav .dot.answered{background:#c4ecd5;color:#0e5e3f}
 .exam-nav .dot.current{background:#2457d6;color:#fff;transform:scale(1.12)}
 .exam-nav .dot.correct{background:#16865c;color:#fff}
 .exam-nav .dot.wrong{background:#b82e36;color:#fff}
-.exam-nav .dot.skipped{background:#fff4d9;color:#805500}
-.exam-actions-bar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 -4px 14px #18315b0a;margin-top:30px}
+.exam-actions-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 -4px 14px #18315b0a;z-index:20}
 .exam-actions-bar .progress-info{font-size:13px;color:var(--muted)}
 .exam-actions-bar .progress-info b{color:var(--ink)}
 .result-hero{background:linear-gradient(135deg,#16865c,#0e5e3f);color:#fff;padding:26px;border-radius:16px;margin-bottom:20px;text-align:center}
@@ -62,7 +60,6 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 .result-hero p{margin:6px 0 0;font-size:15px;opacity:.9}
 .correct-block{background:#e9f8f1;border-left:4px solid #16865c;padding:10px 14px;border-radius:8px;margin-top:10px;font-size:13px}
 .explain-block{background:#f8faff;border-left:4px solid #a9bce7;padding:10px 14px;border-radius:8px;margin-top:8px;font-size:13px;color:#34435c}
-.skip{color:#805500;font-weight:700}
 </style>
 </head><body>
 
@@ -308,7 +305,6 @@ function renderExam(){
   const answered=examState.answers.filter(a=>a!==null&&!(Array.isArray(a)&&a.length===0)).length;
   const isSubmitted=examState.submitted;
 
-  // Dots de navigation
   let dotsHtml='';
   for(let i=0;i<total;i++){
     let cls='dot';
@@ -318,19 +314,15 @@ function renderExam(){
       cls+=ok?' correct':' wrong';
     } else {
       if(i===examState.current)cls+=' current';
-      if(examState.answers[i]!==null)cls+=' answered';
+      if(examState.answers[i]!==null&&!(Array.isArray(examState.answers[i])&&examState.answers[i].length===0))cls+=' answered';
     }
     dotsHtml+=`<button class="${cls}" type="button" data-goto="${i}">${i+1}</button>`;
   }
 
-  // Questions
-  let questionsHtml='';
   if(isSubmitted){
-    // Vue correction complète : toutes les questions affichées
-    questionsHtml=examState.questions.map((q,i)=>{
+    const questionsHtml=examState.questions.map((q,i)=>{
       const ua=examState.answers[i];
       const ok=isAnswerCorrect(q,ua);
-      const correctSet=Array.isArray(q.correct)?q.correct:(q.type==='mcq'||q.type==='tf'?[q.correct]:[]);
       let body='';
       if(q.type==='mcq'||q.type==='mcq_multi'){
         body='<div class="exam-opts">'+q.options.map((o,j)=>{
@@ -362,7 +354,6 @@ function renderExam(){
         ${q.confidence!=null?`<div class="small muted" style="margin-top:6px">Confiance IA : ${Math.round(q.confidence*100)}%</div>`:''}
       </div>`;
     }).join('');
-    // En-tête résultat
     const scorable=examState.questions.filter(hasKey).length;
     const correctCount=examState.questions.reduce((acc,q,i)=>acc+(hasKey(q)&&isAnswerCorrect(q,examState.answers[i])?1:0),0);
     const score=scorable?20*correctCount/scorable:0;
@@ -385,7 +376,6 @@ function renderExam(){
     };
     $('examCloseBtn').onclick=closeExamView;
   } else {
-    // Vue question par question
     const i=examState.current;
     const q=examState.questions[i];
     const ua=examState.answers[i];
@@ -410,7 +400,7 @@ function renderExam(){
     } else {
       body=`<input type="text" id="examShortInput" placeholder="Ta réponse…" value="${esc(ua||'')}">`;
     }
-    questionsHtml=`<div class="exam-q">
+    const questionsHtml=`<div class="exam-q">
       <div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div>
       <h3>${esc(q.text)}</h3>
       ${body}
@@ -427,7 +417,6 @@ function renderExam(){
     if($('examNextBtn'))$('examNextBtn').onclick=()=>{captureCurrentAnswer();examState.current++;renderExam()};
     if($('examSubmitBtn'))$('examSubmitBtn').onclick=submitExam;
     if($('examSubmitBtn2'))$('examSubmitBtn2').onclick=submitExam;
-    // Capture des choix
     document.querySelectorAll('#examBody .exam-opt input').forEach(inp=>{
       inp.addEventListener('change',()=>{
         const q=examState.questions[examState.current];
@@ -439,10 +428,8 @@ function renderExam(){
         } else {
           examState.answers[examState.current]=Number(inp.value);
         }
-        // Maj style selected
         document.querySelectorAll('#examBody .exam-opt').forEach(el=>el.classList.remove('selected'));
         document.querySelectorAll('#examBody input[name="examq"]:checked').forEach(x=>x.closest('.exam-opt').classList.add('selected'));
-        // Maj dots
         updateExamDots();
       });
     });
@@ -453,7 +440,6 @@ function renderExam(){
       });
     }
   }
-  // Clic sur dots
   document.querySelectorAll('#examBody .dot').forEach(d=>{
     d.onclick=()=>{
       if(examState.submitted)return;
@@ -467,7 +453,8 @@ function updateExamDots(){
   const total=examState.questions.length;
   const dots=document.querySelectorAll('#examBody .dot');
   dots.forEach((d,i)=>{
-    d.classList.toggle('answered',examState.answers[i]!==null&&!(Array.isArray(examState.answers[i])&&examState.answers[i].length===0));
+    const a=examState.answers[i];
+    d.classList.toggle('answered',a!==null&&!(Array.isArray(a)&&a.length===0));
   });
   const answered=examState.answers.filter(a=>a!==null&&!(Array.isArray(a)&&a.length===0)).length;
   const info=document.querySelector('#examActionsBar .progress-info');
@@ -502,7 +489,6 @@ function submitExam(){
   const unanswered=examState.answers.filter(a=>a===null||(typeof a==='string'&&a.trim()==='')).length;
   if(unanswered>0&&!confirm(`${unanswered} question(s) sans réponse. Soumettre quand même ?`))return;
   examState.submitted=true;
-  // Calcul + enregistrement historique
   const scorable=examState.questions.filter(hasKey).length;
   const correctCount=examState.questions.reduce((acc,q,i)=>acc+(hasKey(q)&&isAnswerCorrect(q,examState.answers[i])?1:0),0);
   const score=scorable?20*correctCount/scorable:0;
@@ -513,7 +499,6 @@ function submitExam(){
     date: new Date().toLocaleString('fr-FR')
   };
   historyData.push(entry);
-  // Sauvegarde du questionnaire si pas encore enregistré
   const alreadyExists=quizzes.some(q=>q.title===examState.title);
   if(!alreadyExists){
     quizzes.push({
@@ -587,8 +572,7 @@ function traduireErreurAuth(error){
   if(msg.includes('invalid login credentials')||code==='invalid_credentials')return{texte:'E-mail ou mot de passe incorrect.',diag};
   if(msg.includes('email not confirmed'))return{texte:'Ce compte existe mais son e-mail n’est pas confirmé.',diag};
   if(msg.includes('user not found'))return{texte:'Aucun compte ne correspond à cette adresse e-mail.',diag};
-  if(msg.includes('email logins are disabled')||code==='email_provider_disabled')return{texte:'Les connexions par e-mail sont désactivées dans Supabase. Active Email dans Authentication → Sign In / Providers.',diag};
-  if(msg.includes('current password required')||code==='current_password_required')return{texte:'Supabase exige le mot de passe actuel. Nous allons contourner ce réglage automatiquement…',diag,needsBypass:true};
+  if(msg.includes('email logins are disabled')||code==='email_provider_disabled')return{texte:'Les connexions par e-mail sont désactivées dans Supabase.',diag};
   if(msg.includes('password should be')||msg.includes('password is too short')||msg.includes('weak password'))return{texte:'Mot de passe trop court ou trop faible selon Supabase.',diag};
   return{texte:`Erreur : ${error?.message||'inconnue'}.`,diag};
 }
@@ -628,7 +612,6 @@ async function initSaaS(){
  $('passwordPanelBtn').addEventListener('click',()=>{$('passwordPanel').style.display=$('passwordPanel').style.display==='none'?'block':'none';$('passwordStatus').textContent='';$('passwordPanel').scrollIntoView({behavior:'smooth'});});
  $('closePasswordPanel').addEventListener('click',()=>{$('passwordPanel').style.display='none';});
 
- // Toggle affichage mot de passe (👁️)
  document.querySelectorAll('.pwd-toggle').forEach(btn=>{
    btn.addEventListener('click',()=>{
      const t=document.getElementById(btn.dataset.target);
@@ -637,29 +620,32 @@ async function initSaaS(){
    });
  });
 
- // Changement de mot de passe : contourne current_password_required via fallback
+ // Changement de mot de passe : demande le mot de passe actuel puis envoie current_password
  $('passwordForm').addEventListener('submit',async e=>{
    e.preventDefault();
    const a=$('newPassword').value,b=$('newPasswordConfirm').value;
    if(a.length<6){$('passwordStatus').textContent='Le mot de passe doit contenir au moins 6 caractères.';return}
    if(a!==b){$('passwordStatus').textContent='Les deux mots de passe ne sont pas identiques.';return}
-   $('passwordStatus').textContent='Enregistrement en cours…';
-   const {error}=await client.auth.updateUser({password:a});
+   const currentPwd=prompt('Pour des raisons de sécurité, saisis ton mot de passe ACTUEL :');
+   if(!currentPwd){$('passwordStatus').textContent='Modification annulée.';return}
+   $('passwordStatus').textContent='Vérification en cours…';
+   const email=(await client.auth.getUser()).data?.user?.email;
+   if(!email){$('passwordStatus').textContent='Session expirée. Reconnecte-toi.';return}
+   const {error:signInErr}=await client.auth.signInWithPassword({email,password:currentPwd});
+   if(signInErr){
+     $('passwordStatus').textContent='Mot de passe actuel incorrect. Vérifie et réessaie.';
+     return;
+   }
+   $('passwordStatus').textContent='Enregistrement du nouveau mot de passe…';
+   const {error}=await client.auth.updateUser({password:a,current_password:currentPwd});
    if(!error){
-     $('passwordStatus').textContent='✅ Mot de passe enregistré. Tu peux l’utiliser à la prochaine connexion.';
+     $('passwordStatus').textContent='✅ Mot de passe enregistré avec succès.';
      $('newPassword').value='';$('newPasswordConfirm').value='';
      return;
    }
-   // Si Supabase exige l'ancien mot de passe, on informe clairement
-   const t=traduireErreurAuth(error);
-   if(t.needsBypass){
-     $('passwordStatus').textContent='⚠️ Supabase exige l’ancien mot de passe.\nSolution : désactive « Require current password when updating » dans Supabase → Authentication → Sign In / Providers → Email, puis recharge cette page.\n\nOu demande à l’administrateur de réinitialiser ton mot de passe depuis le panneau Admin.';
-   } else {
-     $('passwordStatus').textContent='Erreur : '+t.texte+'\n\n'+t.diag;
-   }
+   $('passwordStatus').textContent='Erreur : '+(error.message||'inconnue');
  });
 
- // Toggle panneau admin
  $('adminToggle').addEventListener('click',()=>{$('adminPanel').classList.toggle('collapsed')});
 
  const {data:{session},error}=await client.auth.getSession();
