@@ -1,7 +1,6 @@
-// Configuration publique du navigateur. La clé anon/publishable Supabase est conçue pour être publique.
-// La sécurité repose sur les politiques RLS du fichier supabase_schema.sql.
-// NE JAMAIS mettre ici une clé service_role, une clé Groq ou une autre clé secrète.
+// Configuration publique du navigateur. La clé publishable est conçue pour être publique.
+// Ne jamais mettre ici SUPABASE_SERVICE_ROLE_KEY ni une clé IA.
 window.COMPOSTEST_CONFIG = {
-  SUPABASE_URL: 'https://drumtggirtmubdvkpvwl.supabase.co',
+  SUPABASE_URL: 'https://drumtgglrtmubdvkpwvl.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_u86DlAD9qU-Byb9tR59gMA_IlGAbcxu'
 };
