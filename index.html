@@ -8,16 +8,52 @@
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
 header{background:linear-gradient(120deg,#132344,#2457d6);color:white;padding:22px max(20px,calc((100% - 1120px)/2));}
 .brand{font-size:25px;font-weight:800;letter-spacing:-.5px}.brand span{color:#8fe4c0}.tagline{opacity:.85;margin-top:5px;font-size:14px}
-.wrap{max-width:1120px;margin:24px auto;padding:0 18px}.hero{background:white;border:1px solid var(--line);border-radius:20px;padding:24px;display:flex;justify-content:space-between;gap:20px;align-items:center;box-shadow:0 8px 30px #18315b0a}
+.wrap{max-width:1120px;margin:24px auto;padding:0 18px}
+.hero{background:white;border:1px solid var(--line);border-radius:20px;padding:24px;display:flex;justify-content:space-between;gap:20px;align-items:center;box-shadow:0 8px 30px #18315b0a}
 h1{font-size:27px;margin:0 0 8px}p{line-height:1.5}.muted{color:var(--muted)}.hero p{margin:0;max-width:620px}.pill{background:#e9f8f1;color:#13734e;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}.stat,.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:18px}.stat small{color:var(--muted)}.stat strong{display:block;font-size:26px;margin-top:7px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.panel h2{font-size:18px;margin:0 0 8px}.panel p{font-size:14px;color:var(--muted);margin-top:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+.stat,.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:18px}
+.stat small{color:var(--muted)}.stat strong{display:block;font-size:26px;margin-top:7px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.panel h2{font-size:18px;margin:0 0 8px}.panel p{font-size:14px;color:var(--muted);margin-top:0}
 label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}input,select,textarea{width:100%;border:1px solid #d5ddeb;border-radius:10px;padding:11px;font:inherit;background:white;color:var(--ink)}textarea{min-height:95px;resize:vertical}
-button{border:0;border-radius:10px;background:var(--blue);color:white;font-weight:700;padding:11px 15px;cursor:pointer;font:inherit}button:hover{filter:brightness(.96)}button.secondary{background:#edf2ff;color:#244fc2}button.ghost{background:#f0f3f8;color:#34435c}button.danger{background:#fff0f0;color:#b82e36}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.filebox{border:1.5px dashed #a9bce7;border-radius:13px;padding:17px;background:#f8faff}.question{border:1px solid var(--line);border-radius:13px;padding:14px;margin-top:12px}.question strong{display:block;margin-bottom:10px}.option{display:flex;gap:8px;align-items:flex-start;padding:8px;border:1px solid var(--line);border-radius:9px;margin:6px 0;cursor:pointer}.option input{width:auto;margin-top:4px}.hide{display:none!important}.notice{padding:11px;border-radius:10px;background:#fff7df;color:#74500b;font-size:13px;margin-top:10px}.result{background:#edf9f2;border:1px solid #c4ecd5;padding:16px;border-radius:12px;margin-top:14px}.progress{height:8px;background:#e9edf5;border-radius:99px;overflow:hidden;margin-top:8px}.progress span{display:block;height:100%;background:#16865c;width:0}.history-item{padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}.history-item:last-child{border-bottom:0}.small{font-size:12px}.footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
-@media(max-width:760px){.hero{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:1fr}.grid{grid-template-columns:1fr}h1{font-size:23px}.wrap{margin-top:15px}}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#edf2ff;color:#244fc2}.badge.ok{background:#e9f8f1;color:#13734e}.badge.warn{background:#fff4d9;color:#805500}.badge.err{background:#fff0f0;color:#a51f2a}.qmeta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.question input[type=checkbox]{width:auto}
-.admin-panel{margin:0 0 18px}.admin-users{width:100%;border-collapse:collapse;font-size:13px}.admin-users th,.admin-users td{text-align:left;padding:9px;border-bottom:1px solid var(--line);vertical-align:top}.admin-users th{color:var(--muted)}.admin-actions{display:flex;gap:6px;flex-wrap:wrap}.admin-panel input{max-width:100%}.auth-gate{max-width:520px;margin:30px auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #18315b0a}.auth-gate h2{margin-top:0}.auth-gate button{margin-top:12px}.auth-error{color:#a51f2a;font-size:13px;min-height:20px;margin-top:10px;white-space:pre-line}.header-actions{float:right;display:flex;align-items:center;gap:10px;font-size:12px}.header-actions button{padding:7px 10px;background:#fff;color:#244fc2}.header-actions span{max-width:250px;overflow-wrap:anywhere}@media(max-width:760px){.header-actions{float:none;margin-top:12px;flex-wrap:wrap}}
-.forgot-row{margin-top:10px;display:flex;justify-content:flex-end}.forgot-row button{background:none;color:#244fc2;font-weight:600;padding:4px;font-size:13px;text-decoration:underline}
+button{border:0;border-radius:10px;background:var(--blue);color:white;font-weight:700;padding:11px 15px;cursor:pointer;font:inherit}button:hover{filter:brightness(.96)}button.secondary{background:#edf2ff;color:#244fc2}button.ghost{background:#f0f3f8;color:#34435c}button.danger{background:#fff0f0;color:#b82e36}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.filebox{border:1.5px dashed #a9bce7;border-radius:13px;padding:17px;background:#f8faff}
+.question{border:1px solid var(--line);border-radius:13px;padding:14px;margin-top:12px}.question strong{display:block;margin-bottom:10px}
+.option{display:flex;gap:8px;align-items:flex-start;padding:8px;border:1px solid var(--line);border-radius:9px;margin:6px 0;cursor:pointer}.option input{width:auto;margin-top:4px}
+.hide{display:none!important}
+.notice{padding:11px;border-radius:10px;background:#fff7df;color:#74500b;font-size:13px;margin-top:10px}
+.result{background:#edf9f2;border:1px solid #c4ecd5;padding:16px;border-radius:12px;margin-top:14px}
+.progress{height:8px;background:#e9edf5;border-radius:99px;overflow:hidden;margin-top:8px}.progress span{display:block;height:100%;background:#16865c;width:0}
+.history-item{padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}.history-item:last-child{border-bottom:0}
+.small{font-size:12px}
+.footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
+@media(max-width:760px){
+  .hero{align-items:flex-start;flex-direction:column}
+  .stats{grid-template-columns:1fr}
+  .grid{grid-template-columns:1fr}
+  h1{font-size:23px}.wrap{margin-top:15px}
+}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#edf2ff;color:#244fc2}
+.badge.ok{background:#e9f8f1;color:#13734e}.badge.warn{background:#fff4d9;color:#805500}.badge.err{background:#fff0f0;color:#a51f2a}
+.qmeta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
+.question input[type=checkbox]{width:auto}
+.admin-panel{margin:0 0 18px}
+.admin-users{width:100%;border-collapse:collapse;font-size:13px}
+.admin-users th,.admin-users td{text-align:left;padding:9px;border-bottom:1px solid var(--line);vertical-align:top}
+.admin-users th{color:var(--muted)}
+.admin-actions{display:flex;gap:6px;flex-wrap:wrap}
+.admin-panel input{max-width:100%}
+.auth-gate{max-width:520px;margin:30px auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 30px #18315b0a}
+.auth-gate h2{margin-top:0}.auth-gate button{margin-top:12px}
+.auth-error{color:#a51f2a;font-size:13px;min-height:20px;margin-top:10px;white-space:pre-line}
+.header-actions{float:right;display:flex;align-items:center;gap:10px;font-size:12px}
+.header-actions button{padding:7px 10px;background:#fff;color:#244fc2}
+.header-actions span{max-width:250px;overflow-wrap:anywhere}
+@media(max-width:760px){.header-actions{float:none;margin-top:12px;flex-wrap:wrap}}
+.forgot-row{margin-top:10px;display:flex;justify-content:flex-end}
+.forgot-row button{background:none;color:#244fc2;font-weight:600;padding:4px;font-size:13px;text-decoration:underline}
 .diag-box{margin-top:14px;padding:10px;background:#f8faff;border:1px solid #d5ddeb;border-radius:9px;font-size:12px;color:#34435c;display:none;white-space:pre-line;font-family:ui-monospace,Menlo,Consolas,monospace}
 .pw-help{font-size:11px;color:var(--muted);margin-top:4px}
 .admin-toggle{background:#edf2ff;color:#244fc2;font-size:14px;padding:10px 14px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:700;border:0;width:100%;justify-content:space-between;text-align:left}
@@ -27,6 +63,21 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 .pwd-wrap{position:relative}.pwd-wrap input{padding-right:44px}.pwd-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;font-size:18px;cursor:pointer;padding:6px 10px;color:#6c7890}
 .gen-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 .btn-exam{background:linear-gradient(135deg,#16865c,#0e5e3f);font-size:15px;padding:13px 20px}
+
+/* ==== ACCORDÉON / MENU DÉROULANT ==== */
+.accordion{background:#fff;border:1px solid var(--line);border-radius:16px;margin-bottom:14px;overflow:hidden;box-shadow:0 4px 14px #18315b08}
+.accordion-header{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:16px 18px;background:#fff;border:0;cursor:pointer;font:inherit;font-weight:800;font-size:15px;color:var(--navy);text-align:left}
+.accordion-header:hover{background:#f8faff}
+.accordion-header .icon{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#edf2ff;color:#244fc2;font-size:16px;flex-shrink:0}
+.accordion-header .title{flex:1}
+.accordion-header .chev{font-size:14px;color:#6c7890;transition:transform .25s}
+.accordion.open .accordion-header .chev{transform:rotate(180deg)}
+.accordion-body{max-height:0;overflow:hidden;transition:max-height .35s ease;padding:0 18px}
+.accordion.open .accordion-body{max-height:20000px;padding:0 18px 20px 18px}
+.accordion-sub{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
+.accordion-count{display:inline-block;background:#e9f8f1;color:#13734e;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;margin-left:8px}
+/* Override des panneaux dans accordéons : pas de bordure ni fond */
+.accordion-body > .panel,.accordion-body > section.panel{border:0;padding:0;background:transparent;box-shadow:none;border-radius:0}
 /* Vue Exercices plein écran */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:1000;overflow-y:auto}
 #examView .exam-header{background:linear-gradient(120deg,#132344,#2457d6);color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
@@ -63,7 +114,6 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
 </style>
 </head><body>
 
-<!-- Vue Exercices plein écran -->
 <div id="examView">
   <div class="exam-header">
     <div>
@@ -78,18 +128,35 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
   <div class="exam-actions-bar" id="examActionsBar"></div>
 </div>
 
-<header><div class="header-actions"><span id="authUserLabel">Espace privé · Connexion requise</span><button id="passwordPanelBtn" type="button" hidden>🔑 Changer mon mot de passe</button><button id="logoutBtn" type="button" hidden>Se déconnecter</button></div><div class="brand">Compo<span>Test</span></div><div class="tagline">Apprendre · Composer · Progresser</div></header>
+<header>
+  <div class="header-actions">
+    <span id="authUserLabel">Espace privé · Connexion requise</span>
+    <button id="passwordPanelBtn" type="button" hidden>🔑 Changer mon mot de passe</button>
+    <button id="logoutBtn" type="button" hidden>Se déconnecter</button>
+  </div>
+  <div class="brand">Compo<span>Test</span></div>
+  <div class="tagline">Apprendre · Composer · Progresser</div>
+</header>
+
 <section id="authGate" class="auth-gate">
 <h2>Connexion à CompoTest</h2>
 <p class="muted">Cet espace est privé et sans inscription publique. Si tu n’as pas encore de compte, contacte l’administrateur.</p>
-<form id="loginForm"><label for="loginEmail">Adresse e-mail</label><input id="loginEmail" type="email" autocomplete="username" required placeholder="toi@exemple.com"><label for="loginPassword">Mot de passe</label><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Ton mot de passe"><button id="loginBtn" type="submit">Se connecter</button></form>
+<form id="loginForm">
+  <label for="loginEmail">Adresse e-mail</label>
+  <input id="loginEmail" type="email" autocomplete="username" required placeholder="toi@exemple.com">
+  <label for="loginPassword">Mot de passe</label>
+  <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Ton mot de passe">
+  <button id="loginBtn" type="submit">Se connecter</button>
+</form>
 <div class="forgot-row"><button type="button" id="forgotPasswordBtn">Mot de passe oublié ?</button></div>
 <div id="authError" class="auth-error" role="status" aria-live="polite"></div>
 <div id="authDiag" class="diag-box" aria-live="polite"></div>
 <p class="small muted">Tes questionnaires et résultats sont associés à ton compte après connexion.</p>
 </section>
+
 <main id="appMain" class="wrap" style="display:none">
 
+<!-- Panneau mot de passe -->
 <section id="passwordPanel" class="panel" style="display:none;margin-bottom:16px">
   <h2>🔑 Changer mon mot de passe</h2>
   <p class="muted">Choisis ton nouveau mot de passe. Minimum 6 caractères.</p>
@@ -105,18 +172,22 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
       <input id="newPasswordConfirm" type="password" minlength="6" autocomplete="new-password" required placeholder="Répète le même mot de passe">
       <button type="button" class="pwd-toggle" data-target="newPasswordConfirm" title="Afficher / masquer">👁️</button>
     </div>
-    <div class="actions"><button type="submit">Enregistrer le mot de passe</button><button id="closePasswordPanel" type="button" class="ghost">Fermer</button></div>
+    <div class="actions">
+      <button type="submit">Enregistrer le mot de passe</button>
+      <button id="closePasswordPanel" type="button" class="ghost">Fermer</button>
+    </div>
     <div id="passwordStatus" class="small muted" role="status" aria-live="polite"></div>
   </form>
 </section>
 
+<!-- Panneau admin -->
 <section id="adminPanel" class="panel admin-panel collapsed" style="display:none">
   <button type="button" class="admin-toggle" id="adminToggle">
     <span>⚙️ Administration des comptes</span>
     <span class="chev">▾</span>
   </button>
   <div class="admin-body" style="margin-top:14px">
-    <p class="muted">Réservé à l’administrateur. Crée un compte avec un mot de passe provisoire (6 caractères minimum). Transmets-le à l’utilisateur par un canal privé.</p>
+    <p class="muted">Réservé à l’administrateur. Crée un compte avec un mot de passe provisoire (6 caractères minimum).</p>
     <form id="adminCreateForm">
       <div class="grid">
         <div><label for="adminNewName">Nom (facultatif)</label><input id="adminNewName" maxlength="100" placeholder="Nom de l’utilisateur"></div>
@@ -130,7 +201,10 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
           <div class="pw-help">Minimum 6 caractères. Les mots de passe simples sont acceptés.</div>
         </div>
       </div>
-      <div class="actions"><button type="submit" id="adminCreateBtn">Créer le compte</button><button type="button" class="secondary" id="adminRefreshBtn">Actualiser la liste</button></div>
+      <div class="actions">
+        <button type="submit" id="adminCreateBtn">Créer le compte</button>
+        <button type="button" class="secondary" id="adminRefreshBtn">Actualiser la liste</button>
+      </div>
       <div id="adminStatus" class="small muted" role="status" aria-live="polite"></div>
     </form>
     <h3 style="font-size:15px;margin-top:18px">Comptes existants</h3>
@@ -138,7 +212,13 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
   </div>
 </section>
 
-<section class="hero"><div><h1>Prépare tes questionnaires plus vite</h1><p class="muted">Importe un PDF : CompoTest détecte les questions, les choix et les réponses marquées. Si une réponse manque, l’IA peut proposer une réponse, une explication et un niveau de confiance via un serveur configuré.</p></div><span class="pill">VERSION BÊTA WEB</span></section>
+<section class="hero">
+  <div>
+    <h1>Prépare tes questionnaires plus vite</h1>
+    <p class="muted">Importe un PDF : CompoTest détecte les questions, les choix et les réponses marquées. Si une réponse manque, l’IA peut proposer une réponse, une explication et un niveau de confiance.</p>
+  </div>
+  <span class="pill">VERSION BÊTA WEB</span>
+</section>
 <p id="cloudStatus" class="small muted" role="status" aria-live="polite">Connexion au stockage sécurisé…</p>
 
 <section class="stats">
@@ -147,57 +227,155 @@ button{border:0;border-radius:10px;background:var(--blue);color:white;font-weigh
   <div class="stat"><small>Meilleure note</small><strong id="statBest">—</strong></div>
 </section>
 
-<div class="grid">
-<section class="panel">
-<h2>① Importer et analyser un PDF</h2>
-<p>Les réponses déjà marquées dans le texte sont prioritaires. Les réponses proposées par l’IA sont identifiées et doivent être vérifiées, surtout en pharmacologie ou en santé.</p>
-<label for="quizTitle">Titre du test</label><input id="quizTitle" placeholder="Ex. Pharmacologie générale 2026">
-<label for="quizSubject">Matière</label><input id="quizSubject" placeholder="Ex. Pharmacologie, biologie, histoire">
-<label>Fichier PDF</label>
-<div class="filebox">
-  <input id="pdfFile" type="file" accept="application/pdf">
-  <div id="pdfStatus" class="small muted">PDF.js est chargé depuis un CDN : connexion Internet nécessaire.</div>
-  <div class="actions"><button id="extractBtn" class="secondary">Extraire le texte</button><button id="analyzeBtn">Détecter les questions et réponses</button></div>
-</div>
-<label for="pdfText">Texte extrait (modifiable)</label><textarea id="pdfText" placeholder="Le texte du PDF apparaîtra ici. Tu peux aussi coller du texte copié depuis un document."></textarea>
-<div class="actions"><button id="parseTextBtn" class="secondary">Analyser le texte collé</button><button id="aiBtn" class="ghost">Résoudre les réponses manquantes avec l’IA</button></div>
-
-<div class="result" style="margin-top:14px">
-  <h3 style="margin-top:0">Générer un questionnaire à partir du cours</h3>
-  <p class="small muted">Utilise le texte extrait ci-dessus. Les questions sont proposées par IA à partir du cours ; vérifie les réponses avant de les utiliser.</p>
-  <label for="genCount">Nombre de questions</label>
-  <input id="genCount" type="number" min="1" max="100" value="20">
-  <div class="small muted">Formats : mélange QCM à réponse unique, QCM à réponses multiples et Vrai/Faux.</div>
-  <div class="gen-actions">
-    <button id="generateQuestionsBtn">Générer depuis le cours</button>
-    <button id="startGeneratedExamBtn" class="btn-exam" style="display:none">📝 Traiter ces exercices maintenant</button>
+<!-- ============ ACCORDÉON 1 : Import PDF ============ -->
+<div class="accordion" id="acc-pdf">
+  <button type="button" class="accordion-header">
+    <span class="icon">📄</span>
+    <span class="title">
+      ① Importer et analyser un PDF
+      <div class="accordion-sub">Détection des questions, réponses et options</div>
+    </span>
+    <span class="chev">▾</span>
+  </button>
+  <div class="accordion-body">
+    <p class="muted">Les réponses déjà marquées dans le texte sont prioritaires. Les réponses IA doivent être vérifiées.</p>
+    <label for="quizTitle">Titre du test</label>
+    <input id="quizTitle" placeholder="Ex. Pharmacologie générale 2026">
+    <label for="quizSubject">Matière</label>
+    <input id="quizSubject" placeholder="Ex. Pharmacologie, biologie, histoire">
+    <label>Fichier PDF</label>
+    <div class="filebox">
+      <input id="pdfFile" type="file" accept="application/pdf">
+      <div id="pdfStatus" class="small muted">PDF.js est chargé depuis un CDN : connexion Internet nécessaire.</div>
+      <div class="actions">
+        <button id="extractBtn" class="secondary">Extraire le texte</button>
+        <button id="analyzeBtn">Détecter les questions et réponses</button>
+      </div>
+    </div>
+    <label for="pdfText">Texte extrait (modifiable)</label>
+    <textarea id="pdfText" placeholder="Le texte du PDF apparaîtra ici. Tu peux aussi coller du texte copié depuis un document."></textarea>
+    <div class="actions">
+      <button id="parseTextBtn" class="secondary">Analyser le texte collé</button>
+      <button id="aiBtn" class="ghost">Résoudre les réponses manquantes avec l’IA</button>
+    </div>
+    <div id="analysisStatus" class="notice">L’analyse locale reconnaît notamment les formats « ✓ Réponse correcte : VRAI/FAUX » et les options A–D précédées d’un ✓.</div>
+    <div id="draftList"></div>
   </div>
-  <div id="generationStatus" class="small muted" aria-live="polite" style="margin-top:8px"></div>
 </div>
 
-<div id="analysisStatus" class="notice">L’analyse locale reconnaît notamment les formats « ✓ Réponse correcte : VRAI/FAUX » et les options A–D précédées d’un ✓. Les PDF scannés nécessitent un OCR qui n’est pas inclus dans cette version.</div>
-<div id="draftList"></div>
-<hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
-<h2>Ajouter une question manuellement</h2>
-<label for="qText">Énoncé</label><textarea id="qText" placeholder="Écris la question…"></textarea>
-<label for="qType">Type</label><select id="qType"><option value="mcq">QCM (une bonne réponse)</option><option value="mcq_multi">QCM (plusieurs bonnes réponses)</option><option value="tf">Vrai / Faux</option><option value="short">Réponse courte</option></select>
-<div id="mcqFields"><label>Options (une par ligne)</label><textarea id="qOptions" placeholder="Réponse A&#10;Réponse B&#10;Réponse C"></textarea><label>Numéro(s) des bonnes réponses, séparés par des virgules (ex. 1,3)</label><input id="qCorrect" value="1"></div>
-<div id="tfFields" class="hide"><label>Bonne réponse</label><select id="qTF"><option value="true">Vrai</option><option value="false">Faux</option></select></div>
-<div id="shortFields" class="hide"><label>Réponse attendue</label><input id="qExpected" placeholder="Ex. mitochondrie"></div>
-<label for="qExplanation">Explication</label><textarea id="qExplanation" placeholder="Pourquoi la réponse est-elle correcte ?"></textarea>
-<div class="actions"><button id="addQuestion">Ajouter</button><button id="saveQuiz" class="secondary">Enregistrer le test</button></div>
-</section>
-
-<section class="panel">
-<h2>② Composer un test</h2>
-<p>Les questions dont la réponse attendue reste inconnue sont signalées et ne peuvent pas être corrigées automatiquement de manière fiable.</p>
-<label for="quizPicker">Questionnaire enregistré</label><select id="quizPicker"><option value="">Aucun test enregistré</option></select>
-<div class="actions"><button id="startQuiz">Commencer</button><button id="shareQuiz" class="secondary">Exporter le test JSON</button><label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:500"><input id="timerToggle" type="checkbox" style="width:auto"> Chronomètre (10 min)</label></div><div id="examArea"></div>
-<hr style="border:0;border-top:1px solid var(--line);margin:20px 0"><h2>③ Historique</h2><div id="history"><div class="muted small">Aucun test terminé.</div></div><div class="actions"><button id="exportHistory" class="ghost">Exporter l’historique</button><button id="clearData" class="danger">Effacer les données locales</button></div>
-</section>
+<!-- ============ ACCORDÉON 2 : Générer depuis le cours ============ -->
+<div class="accordion" id="acc-gen">
+  <button type="button" class="accordion-header">
+    <span class="icon">✨</span>
+    <span class="title">
+      ② Générer un questionnaire à partir du cours
+      <div class="accordion-sub">IA : QCM, Vrai/Faux, questions mixtes</div>
+    </span>
+    <span class="chev">▾</span>
+  </button>
+  <div class="accordion-body">
+    <p class="small muted">Utilise le texte extrait (onglet ①) ou colle directement du texte de cours. Vérifie les réponses avant utilisation.</p>
+    <label for="genCount">Nombre de questions</label>
+    <input id="genCount" type="number" min="1" max="100" value="20">
+    <div class="small muted">Formats : mélange QCM à réponse unique, QCM à réponses multiples et Vrai/Faux.</div>
+    <div class="gen-actions">
+      <button id="generateQuestionsBtn">Générer depuis le cours</button>
+      <button id="startGeneratedExamBtn" class="btn-exam" style="display:none">📝 Traiter ces exercices maintenant</button>
+    </div>
+    <div id="generationStatus" class="small muted" aria-live="polite" style="margin-top:8px"></div>
+  </div>
 </div>
+
+<!-- ============ ACCORDÉON 3 : Ajouter une question ============ -->
+<div class="accordion" id="acc-add">
+  <button type="button" class="accordion-header">
+    <span class="icon">✏️</span>
+    <span class="title">
+      ③ Ajouter une question manuellement
+      <div class="accordion-sub">QCM, Vrai/Faux, réponse courte</div>
+    </span>
+    <span class="chev">▾</span>
+  </button>
+  <div class="accordion-body">
+    <label for="qText">Énoncé</label>
+    <textarea id="qText" placeholder="Écris la question…"></textarea>
+    <label for="qType">Type</label>
+    <select id="qType">
+      <option value="mcq">QCM (une bonne réponse)</option>
+      <option value="mcq_multi">QCM (plusieurs bonnes réponses)</option>
+      <option value="tf">Vrai / Faux</option>
+      <option value="short">Réponse courte</option>
+    </select>
+    <div id="mcqFields">
+      <label>Options (une par ligne)</label>
+      <textarea id="qOptions" placeholder="Réponse A&#10;Réponse B&#10;Réponse C"></textarea>
+      <label>Numéro(s) des bonnes réponses, séparés par des virgules (ex. 1,3)</label>
+      <input id="qCorrect" value="1">
+    </div>
+    <div id="tfFields" class="hide">
+      <label>Bonne réponse</label>
+      <select id="qTF"><option value="true">Vrai</option><option value="false">Faux</option></select>
+    </div>
+    <div id="shortFields" class="hide">
+      <label>Réponse attendue</label>
+      <input id="qExpected" placeholder="Ex. mitochondrie">
+    </div>
+    <label for="qExplanation">Explication</label>
+    <textarea id="qExplanation" placeholder="Pourquoi la réponse est-elle correcte ?"></textarea>
+    <div class="actions">
+      <button id="addQuestion">Ajouter</button>
+      <button id="saveQuiz" class="secondary">Enregistrer le test</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ACCORDÉON 4 : Composer un test ============ -->
+<div class="accordion" id="acc-compose">
+  <button type="button" class="accordion-header">
+    <span class="icon">🎯</span>
+    <span class="title">
+      ④ Composer un test
+      <div class="accordion-sub">Choisir un questionnaire enregistré et démarrer</div>
+    </span>
+    <span class="chev">▾</span>
+  </button>
+  <div class="accordion-body">
+    <p>Les questions dont la réponse attendue reste inconnue sont signalées et ne peuvent pas être corrigées automatiquement de manière fiable.</p>
+    <label for="quizPicker">Questionnaire enregistré</label>
+    <select id="quizPicker"><option value="">Aucun test enregistré</option></select>
+    <div class="actions">
+      <button id="startQuiz">Commencer</button>
+      <button id="shareQuiz" class="secondary">Exporter le test JSON</button>
+      <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:500">
+        <input id="timerToggle" type="checkbox" style="width:auto"> Chronomètre (10 min)
+      </label>
+    </div>
+    <div id="examArea"></div>
+  </div>
+</div>
+
+<!-- ============ ACCORDÉON 5 : Historique ============ -->
+<div class="accordion" id="acc-hist">
+  <button type="button" class="accordion-header">
+    <span class="icon">📊</span>
+    <span class="title">
+      ⑤ Visualiser mes notes (Historique)
+      <div class="accordion-sub">Résultats des tests passés</div>
+    </span>
+    <span class="chev">▾</span>
+  </button>
+  <div class="accordion-body">
+    <div id="history"><div class="muted small">Aucun test terminé.</div></div>
+    <div class="actions">
+      <button id="exportHistory" class="ghost">Exporter l’historique</button>
+      <button id="clearData" class="danger">Effacer les données locales</button>
+    </div>
+  </div>
+</div>
+
 </main>
 <div class="footer">CompoTest · Bêta privée · Les questionnaires et résultats sont synchronisés sur ton compte. L’IA peut se tromper : vérifie les réponses, en particulier pour les contenus médicaux.</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -223,6 +401,21 @@ function renderAll(){
   $('draftList').innerHTML=drafts.length?`<h3 style="font-size:15px;margin:18px 0 6px">Questions détectées (${drafts.length})</h3><div class="small muted">${drafts.filter(hasKey).length} réponse(s) connue(s) · ${drafts.filter(q=>!hasKey(q)).length} à résoudre/vérifier</div>`+drafts.map((q,i)=>`<div class="question"><strong>${i+1}. ${esc(q.text)}</strong><div class="qmeta"><span class="badge">${esc(typeName(q))}</span><span class="badge ${q.source==='pdf-marked'?'ok':q.source==='ai'?'warn':' '} ">${esc(q.source==='pdf-marked'?'Réponse marquée dans le PDF':q.source==='ai'?'Proposition IA':'À vérifier')}</span>${q.confidence!=null?`<span class="badge ${q.confidence>=0.8?'ok':'warn'}">Confiance IA : ${Math.round(q.confidence*100)}%</span>`:''}</div>${q.options?.length?'<div class="small">'+q.options.map((o,j)=>`${q.correct===j||Array.isArray(q.correct)&&q.correct.includes(j)?'✓ ':''}${String.fromCharCode(65+j)}. ${esc(o)}`).join('<br>')+'</div>':''}<div class="small" style="margin-top:6px"><b>Réponse :</b> ${esc(correctLabel(q))}</div>${q.explanation?`<p class="small muted">${esc(q.explanation)}</p>`:''}<button class="ghost" style="padding:5px 8px;margin-top:7px" onclick="removeDraft(${i})">Retirer</button></div>`).join(''):'<div class="small muted">Aucune question analysée pour le moment.</div>';
 }
 window.removeDraft=i=>{drafts.splice(i,1);renderAll()};
+
+// ==== ACCORDÉONS ====
+function initAccordions(){
+  document.querySelectorAll('.accordion').forEach(acc=>{
+    const header=acc.querySelector('.accordion-header');
+    header.addEventListener('click',()=>{
+      acc.classList.toggle('open');
+    });
+  });
+  // Ouvre par défaut le premier (Import PDF)
+  const first=$('acc-pdf');
+  if(first)first.classList.add('open');
+}
+initAccordions();
+
 $('qType').addEventListener('change',()=>{let t=$('qType').value;$('mcqFields').classList.toggle('hide',!['mcq','mcq_multi'].includes(t));$('tfFields').classList.toggle('hide',t!=='tf');$('shortFields').classList.toggle('hide',t!=='short')});
 function pdfTextWithLines(content){const items=(content.items||[]).filter(x=>x.str&&x.str.trim()).map(x=>({s:x.str,x:x.transform?.[4]??0,y:x.transform?.[5]??0}));items.sort((a,b)=>Math.abs(a.y-b.y)>2?b.y-a.y:a.x-b.x);let lines=[],curY=null,line='';for(const it of items){if(curY===null||Math.abs(it.y-curY)>2){if(line.trim())lines.push(line.trim());line=it.s;curY=it.y}else{line+=(line && !/\s$/.test(line)&&!/^([.,;:!?%)\]])/.test(it.s)?' ':'')+it.s}}if(line.trim())lines.push(line.trim());return lines.join('\n')}
 $('extractBtn').onclick=async()=>{const file=$('pdfFile').files[0];if(!file){$('pdfStatus').textContent='Choisis d’abord un fichier PDF.';return}if(!window.pdfjsLib){$('pdfStatus').textContent='PDF.js indisponible. Vérifie la connexion Internet.';return}try{$('pdfStatus').textContent='Lecture du PDF en cours…';const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let pages=[];for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p);pages.push(pdfTextWithLines(await page.getTextContent()))}$('pdfText').value=pages.join('\n\n');$('quizTitle').value=$('quizTitle').value||file.name.replace(/\.pdf$/i,'');$('pdfStatus').textContent=`Extraction terminée : ${pdf.numPages} page(s).`;$('analysisStatus').textContent='Texte extrait. Clique sur « Détecter les questions et réponses ».'}catch(e){$('pdfStatus').textContent='Erreur de lecture. Le PDF est peut-être scanné, protégé ou illisible.'}};
@@ -266,7 +459,8 @@ function answerInput(q,i){if(q.type==='mcq'||q.type==='mcq_multi'){const multi=q
 $('startQuiz').onclick=()=>{let idx=Number($('quizPicker').value),quiz=quizzes[idx];if(!quiz){alert('Choisis un questionnaire.');return}const missing=quiz.questions.filter(q=>!hasKey(q));if(missing.length&&!confirm(`${missing.length} question(s) n’ont pas de réponse attendue. Continuer ?`))return;if(examTimer)clearInterval(examTimer);secondsLeft=600;let timed=$('timerToggle').checked,area=$('examArea');area.innerHTML=`<div class="result"><b>${esc(quiz.title)}</b><div class="muted small">${quiz.questions.length} question(s) · ${timed?'10 minutes':'Sans limite'}</div><div id="timerText" style="font-weight:700;margin-top:7px"></div></div><form id="examForm">${quiz.questions.map((q,i)=>`<div class="question"><strong>${i+1}. ${esc(q.text)}</strong>${answerInput(q,i)}</div>`).join('')}<div class="actions"><button type="submit">Terminer et voir ma note</button></div></form>`;if(timed){let tick=()=>{if(!$('timerText'))return;$('timerText').textContent='Temps restant : '+Math.floor(secondsLeft/60)+':'+String(secondsLeft%60).padStart(2,'0');if(secondsLeft<=0){clearInterval(examTimer);$('examForm')?.requestSubmit()}secondsLeft--};tick();examTimer=setInterval(tick,1000)}
 $('examForm').onsubmit=e=>{e.preventDefault();if(examTimer)clearInterval(examTimer);let fd=new FormData(e.target),scorable=0,correct=0;let review=quiz.questions.map((q,i)=>{let raw=fd.getAll('q'+i),ok=false,known=hasKey(q);if(known){scorable++;if(q.type==='mcq')ok=raw.length===1&&Number(raw[0])===q.correct;else if(q.type==='mcq_multi'){const chosen=raw.map(Number).sort((a,b)=>a-b),expected=(Array.isArray(q.correct)?q.correct:[q.correct]).slice().sort((a,b)=>a-b);ok=chosen.length===expected.length&&chosen.every((v,j)=>v===expected[j])}else if(q.type==='tf')ok=raw.length>0&&(raw[0]==='true')===q.correct;else ok=raw.length>0&&raw[0].trim().toLocaleLowerCase()===q.expected.toLocaleLowerCase();if(ok)correct++}return {q,raw,ok,known}});let score=scorable?20*correct/scorable:0;historyData.push({title:quiz.title,subject:quiz.subject,score,correct,total:scorable,date:new Date().toLocaleString('fr-FR')});persist();area.innerHTML=`<div class="result"><h3 style="margin-top:0">Résultat : ${scorable?score.toFixed(1)+'/20':'Non calculable'}</h3><p>${correct} bonne(s) réponse(s) sur ${scorable} corrigée(s).</p><div class="progress"><span style="width:${scorable?100*correct/scorable:0}%"></span></div></div>`+review.map((r,i)=>`<div class="question"><strong>${i+1}. ${esc(r.q.text)}</strong><p style="color:${!r.known?'#805500':r.ok?'#16865c':'#b82e36'};margin:4px 0">${!r.known?'Non corrigée':r.ok?'Bonne réponse':'À revoir'}</p>${r.known?`<div class="small"><b>Réponse attendue :</b> ${esc(correctLabel(r.q))}</div>`:''}${r.q.explanation?`<p class="muted small">${esc(r.q.explanation)}</p>`:''}</div>`).join('')};};
 
-$('shareQuiz').onclick=()=>{let idx=Number($('quizPicker').value);if(!quizzes[idx]){alert('Choisis un questionnaire.');return}downloadJSON(quizzes[idx],'compoTest-'+quizzes[idx].title.replace(/[^a-z0-9]/gi,'-')+'.json')};function downloadJSON(obj,name){let blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$('shareQuiz').onclick=()=>{let idx=Number($('quizPicker').value);if(!quizzes[idx]){alert('Choisis un questionnaire.');return}downloadJSON(quizzes[idx],'compoTest-'+quizzes[idx].title.replace(/[^a-z0-9]/gi,'-')+'.json')};
+function downloadJSON(obj,name){let blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 $('exportHistory').onclick=()=>downloadJSON({quizzes,history:historyData},'compoTest-historique.json');
 $('clearData').onclick=()=>{if(confirm('Effacer tous les tests et résultats de TON compte CompoTest ?')){quizzes=[];historyData=[];drafts=[];persist();$('examArea').innerHTML=''}};
 renderAll();
@@ -620,7 +814,6 @@ async function initSaaS(){
    });
  });
 
- // Changement de mot de passe : demande le mot de passe actuel puis envoie current_password
  $('passwordForm').addEventListener('submit',async e=>{
    e.preventDefault();
    const a=$('newPassword').value,b=$('newPasswordConfirm').value;
@@ -632,17 +825,10 @@ async function initSaaS(){
    const email=(await client.auth.getUser()).data?.user?.email;
    if(!email){$('passwordStatus').textContent='Session expirée. Reconnecte-toi.';return}
    const {error:signInErr}=await client.auth.signInWithPassword({email,password:currentPwd});
-   if(signInErr){
-     $('passwordStatus').textContent='Mot de passe actuel incorrect. Vérifie et réessaie.';
-     return;
-   }
+   if(signInErr){$('passwordStatus').textContent='Mot de passe actuel incorrect.';return}
    $('passwordStatus').textContent='Enregistrement du nouveau mot de passe…';
    const {error}=await client.auth.updateUser({password:a,current_password:currentPwd});
-   if(!error){
-     $('passwordStatus').textContent='✅ Mot de passe enregistré avec succès.';
-     $('newPassword').value='';$('newPasswordConfirm').value='';
-     return;
-   }
+   if(!error){$('passwordStatus').textContent='✅ Mot de passe enregistré avec succès.';$('newPassword').value='';$('newPasswordConfirm').value='';return}
    $('passwordStatus').textContent='Erreur : '+(error.message||'inconnue');
  });
 
