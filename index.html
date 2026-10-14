@@ -151,7 +151,6 @@ body.device-desktop .stats{grid-template-columns:repeat(3,1fr)}
 .result-hero p{margin:6px 0 0;font-size:15px;opacity:.9}
 .correct-block{background:#e9f8f1;border-left:4px solid #16865c;padding:10px 14px;border-radius:8px;margin-top:10px;font-size:13px}
 .explain-block{background:#f8faff;border-left:4px solid #a9bce7;padding:10px 14px;border-radius:8px;margin-top:8px;font-size:13px;color:#34435c}
-.import-progress{font-size:13px;color:var(--blue);margin-top:6px;font-weight:600}
 </style>
 </head><body>
 
@@ -172,7 +171,7 @@ body.device-desktop .stats{grid-template-columns:repeat(3,1fr)}
 <header>
   <div class="header-actions">
     <span id="authUserLabel">Espace privé · Connexion requise</span>
-    <button id="passwordPanelBtn" type="button" hidden> Changer mon mot de passe</button>
+    <button id="passwordPanelBtn" type="button" hidden>🔑 Changer mon mot de passe</button>
     <button id="logoutBtn" type="button" hidden>Se déconnecter</button>
   </div>
   <div class="brand">Compo<span>Test</span> <span class="device-indicator" id="deviceIndicator" title="Type d'appareil détecté">…</span></div>
@@ -199,7 +198,7 @@ body.device-desktop .stats{grid-template-columns:repeat(3,1fr)}
 <main id="appMain" class="wrap" style="display:none">
 
 <section id="passwordPanel" class="panel" style="display:none;margin-bottom:16px">
-  <h2>🔑 Changer mon mot de passe</h2>
+  <h2>🔑 Changer mon mot de passe (Administrateur)</h2>
   <p class="muted">Choisis ton nouveau mot de passe. Minimum 6 caractères.</p>
   <form id="passwordForm">
     <label for="newPassword">Nouveau mot de passe</label>
@@ -227,7 +226,7 @@ body.device-desktop .stats{grid-template-columns:repeat(3,1fr)}
     <span class="chev">▾</span>
   </button>
   <div class="admin-body" style="margin-top:14px">
-    <p class="muted">Réservé à l’administrateur. Tu peux créer un compte avec un <b>nom d'utilisateur simple</b> ou un e-mail classique.</p>
+    <p class="muted">Réservé à l’administrateur. Crée un compte avec un identifiant simple (nom ou e-mail) et un mot de passe provisoire (6 caractères minimum).</p>
     <form id="adminCreateForm">
       <div class="grid">
         <div><label for="adminNewName">Nom complet (facultatif)</label><input id="adminNewName" maxlength="100" placeholder="Prénom Nom"></div>
@@ -261,7 +260,7 @@ body.device-desktop .stats{grid-template-columns:repeat(3,1fr)}
     <h1>Prépare tes questionnaires plus vite</h1>
     <p class="muted">Importe un <b>PDF</b> ou un <b>fichier Word (.docx)</b> : CompoTest détecte les questions, les choix et les réponses marquées. Si une réponse manque, l’IA peut proposer une réponse, une explication et un niveau de confiance.</p>
   </div>
-  <span class="pill"></span>
+  <span class="pill">VERSION BÊTA WEB</span>
 </section>
 <p id="cloudStatus" class="small muted" role="status" aria-live="polite">Connexion au stockage sécurisé…</p>
 
@@ -438,18 +437,14 @@ window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setT
 window.addEventListener('orientationchange',()=>setTimeout(applyDeviceClass,200));
 
 // ==== IDENTIFIANT → EMAIL INTERNE ====
-// Si l'utilisateur tape "maroane" → "maroane@comptest.local"
-// S'il tape "maroane@exemple.com" → utilisé tel quel.
 function identifierToEmail(input){
   const v=String(input||'').trim().toLowerCase();
   if(!v)return '';
   if(v.includes('@'))return v;
-  // Nettoie le username (lettres, chiffres, . _ -)
   const safe=v.replace(/[^a-z0-9._-]/g,'');
   if(!safe)return '';
   return safe+'@'+INTERNAL_DOMAIN;
 }
-// Affichage : si c'est un email interne @comptest.local, on n'affiche que la partie avant @
 function emailToDisplay(email){
   const e=String(email||'');
   if(e.toLowerCase().endsWith('@'+INTERNAL_DOMAIN)){
@@ -461,6 +456,7 @@ function emailToDisplay(email){
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let drafts=[], quizzes=JSON.parse(localStorage.getItem('compo_quizzes')||'[]'), historyData=JSON.parse(localStorage.getItem('compo_history')||'[]'), examTimer=null, secondsLeft=600;
+let isAdminUser=false;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function persist(){localStorage.setItem('compo_quizzes',JSON.stringify(quizzes));localStorage.setItem('compo_history',JSON.stringify(historyData));renderAll();if(window.comptestSaveCloud)window.comptestSaveCloud(quizzes,historyData)}
@@ -520,36 +516,27 @@ async function extractPdf(file){
 }
 
 // ==== EXTRACTION WORD (.docx) ====
-// Un .docx est un ZIP contenant word/document.xml
 async function extractDocx(file){
   if(!window.JSZip)throw new Error('JSZip non chargé. Vérifie ta connexion Internet.');
   const zip=await JSZip.loadAsync(await file.arrayBuffer());
   const docXml=zip.file('word/document.xml');
   if(!docXml)throw new Error('Fichier Word invalide ou corrompu.');
   const xml=await docXml.async('string');
-  // On utilise DOMParser pour extraire proprement le texte
   const parser=new DOMParser();
   const doc=parser.parseFromString(xml,'application/xml');
-  // On remplace les balises de paragraphe et de saut par des retours à la ligne
   const paragraphs=doc.getElementsByTagNameNS('*','p');
   const lines=[];
   for(let i=0;i<paragraphs.length;i++){
     const p=paragraphs[i];
-    // Récupère tous les textes <w:t> à l'intérieur
     const texts=p.getElementsByTagNameNS('*','t');
     let line='';
-    for(let j=0;j<texts.length;j++){
-      line+=texts[j].textContent||'';
-    }
+    for(let j=0;j<texts.length;j++){line+=texts[j].textContent||''}
     lines.push(line.trim());
   }
   return lines.join('\n');
 }
 
-// ==== EXTRACTION TXT ====
-async function extractTxt(file){
-  return await file.text();
-}
+async function extractTxt(file){return await file.text()}
 
 $('extractBtn').onclick=async()=>{
   const file=$('pdfFile').files[0];
@@ -562,24 +549,21 @@ $('extractBtn').onclick=async()=>{
     let text='';
     if(name.endsWith('.pdf')){
       if(!window.pdfjsLib){$('pdfStatus').textContent='PDF.js indisponible. Vérifie la connexion Internet.';return}
-      btn.textContent='Lecture du PDF…';
-      $('pdfStatus').textContent='Lecture du PDF en cours…';
+      btn.textContent='Lecture du PDF…';$('pdfStatus').textContent='Lecture du PDF en cours…';
       text=await extractPdf(file);
       $('pdfStatus').textContent=`PDF extrait : ${text.length} caractère(s).`;
-    } else if(name.endsWith('.docx')){
-      btn.textContent='Lecture du Word…';
-      $('pdfStatus').textContent='Lecture du fichier Word en cours…';
+    }else if(name.endsWith('.docx')){
+      btn.textContent='Lecture du Word…';$('pdfStatus').textContent='Lecture du fichier Word en cours…';
       text=await extractDocx(file);
       $('pdfStatus').textContent=`Word extrait : ${text.length} caractère(s).`;
-    } else if(name.endsWith('.txt')){
-      btn.textContent='Lecture du fichier…';
-      $('pdfStatus').textContent='Lecture du fichier texte…';
+    }else if(name.endsWith('.txt')){
+      btn.textContent='Lecture du fichier…';$('pdfStatus').textContent='Lecture du fichier texte…';
       text=await extractTxt(file);
       $('pdfStatus').textContent=`Texte extrait : ${text.length} caractère(s).`;
-    } else if(name.endsWith('.doc')){
+    }else if(name.endsWith('.doc')){
       $('pdfStatus').textContent='Le format .doc (ancien Word) n’est pas supporté. Ouvre le fichier dans Word, puis « Enregistrer sous » → .docx.';
       return;
-    } else {
+    }else{
       $('pdfStatus').textContent='Format non reconnu. Utilise .pdf, .docx ou .txt.';
       return;
     }
@@ -595,7 +579,6 @@ $('extractBtn').onclick=async()=>{
   }
 };
 
-// ==== PARSING DES QUESTIONS ====
 function parseQuestions(raw){
   const lines=raw.replace(/\r/g,'').split('\n').map(s=>s.trim()).filter(Boolean);
   let section='',blocks=[],current=null;
@@ -814,7 +797,7 @@ function submitExam(){
 // ==== SAAS LAYER ====
 let activeUserId=null,cloudWriteChain=Promise.resolve();
 function showAuthError(message,diag){$('authError').textContent=message||'';const box=$('authDiag');if(diag){box.style.display='block';box.textContent=diag}else{box.style.display='none';box.textContent=''}}
-function setSignedOut(message=''){activeUserId=null;$('authGate').style.display='block';$('appMain').style.display='none';$('logoutBtn').hidden=true;$('passwordPanelBtn').hidden=true;$('authUserLabel').textContent='Espace privé · Connexion requise';if(message)showAuthError(message)}
+function setSignedOut(message=''){activeUserId=null;isAdminUser=false;$('authGate').style.display='block';$('appMain').style.display='none';$('logoutBtn').hidden=true;$('passwordPanelBtn').hidden=true;$('passwordPanel').style.display='none';$('adminPanel').style.display='none';$('authUserLabel').textContent='Espace privé · Connexion requise';if(message)showAuthError(message)}
 async function apiFetch(url,options={}){const client=window.compTestAuth;const {data:{session}}=await client.auth.getSession();if(!session)throw new Error('Connecte-toi à CompoTest puis réessaie.');return fetch(url,{...options,headers:{...(options.headers||{}),Authorization:`Bearer ${session.access_token}`}})}
 window.apiFetch=apiFetch;
 async function saveCloud(quizzesToSave,historyToSave){
@@ -834,11 +817,28 @@ async function activateSession(session){
   if(!session){setSignedOut();return}
   if(activeUserId===session.user.id)return;
   activeUserId=session.user.id;
-  $('authGate').style.display='none';$('appMain').style.display='block';$('appMain').classList.add('loading');$('logoutBtn').hidden=false;$('passwordPanelBtn').hidden=false;
-  $('authUserLabel').textContent=emailToDisplay(session.user.email||'Connecté');
-  $('cloudStatus').textContent='Chargement des données du compte…';showAuthError('');$('adminPanel').style.display='none';
+  const email=String(session.user.email||'').toLowerCase();
+  // On détecte l'admin côté client par comparaison simple avec le domaine interne ou par appel API plus bas
+  // Le vrai contrôle est serveur, ceci n'est qu'un affichage
+  isAdminUser=false;
+  $('authGate').style.display='none';$('appMain').style.display='block';$('appMain').classList.add('loading');
+  $('logoutBtn').hidden=false;
+  $('authUserLabel').textContent=emailToDisplay(email||'Connecté');
+  $('cloudStatus').textContent='Chargement des données du compte…';showAuthError('');
+  $('adminPanel').style.display='none';$('passwordPanelBtn').hidden=true;$('passwordPanel').style.display='none';
   try{
-    try{await adminApi('/api/admin/users');$('adminPanel').style.display='block';loadAdminUsers()}catch{}
+    // Vérifie si admin via l'API admin (le serveur renvoie 403 si pas admin)
+    try{
+      await adminApi('/api/admin/users');
+      isAdminUser=true;
+      $('adminPanel').style.display='block';
+      $('passwordPanelBtn').hidden=false;
+      loadAdminUsers();
+    }catch{
+      isAdminUser=false;
+      $('adminPanel').style.display='none';
+      $('passwordPanelBtn').hidden=true;
+    }
     const {data:cloudRow,error}=await window.compTestAuth.from('comptest_data').select('quizzes,history').eq('user_id',activeUserId).maybeSingle();
     if(activeUserId!==session.user.id)return;
     if(error){$('cloudStatus').textContent='Erreur de lecture de la table comptest_data.';console.error(error);return}
@@ -865,7 +865,7 @@ function traduireErreurAuth(error){
   if(msg.includes('email not confirmed'))return{texte:'Ce compte existe mais son e-mail n’est pas confirmé.',diag};
   if(msg.includes('user not found'))return{texte:'Aucun compte ne correspond à cet identifiant.',diag};
   if(msg.includes('email logins are disabled')||code==='email_provider_disabled')return{texte:'Les connexions par e-mail sont désactivées dans Supabase.',diag};
-  if(msg.includes('password should be')||msg.includes('password is too short')||msg.includes('weak password'))return{texte:'Mot de passe trop court ou trop faible selon Supabase. Vérifie la politique de mot de passe dans Supabase.',diag};
+  if(msg.includes('password should be')||msg.includes('password is too short')||msg.includes('weak password'))return{texte:'Mot de passe trop court ou trop faible selon Supabase.',diag};
   return{texte:`Erreur : ${error?.message||'inconnue'}.`,diag};
 }
 async function initSaaS(){
@@ -920,6 +920,7 @@ async function initSaaS(){
 
   $('passwordForm').addEventListener('submit',async e=>{
     e.preventDefault();
+    if(!isAdminUser){$('passwordStatus').textContent='Seul l’administrateur peut modifier son mot de passe ici.';return}
     const a=$('newPassword').value,b=$('newPasswordConfirm').value;
     if(a.length<6){$('passwordStatus').textContent='Le mot de passe doit contenir au moins 6 caractères.';return}
     if(a!==b){$('passwordStatus').textContent='Les deux mots de passe ne sont pas identiques.';return}
@@ -954,7 +955,10 @@ async function loadAdminUsers(){
       const banned=u.banned_until&&new Date(u.banned_until)>new Date();
       const status=u.is_admin?'Administrateur':banned?'Désactivé':u.email_confirmed_at?'Actif':'E-mail non confirmé';
       const display=emailToDisplay(u.email);
-      return `<tr><td>${safeHtml(display)}</td><td>${u.created_at?new Date(u.created_at).toLocaleDateString('fr-FR'):'—'}</td><td>${u.last_sign_in_at?new Date(u.last_sign_in_at).toLocaleDateString('fr-FR'):'Jamais'}</td><td>${status}</td><td>${u.is_admin?'<span class="muted">Compte protégé</span>':`<div class="admin-actions"><button class="secondary" data-admin-action="${banned?'enable':'disable'}" data-user-id="${safeHtml(u.id)}">${banned?'Réactiver':'Désactiver'}</button><button class="danger" data-admin-action="delete" data-user-id="${safeHtml(u.id)}">Supprimer</button></div>`}</td></tr>`;
+      if(u.is_admin){
+        return `<tr><td>${safeHtml(display)}</td><td>${u.created_at?new Date(u.created_at).toLocaleDateString('fr-FR'):'—'}</td><td>${u.last_sign_in_at?new Date(u.last_sign_in_at).toLocaleDateString('fr-FR'):'Jamais'}</td><td>${status}</td><td><span class="muted">Compte protégé</span></td></tr>`;
+      }
+      return `<tr><td>${safeHtml(display)}</td><td>${u.created_at?new Date(u.created_at).toLocaleDateString('fr-FR'):'—'}</td><td>${u.last_sign_in_at?new Date(u.last_sign_in_at).toLocaleDateString('fr-FR'):'Jamais'}</td><td>${status}</td><td><div class="admin-actions"><button class="secondary" data-admin-action="reset-password" data-user-id="${safeHtml(u.id)}" data-user-email="${safeHtml(display)}">🔑 Mot de passe</button><button class="secondary" data-admin-action="${banned?'enable':'disable'}" data-user-id="${safeHtml(u.id)}">${banned?'Réactiver':'Désactiver'}</button><button class="danger" data-admin-action="delete" data-user-id="${safeHtml(u.id)}">Supprimer</button></div></td></tr>`;
     }).join('')+'</tbody></table>';
   }catch(e){box.textContent=e.message}
 }
@@ -975,8 +979,20 @@ function initAdminPanel(){
   $('adminRefreshBtn').addEventListener('click',loadAdminUsers);
   $('adminUsersList').addEventListener('click',async e=>{
     const btn=e.target.closest('button[data-admin-action]');if(!btn)return;
-    const id=btn.dataset.userId,action=btn.dataset.adminAction;
+    const id=btn.dataset.userId,action=btn.dataset.adminAction,emailDisplay=btn.dataset.userEmail||'';
     if(action==='delete'&&!confirm('Supprimer définitivement ce compte ?'))return;
+    if(action==='reset-password'){
+      const newPwd=prompt(`Nouveau mot de passe pour ${emailDisplay} (6 caractères minimum) :`);
+      if(!newPwd)return;
+      if(newPwd.length<6){alert('Le mot de passe doit contenir au moins 6 caractères.');return}
+      btn.disabled=true;
+      try{
+        await adminApi('/api/admin/users/'+encodeURIComponent(id)+'/password',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:newPwd})});
+        alert('✅ Mot de passe modifié pour '+emailDisplay+'. Transmets-le en privé.');
+      }catch(err){alert('❌ '+err.message)}
+      finally{btn.disabled=false}
+      return;
+    }
     if(action!=='delete'&&!confirm(action==='disable'?'Désactiver ce compte ?':'Réactiver ce compte ?'))return;
     btn.disabled=true;
     try{
