@@ -62,6 +62,12 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .admin-actions{display:flex;gap:6px;flex-wrap:wrap}
 .filebox{border:1.5px dashed #a9bce7;border-radius:13px;padding:16px;background:#f8faff}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.progress-bar{height:6px;background:#e1e7f0;border-radius:99px;overflow:hidden;margin-top:10px}
+.progress-bar span{display:block;height:100%;background:linear-gradient(90deg,#2457d6,#16865c);width:0;transition:width .4s ease;border-radius:99px}
+.progress-bar.indeterminate span{width:40%;animation:slide 1.5s ease-in-out infinite}
+@keyframes slide{0%{margin-left:0}50%{margin-left:60%}100%{margin-left:0}}
+.progress-info{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-top:6px}
+.progress-info b{color:var(--blue)}
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:1000;overflow-y:auto}
 #examView .exam-header{background:linear-gradient(120deg,#132344,#2457d6);color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
 #examView .exam-header h2{margin:0;font-size:19px}
@@ -202,7 +208,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   <button class="tab hide" data-tab="admin" id="adminTab" role="tab"><span class="icon">⚙️</span> Admin</button>
 </nav>
 
-<!-- ONGLET FUSIONNÉ : IMPORTER & GÉNÉRER -->
 <section class="tab-content active" data-content="import">
   <div class="panel">
     <h2 style="margin-top:0">📥 Importer un document et générer un questionnaire</h2>
@@ -221,7 +226,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 
     <div class="filebox" style="margin-top:12px">
       <input id="pdfFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
-      <div id="pdfStatus" class="small muted" style="margin-top:6px">PDF, Word (.docx) ou texte (.txt) — max 60 000 caractères.</div>
+      <div id="pdfStatus" class="small muted" style="margin-top:6px">PDF, Word (.docx) ou texte (.txt) — max 80 000 caractères.</div>
       <div class="actions">
         <button id="extractBtn" class="secondary">1. Extraire le texte</button>
         <button id="analyzeBtn">2. Analyser le document</button>
@@ -239,6 +244,10 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
     </div>
 
     <div id="analysisStatus" class="notice" style="display:none"></div>
+    <div id="analysisProgress" style="display:none;margin-top:10px">
+      <div class="progress-bar indeterminate"><span></span></div>
+      <div class="progress-info"><span id="analysisProgressText">Analyse…</span><b id="analysisTimer">0s</b></div>
+    </div>
     <div id="analysisDetail" class="analysis-detail" style="display:none"></div>
 
     <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
@@ -255,12 +264,15 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
       <button id="startGeneratedExamBtn" class="success" style="display:none">📝 Traiter les exercices</button>
     </div>
     <div id="generationStatus" class="small muted" style="margin-top:10px"></div>
+    <div id="generationProgress" style="display:none;margin-top:10px">
+      <div class="progress-bar indeterminate"><span></span></div>
+      <div class="progress-info"><span id="generationProgressText">Génération…</span><b id="generationTimer">0s</b></div>
+    </div>
 
     <div id="draftList"></div>
   </div>
 </section>
 
-<!-- ONGLET AJOUTER -->
 <section class="tab-content" data-content="add">
   <div class="panel">
     <h2 style="margin-top:0">✏️ Ajouter une question manuellement</h2>
@@ -296,7 +308,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   </div>
 </section>
 
-<!-- ONGLET COMPOSER -->
 <section class="tab-content" data-content="compose">
   <div class="panel">
     <h2 style="margin-top:0">🎯 Composer un test</h2>
@@ -313,7 +324,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   </div>
 </section>
 
-<!-- ONGLET RÉVISER -->
 <section class="tab-content" data-content="review">
   <div class="panel">
     <h2 style="margin-top:0">⭐ Réviser (Répétition espacée FSRS-5)</h2>
@@ -327,7 +337,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   </div>
 </section>
 
-<!-- ONGLET HISTORIQUE -->
 <section class="tab-content" data-content="history">
   <div class="panel">
     <h2 style="margin-top:0">📊 Historique</h2>
@@ -339,7 +348,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   </div>
 </section>
 
-<!-- ONGLET ADMIN -->
 <section class="tab-content" data-content="admin">
   <div class="panel">
     <h2 style="margin-top:0">⚙️ Administration des comptes</h2>
@@ -409,857 +417,908 @@ function hasKey(q){return q.type==='tf'?typeof q.correct==='boolean':q.type==='s
 function correctLabel(q){if(q.type==='tf')return q.correct===true?'Vrai':q.correct===false?'Faux':'?';if(q.type==='short')return q.expected||'?';if(Array.isArray(q.correct))return q.correct.map(i=>q.options?.[i]).filter(Boolean).join(' ; ')||'?';return q.options?.[q.correct]||'?'}
 
 // ================== FSRS-5 ==================
-const FSRS_W = [
-  0.4072, 1.1829, 3.1262, 15.4722,
-  7.2102, 0.5316, 1.0651, 0.0234,
-  1.616, 0.1544, 1.0824, 1.9813,
-  0.0953, 0.2975, 2.2042, 0.2407,
-  2.9466, 0.5034, 0.6567
-];
+const FSRS_W = [0.4072,1.1829,3.1262,15.4722,7.2102,0.5316,1.0651,0.0234,1.616,0.1544,1.0824,1.9813,0.0953,0.2975,2.2042,0.2407,2.9466,0.5034,0.6567];
 const FSRS_DESIRED_RETENTION = 0.9;
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function fsrsInitStability(grade){return Math.max(0.1, FSRS_W[grade - 1])}
-function fsrsInitDifficulty(grade){return Math.min(10, Math.max(1, FSRS_W[4] - (grade - 3) * FSRS_W[5]))}
-function fsrsRetrievability(elapsedDays, stability){return Math.pow(1 + elapsedDays / (9 * stability), -1)}
-function fsrsNextInterval(stability){
-  const interval = (stability / FSRS_W[16]) * (Math.pow(FSRS_DESIRED_RETENTION, 1/FSRS_W[17]) - 1) * FSRS_W[18];
-  return Math.max(1, Math.round(interval));
+function fsrsInitStability(g){return Math.max(0.1,FSRS_W[g-1])}
+function fsrsInitDifficulty(g){return Math.min(10,Math.max(1,FSRS_W[4]-(g-3)*FSRS_W[5]))}
+function fsrsRetrievability(e,s){return Math.pow(1+e/(9*s),-1)}
+function fsrsNextInterval(s){return Math.max(1,Math.round((s/FSRS_W[16])*(Math.pow(FSRS_DESIRED_RETENTION,1/FSRS_W[17])-1)*FSRS_W[18]))}
+function fsrsNextDifficulty(d,g){return Math.min(10,Math.max(1,d-FSRS_W[6]*(g-3)))}
+function fsrsNextStability(d,s,r,g){
+  if(g===1)return FSRS_W[11]*Math.pow(d,-FSRS_W[12])*(Math.pow(s+1,FSRS_W[13])-1)*Math.exp(FSRS_W[14]*(1-r));
+  const hp=g===2?FSRS_W[15]:1, eb=g===4?FSRS_W[16]:1;
+  return s*(1+Math.exp(FSRS_W[8])*(11-d)*Math.pow(s,-FSRS_W[9])*(Math.exp(FSRS_W[10]*(1-r))-1)*hp*eb);
 }
-function fsrsNextDifficulty(difficulty, grade){
-  const next = difficulty - FSRS_W[6] * (grade - 3);
-  return Math.min(10, Math.max(1, next));
-}
-function fsrsNextStability(difficulty, stability, retrievability, grade){
-  if (grade === 1) {
-    return FSRS_W[11] * Math.pow(difficulty, -FSRS_W[12]) * (Math.pow(stability + 1, FSRS_W[13]) - 1) * Math.exp(FSRS_W[14] * (1 - retrievability));
+function fsrsReview(card,grade){
+  const now=Date.now();
+  if(!card||card.reps===0){
+    const s=fsrsInitStability(grade), d=fsrsInitDifficulty(grade);
+    return {state:'review',stability:s,difficulty:d,reps:1,lapses:grade===1?1:0,lastReview:now,due:now+fsrsNextInterval(s)*DAY_MS};
   }
-  const hardPenalty = grade === 2 ? FSRS_W[15] : 1;
-  const easyBonus = grade === 4 ? FSRS_W[16] : 1;
-  return stability * (1 + Math.exp(FSRS_W[8]) * (11 - difficulty) * Math.pow(stability, -FSRS_W[9]) * (Math.exp(FSRS_W[10] * (1 - retrievability)) - 1) * hardPenalty * easyBonus);
+  const elapsed=(now-card.lastReview)/DAY_MS;
+  const r=fsrsRetrievability(elapsed,card.stability);
+  const nd=fsrsNextDifficulty(card.difficulty,grade);
+  const ns=fsrsNextStability(card.difficulty,card.stability,r,grade);
+  const nl=grade===1?(card.lapses||0)+1:(card.lapses||0);
+  return {state:'review',stability:ns,difficulty:nd,reps:(card.reps||0)+1,lapses:nl,lastReview:now,due:now+fsrsNextInterval(ns)*DAY_MS};
 }
-function fsrsReview(card, grade){
-  const now = Date.now();
-  if (!card || card.reps === 0) {
-    const stability = fsrsInitStability(grade);
-    const difficulty = fsrsInitDifficulty(grade);
-    return {state:'review', stability, difficulty, reps:1, lapses: grade === 1 ? 1 : 0, lastReview: now, due: now + fsrsNextInterval(stability) * DAY_MS};
-  }
-  const elapsedDays = (now - card.lastReview) / DAY_MS;
-  const retrievability = fsrsRetrievability(elapsedDays, card.stability);
-  const newDifficulty = fsrsNextDifficulty(card.difficulty, grade);
-  const newStability = fsrsNextStability(card.difficulty, card.stability, retrievability, grade);
-  const newLapses = grade === 1 ? (card.lapses || 0) + 1 : (card.lapses || 0);
-  return {state:'review', stability:newStability, difficulty:newDifficulty, reps:(card.reps||0)+1, lapses:newLapses, lastReview:now, due: now + fsrsNextInterval(newStability) * DAY_MS};
-}
-function fsrsCardKey(q){return (q.text || '').toLowerCase().trim().slice(0, 200)}
-function saveFsrs(){localStorage.setItem('compo_fsrs', JSON.stringify(fsrsCards))}
+function fsrsCardKey(q){return (q.text||'').toLowerCase().trim().slice(0,200)}
+function saveFsrs(){localStorage.setItem('compo_fsrs',JSON.stringify(fsrsCards))}
 function fsrsDueCards(){
-  const now = Date.now();
-  const cards = [];
-  for (const [key, c] of Object.entries(fsrsCards)) if (c.due <= now) cards.push({key, ...c});
-  cards.sort((a, b) => a.due - b.due);
+  const now=Date.now(), cards=[];
+  for(const [k,c] of Object.entries(fsrsCards))if(c.due<=now)cards.push({key:k,...c});
+  cards.sort((a,b)=>a.due-b.due);
   return cards;
 }
 function fsrsStats(){
-  const all = Object.values(fsrsCards);
-  const now = Date.now();
-  return {total: all.length, due: all.filter(c => c.due <= now).length, learning: all.filter(c => c.reps < 3).length, mature: all.filter(c => c.reps >= 3).length};
+  const all=Object.values(fsrsCards), now=Date.now();
+  return {total:all.length,due:all.filter(c=>c.due<=now).length,learning:all.filter(c=>c.reps<3).length,mature:all.filter(c=>c.reps>=3).length};
 }
 function renderFsrsStats(){
-  const s = fsrsStats();
-  $('fsrsStats').innerHTML = `<div class="stats" style="margin:0"><div class="stat"><small>Cartes totales</small><strong>${s.total}</strong></div><div class="stat"><small>À réviser</small><strong>${s.due}</strong></div><div class="stat"><small>Matures</small><strong>${s.mature}</strong></div></div>`;
-  $('fsrsDueCount').textContent = s.due;
-  $('fsrsDueCount').style.display = s.due > 0 ? 'inline-block' : 'none';
+  const s=fsrsStats();
+  $('fsrsStats').innerHTML=`<div class="stats" style="margin:0"><div class="stat"><small>Cartes totales</small><strong>${s.total}</strong></div><div class="stat"><small>À réviser</small><strong>${s.due}</strong></div><div class="stat"><small>Matures</small><strong>${s.mature}</strong></div></div>`;
+  $('fsrsDueCount').textContent=s.due;
+  $('fsrsDueCount').style.display=s.due>0?'inline-block':'none';
 }
 function renderFsrsList(){
-  const due = fsrsDueCards();
-  if (!due.length) {
-    $('fsrsList').innerHTML = '<div class="fsrs-empty">Aucune carte à réviser.<br>Fais un exercice pour créer des cartes.</div>';
-    return;
-  }
-  $('fsrsList').innerHTML = '<h3 style="font-size:14px;margin:0 0 8px">Cartes à réviser (' + due.length + ')</h3>' +
-    due.slice(0, 20).map(c => {
-      const overdue = Math.round((Date.now() - c.due) / DAY_MS);
-      const overdueTxt = overdue > 0 ? `en retard de ${overdue}j` : "aujourd'hui";
+  const due=fsrsDueCards();
+  if(!due.length){$('fsrsList').innerHTML='<div class="fsrs-empty">Aucune carte à réviser.<br>Fais un exercice pour créer des cartes.</div>';return}
+  $('fsrsList').innerHTML='<h3 style="font-size:14px;margin:0 0 8px">Cartes à réviser ('+due.length+')</h3>'+
+    due.slice(0,20).map(c=>{
+      const overdue=Math.round((Date.now()-c.due)/DAY_MS);
+      const overdueTxt=overdue>0?`en retard de ${overdue}j`:"aujourd'hui";
       return `<div class="fsrs-card"><h4>${esc(c.key)}</h4><div class="fsrs-meta"><span>Révisions : <b>${c.reps}</b></span><span>Échecs : <b>${c.lapses||0}</b></span><span>Stabilité : <b>${(c.stability||0).toFixed(1)}j</b></span><span class="fsrs-due now">${overdueTxt}</span></div></div>`;
-    }).join('') +
-    (due.length > 20 ? `<div class="small muted" style="margin-top:8px">… et ${due.length - 20} autres</div>` : '');
+    }).join('')+(due.length>20?`<div class="small muted" style="margin-top:8px">… et ${due.length-20} autres</div>`:'');
+}
+let reviewSession=null;
+function startReviewSession(){
+  const due=fsrsDueCards();
+  if(!due.length){alert('Aucune carte à réviser aujourd\'hui.');return}
+  const allQuestions=[];
+  for(const q of quizzes){for(const question of q.questions){
+    const key=fsrsCardKey(question);
+    if(fsrsCards[key]&&fsrsCards[key].due<=Date.now())allQuestions.push({...question,_fsrsKey:key,_quizTitle:q.title});
+  }}
+  if(!allQuestions.length){alert('Aucune question correspondante.');return}
+  reviewSession={questions:allQuestions,answers:new Array(allQuestions.length).fill(null),current:0,submitted:false,title:'Révision FSRS',subject:'Répétition espacée'};
+  openExamViewFromState(reviewSession,true);
 }
 
-let reviewSession = null;
-function startReviewSession(){
-  const due = fsrsDueCards();
-  if (!due.length) { alert('Aucune carte à réviser aujourd\'hui.'); return; }
-  const allQuestions = [];
-  for (const q of quizzes) {
-    for (const question of q.questions) {
-      const key = fsrsCardKey(question);
-      if (fsrsCards[key] && fsrsCards[key].due <= Date.now()) {
-        allQuestions.push({...question, _fsrsKey: key, _quizTitle: q.title});
+// ================== GÉNÉRATEUR LOCAL DE SECOURS ==================
+function generateLocalQuestions(text,count){
+  const sentences=text.replace(/\s+/g,' ').split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>40&&s.length<400&&/[a-zA-ZÀ-ÿ]/.test(s));
+  if(sentences.length<5)return [];
+  const stopWords=new Set(['le','la','les','un','une','des','du','de','et','ou','mais','donc','car','que','qui','quoi','dont','où','est','sont','être','avoir','a','ont','ce','cet','cette','ces','son','sa','ses','leur','leurs','pour','par','dans','sur','sous','avec','sans','en','au','aux','il','elle','ils','elles','on','nous','vous','je','tu','se','ne','pas','plus','moins','très','tout','tous','toute','toutes','comme','ainsi','alors','puis','encore','déjà','aussi','bien','peut','peuvent','fait','font','sera','seront']);
+  function keyWords(s){return s.toLowerCase().replace(/[^\wàâäéèêëïîôöùûüÿçœæ\s-]/g,' ').split(/\s+/).filter(w=>w.length>3&&!stopWords.has(w))}
+  const questions=[];const usedSentences=new Set();
+  const shuffled=[...sentences].sort(()=>Math.random()-0.5);
+  for(const sentence of shuffled){
+    if(questions.length>=count)break;
+    if(usedSentences.has(sentence))continue;
+    const words=keyWords(sentence);
+    if(words.length<4)continue;
+    const keyword=words[Math.floor(Math.random()*Math.min(5,words.length))];
+    const blanked=sentence.replace(new RegExp(`\\b${keyword}\\b`,'i'),'_____');
+    const distractors=[];
+    for(const other of shuffled){
+      if(other===sentence)continue;
+      for(const w of keyWords(other)){
+        if(w!==keyword&&!distractors.includes(w)&&w.length>4){distractors.push(w);if(distractors.length>=3)break}
       }
+      if(distractors.length>=3)break;
     }
+    if(distractors.length<3)continue;
+    const options=[keyword,...distractors.slice(0,3)].sort(()=>Math.random()-0.5);
+    const correctIndex=options.indexOf(keyword);
+    questions.push({id:`local-${Date.now()}-${questions.length}`,number:questions.length+1,type:'mcq',text:`Complète la phrase : "${blanked}"`,options,correct:correctIndex,explanation:`D'après le cours : ${sentence}`,sourceExcerpt:sentence.slice(0,200),source:'local-fallback',confidence:0.4});
+    usedSentences.add(sentence);
   }
-  if (!allQuestions.length) { alert('Aucune question correspondante. Les cartes proviennent peut-être de questionnaires supprimés.'); return; }
-  reviewSession = {questions: allQuestions, answers: new Array(allQuestions.length).fill(null), current: 0, submitted: false, title: 'Révision FSRS', subject: 'Répétition espacée'};
-  openExamViewFromState(reviewSession, true);
+  for(const sentence of shuffled){
+    if(questions.length>=count)break;
+    if(usedSentences.has(sentence))continue;
+    const words=keyWords(sentence);
+    if(words.length<4)continue;
+    const isTrue=Math.random()>0.5;
+    let qText=sentence;
+    if(!isTrue){
+      const w2=keyWords(sentence);
+      const wrongWord=w2[Math.floor(Math.random()*w2.length)];
+      const pool=[];
+      for(const other of shuffled){
+        if(other===sentence)continue;
+        for(const w of keyWords(other))if(w!==wrongWord&&!pool.includes(w))pool.push(w);
+      }
+      if(!pool.length)continue;
+      qText=sentence.replace(new RegExp(`\\b${wrongWord}\\b`,'i'),pool[Math.floor(Math.random()*pool.length)]);
+    }
+    questions.push({id:`local-tf-${Date.now()}-${questions.length}`,number:questions.length+1,type:'tf',text:`Vrai ou Faux ? "${qText}"`,options:[],correct:isTrue,explanation:isTrue?'Affirmation correcte.':`Correction : ${sentence}`,sourceExcerpt:sentence.slice(0,200),source:'local-fallback',confidence:0.4});
+    usedSentences.add(sentence);
+  }
+  return questions.slice(0,count);
 }
 
 // ================== CLOUD ==================
-async function apiFetch(url, options={}){
-  const client = window.compTestAuth;
-  const {data:{session}} = await client.auth.getSession();
-  if (!session) throw new Error('Connecte-toi à CompoTest.');
-  return fetch(url, {...options, headers:{...(options.headers||{}), Authorization:`Bearer ${session.access_token}`}});
+async function apiFetch(url,options={}){
+  const client=window.compTestAuth;
+  const {data:{session}}=await client.auth.getSession();
+  if(!session)throw new Error('Connecte-toi à CompoTest.');
+  return fetch(url,{...options,headers:{...(options.headers||{}),Authorization:`Bearer ${session.access_token}`}});
 }
-window.apiFetch = apiFetch;
-
-async function saveCloud(quizzesToSave, historyToSave){
-  if (!activeUserId || !window.compTestAuth) return;
-  const uid = activeUserId;
-  cloudWriteChain = cloudWriteChain.then(async()=>{
-    if (activeUserId !== uid) return;
-    const {error} = await window.compTestAuth.from('comptest_data').upsert(
-      {user_id: uid, quizzes: quizzesToSave, history: historyToSave, updated_at: new Date().toISOString()},
-      {onConflict: 'user_id'}
-    );
-    if (error) throw error;
-  }).catch(err => console.error('Sync:', err));
+window.apiFetch=apiFetch;
+async function saveCloud(quizzesToSave,historyToSave){
+  if(!activeUserId||!window.compTestAuth)return;
+  const uid=activeUserId;
+  cloudWriteChain=cloudWriteChain.then(async()=>{
+    if(activeUserId!==uid)return;
+    const {error}=await window.compTestAuth.from('comptest_data').upsert({user_id:uid,quizzes:quizzesToSave,history:historyToSave,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    if(error)throw error;
+  }).catch(err=>console.error('Sync:',err));
   return cloudWriteChain;
 }
-window.comptestSaveCloud = saveCloud;
-
+window.comptestSaveCloud=saveCloud;
 function persist(){
-  localStorage.setItem('compo_quizzes', JSON.stringify(quizzes));
-  localStorage.setItem('compo_history', JSON.stringify(historyData));
-  localStorage.setItem('compo_fsrs', JSON.stringify(fsrsCards));
+  localStorage.setItem('compo_quizzes',JSON.stringify(quizzes));
+  localStorage.setItem('compo_history',JSON.stringify(historyData));
+  localStorage.setItem('compo_fsrs',JSON.stringify(fsrsCards));
   renderAll();
-  if (window.comptestSaveCloud) window.comptestSaveCloud(quizzes, historyData);
+  if(window.comptestSaveCloud)window.comptestSaveCloud(quizzes,historyData);
 }
 
 // ================== ONGLETS ==================
 function initTabs(){
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      const target = tab.dataset.tab;
-      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.dataset.content === target));
-      if (target === 'review') { renderFsrsStats(); renderFsrsList(); }
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      const target=tab.dataset.tab;
+      document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===tab));
+      document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.dataset.content===target));
+      if(target==='review'){renderFsrsStats();renderFsrsList()}
     });
   });
 }
 initTabs();
 
 // ================== AUTH ==================
-function showAuthError(message, diag){
-  $('authError').textContent = message || '';
-  const box = $('authDiag');
-  if (diag) { box.style.display = 'block'; box.textContent = diag; }
-  else { box.style.display = 'none'; box.textContent = ''; }
+function showAuthError(message,diag){
+  $('authError').textContent=message||'';
+  const box=$('authDiag');
+  if(diag){box.style.display='block';box.textContent=diag}else{box.style.display='none';box.textContent=''}
 }
 function setSignedOut(message=''){
-  activeUserId = null; isAdminUser = false;
-  $('authGate').style.display = 'block';
-  $('appMain').style.display = 'none';
-  $('logoutBtn').hidden = true;
-  $('passwordPanelBtn').hidden = true;
+  activeUserId=null;isAdminUser=false;
+  $('authGate').style.display='block';
+  $('appMain').style.display='none';
+  $('logoutBtn').hidden=true;
+  $('passwordPanelBtn').hidden=true;
   $('adminTab').classList.add('hide');
-  $('authUserLabel').textContent = 'Espace privé · Connexion requise';
-  if (message) showAuthError(message);
+  $('authUserLabel').textContent='Espace privé · Connexion requise';
+  if(message)showAuthError(message);
 }
 function traduireErreurAuth(error){
-  const msg = String(error?.message || '').toLowerCase();
-  const code = String(error?.code || '').toLowerCase();
-  const status = error?.status;
-  const diag = `message = ${error?.message||'(vide)'}\ncode = ${error?.code||'(vide)'}\nstatus = ${status||'(vide)'}`;
-  if (msg.includes('invalid login credentials')||code==='invalid_credentials') return {texte:'Identifiant ou mot de passe incorrect.',diag};
-  if (msg.includes('email not confirmed')) return {texte:'Ce compte existe mais son e-mail n’est pas confirmé.',diag};
-  if (msg.includes('user not found')) return {texte:'Aucun compte trouvé.',diag};
-  if (msg.includes('email logins are disabled')||code==='email_provider_disabled') return {texte:'Connexions e-mail désactivées dans Supabase.',diag};
-  if (msg.includes('password')) return {texte:'Mot de passe trop court ou trop faible.',diag};
-  return {texte:`Erreur : ${error?.message||'inconnue'}.`,diag};
+  const msg=String(error?.message||'').toLowerCase();
+  const code=String(error?.code||'').toLowerCase();
+  const status=error?.status;
+  const diag=`message = ${error?.message||'(vide)'}\ncode = ${error?.code||'(vide)'}\nstatus = ${status||'(vide)'}`;
+  if(msg.includes('invalid login credentials')||code==='invalid_credentials')return{texte:'Identifiant ou mot de passe incorrect.',diag};
+  if(msg.includes('email not confirmed'))return{texte:'Ce compte existe mais son e-mail n’est pas confirmé.',diag};
+  if(msg.includes('user not found'))return{texte:'Aucun compte trouvé.',diag};
+  if(msg.includes('email logins are disabled')||code==='email_provider_disabled')return{texte:'Connexions e-mail désactivées dans Supabase.',diag};
+  if(msg.includes('password'))return{texte:'Mot de passe trop court ou trop faible.',diag};
+  return{texte:`Erreur : ${error?.message||'inconnue'}.`,diag};
 }
 async function initSaaS(){
-  const cfg = window.COMPOSTEST_CONFIG || {};
-  if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
-    setSignedOut('Configuration Supabase manquante dans config.js.'); return;
-  }
-  const client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
-    auth: {persistSession: true, autoRefreshToken: true, detectSessionInUrl: true}
-  });
-  window.compTestAuth = client;
-  client.auth.onAuthStateChange((_e, session) => setTimeout(() => activateSession(session), 0));
+  const cfg=window.COMPOSTEST_CONFIG||{};
+  if(!window.supabase||!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY){setSignedOut('Configuration Supabase manquante dans config.js.');return}
+  const client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  window.compTestAuth=client;
+  client.auth.onAuthStateChange((_e,session)=>setTimeout(()=>activateSession(session),0));
 
-  $('loginForm').addEventListener('submit', async e => {
+  $('loginForm').addEventListener('submit',async e=>{
     e.preventDefault();
-    const btn = $('loginBtn'); btn.disabled = true; btn.textContent = 'Connexion…'; showAuthError('');
-    try {
-      const email = identifierToEmail($('loginEmail').value);
-      if (!email) { showAuthError('Identifiant invalide.'); return; }
-      const {data, error} = await client.auth.signInWithPassword({email, password: $('loginPassword').value});
-      if (error) { const t = traduireErreurAuth(error); showAuthError(t.texte, t.diag); return; }
-      $('loginPassword').value = '';
-    } catch(err) { showAuthError('Erreur : ' + (err?.message||err)); }
-    finally { btn.disabled = false; btn.textContent = 'Se connecter'; }
+    const btn=$('loginBtn');btn.disabled=true;btn.textContent='Connexion…';showAuthError('');
+    try{
+      const email=identifierToEmail($('loginEmail').value);
+      if(!email){showAuthError('Identifiant invalide.');return}
+      const {data,error}=await client.auth.signInWithPassword({email,password:$('loginPassword').value});
+      if(error){const t=traduireErreurAuth(error);showAuthError(t.texte,t.diag);return}
+      $('loginPassword').value='';
+    }catch(err){showAuthError('Erreur : '+(err?.message||err))}
+    finally{btn.disabled=false;btn.textContent='Se connecter'}
   });
 
-  $('forgotPasswordBtn').addEventListener('click', async () => {
-    const email = identifierToEmail($('loginEmail').value);
-    if (!email) { showAuthError('Saisis ton identifiant.'); return; }
-    if (email.endsWith('@' + INTERNAL_DOMAIN)) { showAuthError('Identifiant interne. Contacte l’administrateur.'); return; }
-    if (!confirm(`Envoyer un e-mail à ${email} ?`)) return;
-    const {error} = await client.auth.resetPasswordForEmail(email, {redirectTo: window.location.origin + '/index.html'});
-    if (error) showAuthError('Envoi impossible : ' + error.message);
+  $('forgotPasswordBtn').addEventListener('click',async()=>{
+    const email=identifierToEmail($('loginEmail').value);
+    if(!email){showAuthError('Saisis ton identifiant.');return}
+    if(email.endsWith('@'+INTERNAL_DOMAIN)){showAuthError('Identifiant interne. Contacte l’administrateur.');return}
+    if(!confirm(`Envoyer un e-mail à ${email} ?`))return;
+    const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/index.html'});
+    if(error)showAuthError('Envoi impossible : '+error.message);
     else showAuthError('Si un compte existe, un e-mail a été envoyé.');
   });
 
-  $('logoutBtn').addEventListener('click', async () => { await client.auth.signOut(); setSignedOut('Déconnecté.'); });
-  $('passwordPanelBtn').addEventListener('click', () => {
-    $('passwordPanel').style.display = $('passwordPanel').style.display === 'none' ? 'block' : 'none';
-  });
-  $('closePasswordPanel').addEventListener('click', () => $('passwordPanel').style.display = 'none');
+  $('logoutBtn').addEventListener('click',async()=>{await client.auth.signOut();setSignedOut('Déconnecté.');});
+  $('passwordPanelBtn').addEventListener('click',()=>{$('passwordPanel').style.display=$('passwordPanel').style.display==='none'?'block':'none';});
+  $('closePasswordPanel').addEventListener('click',()=>$('passwordPanel').style.display='none');
 
-  document.querySelectorAll('.pwd-toggle').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const t = document.getElementById(btn.dataset.target);
-      if (t) t.type = t.type === 'password' ? 'text' : 'password';
+  document.querySelectorAll('.pwd-toggle').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const t=document.getElementById(btn.dataset.target);
+      if(t)t.type=t.type==='password'?'text':'password';
     });
   });
 
-  $('passwordForm').addEventListener('submit', async e => {
+  $('passwordForm').addEventListener('submit',async e=>{
     e.preventDefault();
-    if (!isAdminUser) { $('passwordStatus').textContent = 'Seul l’administrateur peut modifier son mot de passe ici.'; return; }
-    const a = $('newPassword').value, b = $('newPasswordConfirm').value;
-    if (a.length < 6) { $('passwordStatus').textContent = 'Minimum 6 caractères.'; return; }
-    if (a !== b) { $('passwordStatus').textContent = 'Les mots de passe ne correspondent pas.'; return; }
-    const currentPwd = prompt('Saisis ton mot de passe ACTUEL :');
-    if (!currentPwd) { $('passwordStatus').textContent = 'Annulé.'; return; }
-    const email = (await client.auth.getUser()).data?.user?.email;
-    if (!email) { $('passwordStatus').textContent = 'Session expirée.'; return; }
-    const {error: sErr} = await client.auth.signInWithPassword({email, password: currentPwd});
-    if (sErr) { $('passwordStatus').textContent = 'Mot de passe actuel incorrect.'; return; }
-    const {error} = await client.auth.updateUser({password: a, current_password: currentPwd});
-    if (!error) { $('passwordStatus').textContent = '✅ Mot de passe modifié.'; $('newPassword').value=''; $('newPasswordConfirm').value=''; }
-    else $('passwordStatus').textContent = 'Erreur : ' + error.message;
+    if(!isAdminUser){$('passwordStatus').textContent='Seul l’administrateur peut modifier son mot de passe ici.';return}
+    const a=$('newPassword').value,b=$('newPasswordConfirm').value;
+    if(a.length<6){$('passwordStatus').textContent='Minimum 6 caractères.';return}
+    if(a!==b){$('passwordStatus').textContent='Les mots de passe ne correspondent pas.';return}
+    const currentPwd=prompt('Saisis ton mot de passe ACTUEL :');
+    if(!currentPwd){$('passwordStatus').textContent='Annulé.';return}
+    const email=(await client.auth.getUser()).data?.user?.email;
+    if(!email){$('passwordStatus').textContent='Session expirée.';return}
+    const {error:sErr}=await client.auth.signInWithPassword({email,password:currentPwd});
+    if(sErr){$('passwordStatus').textContent='Mot de passe actuel incorrect.';return}
+    const {error}=await client.auth.updateUser({password:a,current_password:currentPwd});
+    if(!error){$('passwordStatus').textContent='✅ Mot de passe modifié.';$('newPassword').value='';$('newPasswordConfirm').value='';}
+    else $('passwordStatus').textContent='Erreur : '+error.message;
   });
 
-  const {data:{session}, error} = await client.auth.getSession();
-  if (error) setSignedOut('Recharge la page.');
+  const {data:{session},error}=await client.auth.getSession();
+  if(error)setSignedOut('Recharge la page.');
   else await activateSession(session);
 }
-
 async function activateSession(session){
-  if (!session) { setSignedOut(); return; }
-  if (activeUserId === session.user.id) return;
-  activeUserId = session.user.id;
-  $('authGate').style.display = 'none';
-  $('appMain').style.display = 'block';
-  $('logoutBtn').hidden = false;
-  $('authUserLabel').textContent = emailToDisplay(session.user.email || 'Connecté');
+  if(!session){setSignedOut();return}
+  if(activeUserId===session.user.id)return;
+  activeUserId=session.user.id;
+  $('authGate').style.display='none';
+  $('appMain').style.display='block';
+  $('logoutBtn').hidden=false;
+  $('authUserLabel').textContent=emailToDisplay(session.user.email||'Connecté');
 
-  isAdminUser = false;
-  try {
+  isAdminUser=false;
+  try{
     await adminApi('/api/admin/users');
-    isAdminUser = true;
+    isAdminUser=true;
     $('adminTab').classList.remove('hide');
-    $('passwordPanelBtn').hidden = false;
+    $('passwordPanelBtn').hidden=false;
     loadAdminUsers();
-  } catch {
+  }catch{
     $('adminTab').classList.add('hide');
-    $('passwordPanelBtn').hidden = true;
+    $('passwordPanelBtn').hidden=true;
   }
 
-  try {
-    const {data: cloudRow, error} = await window.compTestAuth.from('comptest_data').select('quizzes,history').eq('user_id', activeUserId).maybeSingle();
-    if (error) { console.error(error); return; }
-    if (cloudRow) {
-      quizzes = Array.isArray(cloudRow.quizzes) ? cloudRow.quizzes : [];
-      historyData = Array.isArray(cloudRow.history) ? cloudRow.history : [];
-      localStorage.setItem('compo_quizzes', JSON.stringify(quizzes));
-      localStorage.setItem('compo_history', JSON.stringify(historyData));
-    } else {
-      const hasLocal = quizzes.length > 0 || historyData.length > 0;
-      if (hasLocal && confirm('Importer les questionnaires locaux dans ton compte ?')) {
-        await saveCloud(quizzes, historyData);
-      } else {
-        quizzes = []; historyData = [];
-        localStorage.setItem('compo_quizzes', '[]'); localStorage.setItem('compo_history', '[]');
-        await saveCloud(quizzes, historyData);
-      }
+  try{
+    const {data:cloudRow,error}=await window.compTestAuth.from('comptest_data').select('quizzes,history').eq('user_id',activeUserId).maybeSingle();
+    if(error){console.error(error);return}
+    if(cloudRow){
+      quizzes=Array.isArray(cloudRow.quizzes)?cloudRow.quizzes:[];
+      historyData=Array.isArray(cloudRow.history)?cloudRow.history:[];
+      localStorage.setItem('compo_quizzes',JSON.stringify(quizzes));
+      localStorage.setItem('compo_history',JSON.stringify(historyData));
+    }else{
+      const hasLocal=quizzes.length>0||historyData.length>0;
+      if(hasLocal&&confirm('Importer les questionnaires locaux dans ton compte ?')){await saveCloud(quizzes,historyData)}
+      else{quizzes=[];historyData=[];localStorage.setItem('compo_quizzes','[]');localStorage.setItem('compo_history','[]');await saveCloud(quizzes,historyData)}
     }
-  } catch(err) { console.error('Chargement:', err); }
-  renderAll();
-  renderFsrsStats();
-  renderFsrsList();
+  }catch(err){console.error('Chargement:',err)}
+  renderAll();renderFsrsStats();renderFsrsList();
 }
 
 // ================== ADMIN ==================
-async function adminApi(url, options={}) {
-  const r = await apiFetch(url, options);
-  const data = await r.json().catch(()=>({}));
-  if (!r.ok) throw new Error(data.error || 'Erreur admin.');
+async function adminApi(url,options={}){
+  const r=await apiFetch(url,options);
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.error||'Erreur admin.');
   return data;
 }
-function safeHtml(v){return String(v??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-
+function safeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function loadAdminUsers(){
-  const box = $('adminUsersList'); box.textContent = 'Chargement…';
-  try {
-    const data = await adminApi('/api/admin/users');
-    if (!data.users?.length) { box.textContent = 'Aucun compte.'; return; }
-    box.innerHTML = '<table class="admin-users"><thead><tr><th>Identifiant</th><th>Créé</th><th>Dernière connexion</th><th>État</th><th>Actions</th></tr></thead><tbody>' +
-      data.users.map(u => {
-        const banned = u.banned_until && new Date(u.banned_until) > new Date();
-        const status = u.is_admin ? 'Admin' : banned ? 'Désactivé' : u.email_confirmed_at ? 'Actif' : 'Non confirmé';
-        const display = emailToDisplay(u.email);
-        if (u.is_admin) return `<tr><td>${safeHtml(display)}</td><td>${u.created_at?new Date(u.created_at).toLocaleDateString('fr-FR'):'—'}</td><td>${u.last_sign_in_at?new Date(u.last_sign_in_at).toLocaleDateString('fr-FR'):'Jamais'}</td><td>${status}</td><td class="muted">Protégé</td></tr>`;
+  const box=$('adminUsersList');box.textContent='Chargement…';
+  try{
+    const data=await adminApi('/api/admin/users');
+    if(!data.users?.length){box.textContent='Aucun compte.';return}
+    box.innerHTML='<table class="admin-users"><thead><tr><th>Identifiant</th><th>Créé</th><th>Dernière connexion</th><th>État</th><th>Actions</th></tr></thead><tbody>'+
+      data.users.map(u=>{
+        const banned=u.banned_until&&new Date(u.banned_until)>new Date();
+        const status=u.is_admin?'Admin':banned?'Désactivé':u.email_confirmed_at?'Actif':'Non confirmé';
+        const display=emailToDisplay(u.email);
+        if(u.is_admin)return `<tr><td>${safeHtml(display)}</td><td>${u.created_at?new Date(u.created_at).toLocaleDateString('fr-FR'):'—'}</td><td>${u.last_sign_in_at?new Date(u.last_sign_in_at).toLocaleDateString('fr-FR'):'Jamais'}</td><td>${status}</td><td class="muted">Protégé</td></tr>`;
         return `<tr><td>${safeHtml(display)}</td><td>${u.created_at?new Date(u.created_at).toLocaleDateString('fr-FR'):'—'}</td><td>${u.last_sign_in_at?new Date(u.last_sign_in_at).toLocaleDateString('fr-FR'):'Jamais'}</td><td>${status}</td><td><div class="admin-actions"><button class="secondary" data-action="reset-password" data-id="${safeHtml(u.id)}" data-email="${safeHtml(display)}">🔑 MDP</button><button class="secondary" data-action="${banned?'enable':'disable'}" data-id="${safeHtml(u.id)}">${banned?'Réactiver':'Désactiver'}</button><button class="danger" data-action="delete" data-id="${safeHtml(u.id)}">Supprimer</button></div></td></tr>`;
-      }).join('') + '</tbody></table>';
-  } catch(e) { box.textContent = e.message; }
+      }).join('')+'</tbody></table>';
+  }catch(e){box.textContent=e.message}
 }
-
-$('adminCreateForm').addEventListener('submit', async e => {
+$('adminCreateForm').addEventListener('submit',async e=>{
   e.preventDefault();
-  const btn = $('adminCreateBtn'); btn.disabled = true; $('adminStatus').textContent = 'Création…';
-  try {
-    const email = identifierToEmail($('adminNewEmail').value);
-    if (!email) { $('adminStatus').textContent = '❌ Identifiant invalide.'; return; }
-    const data = await adminApi('/api/admin/users', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name: $('adminNewName').value, email, password: $('adminNewPassword').value})});
-    $('adminStatus').textContent = `✅ Créé : ${emailToDisplay(data.user.email)}`;
-    $('adminNewName').value=''; $('adminNewEmail').value=''; $('adminNewPassword').value='';
+  const btn=$('adminCreateBtn');btn.disabled=true;$('adminStatus').textContent='Création…';
+  try{
+    const email=identifierToEmail($('adminNewEmail').value);
+    if(!email){$('adminStatus').textContent='❌ Identifiant invalide.';return}
+    const data=await adminApi('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('adminNewName').value,email,password:$('adminNewPassword').value})});
+    $('adminStatus').textContent=`✅ Créé : ${emailToDisplay(data.user.email)}`;
+    $('adminNewName').value='';$('adminNewEmail').value='';$('adminNewPassword').value='';
     await loadAdminUsers();
-  } catch(err) { $('adminStatus').textContent = '❌ ' + err.message; }
-  finally { btn.disabled = false; }
+  }catch(err){$('adminStatus').textContent='❌ '+err.message}
+  finally{btn.disabled=false}
 });
-$('adminRefreshBtn').addEventListener('click', loadAdminUsers);
-
-$('adminUsersList').addEventListener('click', async e => {
-  const btn = e.target.closest('button[data-action]'); if (!btn) return;
-  const id = btn.dataset.id, action = btn.dataset.action, email = btn.dataset.email || '';
-  if (action === 'delete' && !confirm('Supprimer définitivement ce compte ?')) return;
-  if (action === 'reset-password') {
-    const pwd = prompt(`Nouveau mot de passe pour ${email} (6 caractères min) :`);
-    if (!pwd) return;
-    if (pwd.length < 6) { alert('Minimum 6 caractères.'); return; }
-    try { await adminApi('/api/admin/users/'+encodeURIComponent(id)+'/password', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({password: pwd})}); alert('✅ Modifié.'); }
-    catch(err) { alert('❌ ' + err.message); }
+$('adminRefreshBtn').addEventListener('click',loadAdminUsers);
+$('adminUsersList').addEventListener('click',async e=>{
+  const btn=e.target.closest('button[data-action]');if(!btn)return;
+  const id=btn.dataset.id,action=btn.dataset.action,email=btn.dataset.email||'';
+  if(action==='delete'&&!confirm('Supprimer définitivement ce compte ?'))return;
+  if(action==='reset-password'){
+    const pwd=prompt(`Nouveau mot de passe pour ${email} (6 caractères min) :`);
+    if(!pwd)return;
+    if(pwd.length<6){alert('Minimum 6 caractères.');return}
+    try{await adminApi('/api/admin/users/'+encodeURIComponent(id)+'/password',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})});alert('✅ Modifié.')}
+    catch(err){alert('❌ '+err.message)}
     return;
   }
-  if (!confirm(action==='disable'?'Désactiver ce compte ?':'Réactiver ce compte ?')) return;
-  try {
-    if (action==='delete') await adminApi('/api/admin/users/'+encodeURIComponent(id), {method:'DELETE'});
-    else await adminApi('/api/admin/users/'+encodeURIComponent(id)+'/status', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({banned: action==='disable'})});
+  if(!confirm(action==='disable'?'Désactiver ce compte ?':'Réactiver ce compte ?'))return;
+  try{
+    if(action==='delete')await adminApi('/api/admin/users/'+encodeURIComponent(id),{method:'DELETE'});
+    else await adminApi('/api/admin/users/'+encodeURIComponent(id)+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({banned:action==='disable'})});
     await loadAdminUsers();
-  } catch(err) { alert(err.message); }
+  }catch(err){alert(err.message)}
 });
 
 // ================== RENDER ==================
 function renderAll(){
-  $('statTests').textContent = historyData.length;
-  const avg = historyData.length ? historyData.reduce((a,x)=>a+x.score,0)/historyData.length : 0;
-  $('statAvg').textContent = historyData.length ? avg.toFixed(1)+'/20' : '—';
-  $('statBest').textContent = historyData.length ? Math.max(...historyData.map(x=>x.score)).toFixed(1)+'/20' : '—';
+  $('statTests').textContent=historyData.length;
+  const avg=historyData.length?historyData.reduce((a,x)=>a+x.score,0)/historyData.length:0;
+  $('statAvg').textContent=historyData.length?avg.toFixed(1)+'/20':'—';
+  $('statBest').textContent=historyData.length?Math.max(...historyData.map(x=>x.score)).toFixed(1)+'/20':'—';
 
-  const old = $('quizPicker').value;
-  $('quizPicker').innerHTML = '<option value="">Sélectionner un test</option>' + quizzes.map((q,i) => `<option value="${i}">${esc(q.title)} — ${q.questions.length} Q</option>`).join('');
-  if (old !== '' && quizzes[old]) $('quizPicker').value = old;
+  const old=$('quizPicker').value;
+  $('quizPicker').innerHTML='<option value="">Sélectionner un test</option>'+quizzes.map((q,i)=>`<option value="${i}">${esc(q.title)} — ${q.questions.length} Q</option>`).join('');
+  if(old!==''&&quizzes[old])$('quizPicker').value=old;
 
-  $('history').innerHTML = historyData.length ? [...historyData].reverse().slice(0,12).map(h =>
+  $('history').innerHTML=historyData.length?[...historyData].reverse().slice(0,12).map(h=>
     `<div class="history-item"><b>${esc(h.title)}</b><br><span class="muted">${esc(h.subject||'Sans matière')} · ${esc(h.date)}</span><br><b>${Number(h.score).toFixed(1)}/20</b> <span class="muted">(${h.correct}/${h.total})</span></div>`
-  ).join('') : '<div class="muted small">Aucun test terminé.</div>';
+  ).join(''):'<div class="muted small">Aucun test terminé.</div>';
 
-  $('draftList').innerHTML = drafts.length ? `<h3 style="font-size:15px;margin:18px 0 6px">Questions détectées (${drafts.length})</h3>
-    <div class="small muted">${drafts.filter(hasKey).length} avec réponse · ${drafts.filter(q=>!hasKey(q)).length} sans réponse</div>` +
-    drafts.map((q,i) => `<div class="question"><strong>${i+1}. ${esc(q.text)}</strong>
-      <div class="qmeta"><span class="badge">${esc(typeName(q))}</span></div>
-      ${q.options?.length ? '<div class="small">' + q.options.map((o,j) => `${q.correct===j || (Array.isArray(q.correct)&&q.correct.includes(j)) ? '✓ ' : ''}${String.fromCharCode(65+j)}. ${esc(o)}`).join('<br>') + '</div>' : ''}
+  $('draftList').innerHTML=drafts.length?`<h3 style="font-size:15px;margin:18px 0 6px">Questions détectées (${drafts.length})</h3>
+    <div class="small muted">${drafts.filter(hasKey).length} avec réponse · ${drafts.filter(q=>!hasKey(q)).length} sans réponse</div>`+
+    drafts.map((q,i)=>`<div class="question"><strong>${i+1}. ${esc(q.text)}</strong>
+      <div class="qmeta"><span class="badge">${esc(typeName(q))}</span>${q.source==='local-fallback'?'<span class="badge warn">Mode secours</span>':''}</div>
+      ${q.options?.length?'<div class="small">'+q.options.map((o,j)=>`${q.correct===j||(Array.isArray(q.correct)&&q.correct.includes(j))?'✓ ':''}${String.fromCharCode(65+j)}. ${esc(o)}`).join('<br>')+'</div>':''}
       <div class="small" style="margin-top:6px"><b>Réponse :</b> ${esc(correctLabel(q))}</div>
-      ${q.explanation ? `<p class="small muted">${esc(q.explanation)}</p>` : ''}
+      ${q.explanation?`<p class="small muted">${esc(q.explanation)}</p>`:''}
       <button class="ghost" style="padding:5px 8px;margin-top:7px" onclick="removeDraft(${i})">Retirer</button>
-    </div>`).join('') : '';
+    </div>`).join(''):'';
 }
-window.removeDraft = i => { drafts.splice(i,1); renderAll(); };
+window.removeDraft=i=>{drafts.splice(i,1);renderAll()};
 
 // ================== IMPORT ==================
-$('qType').addEventListener('change', () => {
-  const t = $('qType').value;
-  $('mcqFields').classList.toggle('hide', !['mcq','mcq_multi'].includes(t));
-  $('tfFields').classList.toggle('hide', t !== 'tf');
-  $('shortFields').classList.toggle('hide', t !== 'short');
+$('qType').addEventListener('change',()=>{
+  const t=$('qType').value;
+  $('mcqFields').classList.toggle('hide',!['mcq','mcq_multi'].includes(t));
+  $('tfFields').classList.toggle('hide',t!=='tf');
+  $('shortFields').classList.toggle('hide',t!=='short');
 });
 
 function pdfTextWithLines(content){
-  const items = (content.items||[]).filter(x=>x.str&&x.str.trim()).map(x=>({s:x.str,x:x.transform?.[4]??0,y:x.transform?.[5]??0}));
-  items.sort((a,b)=>Math.abs(a.y-b.y)>2 ? b.y-a.y : a.x-b.x);
-  let lines=[], curY=null, line='';
-  for (const it of items) {
-    if (curY===null || Math.abs(it.y-curY)>2) { if (line.trim()) lines.push(line.trim()); line=it.s; curY=it.y; }
-    else line += (line && !/\s$/.test(line) && !/^([.,;:!?%)\]])/.test(it.s) ? ' ' : '') + it.s;
+  const items=(content.items||[]).filter(x=>x.str&&x.str.trim()).map(x=>({s:x.str,x:x.transform?.[4]??0,y:x.transform?.[5]??0}));
+  items.sort((a,b)=>Math.abs(a.y-b.y)>2?b.y-a.y:a.x-b.x);
+  let lines=[],curY=null,line='';
+  for(const it of items){
+    if(curY===null||Math.abs(it.y-curY)>2){if(line.trim())lines.push(line.trim());line=it.s;curY=it.y}
+    else line+=(line&&!/\s$/.test(line)&&!/^([.,;:!?%)\]])/.test(it.s)?' ':'')+it.s;
   }
-  if (line.trim()) lines.push(line.trim());
+  if(line.trim())lines.push(line.trim());
   return lines.join('\n');
 }
 async function extractPdf(file){
-  const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
-  const pages = [];
-  for (let p=1; p<=pdf.numPages; p++){
-    const page = await pdf.getPage(p);
-    pages.push(pdfTextWithLines(await page.getTextContent()));
-  }
+  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+  const pages=[];
+  for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p);pages.push(pdfTextWithLines(await page.getTextContent()))}
   return pages.join('\n\n');
 }
 async function extractDocx(file){
-  if (!window.JSZip) throw new Error('JSZip non chargé.');
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
-  const docXml = zip.file('word/document.xml');
-  if (!docXml) throw new Error('Word invalide.');
-  const xml = await docXml.async('string');
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xml, 'application/xml');
-  const paragraphs = doc.getElementsByTagNameNS('*', 'p');
-  const lines = [];
-  for (let i=0; i<paragraphs.length; i++){
-    const texts = paragraphs[i].getElementsByTagNameNS('*', 't');
-    let line = '';
-    for (let j=0; j<texts.length; j++) line += texts[j].textContent || '';
+  if(!window.JSZip)throw new Error('JSZip non chargé.');
+  const zip=await JSZip.loadAsync(await file.arrayBuffer());
+  const docXml=zip.file('word/document.xml');
+  if(!docXml)throw new Error('Word invalide.');
+  const xml=await docXml.async('string');
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(xml,'application/xml');
+  const paragraphs=doc.getElementsByTagNameNS('*','p');
+  const lines=[];
+  for(let i=0;i<paragraphs.length;i++){
+    const texts=paragraphs[i].getElementsByTagNameNS('*','t');
+    let line='';
+    for(let j=0;j<texts.length;j++)line+=texts[j].textContent||'';
     lines.push(line.trim());
   }
   return lines.join('\n');
 }
-async function extractTxt(file){ return await file.text(); }
-
-$('extractBtn').onclick = async () => {
-  const file = $('pdfFile').files[0];
-  if (!file) { $('pdfStatus').textContent = 'Choisis un fichier.'; return; }
-  const name = file.name.toLowerCase();
-  const btn = $('extractBtn'); btn.disabled = true;
-  try {
-    let text = '';
-    if (name.endsWith('.pdf')) text = await extractPdf(file);
-    else if (name.endsWith('.docx')) text = await extractDocx(file);
-    else if (name.endsWith('.txt')) text = await extractTxt(file);
-    else if (name.endsWith('.doc')) { $('pdfStatus').textContent = 'Format .doc non supporté. Convertis en .docx.'; return; }
-    else { $('pdfStatus').textContent = 'Format non reconnu.'; return; }
-    $('pdfText').value = text;
-    $('quizTitle').value = $('quizTitle').value || file.name.replace(/\.[^.]+$/,'');
-    $('pdfStatus').textContent = `✅ Extrait : ${text.length} caractères.`;
-  } catch(e) {
-    $('pdfStatus').textContent = 'Erreur : ' + (e.message || 'illisible.');
-  } finally { btn.disabled = false; }
+async function extractTxt(file){return await file.text()}
+$('extractBtn').onclick=async()=>{
+  const file=$('pdfFile').files[0];
+  if(!file){$('pdfStatus').textContent='Choisis un fichier.';return}
+  const name=file.name.toLowerCase();
+  const btn=$('extractBtn');btn.disabled=true;
+  try{
+    let text='';
+    if(name.endsWith('.pdf'))text=await extractPdf(file);
+    else if(name.endsWith('.docx'))text=await extractDocx(file);
+    else if(name.endsWith('.txt'))text=await extractTxt(file);
+    else if(name.endsWith('.doc')){$('pdfStatus').textContent='Format .doc non supporté. Convertis en .docx.';return}
+    else{$('pdfStatus').textContent='Format non reconnu.';return}
+    $('pdfText').value=text;
+    $('quizTitle').value=$('quizTitle').value||file.name.replace(/\.[^.]+$/,'');
+    $('pdfStatus').textContent=`✅ Extrait : ${text.length} caractères.`;
+  }catch(e){$('pdfStatus').textContent='Erreur : '+(e.message||'illisible.')}
+  finally{btn.disabled=false}
 };
-
 function parseQuestions(raw){
-  const lines = raw.replace(/\r/g,'').split('\n').map(s=>s.trim()).filter(Boolean);
-  let section = '', blocks = [], current = null;
-  const qstart = /^(?:[✓✔☑]\s*)?(\d{1,3})[.)]\s+(.+)$/;
-  for (const line of lines) {
-    if (/^Partie\s+\d+/i.test(line)) { section = line; continue; }
-    const m = line.match(qstart);
-    if (m) { if (current) blocks.push(current); current = {number: Number(m[1]), text: m[2], lines: [], section}; continue; }
-    if (current) current.lines.push(line);
+  const lines=raw.replace(/\r/g,'').split('\n').map(s=>s.trim()).filter(Boolean);
+  let section='',blocks=[],current=null;
+  const qstart=/^(?:[✓✔☑]\s*)?(\d{1,3})[.)]\s+(.+)$/;
+  for(const line of lines){
+    if(/^Partie\s+\d+/i.test(line)){section=line;continue}
+    const m=line.match(qstart);
+    if(m){if(current)blocks.push(current);current={number:Number(m[1]),text:m[2],lines:[],section};continue}
+    if(current)current.lines.push(line);
   }
-  if (current) blocks.push(current);
-  const out = [];
-  for (const b of blocks) {
-    let textParts = [], options = [], marked = [], key = null;
-    for (const line of b.lines) {
-      const k = line.match(/(?:✓|✔|☑)\s*R[eé]ponse correcte\s*:\s*(VRAI|FAUX|TRUE|FALSE)/i);
-      if (k) { key = /^(VRAI|TRUE)$/i.test(k[1]); continue; }
-      const opt = line.match(/^([✓✔☑]\s*)?([A-H])[.)]\s*(.+)$/i);
-      if (opt) { options.push(opt[3].trim()); if (opt[1]) marked.push(options.length - 1); continue; }
-      if (/^(?:Page\s+\d+)/i.test(line)) continue;
+  if(current)blocks.push(current);
+  const out=[];
+  for(const b of blocks){
+    let textParts=[],options=[],marked=[],key=null;
+    for(const line of b.lines){
+      const k=line.match(/(?:✓|✔|☑)\s*R[eé]ponse correcte\s*:\s*(VRAI|FAUX|TRUE|FALSE)/i);
+      if(k){key=/^(VRAI|TRUE)$/i.test(k[1]);continue}
+      const opt=line.match(/^([✓✔☑]\s*)?([A-H])[.)]\s*(.+)$/i);
+      if(opt){options.push(opt[3].trim());if(opt[1])marked.push(options.length-1);continue}
+      if(/^(?:Page\s+\d+)/i.test(line))continue;
       textParts.push(line);
     }
-    const q = {text: [b.text, ...textParts].join(' ').replace(/\s+/g,' ').trim(), options, explanation: '', source: 'unresolved', confidence: null, number: b.number, section: b.section};
-    if (key !== null) { q.type = 'tf'; q.correct = key; q.source = 'pdf-marked'; }
-    else if (options.length) {
-      q.type = /réponses? multiples|plusieurs bonnes réponses/i.test(b.section) ? 'mcq_multi' : (marked.length > 1 ? 'mcq_multi' : 'mcq');
-      if (marked.length) { q.correct = q.type === 'mcq_multi' ? marked : marked[0]; q.source = 'pdf-marked'; }
+    const q={text:[b.text,...textParts].join(' ').replace(/\s+/g,' ').trim(),options,explanation:'',source:'unresolved',confidence:null,number:b.number,section:b.section};
+    if(key!==null){q.type='tf';q.correct=key;q.source='pdf-marked'}
+    else if(options.length){
+      q.type=/réponses? multiples|plusieurs bonnes réponses/i.test(b.section)?'mcq_multi':(marked.length>1?'mcq_multi':'mcq');
+      if(marked.length){q.correct=q.type==='mcq_multi'?marked:marked[0];q.source='pdf-marked'}
     }
-    else q.type = 'short';
+    else q.type='short';
     out.push(q);
   }
   return out;
 }
 function setSubjectFromText(){
-  if (!$('quizSubject').value.trim()) {
-    const m = $('pdfText').value.match(/(?:EXERCICE DE |COURS DE )([^\n]+)/i);
-    if (m) $('quizSubject').value = m[1].trim();
+  if(!$('quizSubject').value.trim()){
+    const m=$('pdfText').value.match(/(?:EXERCICE DE |COURS DE )([^\n]+)/i);
+    if(m)$('quizSubject').value=m[1].trim();
   }
 }
 
-// ================== ANALYSE INTELLIGENTE DU DOCUMENT ==================
+// ================== ANALYSE INTELLIGENTE ==================
+let analysisTicker=null;
 async function analyzeDocument(){
-  const raw = $('pdfText').value.trim();
-  if (!raw) { $('analysisStatus').style.display = 'block'; $('analysisStatus').textContent = 'Aucun texte à analyser.'; return; }
-  if (raw.length < 80) { $('analysisStatus').style.display = 'block'; $('analysisStatus').textContent = 'Texte trop court (min 80 caractères).'; return; }
+  const raw=$('pdfText').value.trim();
+  if(!raw){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Aucun texte à analyser.';return}
+  if(raw.length<80){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Texte trop court (min 80 caractères).';return}
 
-  const btn = $('analyzeBtn');
-  btn.disabled = true; const oldText = btn.textContent; btn.textContent = 'Analyse…';
-  $('analysisStatus').style.display = 'block';
-  $('analysisStatus').textContent = 'Analyse en cours…';
-  $('docTypeBox').style.display = 'none';
-  $('analysisDetail').style.display = 'none';
+  const btn=$('analyzeBtn');btn.disabled=true;const oldText=btn.textContent;btn.textContent='Analyse…';
+  $('analysisStatus').style.display='block';$('analysisStatus').textContent='';
+  $('docTypeBox').style.display='none';
+  $('analysisDetail').style.display='none';
+  $('analysisProgress').style.display='block';
 
-  try {
-    // 1) Détection locale du type de document
-    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-    const numberPattern = /^\s*(?:[✓✔☑]\s*)?(\d{1,3})[.)]\s+\S/;
-    const optionPattern = /^\s*([✓✔☑]\s*)?([A-H])[.)]\s+\S/;
-    let numberedCount = 0, optionsCount = 0;
-    for (const line of lines) {
-      if (numberPattern.test(line)) numberedCount++;
-      if (optionPattern.test(line)) optionsCount++;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  const numberPattern=/^\s*(?:[✓✔☑]\s*)?(\d{1,3})[.)]\s+\S/;
+  const optionPattern=/^\s*([✓✔☑]\s*)?([A-H])[.)]\s+\S/;
+  let numberedCount=0,optionsCount=0;
+  for(const line of lines){if(numberPattern.test(line))numberedCount++;if(optionPattern.test(line))optionsCount++}
+  const numberedRatio=numberedCount/Math.max(1,lines.length);
+  const optionsRatio=optionsCount/Math.max(1,lines.length);
+
+  let docType='course';
+  let typeLabel='📚 Cours rédigé (sans questions numérotées)';
+  if(numberedRatio>0.05&&optionsRatio>0.03){docType='numbered';typeLabel='📋 Questionnaire numéroté'}
+  else if(numberedCount>=3){docType='mixed';typeLabel='📋 Document mixte (cours + quelques questions)'}
+
+  $('docTypeBox').style.display='block';
+  $('docTypeBox').innerHTML=`<b>Type détecté :</b> ${typeLabel}<br><span class="small">${numberedCount} ligne(s) numérotée(s) · ${optionsCount} option(s) A/B/C/D</span>`;
+
+  // Si numéroté → parsing local immédiat
+  if(docType==='numbered'||docType==='mixed'){
+    const parsed=parseQuestions(raw);
+    const withKeys=parsed.filter(hasKey).length;
+    if(parsed.length>=3){
+      drafts=parsed;setSubjectFromText();
+      if(withKeys>0){$('analysisStatus').textContent=`✅ ${parsed.length} question(s) détectée(s), ${withKeys} avec réponse, ${parsed.length-withKeys} sans.`}
+      else{$('analysisStatus').textContent=`📋 ${parsed.length} question(s) détectée(s) sans réponse. Clique sur « Résoudre les réponses manquantes » pour l'IA.`}
+      renderAll();
+      btn.disabled=false;btn.textContent=oldText;
+      $('analysisProgress').style.display='none';
+      return;
     }
-    const numberedRatio = numberedCount / Math.max(1, lines.length);
-    const optionsRatio = optionsCount / Math.max(1, lines.length);
-
-    let docType = 'course';
-    let typeLabel = '📚 Cours rédigé (sans questions numérotées)';
-    if (numberedRatio > 0.05 && optionsRatio > 0.03) {
-      docType = 'numbered';
-      typeLabel = '📋 Questionnaire numéroté';
-    } else if (numberedCount >= 3) {
-      docType = 'mixed';
-      typeLabel = '📋 Document mixte (cours + quelques questions)';
-    }
-
-    $('docTypeBox').style.display = 'block';
-    $('docTypeBox').innerHTML = `<b>Type détecté :</b> ${typeLabel}<br><span class="small">${numberedCount} ligne(s) numérotée(s) · ${optionsCount} option(s) A/B/C/D</span>`;
-
-    // 2) Si document numéroté → parsing local
-    if (docType === 'numbered' || docType === 'mixed') {
-      const parsed = parseQuestions(raw);
-      const withKeys = parsed.filter(hasKey).length;
-      if (parsed.length >= 3) {
-        drafts = parsed; setSubjectFromText();
-        if (withKeys > 0) {
-          $('analysisStatus').textContent = `✅ ${parsed.length} question(s) détectée(s), ${withKeys} avec réponse, ${parsed.length - withKeys} sans. Clique sur « Résoudre les réponses manquantes » si besoin.`;
-        } else {
-          $('analysisStatus').textContent = `📋 ${parsed.length} question(s) détectée(s) sans réponse. Clique sur « Résoudre les réponses manquantes (IA) » pour que l'IA propose les corrections.`;
-        }
-        renderAll();
-        return;
-      }
-    }
-
-    // 3) Cours rédigé → analyse IA approfondie
-    const count = Math.max(10, Math.min(Number($('genCount').value) || 20, 50));
-    $('analysisStatus').textContent = `📚 Cours détecté. Analyse IA approfondie (${count} questions)… Cela peut prendre 30-60 secondes.`;
-
-    const r = await apiFetch('/api/analyze-course', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
-      subject: $('quizSubject').value.trim() || 'Matière non précisée',
-      title: $('quizTitle').value.trim() || 'Cours analysé',
-      sourceText: raw,
-      count
-    })});
-    const data = await r.json().catch(() => ({error:'Réponse illisible'}));
-    if (!r.ok) throw new Error(data.error || 'Erreur analyse');
-
-    drafts = (data.questions || []).map((q, i) => ({...q, number: i+1, source: 'ai-generated'}));
-
-    // Affiche les notions détectées
-    if (data.notions && data.notions.length) {
-      $('analysisDetail').style.display = 'block';
-      $('analysisDetail').innerHTML = `<h4>🧠 Notions extraites du cours (${data.notions.length})</h4>` +
-        (data.summary ? `<p class="muted small" style="margin:0 0 10px">${esc(data.summary)}</p>` : '') +
-        data.notions.slice(0, 15).map(n => `<div class="notion"><b>${esc(n.topic || 'Notion')}</b> — <span class="muted">${esc((n.detail || '').slice(0, 200))}${n.importance ? ' · ' + esc(n.importance) : ''}</span></div>`).join('') +
-        (data.notions.length > 15 ? `<div class="small muted" style="margin-top:6px">… et ${data.notions.length - 15} autres notions</div>` : '');
-    }
-
-    $('analysisStatus').textContent = `✅ ${drafts.length} question(s) générée(s) à partir du cours. ${data.coverage || ''}`;
-    if (!$('quizTitle').value.trim()) $('quizTitle').value = 'Questionnaire issu du cours';
-    $('startGeneratedExamBtn').style.display = 'inline-block';
-    renderAll();
-  } catch(e) {
-    $('analysisStatus').textContent = '❌ Erreur : ' + e.message;
-  } finally {
-    btn.disabled = false; btn.textContent = oldText;
   }
+
+  // Cours rédigé → tentative IA + fallback
+  const count=Math.max(10,Math.min(Number($('genCount').value)||20,50));
+  const startTime=Date.now();
+  let aiSucceeded=false,data=null;
+
+  $('analysisProgressText').textContent='📚 Analyse IA du cours en cours…';
+  if(analysisTicker)clearInterval(analysisTicker);
+  analysisTicker=setInterval(()=>{
+    const elapsed=Math.round((Date.now()-startTime)/1000);
+    $('analysisTimer').textContent=elapsed+'s';
+    if(elapsed<15)$('analysisProgressText').textContent='📚 Lecture du cours…';
+    else if(elapsed<30)$('analysisProgressText').textContent='🧠 Extraction des notions clés…';
+    else if(elapsed<60)$('analysisProgressText').textContent='✍️ Rédaction des questions…';
+    else $('analysisProgressText').textContent='⏳ Presque terminé, patience…';
+  },500);
+
+  try{
+    const controller=new AbortController();
+    const timeoutId=setTimeout(()=>controller.abort(),100000);
+    const r=await apiFetch('/api/analyze-course',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subject:$('quizSubject').value.trim()||'Matière non précisée',title:$('quizTitle').value.trim()||'Cours analysé',sourceText:raw,count}),
+      signal:controller.signal
+    });
+    clearTimeout(timeoutId);
+    data=await r.json().catch(()=>({error:'Réponse illisible'}));
+    if(!r.ok)throw new Error(data.error||`Erreur ${r.status}`);
+    aiSucceeded=true;
+  }catch(err){
+    console.warn('IA échouée, bascule locale :',err.message);
+  }finally{
+    if(analysisTicker){clearInterval(analysisTicker);analysisTicker=null}
+  }
+
+  const elapsed=Math.round((Date.now()-startTime)/1000);
+
+  if(aiSucceeded&&data&&data.questions&&data.questions.length){
+    drafts=data.questions.map((q,i)=>({...q,number:i+1,source:'ai-generated'}));
+    if(data.notions&&data.notions.length){
+      $('analysisDetail').style.display='block';
+      $('analysisDetail').innerHTML=`<h4>🧠 Notions extraites (${data.notions.length})</h4>`+
+        (data.summary?`<p class="muted small" style="margin:0 0 10px">${esc(data.summary)}</p>`:'')+
+        data.notions.slice(0,15).map(n=>`<div class="notion"><b>${esc(n.topic||'Notion')}</b> — <span class="muted">${esc((n.detail||'').slice(0,200))}</span></div>`).join('');
+    }
+    $('analysisStatus').innerHTML=`✅ ${drafts.length} question(s) générée(s) par IA en ${elapsed}s.`;
+    if(!$('quizTitle').value.trim())$('quizTitle').value='Questionnaire issu du cours';
+    $('startGeneratedExamBtn').style.display='inline-block';
+    renderAll();
+  }else{
+    // Fallback local
+    $('analysisProgressText').textContent='⚠️ L\'IA n\'a pas répondu à temps, génération locale…';
+    const localQuestions=generateLocalQuestions(raw,count);
+    if(localQuestions.length){
+      drafts=localQuestions;
+      $('analysisStatus').innerHTML=`⚠️ <b>Mode secours activé.</b> ${localQuestions.length} question(s) générée(s) localement.<br><span class="small muted">L'IA n'a pas répondu dans les 100 secondes. Ces questions sont basiques — vérifie-les.</span>`;
+      $('analysisDetail').style.display='block';
+      $('analysisDetail').innerHTML=`<h4>ℹ️ Mode secours</h4><p class="small muted" style="margin:0">Le serveur IA (Groq) n'a pas répondu à temps. Le générateur local a extrait ${localQuestions.length} questions directement du texte. Pour de meilleures questions, réessaie plus tard.</p>`;
+      if(!$('quizTitle').value.trim())$('quizTitle').value='Questionnaire (mode secours)';
+      $('startGeneratedExamBtn').style.display='inline-block';
+      renderAll();
+    }else{
+      $('analysisStatus').innerHTML=`❌ Impossible de générer des questions.<br><span class="small muted">Le texte est peut-être trop court ou peu structuré. Essaie avec un texte plus long.</span>`;
+    }
+  }
+
+  $('analysisProgress').style.display='none';
+  btn.disabled=false;btn.textContent=oldText;
 }
 
-$('analyzeBtn').onclick = analyzeDocument;
-$('parseTextBtn').onclick = analyzeDocument;
+$('analyzeBtn').onclick=analyzeDocument;
+$('parseTextBtn').onclick=analyzeDocument;
 
-$('generateQuestionsBtn').onclick = async () => {
-  const sourceText = $('pdfText').value.trim();
-  const count = Number($('genCount').value);
-  if (sourceText.length < 80) { $('generationStatus').textContent = 'Importe un document ou colle un texte (min 80 caractères).'; return; }
-  if (!Number.isInteger(count) || count < 1 || count > 100) { $('generationStatus').textContent = 'Entre 1 et 100.'; return; }
-  const btn = $('generateQuestionsBtn'); btn.disabled = true; btn.textContent = 'Génération…';
-  $('generationStatus').textContent = 'Analyse du cours en plusieurs passes…';
-  try {
-    const r = await apiFetch('/api/generate-questions', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({subject: $('quizSubject').value.trim() || 'Matière non précisée', title: $('quizTitle').value.trim() || 'Cours importé', sourceText, count})
+// ================== GÉNÉRATION DIRECTE ==================
+let generationTicker=null;
+$('generateQuestionsBtn').onclick=async()=>{
+  const sourceText=$('pdfText').value.trim();
+  const count=Number($('genCount').value);
+  if(sourceText.length<80){$('generationStatus').textContent='Texte trop court (min 80 caractères).';return}
+  if(!Number.isInteger(count)||count<1||count>100){$('generationStatus').textContent='Nombre entre 1 et 100.';return}
+  const btn=$('generateQuestionsBtn');btn.disabled=true;btn.textContent='Génération…';
+  const startTime=Date.now();
+  $('generationStatus').textContent='';
+  $('generationProgress').style.display='block';
+  $('generationProgressText').textContent='Analyse IA du cours en cours…';
+  if(generationTicker)clearInterval(generationTicker);
+  generationTicker=setInterval(()=>{
+    const elapsed=Math.round((Date.now()-startTime)/1000);
+    $('generationTimer').textContent=elapsed+'s';
+    if(elapsed<15)$('generationProgressText').textContent='📚 Lecture du cours…';
+    else if(elapsed<30)$('generationProgressText').textContent='🧠 Extraction des notions…';
+    else if(elapsed<60)$('generationProgressText').textContent='✍️ Rédaction des questions…';
+    else $('generationProgressText').textContent='⏳ Presque terminé…';
+  },500);
+
+  try{
+    const controller=new AbortController();
+    const timeoutId=setTimeout(()=>controller.abort(),100000);
+    const r=await apiFetch('/api/generate-questions',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subject:$('quizSubject').value.trim()||'Matière non précisée',title:$('quizTitle').value.trim()||'Cours importé',sourceText,count}),
+      signal:controller.signal
     });
-    const data = await r.json().catch(()=>({error:'Réponse illisible'}));
-    if (!r.ok) throw new Error(data.error || `Erreur ${r.status}`);
-    const made = (data.questions || []).map((q, i) => ({...q, number: i+1, source: 'ai-generated'}));
-    drafts = made;
-    if (!$('quizTitle').value.trim()) $('quizTitle').value = 'Questionnaire généré';
-    $('generationStatus').textContent = `✅ ${made.length} question(s) générée(s). ${data.coverage || ''}`;
-    $('startGeneratedExamBtn').style.display = 'inline-block';
+    clearTimeout(timeoutId);
+    const data=await r.json().catch(()=>({error:'Réponse illisible'}));
+    if(!r.ok)throw new Error(data.error||`Erreur ${r.status}`);
+    const made=(data.questions||[]).map((q,i)=>({...q,number:i+1,source:'ai-generated'}));
+    drafts=made;
+    if(!$('quizTitle').value.trim())$('quizTitle').value='Questionnaire généré';
+    const elapsed=Math.round((Date.now()-startTime)/1000);
+    $('generationStatus').innerHTML=`✅ ${made.length} question(s) générée(s) en ${elapsed}s.`;
+    $('startGeneratedExamBtn').style.display='inline-block';
     renderAll();
-  } catch(e) { $('generationStatus').textContent = `Échec : ${e.message}`; }
-  finally { btn.disabled = false; btn.textContent = 'Générer depuis le cours'; }
-};
-
-$('startGeneratedExamBtn').onclick = () => {
-  if (!drafts.length) { alert('Aucune question.'); return; }
-  const title = $('quizTitle').value.trim() || 'Exercices';
-  const subject = $('quizSubject').value.trim() || 'Non précisée';
-  openExamView({title, subject, questions: drafts.map(q => ({...q, options: q.options ? [...q.options] : undefined}))});
-};
-
-$('aiBtn').onclick = async () => {
-  if (!drafts.length) { await analyzeDocument(); }
-  const pending = drafts.filter(q => !hasKey(q));
-  if (!pending.length) { $('analysisStatus').style.display = 'block'; $('analysisStatus').textContent = 'Toutes les questions ont une réponse.'; return; }
-  const btn = $('aiBtn'); btn.disabled = true; btn.textContent = 'Analyse…';
-  try {
-    const r = await apiFetch('/api/answer-questions', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({subject: $('quizSubject').value.trim(), questions: pending.map((q,i) => ({id: String(q.number ?? i), type: q.type, text: q.text, options: q.options||[]}))})});
-    const data = await r.json().catch(()=>({error:'Réponse illisible'}));
-    if (!r.ok) throw new Error(data.error || 'Erreur');
-    for (const a of data.answers || []) {
-      const q = drafts.find(x => String(x.number) === String(a.id));
-      if (!q) continue;
-      if (q.type === 'tf' && typeof a.correct === 'boolean') q.correct = a.correct;
-      else if (q.type === 'short' && typeof a.correct === 'string') q.expected = a.correct.trim();
-      else if (q.type === 'mcq' || q.type === 'mcq_multi') {
-        let c = a.correct;
-        if (Array.isArray(c)) q.correct = c;
-        else if (Number.isInteger(c)) q.correct = q.type === 'mcq_multi' ? [c] : c;
-      }
-      if (hasKey(q)) { q.source = 'ai'; q.explanation = a.explanation || ''; q.confidence = a.confidence; }
+  }catch(e){
+    console.warn('IA échouée, bascule locale :',e.message);
+    const local=generateLocalQuestions(sourceText,count);
+    if(local.length){
+      drafts=local;
+      $('generationStatus').innerHTML=`⚠️ Mode secours : ${local.length} question(s) générée(s) localement (IA indisponible).`;
+      $('startGeneratedExamBtn').style.display='inline-block';
+      renderAll();
+    }else{
+      $('generationStatus').innerHTML=`❌ Échec : ${e.message}`;
     }
-    $('analysisStatus').textContent = 'Réponses IA ajoutées.';
-    renderAll();
-  } catch(e) { $('analysisStatus').style.display = 'block'; $('analysisStatus').textContent = 'Erreur IA : ' + e.message; }
-  finally { btn.disabled = false; btn.textContent = 'Résoudre les réponses manquantes (IA)'; }
-};
-
-$('addQuestion').onclick = () => {
-  const text = $('qText').value.trim(), type = $('qType').value;
-  if (!text) { alert('Écris un énoncé.'); return; }
-  const q = {text, type, explanation: $('qExplanation').value.trim(), source: 'manual'};
-  if (type === 'mcq' || type === 'mcq_multi') {
-    q.options = $('qOptions').value.split('\n').map(x => x.trim()).filter(Boolean);
-    const nums = $('qCorrect').value.split(',').map(x => Number(x.trim()) - 1);
-    if (q.options.length < 2 || nums.some(n => n < 0 || n >= q.options.length)) { alert('Vérifie options et réponses.'); return; }
-    q.correct = type === 'mcq_multi' ? nums : nums[0];
+  }finally{
+    if(generationTicker){clearInterval(generationTicker);generationTicker=null}
+    $('generationProgress').style.display='none';
+    btn.disabled=false;btn.textContent='Générer depuis le cours';
   }
-  if (type === 'tf') q.correct = $('qTF').value === 'true';
-  if (type === 'short') { q.expected = $('qExpected').value.trim(); if (!q.expected) { alert('Réponse attendue ?'); return; } }
-  drafts.push(q);
-  $('qText').value = ''; $('qExplanation').value = '';
-  renderAll();
-  alert('Question ajoutée. Va dans l\'onglet « Composer » pour la voir ou clique sur « Enregistrer le test ».');
 };
 
-$('saveQuiz').onclick = () => {
-  const title = $('quizTitle').value.trim(), subject = $('quizSubject').value.trim();
-  if (!title) { alert('Donne un titre.'); return; }
-  if (!drafts.length) { alert('Aucune question.'); return; }
-  quizzes.push({title, subject, questions: drafts.map(q => ({...q, options: q.options ? [...q.options] : undefined})), created: new Date().toISOString()});
-  drafts = [];
+$('startGeneratedExamBtn').onclick=()=>{
+  if(!drafts.length){alert('Aucune question.');return}
+  const title=$('quizTitle').value.trim()||'Exercices';
+  const subject=$('quizSubject').value.trim()||'Non précisée';
+  openExamView({title,subject,questions:drafts.map(q=>({...q,options:q.options?[...q.options]:undefined}))});
+};
+
+$('aiBtn').onclick=async()=>{
+  if(!drafts.length){await analyzeDocument()}
+  const pending=drafts.filter(q=>!hasKey(q));
+  if(!pending.length){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Toutes les questions ont une réponse.';return}
+  const btn=$('aiBtn');btn.disabled=true;btn.textContent='Analyse…';
+  try{
+    const r=await apiFetch('/api/answer-questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:$('quizSubject').value.trim(),questions:pending.map((q,i)=>({id:String(q.number??i),type:q.type,text:q.text,options:q.options||[]}))})});
+    const data=await r.json().catch(()=>({error:'Réponse illisible'}));
+    if(!r.ok)throw new Error(data.error||'Erreur');
+    for(const a of data.answers||[]){
+      const q=drafts.find(x=>String(x.number)===String(a.id));
+      if(!q)continue;
+      if(q.type==='tf'&&typeof a.correct==='boolean')q.correct=a.correct;
+      else if(q.type==='short'&&typeof a.correct==='string')q.expected=a.correct.trim();
+      else if(q.type==='mcq'||q.type==='mcq_multi'){
+        let c=a.correct;
+        if(Array.isArray(c))q.correct=c;
+        else if(Number.isInteger(c))q.correct=q.type==='mcq_multi'?[c]:c;
+      }
+      if(hasKey(q)){q.source='ai';q.explanation=a.explanation||'';q.confidence=a.confidence}
+    }
+    $('analysisStatus').textContent='Réponses IA ajoutées.';
+    renderAll();
+  }catch(e){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Erreur IA : '+e.message}
+  finally{btn.disabled=false;btn.textContent='Résoudre les réponses manquantes (IA)'}
+};
+
+$('addQuestion').onclick=()=>{
+  const text=$('qText').value.trim(),type=$('qType').value;
+  if(!text){alert('Écris un énoncé.');return}
+  const q={text,type,explanation:$('qExplanation').value.trim(),source:'manual'};
+  if(type==='mcq'||type==='mcq_multi'){
+    q.options=$('qOptions').value.split('\n').map(x=>x.trim()).filter(Boolean);
+    const nums=$('qCorrect').value.split(',').map(x=>Number(x.trim())-1);
+    if(q.options.length<2||nums.some(n=>n<0||n>=q.options.length)){alert('Vérifie options et réponses.');return}
+    q.correct=type==='mcq_multi'?nums:nums[0];
+  }
+  if(type==='tf')q.correct=$('qTF').value==='true';
+  if(type==='short'){q.expected=$('qExpected').value.trim();if(!q.expected){alert('Réponse attendue ?');return}}
+  drafts.push(q);
+  $('qText').value='';$('qExplanation').value='';
+  renderAll();
+  alert('Question ajoutée.');
+};
+
+$('saveQuiz').onclick=()=>{
+  const title=$('quizTitle').value.trim(),subject=$('quizSubject').value.trim();
+  if(!title){alert('Donne un titre.');return}
+  if(!drafts.length){alert('Aucune question.');return}
+  quizzes.push({title,subject,questions:drafts.map(q=>({...q,options:q.options?[...q.options]:undefined})),created:new Date().toISOString()});
+  drafts=[];
   persist();
   alert('Questionnaire enregistré.');
 };
 
 // ================== EXAM ==================
-let examState = null;
-function openExamView(quiz){ openExamViewFromState({...quiz, answers: new Array(quiz.questions.length).fill(null), current: 0, submitted: false}, false); }
-function openExamViewFromState(state, isReview){
-  examState = state;
-  examState.isReview = !!isReview;
-  $('examTitle').textContent = state.title;
-  $('examMeta').textContent = `${state.questions.length} question(s) · ${state.subject}`;
-  $('examView').style.display = 'block';
-  document.body.style.overflow = 'hidden';
+let examState=null;
+function openExamView(quiz){openExamViewFromState({...quiz,answers:new Array(quiz.questions.length).fill(null),current:0,submitted:false},false)}
+function openExamViewFromState(state,isReview){
+  examState=state;
+  examState.isReview=!!isReview;
+  $('examTitle').textContent=state.title;
+  $('examMeta').textContent=`${state.questions.length} question(s) · ${state.subject}`;
+  $('examView').style.display='block';
+  document.body.style.overflow='hidden';
   renderExam();
 }
 function closeExamView(){
-  if (!examState) return;
-  if (!examState.submitted && !confirm('Quitter ? Les réponses seront perdues.')) return;
-  $('examView').style.display = 'none';
-  document.body.style.overflow = '';
-  examState = null;
+  if(!examState)return;
+  if(!examState.submitted&&!confirm('Quitter ? Les réponses seront perdues.'))return;
+  $('examView').style.display='none';
+  document.body.style.overflow='';
+  examState=null;
 }
-$('examQuitBtn').onclick = closeExamView;
+$('examQuitBtn').onclick=closeExamView;
 
 function renderExam(){
-  if (!examState) return;
-  const total = examState.questions.length;
-  const answered = examState.answers.filter(a => a !== null && !(Array.isArray(a) && a.length === 0)).length;
-  const isSubmitted = examState.submitted;
+  if(!examState)return;
+  const total=examState.questions.length;
+  const answered=examState.answers.filter(a=>a!==null&&!(Array.isArray(a)&&a.length===0)).length;
+  const isSubmitted=examState.submitted;
 
-  let dotsHtml = '';
-  for (let i=0; i<total; i++){
-    let cls = 'dot';
-    if (isSubmitted) { const ok = isAnswerCorrect(examState.questions[i], examState.answers[i]); cls += ok ? ' correct' : ' wrong'; }
-    else { if (i === examState.current) cls += ' current'; if (examState.answers[i] !== null && !(Array.isArray(examState.answers[i]) && examState.answers[i].length === 0)) cls += ' answered'; }
-    dotsHtml += `<button class="${cls}" type="button" data-goto="${i}">${i+1}</button>`;
+  let dotsHtml='';
+  for(let i=0;i<total;i++){
+    let cls='dot';
+    if(isSubmitted){const ok=isAnswerCorrect(examState.questions[i],examState.answers[i]);cls+=ok?' correct':' wrong'}
+    else{if(i===examState.current)cls+=' current';if(examState.answers[i]!==null&&!(Array.isArray(examState.answers[i])&&examState.answers[i].length===0))cls+=' answered'}
+    dotsHtml+=`<button class="${cls}" type="button" data-goto="${i}">${i+1}</button>`;
   }
 
-  if (isSubmitted) {
-    const questionsHtml = examState.questions.map((q, i) => {
-      const ua = examState.answers[i], ok = isAnswerCorrect(q, ua);
-      let body = '';
-      if (q.type === 'mcq' || q.type === 'mcq_multi') {
-        body = '<div class="exam-opts">' + q.options.map((o, j) => {
-          const isCorrect = q.type === 'mcq' ? j === q.correct : (Array.isArray(q.correct) && q.correct.includes(j));
-          const isChosen = q.type === 'mcq' ? ua === j : (Array.isArray(ua) && ua.includes(j));
-          let cls = 'exam-opt';
-          if (isCorrect) cls += ' correct'; else if (isChosen) cls += ' wrong';
+  if(isSubmitted){
+    const questionsHtml=examState.questions.map((q,i)=>{
+      const ua=examState.answers[i],ok=isAnswerCorrect(q,ua);
+      let body='';
+      if(q.type==='mcq'||q.type==='mcq_multi'){
+        body='<div class="exam-opts">'+q.options.map((o,j)=>{
+          const isCorrect=q.type==='mcq'?j===q.correct:(Array.isArray(q.correct)&&q.correct.includes(j));
+          const isChosen=q.type==='mcq'?ua===j:(Array.isArray(ua)&&ua.includes(j));
+          let cls='exam-opt';if(isCorrect)cls+=' correct';else if(isChosen)cls+=' wrong';
           return `<div class="${cls}"><span>${String.fromCharCode(65+j)}. ${esc(o)}${isCorrect?' ✓':''}${isChosen&&!isCorrect?' (ton choix)':''}</span></div>`;
-        }).join('') + '</div>';
-      } else if (q.type === 'tf') {
-        body = '<div class="exam-opts">' + [true, false].map(v => {
-          const isCorrect = q.correct === v, isChosen = ua === v;
-          let cls = 'exam-opt';
-          if (isCorrect) cls += ' correct'; else if (isChosen) cls += ' wrong';
+        }).join('')+'</div>';
+      }else if(q.type==='tf'){
+        body='<div class="exam-opts">'+[true,false].map(v=>{
+          const isCorrect=q.correct===v,isChosen=ua===v;let cls='exam-opt';
+          if(isCorrect)cls+=' correct';else if(isChosen)cls+=' wrong';
           return `<div class="${cls}"><span>${v?'Vrai':'Faux'}${isCorrect?' ✓':''}${isChosen&&!isCorrect?' (ton choix)':''}</span></div>`;
-        }).join('') + '</div>';
-      } else {
-        body = `<div class="small"><b>Ta réponse :</b> ${esc(ua||'(vide)')}</div><div class="correct-block"><b>Attendu :</b> ${esc(q.expected||'—')}</div>`;
+        }).join('')+'</div>';
+      }else{
+        body=`<div class="small"><b>Ta réponse :</b> ${esc(ua||'(vide)')}</div><div class="correct-block"><b>Attendu :</b> ${esc(q.expected||'—')}</div>`;
       }
       return `<div class="exam-q"><div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div><h3>${esc(q.text)}</h3>${body}<div class="correct-block"><b>${ok?'✅ Bonne réponse':'❌ Incorrect'}</b>${q.type!=='short'?' — attendu : <b>'+esc(correctLabel(q))+'</b>':''}</div>${q.explanation?`<div class="explain-block"><b>Explication :</b> ${esc(q.explanation)}</div>`:''}</div>`;
     }).join('');
-    const scorable = examState.questions.filter(hasKey).length;
-    const correctCount = examState.questions.reduce((a,q,i) => a + (hasKey(q) && isAnswerCorrect(q, examState.answers[i]) ? 1 : 0), 0);
-    const score = scorable ? 20*correctCount/scorable : 0;
-    let hero = `<div class="result-hero"><h1>${scorable?score.toFixed(1)+'/20':'—'}</h1><p>${correctCount} / ${scorable} correct${examState.isReview?' · Révision FSRS':''}</p></div>`;
-    $('examBody').innerHTML = hero + '<div class="exam-nav"><div class="dots">' + dotsHtml + '</div></div>' + questionsHtml;
-    $('examActionsBar').innerHTML = `<div class="progress-info">Terminé · <b>${correctCount}/${scorable}</b></div><div style="display:flex;gap:8px"><button type="button" class="secondary" id="examRestartBtn">🔄 Recommencer</button><button type="button" id="examCloseBtn">← Retour</button></div>`;
-    $('examRestartBtn').onclick = () => { examState.answers = new Array(total).fill(null); examState.current = 0; examState.submitted = false; renderExam(); };
-    $('examCloseBtn').onclick = closeExamView;
+    const scorable=examState.questions.filter(hasKey).length;
+    const correctCount=examState.questions.reduce((a,q,i)=>a+(hasKey(q)&&isAnswerCorrect(q,examState.answers[i])?1:0),0);
+    const score=scorable?20*correctCount/scorable:0;
+    let hero=`<div class="result-hero"><h1>${scorable?score.toFixed(1)+'/20':'—'}</h1><p>${correctCount} / ${scorable} correct${examState.isReview?' · Révision FSRS':''}</p></div>`;
+    $('examBody').innerHTML=hero+'<div class="exam-nav"><div class="dots">'+dotsHtml+'</div></div>'+questionsHtml;
+    $('examActionsBar').innerHTML=`<div class="progress-info">Terminé · <b>${correctCount}/${scorable}</b></div><div style="display:flex;gap:8px"><button type="button" class="secondary" id="examRestartBtn">🔄 Recommencer</button><button type="button" id="examCloseBtn">← Retour</button></div>`;
+    $('examRestartBtn').onclick=()=>{examState.answers=new Array(total).fill(null);examState.current=0;examState.submitted=false;renderExam()};
+    $('examCloseBtn').onclick=closeExamView;
 
-    if (!examState.isReview && !examState._fsrsSaved) {
-      examState._fsrsSaved = true;
-      const pct = scorable ? correctCount / scorable : 0;
+    if(!examState.isReview&&!examState._fsrsSaved){
+      examState._fsrsSaved=true;
+      const pct=scorable?correctCount/scorable:0;
       let grade;
-      if (pct < 0.5) grade = 1;
-      else if (pct < 0.75) grade = 2;
-      else if (pct < 0.95) grade = 3;
-      else grade = 4;
-      for (const q of examState.questions) {
-        const key = fsrsCardKey(q);
-        fsrsCards[key] = fsrsReview(fsrsCards[key], grade);
+      if(pct<0.5)grade=1;
+      else if(pct<0.75)grade=2;
+      else if(pct<0.95)grade=3;
+      else grade=4;
+      for(const q of examState.questions){
+        const key=fsrsCardKey(q);
+        fsrsCards[key]=fsrsReview(fsrsCards[key],grade);
       }
       saveFsrs();
     }
-  } else {
-    const i = examState.current, q = examState.questions[i], ua = examState.answers[i];
-    let body = '';
-    if (q.type === 'mcq' || q.type === 'mcq_multi') {
-      const multi = q.type === 'mcq_multi';
-      body = '<div class="exam-opts">' + q.options.map((o, j) => {
-        const chosen = multi ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
+  }else{
+    const i=examState.current,q=examState.questions[i],ua=examState.answers[i];
+    let body='';
+    if(q.type==='mcq'||q.type==='mcq_multi'){
+      const multi=q.type==='mcq_multi';
+      body='<div class="exam-opts">'+q.options.map((o,j)=>{
+        const chosen=multi?(Array.isArray(ua)&&ua.includes(j)):(ua===j);
         return `<label class="exam-opt${chosen?' selected':''}"><input type="${multi?'checkbox':'radio'}" name="examq" value="${j}" ${chosen?'checked':''}><span>${String.fromCharCode(65+j)}. ${esc(o)}</span></label>`;
-      }).join('') + '</div>';
-    } else if (q.type === 'tf') {
-      body = '<div class="exam-opts">' + [true, false].map(v => {
-        const chosen = ua === v;
+      }).join('')+'</div>';
+    }else if(q.type==='tf'){
+      body='<div class="exam-opts">'+[true,false].map(v=>{
+        const chosen=ua===v;
         return `<label class="exam-opt${chosen?' selected':''}"><input type="radio" name="examq" value="${v}" ${chosen?'checked':''}><span>${v?'Vrai':'Faux'}</span></label>`;
-      }).join('') + '</div>';
-    } else {
-      body = `<input type="text" id="examShortInput" placeholder="Ta réponse…" value="${esc(ua||'')}">`;
+      }).join('')+'</div>';
+    }else{
+      body=`<input type="text" id="examShortInput" placeholder="Ta réponse…" value="${esc(ua||'')}">`;
     }
-    $('examBody').innerHTML = `<div class="exam-q"><div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div><h3>${esc(q.text)}</h3>${body}</div><div class="exam-nav"><div class="dots">${dotsHtml}</div></div>`;
-    $('examActionsBar').innerHTML = `<div class="progress-info">Question <b>${i+1}</b>/${total} · <b>${answered}</b> répondue(s)</div><div style="display:flex;gap:8px"><button type="button" class="secondary" id="examPrevBtn" ${i===0?'disabled':''}>← Précédent</button>${i<total-1?`<button type="button" id="examNextBtn">Suivant →</button>`:`<button type="button" class="success" id="examSubmitBtn">✓ Soumettre</button>`}${i<total-1?`<button type="button" class="ghost" id="examSubmitBtn2">Soumettre</button>`:''}</div>`;
+    $('examBody').innerHTML=`<div class="exam-q"><div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div><h3>${esc(q.text)}</h3>${body}</div><div class="exam-nav"><div class="dots">${dotsHtml}</div></div>`;
+    $('examActionsBar').innerHTML=`<div class="progress-info">Question <b>${i+1}</b>/${total} · <b>${answered}</b> répondue(s)</div><div style="display:flex;gap:8px"><button type="button" class="secondary" id="examPrevBtn" ${i===0?'disabled':''}>← Précédent</button>${i<total-1?`<button type="button" id="examNextBtn">Suivant →</button>`:`<button type="button" class="success" id="examSubmitBtn">✓ Soumettre</button>`}${i<total-1?`<button type="button" class="ghost" id="examSubmitBtn2">Soumettre</button>`:''}</div>`;
 
-    if ($('examPrevBtn')) $('examPrevBtn').onclick = () => { captureCurrentAnswer(); examState.current--; renderExam(); };
-    if ($('examNextBtn')) $('examNextBtn').onclick = () => { captureCurrentAnswer(); examState.current++; renderExam(); };
-    if ($('examSubmitBtn')) $('examSubmitBtn').onclick = submitExam;
-    if ($('examSubmitBtn2')) $('examSubmitBtn2').onclick = submitExam;
+    if($('examPrevBtn'))$('examPrevBtn').onclick=()=>{captureCurrentAnswer();examState.current--;renderExam()};
+    if($('examNextBtn'))$('examNextBtn').onclick=()=>{captureCurrentAnswer();examState.current++;renderExam()};
+    if($('examSubmitBtn'))$('examSubmitBtn').onclick=submitExam;
+    if($('examSubmitBtn2'))$('examSubmitBtn2').onclick=submitExam;
 
-    document.querySelectorAll('#examBody .exam-opt input').forEach(inp => {
-      inp.addEventListener('change', () => {
-        const q = examState.questions[examState.current];
-        if (q.type === 'mcq_multi') examState.answers[examState.current] = [...document.querySelectorAll('#examBody input[name="examq"]:checked')].map(x => Number(x.value));
-        else if (q.type === 'tf') examState.answers[examState.current] = inp.value === 'true';
-        else examState.answers[examState.current] = Number(inp.value);
-        document.querySelectorAll('#examBody .exam-opt').forEach(el => el.classList.remove('selected'));
-        document.querySelectorAll('#examBody input[name="examq"]:checked').forEach(x => x.closest('.exam-opt').classList.add('selected'));
+    document.querySelectorAll('#examBody .exam-opt input').forEach(inp=>{
+      inp.addEventListener('change',()=>{
+        const q=examState.questions[examState.current];
+        if(q.type==='mcq_multi')examState.answers[examState.current]=[...document.querySelectorAll('#examBody input[name="examq"]:checked')].map(x=>Number(x.value));
+        else if(q.type==='tf')examState.answers[examState.current]=inp.value==='true';
+        else examState.answers[examState.current]=Number(inp.value);
+        document.querySelectorAll('#examBody .exam-opt').forEach(el=>el.classList.remove('selected'));
+        document.querySelectorAll('#examBody input[name="examq"]:checked').forEach(x=>x.closest('.exam-opt').classList.add('selected'));
       });
     });
-    if ($('examShortInput')) $('examShortInput').addEventListener('input', e => { examState.answers[examState.current] = e.target.value; });
+    if($('examShortInput'))$('examShortInput').addEventListener('input',e=>{examState.answers[examState.current]=e.target.value});
   }
-  document.querySelectorAll('#examBody .dot').forEach(d => {
-    d.onclick = () => { if (examState.submitted) return; captureCurrentAnswer(); examState.current = Number(d.dataset.goto); renderExam(); };
+  document.querySelectorAll('#examBody .dot').forEach(d=>{
+    d.onclick=()=>{if(examState.submitted)return;captureCurrentAnswer();examState.current=Number(d.dataset.goto);renderExam()};
   });
 }
 function captureCurrentAnswer(){
-  if (!examState || examState.submitted) return;
-  const q = examState.questions[examState.current];
-  if (q.type === 'short') { const inp = $('examShortInput'); if (inp) examState.answers[examState.current] = inp.value; }
+  if(!examState||examState.submitted)return;
+  const q=examState.questions[examState.current];
+  if(q.type==='short'){const inp=$('examShortInput');if(inp)examState.answers[examState.current]=inp.value}
 }
-function isAnswerCorrect(q, ua){
-  if (!hasKey(q) || ua === null || ua === undefined) return false;
-  if (q.type === 'mcq') return ua === q.correct;
-  if (q.type === 'mcq_multi') { const c = Array.isArray(ua) ? [...ua].sort() : []; const e = (Array.isArray(q.correct) ? q.correct : [q.correct]).slice().sort(); return c.length === e.length && c.every((v,j)=>v===e[j]); }
-  if (q.type === 'tf') return ua === q.correct;
-  if (q.type === 'short') return String(ua).trim().toLowerCase() === String(q.expected).toLowerCase();
+function isAnswerCorrect(q,ua){
+  if(!hasKey(q)||ua===null||ua===undefined)return false;
+  if(q.type==='mcq')return ua===q.correct;
+  if(q.type==='mcq_multi'){const c=Array.isArray(ua)?[...ua].sort():[];const e=(Array.isArray(q.correct)?q.correct:[q.correct]).slice().sort();return c.length===e.length&&c.every((v,j)=>v===e[j])}
+  if(q.type==='tf')return ua===q.correct;
+  if(q.type==='short')return String(ua).trim().toLowerCase()===String(q.expected).toLowerCase();
   return false;
 }
 function submitExam(){
-  if (!examState) return;
+  if(!examState)return;
   captureCurrentAnswer();
-  const unanswered = examState.answers.filter(a => a === null || (typeof a === 'string' && a.trim() === '')).length;
-  if (unanswered > 0 && !confirm(`${unanswered} sans réponse. Soumettre ?`)) return;
-  examState.submitted = true;
+  const unanswered=examState.answers.filter(a=>a===null||(typeof a==='string'&&a.trim()==='')).length;
+  if(unanswered>0&&!confirm(`${unanswered} sans réponse. Soumettre ?`))return;
+  examState.submitted=true;
 
-  if (examState.isReview) {
-    examState.questions.forEach((q, i) => {
-      const key = q._fsrsKey || fsrsCardKey(q);
-      const ok = isAnswerCorrect(q, examState.answers[i]);
-      const grade = ok ? 3 : 1;
-      fsrsCards[key] = fsrsReview(fsrsCards[key], grade);
+  if(examState.isReview){
+    examState.questions.forEach((q,i)=>{
+      const key=q._fsrsKey||fsrsCardKey(q);
+      const ok=isAnswerCorrect(q,examState.answers[i]);
+      const grade=ok?3:1;
+      fsrsCards[key]=fsrsReview(fsrsCards[key],grade);
     });
     saveFsrs();
-  } else {
-    const scorable = examState.questions.filter(hasKey).length;
-    const correctCount = examState.questions.reduce((a,q,i) => a + (hasKey(q) && isAnswerCorrect(q, examState.answers[i]) ? 1 : 0), 0);
-    const score = scorable ? 20*correctCount/scorable : 0;
-    historyData.push({title: examState.title, subject: examState.subject, score, correct: correctCount, total: scorable, date: new Date().toLocaleString('fr-FR')});
-    if (!quizzes.some(q => q.title === examState.title)) {
-      quizzes.push({title: examState.title, subject: examState.subject, questions: examState.questions.map(q => ({...q, options: q.options ? [...q.options] : undefined})), created: new Date().toISOString()});
+  }else{
+    const scorable=examState.questions.filter(hasKey).length;
+    const correctCount=examState.questions.reduce((a,q,i)=>a+(hasKey(q)&&isAnswerCorrect(q,examState.answers[i])?1:0),0);
+    const score=scorable?20*correctCount/scorable:0;
+    historyData.push({title:examState.title,subject:examState.subject,score,correct:correctCount,total:scorable,date:new Date().toLocaleString('fr-FR')});
+    if(!quizzes.some(q=>q.title===examState.title)){
+      quizzes.push({title:examState.title,subject:examState.subject,questions:examState.questions.map(q=>({...q,options:q.options?[...q.options]:undefined})),created:new Date().toISOString()});
     }
     persist();
   }
   renderExam();
 }
+$('startReviewBtn').onclick=startReviewSession;
+$('refreshReviewBtn').onclick=()=>{renderFsrsStats();renderFsrsList()};
 
-$('startReviewBtn').onclick = startReviewSession;
-$('refreshReviewBtn').onclick = () => { renderFsrsStats(); renderFsrsList(); };
-
-$('shareQuiz').onclick = () => {
-  const idx = Number($('quizPicker').value);
-  if (!quizzes[idx]) { alert('Choisis un questionnaire.'); return; }
-  const blob = new Blob([JSON.stringify(quizzes[idx], null, 2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'compoTest-' + quizzes[idx].title.replace(/[^a-z0-9]/gi,'-') + '.json'; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+$('shareQuiz').onclick=()=>{
+  const idx=Number($('quizPicker').value);
+  if(!quizzes[idx]){alert('Choisis un questionnaire.');return}
+  const blob=new Blob([JSON.stringify(quizzes[idx],null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='compoTest-'+quizzes[idx].title.replace(/[^a-z0-9]/gi,'-')+'.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
-$('exportHistory').onclick = () => {
-  const blob = new Blob([JSON.stringify({quizzes, history: historyData}, null, 2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'compoTest-historique.json'; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+$('exportHistory').onclick=()=>{
+  const blob=new Blob([JSON.stringify({quizzes,history:historyData},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='compoTest-historique.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
-$('clearData').onclick = () => {
-  if (confirm('Effacer tous les tests, résultats et cartes FSRS ?')) {
-    quizzes = []; historyData = []; drafts = []; fsrsCards = {};
+$('clearData').onclick=()=>{
+  if(confirm('Effacer tous les tests, résultats et cartes FSRS ?')){
+    quizzes=[];historyData=[];drafts=[];fsrsCards={};
     localStorage.removeItem('compo_fsrs');
     persist();
-    $('examArea').innerHTML = '';
-    renderFsrsStats(); renderFsrsList();
+    $('examArea').innerHTML='';
+    renderFsrsStats();renderFsrsList();
   }
 };
-$('startQuiz').onclick = () => {
-  const idx = Number($('quizPicker').value);
-  const quiz = quizzes[idx];
-  if (!quiz) { alert('Choisis un questionnaire.'); return; }
-  openExamView({title: quiz.title, subject: quiz.subject, questions: quiz.questions.map(q => ({...q, options: q.options ? [...q.options] : undefined}))});
+$('startQuiz').onclick=()=>{
+  const idx=Number($('quizPicker').value);
+  const quiz=quizzes[idx];
+  if(!quiz){alert('Choisis un questionnaire.');return}
+  openExamView({title:quiz.title,subject:quiz.subject,questions:quiz.questions.map(q=>({...q,options:q.options?[...q.options]:undefined}))});
 };
 
 renderAll();
