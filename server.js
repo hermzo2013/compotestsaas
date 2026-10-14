@@ -8,13 +8,12 @@ const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '2mb' }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
 app.get('/api/health', (_req, res) => res.json({ ok: true, aiConfigured: Boolean(process.env.AI_API_KEY), authConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY), adminConfigured: Boolean(process.env.ADMIN_EMAIL && process.env.SUPABASE_SERVICE_ROLE_KEY) }));
 
-// Verify access tokens with Supabase Auth. The service-role key is only used by server-side admin routes.
 async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return res.status(401).json({ error: 'Connecte-toi à CompoTest pour utiliser cette fonction.' });
@@ -30,7 +29,7 @@ async function authenticate(req, res, next) {
     const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
     const allowedEmails = (process.env.ALLOWED_USER_EMAILS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
     const hasAppAccess = user.app_metadata?.compotest_access === true;
-    if (email !== adminEmail && !allowedEmails.includes(email) && !hasAppAccess) return res.status(403).json({ error: 'Ce compte ne figure pas parmi les utilisateurs autorisés par l’administrateur.' });
+    if (email !== adminEmail && !allowedEmails.includes(email) && !hasAppAccess) return res.status(403).json({ error: 'Ce compte ne figure pas parmi les utilisateurs autorisés.' });
     req.user = { id: user.id, email: user.email, isAdmin: Boolean(adminEmail && email === adminEmail) };
     next();
   } catch {
@@ -39,7 +38,6 @@ async function authenticate(req, res, next) {
 }
 app.use('/api', (req, res, next) => req.path === '/health' ? next() : authenticate(req, res, next));
 
-// Administration des comptes. La clé service_role reste exclusivement côté serveur (Render Environment).
 function requireAdmin(req, res, next) {
   if (!req.user?.isAdmin) return res.status(403).json({ error: 'Accès réservé à l’administrateur CompoTest.' });
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return res.status(503).json({ error: 'La clé administrative Supabase manque dans les variables Render.' });
@@ -111,7 +109,6 @@ app.patch('/api/admin/users/:id/status', requireAdmin, async (req, res) => {
     res.status(error.status || 502).json({ error: 'Impossible de modifier le statut du compte.' });
   }
 });
-// Réinitialiser le mot de passe d'un utilisateur (admin uniquement, sans demander l'ancien mot de passe)
 app.patch('/api/admin/users/:id/password', requireAdmin, async (req, res) => {
   const id = String(req.params.id || '');
   const password = String(req.body?.password || '');
@@ -120,7 +117,7 @@ app.patch('/api/admin/users/:id/password', requireAdmin, async (req, res) => {
   try {
     const current = await supabaseAdmin(`users/${encodeURIComponent(id)}`);
     if (String(current.email || '').toLowerCase() === String(process.env.ADMIN_EMAIL || '').trim().toLowerCase()) {
-      return res.status(400).json({ error: 'Utilise le bouton « Changer mon mot de passe » dans l’en-tête pour modifier ton propre mot de passe administrateur.' });
+      return res.status(400).json({ error: 'Utilise le bouton « Changer mon mot de passe » dans l’en-tête.' });
     }
     await supabaseAdmin(`users/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify({ password }) });
     res.json({ ok: true });
@@ -143,10 +140,9 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// Best-effort per-user daily caps. They reset when this free server restarts; provider limits remain the final guardrail.
 const usage = new Map();
 function underDailyLimit(req, res, next) {
-  const limit = req.path === '/generate-questions' ? 5 : 10;
+  const limit = req.path === '/generate-questions' ? 10 : 10;
   const day = new Date().toISOString().slice(0, 10);
   const key = `${req.user.id}:${day}:${req.path}`;
   const used = usage.get(key) || 0;
@@ -165,7 +161,7 @@ const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
   const client = aiClient();
-  if (!client) return res.status(503).json({ error: 'IA désactivée : ajoute une clé d’offre gratuite dans AI_API_KEY côté serveur.' });
+  if (!client) return res.status(503).json({ error: 'IA désactivée : ajoute une clé dans AI_API_KEY côté serveur.' });
   const { subject = 'Matière non précisée', questions } = req.body || {};
   if (!Array.isArray(questions) || questions.length === 0 || questions.length > 100) return res.status(400).json({ error: 'Fournis entre 1 et 100 questions.' });
   const safeQuestions = questions.map((q, i) => ({
@@ -178,7 +174,7 @@ app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
     const response = await client.chat.completions.create({
       model: modelName(), temperature: 0.1, response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: `Tu aides à préparer des questionnaires pédagogiques. Matière : ${String(subject).slice(0,200)}. Réponds en français, avec prudence. Ne devine pas si l'énoncé manque d'informations : dans ce cas indique correct:null, confidence:0 et warning. Pour mcq, correct est un index d'option commençant à 0. Pour mcq_multi, correct est un tableau d'indices. Pour tf, correct est true ou false. Pour short, correct est une chaîne de réponse. confidence est une estimation entre 0 et 1, pas une garantie. Donne une explication concise et signale toute ambiguïté. Le JSON doit respecter cette forme : {"answers":[{"id":"...","correct":0,"explanation":"...","confidence":0.75,"warning":"..."}]}.` },
+        { role: 'system', content: `Tu aides à préparer des questionnaires. Matière : ${String(subject).slice(0,200)}. Réponds en français. Pour mcq, correct = index zéro-based. Pour mcq_multi, correct = tableau d'indices. Pour tf, correct = booléen. Pour short, correct = chaîne. confidence entre 0 et 1. Format : {"answers":[{"id":"...","correct":...,"explanation":"...","confidence":0.75,"warning":"..."}]}.` },
         { role: 'user', content: JSON.stringify({ questions: safeQuestions }) }
       ]
     });
@@ -195,47 +191,150 @@ app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
     res.json({ answers, model: modelName() });
   } catch (error) {
     console.error('Erreur API IA:', error?.message || error);
-    res.status(502).json({ error: 'Échec de la génération IA ou quota gratuit épuisé. Réessaie plus tard.' });
+    res.status(502).json({ error: 'Échec de la génération IA ou quota épuisé.' });
   }
 });
 
+// Génération améliorée : multi-passes + vérification de couverture
 app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
   const client = aiClient();
-  if (!client) return res.status(503).json({ error: 'IA désactivée : ajoute une clé d’offre gratuite dans AI_API_KEY côté serveur.' });
+  if (!client) return res.status(503).json({ error: 'IA désactivée : ajoute une clé dans AI_API_KEY côté serveur.' });
   const { subject = 'Matière non précisée', title = 'Cours importé', sourceText, count = 20 } = req.body || {};
   const text = typeof sourceText === 'string' ? sourceText.trim() : '';
   const n = Number(count);
-  if (text.length < 80) return res.status(400).json({ error: 'Le texte du cours est trop court. Importe un document et extrais son texte avant de générer les questions.' });
-  if (text.length > 40000) return res.status(413).json({ error: 'Le texte est trop long pour une seule génération (maximum 40 000 caractères). Essaie avec un extrait plus court du cours.' });
+  if (text.length < 80) return res.status(400).json({ error: 'Le texte du cours est trop court (minimum 80 caractères).' });
+  if (text.length > 60000) return res.status(413).json({ error: 'Le texte est trop long (maximum 60 000 caractères).' });
   if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Choisis un nombre de questions entre 1 et 100.' });
+
   try {
-    const response = await client.chat.completions.create({
-      model: modelName(), temperature: 0.2, response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: `Tu es un assistant pédagogique. Génère exactement ${n} questions en français, uniquement à partir du contenu source fourni. N'ajoute pas de faits absents du cours. Si le contenu ne permet pas de soutenir une question ou sa réponse, ne l'invente pas; génère autant de questions fiables que possible et indique les limites dans le champ note. Mélange ces formats : mcq (une seule bonne réponse), mcq_multi (plusieurs bonnes réponses), tf (Vrai/Faux). Répartition souhaitée : environ un tiers de chaque format, sans obligation stricte si le contenu ne s'y prête pas. Pour mcq, options contient 4 choix et correct est l'index zéro-based de la bonne réponse. Pour mcq_multi, options contient 4 choix et correct est un tableau d'au moins 2 indices distincts. Pour tf, options doit être [] et correct est un booléen (true = Vrai). Chaque question doit être claire, sans ambiguïté, sans doublons et sans négation piège. L'explication doit justifier la réponse en se référant au cours. Réponds en JSON valide : {"questions":[{"type":"mcq|mcq_multi|tf","text":"...","options":["..."],"correct":0,"explanation":"...","source_excerpt":"courte citation/paraphrase fidèle au cours"}],"note":"..."}. Pour tf, correct est true ou false et options [].` },
-        { role: 'user', content: JSON.stringify({ subject: String(subject).slice(0,200), title: String(title).slice(0,200), sourceText: text }) }
-      ]
+    const systemPrompt = `Tu es un assistant pédagogique expert. Tu vas générer des questions de quiz à partir d'un texte de cours en français.
+
+INSTRUCTIONS CRITIQUES :
+1. Lis ATTENTIVEMENT tout le texte fourni, du début à la fin.
+2. Identifie TOUTES les notions importantes : définitions, classifications, mécanismes, chiffres clés, exceptions, exemples, propriétés, fonctions, causes et conséquences.
+3. Génère exactement ${n} questions couvrant un MAXIMUM de notions différentes. Ne répète pas deux fois la même notion.
+4. Répartis les questions sur tout le texte (début, milieu, fin) — ne te concentre pas sur les premiers paragraphes.
+5. Si le texte contient des listes, des tableaux ou des énumérations, tu DOIS générer au moins une question par élément important.
+6. N'invente JAMAIS de faits absents du cours. Si tu manques de matière pour ${n} questions, génère moins et signale-le dans "note".
+
+TYPES DE QUESTIONS :
+- "mcq" : QCM 1 bonne réponse (4 options, correct = index 0-3)
+- "mcq_multi" : QCM plusieurs bonnes réponses (4 options, correct = tableau d'au moins 2 indices)
+- "tf" : Vrai/Faux (options = [], correct = true/false)
+Répartition : 40% mcq, 30% mcq_multi, 30% tf.
+
+POUR CHAQUE QUESTION :
+- text : énoncé clair, précis, sans ambiguïté, sans piège
+- options : 4 propositions (sauf tf = [])
+- correct : bonne réponse selon le type
+- explanation : 1-3 phrases justifiant la réponse en citant le cours
+- source_excerpt : courte phrase du cours dont la question est tirée (10-25 mots)
+
+FORMAT JSON OBLIGATOIRE :
+{"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"note":"...","coverage_summary":"Résumé des parties du cours couvertes"}`;
+
+    // Découpe le texte en morceaux si trop long (max ~12000 chars par passe)
+    const chunks = [];
+    const maxChunkSize = 12000;
+    if (text.length <= maxChunkSize) {
+      chunks.push(text);
+    } else {
+      // Découpe intelligente par paragraphes
+      const paragraphs = text.split(/\n\s*\n/);
+      let current = '';
+      for (const p of paragraphs) {
+        if ((current + '\n\n' + p).length > maxChunkSize && current.length > 0) {
+          chunks.push(current);
+          current = p;
+        } else {
+          current = current ? current + '\n\n' + p : p;
+        }
+      }
+      if (current) chunks.push(current);
+    }
+
+    // Répartit le nombre de questions sur les chunks
+    const questionsPerChunk = Math.ceil(n / chunks.length);
+    const allQuestions = [];
+    const coverageNotes = [];
+
+    for (let ci = 0; ci < chunks.length; ci++) {
+      const chunk = chunks[ci];
+      const remaining = n - allQuestions.length;
+      if (remaining <= 0) break;
+      const chunkCount = Math.min(questionsPerChunk, remaining);
+
+      const userPrompt = `Cours complet (partie ${ci + 1}/${chunks.length}) :
+
+"""
+${chunk}
+"""
+
+Génère exactement ${chunkCount} questions en respectant les instructions système.`;
+
+      const response = await client.chat.completions.create({
+        model: modelName(), temperature: 0.3, response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ]
+      });
+
+      const content = response.choices?.[0]?.message?.content;
+      if (!content) continue;
+      const parsed = JSON.parse(content);
+      const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
+      if (parsed.note) coverageNotes.push(`Partie ${ci + 1}: ${parsed.note}`);
+
+      for (const q of raw) {
+        const type = ['mcq','mcq_multi','tf'].includes(q.type) ? q.type : null;
+        const text = String(q.text || '').trim().slice(0, 2000);
+        const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => String(x).slice(0, 500)) : [];
+        let correct = q.correct;
+        if (type === 'tf') { if (typeof correct !== 'boolean') continue; }
+        else if (type === 'mcq') { if (!Number.isInteger(correct) || correct < 0 || correct >= options.length || options.length < 2) continue; }
+        else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2 || correct.some(x => !Number.isInteger(x) || x < 0 || x >= options.length) || options.length < 3) continue; correct = [...new Set(correct)]; }
+        if (!type || !text) continue;
+        // Anti-doublon simple
+        const dup = allQuestions.some(existing => {
+          const a = existing.text.toLowerCase();
+          const b = text.toLowerCase();
+          // Similarité grossière : si 80% des mots sont communs, c'est un doublon
+          const wa = new Set(a.split(/\s+/).filter(w => w.length > 3));
+          const wb = new Set(b.split(/\s+/).filter(w => w.length > 3));
+          if (wa.size === 0 || wb.size === 0) return false;
+          let common = 0;
+          for (const w of wa) if (wb.has(w)) common++;
+          return common / Math.max(wa.size, wb.size) > 0.8;
+        });
+        if (dup) continue;
+
+        allQuestions.push({
+          id: `gen-${Date.now()}-${allQuestions.length}`,
+          number: allQuestions.length + 1,
+          type, text,
+          options: type === 'tf' ? [] : options,
+          correct,
+          explanation: String(q.explanation || '').slice(0, 1500),
+          sourceExcerpt: String(q.source_excerpt || '').slice(0, 500),
+          source: 'ai-generated',
+          confidence: null
+        });
+        if (allQuestions.length >= n) break;
+      }
+    }
+
+    if (!allQuestions.length) return res.status(502).json({ error: 'Aucune question exploitable n’a été produite. Essaie avec un texte plus structuré ou plus long.' });
+
+    res.json({
+      questions: allQuestions,
+      note: coverageNotes.join(' ') || '',
+      coverage: `Générées : ${allQuestions.length}/${n} questions sur ${chunks.length} passe(s).`,
+      model: modelName()
     });
-    const content = response.choices?.[0]?.message?.content;
-    if (!content) throw new Error('Le modèle n’a renvoyé aucun contenu.');
-    const parsed = JSON.parse(content);
-    const rawQuestions = Array.isArray(parsed.questions) ? parsed.questions : [];
-    const questions = rawQuestions.slice(0, n).map((q, i) => {
-      const type = ['mcq','mcq_multi','tf'].includes(q.type) ? q.type : null;
-      const text = String(q.text || '').trim().slice(0, 2000);
-      const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => String(x).slice(0, 500)) : [];
-      let correct = q.correct;
-      if (type === 'tf') { if (typeof correct !== 'boolean') return null; }
-      else if (type === 'mcq') { if (!Number.isInteger(correct) || correct < 0 || correct >= options.length || options.length < 2) return null; }
-      else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2 || correct.some(x => !Number.isInteger(x) || x < 0 || x >= options.length) || options.length < 3) return null; correct = [...new Set(correct)]; }
-      if (!type || !text) return null;
-      return { id: `gen-${Date.now()}-${i}`, number: i + 1, type, text, options: type === 'tf' ? [] : options, correct, explanation: String(q.explanation || '').slice(0, 1500), sourceExcerpt: String(q.source_excerpt || '').slice(0, 500), source: 'ai-generated', confidence: null };
-    }).filter(Boolean);
-    if (!questions.length) return res.status(502).json({ error: 'Aucune question exploitable n’a été produite. Essaie avec un texte de cours plus complet.' });
-    res.json({ questions, note: String(parsed.note || '').slice(0, 1000), model: modelName() });
   } catch (error) {
-    console.error('Erreur génération de questions:', error?.message || error);
-    res.status(502).json({ error: 'La génération a échoué ou le quota gratuit est épuisé. Vérifie la configuration de l’API et réessaie.' });
+    console.error('Erreur génération:', error?.message || error);
+    res.status(502).json({ error: 'La génération a échoué. Vérifie la configuration ou réessaie.' });
   }
 });
 
