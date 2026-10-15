@@ -125,7 +125,7 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
 
 const usage = new Map();
 function underDailyLimit(req, res, next) {
-  const limit = 20;
+  const limit = 30;
   const day = new Date().toISOString().slice(0, 10);
   const key = `${req.user.id}:${day}:${req.path}`;
   const used = usage.get(key) || 0;
@@ -138,49 +138,72 @@ function aiClient() {
   return new OpenAI({
     apiKey: process.env.AI_API_KEY,
     baseURL: process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1',
-    timeout: 90000, // 90 secondes max par appel
-    maxRetries: 0    // pas de retry, on gère nous-mêmes
+    timeout: 120000,
+    maxRetries: 1
   });
 }
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
-// ============ ANALYSE DE COURS OPTIMISÉE ============
-// Une seule passe IA qui extrait les notions ET génère les questions simultanément
+// Nettoie le texte reçu (retire les caractères parasites PDF)
+function sanitizeText(text) {
+  if (!text) return '';
+  let t = String(text);
+  // Retire les lignes polluées
+  t = t.split('\n').map(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return '';
+    const normal = (trimmed.match(/[a-zA-ZÀ-ÿ0-9\s.,;:!?'"()\-]/g) || []).length;
+    if (trimmed.length > 5 && normal / trimmed.length < 0.3) return '';
+    return line;
+  }).filter(Boolean).join('\n');
+  // Blocs exotiques
+  t = t.replace(/[¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ]{8,}/g, '');
+  // Caractères de contrôle
+  t = t.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  // Unicode exotique
+  t = t.replace(/[\u2000-\u206F\uFFF0-\uFFFF]/g, '');
+  // Espaces multiples
+  t = t.replace(/[ \t]{2,}/g, ' ');
+  t = t.replace(/\n{3,}/g, '\n\n');
+  return t.trim();
+}
+
+// ============ ANALYSE DE COURS (avec nettoyage) ============
 app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
   const { subject = 'Matière', title = 'Cours', sourceText, count = 20 } = req.body || {};
-  const text = String(sourceText || '').trim();
+  const text = sanitizeText(String(sourceText || '').trim());
   const n = Number(count);
 
-  if (text.length < 150) return res.status(400).json({ error: 'Texte trop court (min 150 caractères).' });
+  if (text.length < 150) return res.status(400).json({ error: 'Texte trop court après nettoyage (min 150 caractères). Le PDF contient peut-être trop de caractères parasites.' });
   if (text.length > 80000) return res.status(413).json({ error: 'Texte trop long (max 80 000 caractères).' });
   if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Nombre entre 1 et 100.' });
 
   try {
-    // Prompt unique qui fait tout en un seul appel
-    const systemPrompt = `Tu es un assistant pédagogique expert. Tu vas lire un cours en français et produire un questionnaire QCM complet.
+    const systemPrompt = `Tu es un assistant pédagogique expert en immunologie et sciences médicales. Tu vas lire un cours en français et produire un questionnaire QCM complet.
 
-MÉTHODE :
-1. Lis intégralement le texte fourni.
-2. Identifie TOUTES les notions testables : définitions, classifications, mécanismes, chiffres clés, exceptions, causes/conséquences, propriétés.
-3. Génère exactement ${n} questions couvrant un MAXIMUM de notions différentes.
-4. Répartis les questions sur tout le texte (début, milieu, fin).
-5. N'invente JAMAIS de faits absents du cours. Si tu manques de matière pour ${n} questions, génère moins et signale-le dans "note".
+MÉTHODE STRICTE :
+1. Lis INTÉGRALEMENT le texte fourni, du début à la fin.
+2. Identifie TOUTES les notions testables : définitions, classifications, mécanismes, chiffres clés, exceptions, causes/conséquences, propriétés, indications cliniques, valeurs seuils.
+3. Génère EXACTEMENT ${n} questions couvrant un MAXIMUM de notions différentes.
+4. Répartis les questions sur TOUT le texte (début, milieu, fin). Ne te concentre pas sur les premières pages.
+5. N'invente JAMAIS de faits absents du cours.
+6. Si le cours liste des éléments ("3 types de...", "les 5 classes..."), tu DOIS générer une question pour chaque élément important.
 
-RÉPARTITION :
-- 40% de type "mcq" (QCM 1 bonne réponse, 4 options, correct = index 0-3)
-- 30% de type "mcq_multi" (QCM multi, 4 options, correct = tableau d'au moins 2 index)
-- 30% de type "tf" (Vrai/Faux, options = [], correct = true ou false)
+TYPES DE QUESTIONS :
+- 40% "mcq" : QCM une bonne réponse, 4 options, correct = index 0-3
+- 30% "mcq_multi" : QCM plusieurs bonnes réponses, 4 options, correct = tableau d'au moins 2 indices
+- 30% "tf" : Vrai/Faux, options = [], correct = true ou false
 
-RÈGLES DE QUALITÉ :
-- Chaque question teste UNE seule notion claire
-- Les mauvaises options doivent être plausibles
-- Pas de doublons (ne pose pas 2 questions sur la même notion)
-- Explication : 1-3 phrases justifiant la bonne réponse
-- Source : courte phrase du cours dont vient la question
+QUALITÉ :
+- Énoncé clair, précis, sans ambiguïté
+- Options plausibles mais une seule correcte
+- Pas de doublons
+- Explication concise (1-3 phrases) justifiant la réponse
+- "source_excerpt" : courte phrase du cours dont vient la question
 
-FORMAT JSON STRICT (rien d'autre, pas de texte avant ou après) :
+FORMAT JSON STRICT :
 {"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"notions_covered":["notion 1","notion 2"],"summary":"Résumé du cours en 2 phrases","note":"..."}`;
 
     const response = await client.chat.completions.create({
@@ -189,7 +212,7 @@ FORMAT JSON STRICT (rien d'autre, pas de texte avant ou après) :
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Matière : ${String(subject).slice(0,200)}\nTitre : ${String(title).slice(0,200)}\n\nCOURS :\n"""\n${text}\n"""\n\nGénère ${n} questions.` }
+        { role: 'user', content: `Matière : ${String(subject).slice(0,200)}\nTitre : ${String(title).slice(0,200)}\n\nCOURS :\n"""\n${text}\n"""\n\nGénère ${n} questions couvrant l'ensemble du cours.` }
       ]
     });
 
@@ -220,7 +243,6 @@ FORMAT JSON STRICT (rien d'autre, pas de texte avant ou après) :
 
     if (!questions.length) throw new Error('Aucune question valide générée.');
 
-    // Reconstruit une liste de notions factices à partir des sources des questions
     const notionsFromQuestions = [...new Set(questions.map(q => q.sourceExcerpt).filter(Boolean))].slice(0, 30);
 
     res.json({
@@ -280,15 +302,10 @@ app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
 });
 
 app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
-  // Réutilise analyze-course pour éviter la duplication
-  req.url = '/analyze-course';
-  const { subject = 'Matière', title = 'Cours', sourceText, count = 20 } = req.body || {};
-  req.body = { subject, title, sourceText, count };
-  // Appel interne : renvoie simplement en réutilisant la route ci-dessus
-  // Pour simplifier, on appelle la même logique ici
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA désactivée.' });
-  const text = String(sourceText || '').trim();
+  const { subject = 'Matière', title = 'Cours', sourceText, count = 20 } = req.body || {};
+  const text = sanitizeText(String(sourceText || '').trim());
   const n = Number(count);
   if (text.length < 80) return res.status(400).json({ error: 'Texte trop court.' });
   if (text.length > 60000) return res.status(413).json({ error: 'Texte trop long.' });
@@ -299,9 +316,9 @@ app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
 
 Répartition : 40% mcq (4 options, correct=index), 30% mcq_multi (4 options, ≥2 corrects), 30% tf (options=[], correct=bool).
 
-Format JSON : {"questions":[{"type":"...","text":"...","options":[...],"correct":...,"explanation":"...","source_excerpt":"..."}],"note":"..."}
+Lis TOUT le texte. Couvre un maximum de notions. N'invente rien.
 
-N'invente rien. Couvre tout le texte.`;
+Format JSON : {"questions":[{"type":"...","text":"...","options":[...],"correct":...,"explanation":"...","source_excerpt":"..."}],"note":"..."}`;
 
     const response = await client.chat.completions.create({
       model: modelName(), temperature: 0.3, response_format: { type: 'json_object' },
