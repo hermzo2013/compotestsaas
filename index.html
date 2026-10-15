@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CompoTest — Import intelligent de questionnaires</title>
+<link rel="icon" type="image/png" href="/favicon.png" />
+<link rel="apple-touch-icon" href="/favicon.png" />
 <style>
 :root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c;--purple:#7c3aed}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
@@ -253,7 +255,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
     <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
 
     <h3 style="margin:0 0 6px;font-size:16px">✨ Générer un questionnaire depuis le cours</h3>
-    <p class="small muted" style="margin-top:0">L'IA lit l'intégralité du texte et génère des questions couvrant un maximum de notions. Fonctionne aussi sur les cours rédigés sans questions numérotées.</p>
+    <p class="small muted" style="margin-top:0">L'IA lit l'intégralité du texte et génère des questions couvrant un maximum de notions.</p>
 
     <label for="genCount">Nombre de questions</label>
     <input id="genCount" type="number" min="1" max="100" value="20">
@@ -416,7 +418,7 @@ function typeName(q){return ({mcq:'QCM',mcq_multi:'QCM multi',tf:'Vrai/Faux',sho
 function hasKey(q){return q.type==='tf'?typeof q.correct==='boolean':q.type==='short'?Boolean(q.expected):Array.isArray(q.correct)?q.correct.length>0:Number.isInteger(q.correct)}
 function correctLabel(q){if(q.type==='tf')return q.correct===true?'Vrai':q.correct===false?'Faux':'?';if(q.type==='short')return q.expected||'?';if(Array.isArray(q.correct))return q.correct.map(i=>q.options?.[i]).filter(Boolean).join(' ; ')||'?';return q.options?.[q.correct]||'?'}
 
-// ================== NETTOYAGE DU TEXTE ==================
+// ================== NETTOYAGE ==================
 function cleanExtractedText(text){
   if(!text)return '';
   let cleaned=text;
@@ -504,7 +506,7 @@ function startReviewSession(){
   openExamViewFromState(reviewSession,true);
 }
 
-// ================== GÉNÉRATEUR LOCAL DE SECOURS ==================
+// ================== GÉNÉRATEUR LOCAL ==================
 function generateLocalQuestions(text,count){
   const cleaned=cleanExtractedText(text);
   if(!cleaned||cleaned.length<100)return [];
@@ -842,10 +844,7 @@ async function extractPdf(file){
   const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
   const pages=[];
   for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p);pages.push(pdfTextWithLines(await page.getTextContent()))}
-  const raw=pages.join('\n\n');
-  const cleaned=cleanExtractedText(raw);
-  console.log('PDF brut:',raw.length,'chars · Nettoyé:',cleaned.length,'chars');
-  return cleaned;
+  return cleanExtractedText(pages.join('\n\n'));
 }
 async function extractDocx(file){
   if(!window.JSZip)throw new Error('JSZip non chargé.');
@@ -925,7 +924,7 @@ function setSubjectFromText(){
   }
 }
 
-// ================== ANALYSE INTELLIGENTE ==================
+// ================== ANALYSE ==================
 let analysisTicker=null;
 async function analyzeDocument(){
   const rawOriginal=$('pdfText').value.trim();
@@ -954,7 +953,7 @@ async function analyzeDocument(){
   else if(numberedCount>=3){docType='mixed';typeLabel='📋 Document mixte'}
 
   $('docTypeBox').style.display='block';
-  $('docTypeBox').innerHTML=`<b>Type détecté :</b> ${typeLabel}<br><span class="small">${numberedCount} ligne(s) numérotée(s) · ${optionsCount} option(s) A/B/C/D · ${raw.length} caractères nets</span>`;
+  $('docTypeBox').innerHTML=`<b>Type détecté :</b> ${typeLabel}<br><span class="small">${numberedCount} ligne(s) numérotée(s) · ${optionsCount} option(s) · ${raw.length} caractères nets</span>`;
 
   if(docType==='numbered'||docType==='mixed'){
     const parsed=parseQuestions(raw);
@@ -1025,14 +1024,14 @@ async function analyzeDocument(){
     const localQuestions=generateLocalQuestions(raw,count);
     if(localQuestions.length){
       drafts=localQuestions;
-      $('analysisStatus').innerHTML=`⚠️ <b>Mode secours activé.</b> ${localQuestions.length} question(s) générée(s) localement.<br><span class="small muted">L'IA n'a pas répondu dans les 100 secondes. Ces questions sont basiques — vérifie-les. Pour de meilleures questions, réessaie dans quelques minutes quand le serveur IA est disponible.</span>`;
+      $('analysisStatus').innerHTML=`⚠️ <b>Mode secours activé.</b> ${localQuestions.length} question(s) générée(s) localement.<br><span class="small muted">L'IA n'a pas répondu dans les 100 secondes. Ces questions sont basiques — vérifie-les.</span>`;
       $('analysisDetail').style.display='block';
-      $('analysisDetail').innerHTML=`<h4>ℹ️ Mode secours</h4><p class="small muted" style="margin:0">Le serveur IA (Groq) n'a pas répondu à temps. Le générateur local a extrait ${localQuestions.length} questions directement du texte. Ces questions complètent des phrases ou vérifient du vrai/faux. Qualité basique mais utilisable.</p>`;
+      $('analysisDetail').innerHTML=`<h4>ℹ️ Mode secours</h4><p class="small muted" style="margin:0">Le serveur IA (Groq) n'a pas répondu à temps. Le générateur local a extrait ${localQuestions.length} questions directement du texte.</p>`;
       if(!$('quizTitle').value.trim())$('quizTitle').value='Questionnaire (mode secours)';
       $('startGeneratedExamBtn').style.display='inline-block';
       renderAll();
     }else{
-      $('analysisStatus').innerHTML=`❌ Impossible de générer des questions.<br><span class="small muted">Le texte est peut-être trop court, trop pollué ou mal structuré. Essaie avec un texte plus long ou réessaie plus tard.</span>`;
+      $('analysisStatus').innerHTML=`❌ Impossible de générer des questions.<br><span class="small muted">Texte trop court, trop pollué ou mal structuré.</span>`;
     }
   }
 
@@ -1042,13 +1041,12 @@ async function analyzeDocument(){
 $('analyzeBtn').onclick=analyzeDocument;
 $('parseTextBtn').onclick=analyzeDocument;
 
-// ================== GÉNÉRATION DIRECTE ==================
+// ================== GÉNÉRATION ==================
 let generationTicker=null;
 $('generateQuestionsBtn').onclick=async()=>{
-  const sourceTextRaw=$('pdfText').value.trim();
-  const sourceText=cleanExtractedText(sourceTextRaw);
+  const sourceText=cleanExtractedText($('pdfText').value.trim());
   const count=Number($('genCount').value);
-  if(sourceText.length<80){$('generationStatus').textContent='Texte trop court (min 80 caractères après nettoyage).';return}
+  if(sourceText.length<80){$('generationStatus').textContent='Texte trop court.';return}
   if(!Number.isInteger(count)||count<1||count>100){$('generationStatus').textContent='Nombre entre 1 et 100.';return}
   const btn=$('generateQuestionsBtn');btn.disabled=true;btn.textContent='Génération…';
   const startTime=Date.now();
