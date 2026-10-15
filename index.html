@@ -211,7 +211,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 <section class="tab-content active" data-content="import">
   <div class="panel">
     <h2 style="margin-top:0">📥 Importer un document et générer un questionnaire</h2>
-    <p class="muted">Formats supportés : <b>PDF</b>, <b>Word (.docx)</b>, <b>texte (.txt)</b>. Le document peut être un <b>questionnaire numéroté</b> ou un <b>cours rédigé</b> — le site détecte automatiquement le type et s'adapte.</p>
+    <p class="muted">Formats : <b>PDF</b>, <b>Word (.docx)</b>, <b>texte (.txt)</b>. Le site détecte automatiquement si c'est un questionnaire numéroté ou un cours rédigé, et s'adapte.</p>
 
     <div class="grid-2">
       <div>
@@ -220,7 +220,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
       </div>
       <div>
         <label for="quizSubject">Matière</label>
-        <input id="quizSubject" placeholder="Ex. Pharmacologie">
+        <input id="quizSubject" placeholder="Ex. Immunologie">
       </div>
     </div>
 
@@ -416,10 +416,29 @@ function typeName(q){return ({mcq:'QCM',mcq_multi:'QCM multi',tf:'Vrai/Faux',sho
 function hasKey(q){return q.type==='tf'?typeof q.correct==='boolean':q.type==='short'?Boolean(q.expected):Array.isArray(q.correct)?q.correct.length>0:Number.isInteger(q.correct)}
 function correctLabel(q){if(q.type==='tf')return q.correct===true?'Vrai':q.correct===false?'Faux':'?';if(q.type==='short')return q.expected||'?';if(Array.isArray(q.correct))return q.correct.map(i=>q.options?.[i]).filter(Boolean).join(' ; ')||'?';return q.options?.[q.correct]||'?'}
 
+// ================== NETTOYAGE DU TEXTE ==================
+function cleanExtractedText(text){
+  if(!text)return '';
+  let cleaned=text;
+  cleaned=cleaned.split('\n').map(line=>{
+    const trimmed=line.trim();
+    if(!trimmed)return '';
+    const normal=(trimmed.match(/[a-zA-ZÀ-ÿ0-9\s.,;:!?'"()\-]/g)||[]).length;
+    if(trimmed.length>5&&normal/trimmed.length<0.3)return '';
+    return line;
+  }).filter(Boolean).join('\n');
+  cleaned=cleaned.replace(/[¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ]{8,}/g,'');
+  cleaned=cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
+  cleaned=cleaned.replace(/[\u2000-\u206F\uFFF0-\uFFFF]/g,'');
+  cleaned=cleaned.replace(/[ \t]{2,}/g,' ');
+  cleaned=cleaned.replace(/\n{3,}/g,'\n\n');
+  return cleaned.trim();
+}
+
 // ================== FSRS-5 ==================
-const FSRS_W = [0.4072,1.1829,3.1262,15.4722,7.2102,0.5316,1.0651,0.0234,1.616,0.1544,1.0824,1.9813,0.0953,0.2975,2.2042,0.2407,2.9466,0.5034,0.6567];
-const FSRS_DESIRED_RETENTION = 0.9;
-const DAY_MS = 24 * 60 * 60 * 1000;
+const FSRS_W=[0.4072,1.1829,3.1262,15.4722,7.2102,0.5316,1.0651,0.0234,1.616,0.1544,1.0824,1.9813,0.0953,0.2975,2.2042,0.2407,2.9466,0.5034,0.6567];
+const FSRS_DESIRED_RETENTION=0.9;
+const DAY_MS=24*60*60*1000;
 function fsrsInitStability(g){return Math.max(0.1,FSRS_W[g-1])}
 function fsrsInitDifficulty(g){return Math.min(10,Math.max(1,FSRS_W[4]-(g-3)*FSRS_W[5]))}
 function fsrsRetrievability(e,s){return Math.pow(1+e/(9*s),-1)}
@@ -427,13 +446,13 @@ function fsrsNextInterval(s){return Math.max(1,Math.round((s/FSRS_W[16])*(Math.p
 function fsrsNextDifficulty(d,g){return Math.min(10,Math.max(1,d-FSRS_W[6]*(g-3)))}
 function fsrsNextStability(d,s,r,g){
   if(g===1)return FSRS_W[11]*Math.pow(d,-FSRS_W[12])*(Math.pow(s+1,FSRS_W[13])-1)*Math.exp(FSRS_W[14]*(1-r));
-  const hp=g===2?FSRS_W[15]:1, eb=g===4?FSRS_W[16]:1;
+  const hp=g===2?FSRS_W[15]:1,eb=g===4?FSRS_W[16]:1;
   return s*(1+Math.exp(FSRS_W[8])*(11-d)*Math.pow(s,-FSRS_W[9])*(Math.exp(FSRS_W[10]*(1-r))-1)*hp*eb);
 }
 function fsrsReview(card,grade){
   const now=Date.now();
   if(!card||card.reps===0){
-    const s=fsrsInitStability(grade), d=fsrsInitDifficulty(grade);
+    const s=fsrsInitStability(grade),d=fsrsInitDifficulty(grade);
     return {state:'review',stability:s,difficulty:d,reps:1,lapses:grade===1?1:0,lastReview:now,due:now+fsrsNextInterval(s)*DAY_MS};
   }
   const elapsed=(now-card.lastReview)/DAY_MS;
@@ -446,13 +465,13 @@ function fsrsReview(card,grade){
 function fsrsCardKey(q){return (q.text||'').toLowerCase().trim().slice(0,200)}
 function saveFsrs(){localStorage.setItem('compo_fsrs',JSON.stringify(fsrsCards))}
 function fsrsDueCards(){
-  const now=Date.now(), cards=[];
+  const now=Date.now(),cards=[];
   for(const [k,c] of Object.entries(fsrsCards))if(c.due<=now)cards.push({key:k,...c});
   cards.sort((a,b)=>a.due-b.due);
   return cards;
 }
 function fsrsStats(){
-  const all=Object.values(fsrsCards), now=Date.now();
+  const all=Object.values(fsrsCards),now=Date.now();
   return {total:all.length,due:all.filter(c=>c.due<=now).length,learning:all.filter(c=>c.reps<3).length,mature:all.filter(c=>c.reps>=3).length};
 }
 function renderFsrsStats(){
@@ -487,52 +506,65 @@ function startReviewSession(){
 
 // ================== GÉNÉRATEUR LOCAL DE SECOURS ==================
 function generateLocalQuestions(text,count){
-  const sentences=text.replace(/\s+/g,' ').split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(s=>s.length>40&&s.length<400&&/[a-zA-ZÀ-ÿ]/.test(s));
-  if(sentences.length<5)return [];
+  const cleaned=cleanExtractedText(text);
+  if(!cleaned||cleaned.length<100)return [];
+  const rawSentences=cleaned.replace(/\s+/g,' ').split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý])/).map(s=>s.trim()).filter(s=>s.length>30&&s.length<500);
+  if(rawSentences.length<5)return [];
   const stopWords=new Set(['le','la','les','un','une','des','du','de','et','ou','mais','donc','car','que','qui','quoi','dont','où','est','sont','être','avoir','a','ont','ce','cet','cette','ces','son','sa','ses','leur','leurs','pour','par','dans','sur','sous','avec','sans','en','au','aux','il','elle','ils','elles','on','nous','vous','je','tu','se','ne','pas','plus','moins','très','tout','tous','toute','toutes','comme','ainsi','alors','puis','encore','déjà','aussi','bien','peut','peuvent','fait','font','sera','seront']);
-  function keyWords(s){return s.toLowerCase().replace(/[^\wàâäéèêëïîôöùûüÿçœæ\s-]/g,' ').split(/\s+/).filter(w=>w.length>3&&!stopWords.has(w))}
+  function keyWords(s){return s.toLowerCase().replace(/[^\wàâäéèêëïîôöùûüÿçœæ\s-]/g,' ').split(/\s+/).filter(w=>w.length>4&&!stopWords.has(w))}
+  const sentences=rawSentences.filter(s=>keyWords(s).length>=3);
+  if(sentences.length<3)return [];
   const questions=[];const usedSentences=new Set();
   const shuffled=[...sentences].sort(()=>Math.random()-0.5);
   for(const sentence of shuffled){
     if(questions.length>=count)break;
     if(usedSentences.has(sentence))continue;
     const words=keyWords(sentence);
-    if(words.length<4)continue;
-    const keyword=words[Math.floor(Math.random()*Math.min(5,words.length))];
-    const blanked=sentence.replace(new RegExp(`\\b${keyword}\\b`,'i'),'_____');
+    if(words.length<3)continue;
+    const keyword=words[Math.min(words.length-1,Math.floor(Math.random()*4)+1)];
+    if(!keyword||keyword.length<5)continue;
+    const regex=new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'i');
+    if(!regex.test(sentence))continue;
+    const blanked=sentence.replace(regex,'_____');
     const distractors=[];
     for(const other of shuffled){
       if(other===sentence)continue;
       for(const w of keyWords(other)){
-        if(w!==keyword&&!distractors.includes(w)&&w.length>4){distractors.push(w);if(distractors.length>=3)break}
+        if(w!==keyword&&!distractors.includes(w)&&w.length>4&&!sentence.toLowerCase().includes(w.toLowerCase())){
+          distractors.push(w);if(distractors.length>=3)break;
+        }
       }
       if(distractors.length>=3)break;
     }
     if(distractors.length<3)continue;
     const options=[keyword,...distractors.slice(0,3)].sort(()=>Math.random()-0.5);
     const correctIndex=options.indexOf(keyword);
-    questions.push({id:`local-${Date.now()}-${questions.length}`,number:questions.length+1,type:'mcq',text:`Complète la phrase : "${blanked}"`,options,correct:correctIndex,explanation:`D'après le cours : ${sentence}`,sourceExcerpt:sentence.slice(0,200),source:'local-fallback',confidence:0.4});
+    if(correctIndex===-1)continue;
+    questions.push({id:`local-${Date.now()}-${questions.length}`,number:questions.length+1,type:'mcq',text:`Complète la phrase :\n"${blanked}"`,options,correct:correctIndex,explanation:`Phrase originale du cours : "${sentence}"`,sourceExcerpt:sentence.slice(0,200),source:'local-fallback',confidence:0.4});
     usedSentences.add(sentence);
   }
   for(const sentence of shuffled){
     if(questions.length>=count)break;
     if(usedSentences.has(sentence))continue;
     const words=keyWords(sentence);
-    if(words.length<4)continue;
+    if(words.length<3)continue;
     const isTrue=Math.random()>0.5;
     let qText=sentence;
     if(!isTrue){
-      const w2=keyWords(sentence);
-      const wrongWord=w2[Math.floor(Math.random()*w2.length)];
+      const candidates=words.filter(w=>w.length>5);
+      if(!candidates.length)continue;
+      const wrongWord=candidates[Math.floor(Math.random()*candidates.length)];
       const pool=[];
       for(const other of shuffled){
         if(other===sentence)continue;
-        for(const w of keyWords(other))if(w!==wrongWord&&!pool.includes(w))pool.push(w);
+        for(const w of keyWords(other)){if(w!==wrongWord&&!pool.includes(w)&&w.length>5)pool.push(w)}
       }
       if(!pool.length)continue;
-      qText=sentence.replace(new RegExp(`\\b${wrongWord}\\b`,'i'),pool[Math.floor(Math.random()*pool.length)]);
+      const replacement=pool[Math.floor(Math.random()*pool.length)];
+      const regex=new RegExp(`\\b${wrongWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'i');
+      qText=sentence.replace(regex,replacement);
     }
-    questions.push({id:`local-tf-${Date.now()}-${questions.length}`,number:questions.length+1,type:'tf',text:`Vrai ou Faux ? "${qText}"`,options:[],correct:isTrue,explanation:isTrue?'Affirmation correcte.':`Correction : ${sentence}`,sourceExcerpt:sentence.slice(0,200),source:'local-fallback',confidence:0.4});
+    questions.push({id:`local-tf-${Date.now()}-${questions.length}`,number:questions.length+1,type:'tf',text:`Vrai ou Faux ?\n"${qText}"`,options:[],correct:isTrue,explanation:isTrue?'Affirmation exacte d\'après le cours.':`Correction : "${sentence}"`,sourceExcerpt:sentence.slice(0,200),source:'local-fallback',confidence:0.4});
     usedSentences.add(sentence);
   }
   return questions.slice(0,count);
@@ -769,15 +801,12 @@ function renderAll(){
   const avg=historyData.length?historyData.reduce((a,x)=>a+x.score,0)/historyData.length:0;
   $('statAvg').textContent=historyData.length?avg.toFixed(1)+'/20':'—';
   $('statBest').textContent=historyData.length?Math.max(...historyData.map(x=>x.score)).toFixed(1)+'/20':'—';
-
   const old=$('quizPicker').value;
   $('quizPicker').innerHTML='<option value="">Sélectionner un test</option>'+quizzes.map((q,i)=>`<option value="${i}">${esc(q.title)} — ${q.questions.length} Q</option>`).join('');
   if(old!==''&&quizzes[old])$('quizPicker').value=old;
-
   $('history').innerHTML=historyData.length?[...historyData].reverse().slice(0,12).map(h=>
     `<div class="history-item"><b>${esc(h.title)}</b><br><span class="muted">${esc(h.subject||'Sans matière')} · ${esc(h.date)}</span><br><b>${Number(h.score).toFixed(1)}/20</b> <span class="muted">(${h.correct}/${h.total})</span></div>`
   ).join(''):'<div class="muted small">Aucun test terminé.</div>';
-
   $('draftList').innerHTML=drafts.length?`<h3 style="font-size:15px;margin:18px 0 6px">Questions détectées (${drafts.length})</h3>
     <div class="small muted">${drafts.filter(hasKey).length} avec réponse · ${drafts.filter(q=>!hasKey(q)).length} sans réponse</div>`+
     drafts.map((q,i)=>`<div class="question"><strong>${i+1}. ${esc(q.text)}</strong>
@@ -813,7 +842,10 @@ async function extractPdf(file){
   const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
   const pages=[];
   for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p);pages.push(pdfTextWithLines(await page.getTextContent()))}
-  return pages.join('\n\n');
+  const raw=pages.join('\n\n');
+  const cleaned=cleanExtractedText(raw);
+  console.log('PDF brut:',raw.length,'chars · Nettoyé:',cleaned.length,'chars');
+  return cleaned;
 }
 async function extractDocx(file){
   if(!window.JSZip)throw new Error('JSZip non chargé.');
@@ -831,9 +863,9 @@ async function extractDocx(file){
     for(let j=0;j<texts.length;j++)line+=texts[j].textContent||'';
     lines.push(line.trim());
   }
-  return lines.join('\n');
+  return cleanExtractedText(lines.join('\n'));
 }
-async function extractTxt(file){return await file.text()}
+async function extractTxt(file){return cleanExtractedText(await file.text())}
 $('extractBtn').onclick=async()=>{
   const file=$('pdfFile').files[0];
   if(!file){$('pdfStatus').textContent='Choisis un fichier.';return}
@@ -848,7 +880,8 @@ $('extractBtn').onclick=async()=>{
     else{$('pdfStatus').textContent='Format non reconnu.';return}
     $('pdfText').value=text;
     $('quizTitle').value=$('quizTitle').value||file.name.replace(/\.[^.]+$/,'');
-    $('pdfStatus').textContent=`✅ Extrait : ${text.length} caractères.`;
+    if(text.length<200){$('pdfStatus').innerHTML=`⚠️ Extrait : ${text.length} caractères seulement.<br><span class="muted">Le PDF contient peut-être beaucoup de caractères parasites ou est scanné. Vérifie le texte ci-dessous.</span>`}
+    else{$('pdfStatus').textContent=`✅ Extrait : ${text.length} caractères (nettoyé).`}
   }catch(e){$('pdfStatus').textContent='Erreur : '+(e.message||'illisible.')}
   finally{btn.disabled=false}
 };
@@ -895,9 +928,11 @@ function setSubjectFromText(){
 // ================== ANALYSE INTELLIGENTE ==================
 let analysisTicker=null;
 async function analyzeDocument(){
-  const raw=$('pdfText').value.trim();
-  if(!raw){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Aucun texte à analyser.';return}
-  if(raw.length<80){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Texte trop court (min 80 caractères).';return}
+  const rawOriginal=$('pdfText').value.trim();
+  if(!rawOriginal){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Aucun texte à analyser.';return}
+  if(rawOriginal.length<80){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Texte trop court (min 80 caractères).';return}
+  const raw=cleanExtractedText(rawOriginal);
+  if(raw.length<80){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Après nettoyage, le texte est trop court.';return}
 
   const btn=$('analyzeBtn');btn.disabled=true;const oldText=btn.textContent;btn.textContent='Analyse…';
   $('analysisStatus').style.display='block';$('analysisStatus').textContent='';
@@ -916,12 +951,11 @@ async function analyzeDocument(){
   let docType='course';
   let typeLabel='📚 Cours rédigé (sans questions numérotées)';
   if(numberedRatio>0.05&&optionsRatio>0.03){docType='numbered';typeLabel='📋 Questionnaire numéroté'}
-  else if(numberedCount>=3){docType='mixed';typeLabel='📋 Document mixte (cours + quelques questions)'}
+  else if(numberedCount>=3){docType='mixed';typeLabel='📋 Document mixte'}
 
   $('docTypeBox').style.display='block';
-  $('docTypeBox').innerHTML=`<b>Type détecté :</b> ${typeLabel}<br><span class="small">${numberedCount} ligne(s) numérotée(s) · ${optionsCount} option(s) A/B/C/D</span>`;
+  $('docTypeBox').innerHTML=`<b>Type détecté :</b> ${typeLabel}<br><span class="small">${numberedCount} ligne(s) numérotée(s) · ${optionsCount} option(s) A/B/C/D · ${raw.length} caractères nets</span>`;
 
-  // Si numéroté → parsing local immédiat
   if(docType==='numbered'||docType==='mixed'){
     const parsed=parseQuestions(raw);
     const withKeys=parsed.filter(hasKey).length;
@@ -936,7 +970,6 @@ async function analyzeDocument(){
     }
   }
 
-  // Cours rédigé → tentative IA + fallback
   const count=Math.max(10,Math.min(Number($('genCount').value)||20,50));
   const startTime=Date.now();
   let aiSucceeded=false,data=null;
@@ -986,35 +1019,36 @@ async function analyzeDocument(){
     $('startGeneratedExamBtn').style.display='inline-block';
     renderAll();
   }else{
-    // Fallback local
     $('analysisProgressText').textContent='⚠️ L\'IA n\'a pas répondu à temps, génération locale…';
+    $('analysisStatus').innerHTML='<span class="muted">Génération locale en cours…</span>';
+    await new Promise(r=>setTimeout(r,100));
     const localQuestions=generateLocalQuestions(raw,count);
     if(localQuestions.length){
       drafts=localQuestions;
-      $('analysisStatus').innerHTML=`⚠️ <b>Mode secours activé.</b> ${localQuestions.length} question(s) générée(s) localement.<br><span class="small muted">L'IA n'a pas répondu dans les 100 secondes. Ces questions sont basiques — vérifie-les.</span>`;
+      $('analysisStatus').innerHTML=`⚠️ <b>Mode secours activé.</b> ${localQuestions.length} question(s) générée(s) localement.<br><span class="small muted">L'IA n'a pas répondu dans les 100 secondes. Ces questions sont basiques — vérifie-les. Pour de meilleures questions, réessaie dans quelques minutes quand le serveur IA est disponible.</span>`;
       $('analysisDetail').style.display='block';
-      $('analysisDetail').innerHTML=`<h4>ℹ️ Mode secours</h4><p class="small muted" style="margin:0">Le serveur IA (Groq) n'a pas répondu à temps. Le générateur local a extrait ${localQuestions.length} questions directement du texte. Pour de meilleures questions, réessaie plus tard.</p>`;
+      $('analysisDetail').innerHTML=`<h4>ℹ️ Mode secours</h4><p class="small muted" style="margin:0">Le serveur IA (Groq) n'a pas répondu à temps. Le générateur local a extrait ${localQuestions.length} questions directement du texte. Ces questions complètent des phrases ou vérifient du vrai/faux. Qualité basique mais utilisable.</p>`;
       if(!$('quizTitle').value.trim())$('quizTitle').value='Questionnaire (mode secours)';
       $('startGeneratedExamBtn').style.display='inline-block';
       renderAll();
     }else{
-      $('analysisStatus').innerHTML=`❌ Impossible de générer des questions.<br><span class="small muted">Le texte est peut-être trop court ou peu structuré. Essaie avec un texte plus long.</span>`;
+      $('analysisStatus').innerHTML=`❌ Impossible de générer des questions.<br><span class="small muted">Le texte est peut-être trop court, trop pollué ou mal structuré. Essaie avec un texte plus long ou réessaie plus tard.</span>`;
     }
   }
 
   $('analysisProgress').style.display='none';
   btn.disabled=false;btn.textContent=oldText;
 }
-
 $('analyzeBtn').onclick=analyzeDocument;
 $('parseTextBtn').onclick=analyzeDocument;
 
 // ================== GÉNÉRATION DIRECTE ==================
 let generationTicker=null;
 $('generateQuestionsBtn').onclick=async()=>{
-  const sourceText=$('pdfText').value.trim();
+  const sourceTextRaw=$('pdfText').value.trim();
+  const sourceText=cleanExtractedText(sourceTextRaw);
   const count=Number($('genCount').value);
-  if(sourceText.length<80){$('generationStatus').textContent='Texte trop court (min 80 caractères).';return}
+  if(sourceText.length<80){$('generationStatus').textContent='Texte trop court (min 80 caractères après nettoyage).';return}
   if(!Number.isInteger(count)||count<1||count>100){$('generationStatus').textContent='Nombre entre 1 et 100.';return}
   const btn=$('generateQuestionsBtn');btn.disabled=true;btn.textContent='Génération…';
   const startTime=Date.now();
@@ -1194,7 +1228,6 @@ function renderExam(){
     $('examActionsBar').innerHTML=`<div class="progress-info">Terminé · <b>${correctCount}/${scorable}</b></div><div style="display:flex;gap:8px"><button type="button" class="secondary" id="examRestartBtn">🔄 Recommencer</button><button type="button" id="examCloseBtn">← Retour</button></div>`;
     $('examRestartBtn').onclick=()=>{examState.answers=new Array(total).fill(null);examState.current=0;examState.submitted=false;renderExam()};
     $('examCloseBtn').onclick=closeExamView;
-
     if(!examState.isReview&&!examState._fsrsSaved){
       examState._fsrsSaved=true;
       const pct=scorable?correctCount/scorable:0;
@@ -1228,12 +1261,10 @@ function renderExam(){
     }
     $('examBody').innerHTML=`<div class="exam-q"><div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div><h3>${esc(q.text)}</h3>${body}</div><div class="exam-nav"><div class="dots">${dotsHtml}</div></div>`;
     $('examActionsBar').innerHTML=`<div class="progress-info">Question <b>${i+1}</b>/${total} · <b>${answered}</b> répondue(s)</div><div style="display:flex;gap:8px"><button type="button" class="secondary" id="examPrevBtn" ${i===0?'disabled':''}>← Précédent</button>${i<total-1?`<button type="button" id="examNextBtn">Suivant →</button>`:`<button type="button" class="success" id="examSubmitBtn">✓ Soumettre</button>`}${i<total-1?`<button type="button" class="ghost" id="examSubmitBtn2">Soumettre</button>`:''}</div>`;
-
     if($('examPrevBtn'))$('examPrevBtn').onclick=()=>{captureCurrentAnswer();examState.current--;renderExam()};
     if($('examNextBtn'))$('examNextBtn').onclick=()=>{captureCurrentAnswer();examState.current++;renderExam()};
     if($('examSubmitBtn'))$('examSubmitBtn').onclick=submitExam;
     if($('examSubmitBtn2'))$('examSubmitBtn2').onclick=submitExam;
-
     document.querySelectorAll('#examBody .exam-opt input').forEach(inp=>{
       inp.addEventListener('change',()=>{
         const q=examState.questions[examState.current];
@@ -1269,7 +1300,6 @@ function submitExam(){
   const unanswered=examState.answers.filter(a=>a===null||(typeof a==='string'&&a.trim()==='')).length;
   if(unanswered>0&&!confirm(`${unanswered} sans réponse. Soumettre ?`))return;
   examState.submitted=true;
-
   if(examState.isReview){
     examState.questions.forEach((q,i)=>{
       const key=q._fsrsKey||fsrsCardKey(q);
@@ -1292,7 +1322,6 @@ function submitExam(){
 }
 $('startReviewBtn').onclick=startReviewSession;
 $('refreshReviewBtn').onclick=()=>{renderFsrsStats();renderFsrsList()};
-
 $('shareQuiz').onclick=()=>{
   const idx=Number($('quizPicker').value);
   if(!quizzes[idx]){alert('Choisis un questionnaire.');return}
