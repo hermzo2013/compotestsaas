@@ -12,6 +12,8 @@ app.use(express.json({ limit: '2mb' }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
+app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
+app.get('/favicon.ico', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
 app.get('/api/health', (_req, res) => res.json({ ok: true, aiConfigured: Boolean(process.env.AI_API_KEY), authConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY), adminConfigured: Boolean(process.env.ADMIN_EMAIL && process.env.SUPABASE_SERVICE_ROLE_KEY) }));
 
 async function authenticate(req, res, next) {
@@ -144,11 +146,9 @@ function aiClient() {
 }
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
-// Nettoie le texte reçu (retire les caractères parasites PDF)
 function sanitizeText(text) {
   if (!text) return '';
   let t = String(text);
-  // Retire les lignes polluées
   t = t.split('\n').map(line => {
     const trimmed = line.trim();
     if (!trimmed) return '';
@@ -156,19 +156,14 @@ function sanitizeText(text) {
     if (trimmed.length > 5 && normal / trimmed.length < 0.3) return '';
     return line;
   }).filter(Boolean).join('\n');
-  // Blocs exotiques
   t = t.replace(/[¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ]{8,}/g, '');
-  // Caractères de contrôle
   t = t.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-  // Unicode exotique
   t = t.replace(/[\u2000-\u206F\uFFF0-\uFFFF]/g, '');
-  // Espaces multiples
   t = t.replace(/[ \t]{2,}/g, ' ');
   t = t.replace(/\n{3,}/g, '\n\n');
   return t.trim();
 }
 
-// ============ ANALYSE DE COURS (avec nettoyage) ============
 app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
@@ -176,12 +171,12 @@ app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
   const text = sanitizeText(String(sourceText || '').trim());
   const n = Number(count);
 
-  if (text.length < 150) return res.status(400).json({ error: 'Texte trop court après nettoyage (min 150 caractères). Le PDF contient peut-être trop de caractères parasites.' });
+  if (text.length < 150) return res.status(400).json({ error: 'Texte trop court après nettoyage (min 150 caractères).' });
   if (text.length > 80000) return res.status(413).json({ error: 'Texte trop long (max 80 000 caractères).' });
   if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Nombre entre 1 et 100.' });
 
   try {
-    const systemPrompt = `Tu es un assistant pédagogique expert en immunologie et sciences médicales. Tu vas lire un cours en français et produire un questionnaire QCM complet.
+    const systemPrompt = `Tu es un assistant pédagogique expert en sciences médicales et biologiques. Tu vas lire un cours en français et produire un questionnaire QCM complet.
 
 MÉTHODE STRICTE :
 1. Lis INTÉGRALEMENT le texte fourni, du début à la fin.
@@ -191,20 +186,13 @@ MÉTHODE STRICTE :
 5. N'invente JAMAIS de faits absents du cours.
 6. Si le cours liste des éléments ("3 types de...", "les 5 classes..."), tu DOIS générer une question pour chaque élément important.
 
-TYPES DE QUESTIONS :
-- 40% "mcq" : QCM une bonne réponse, 4 options, correct = index 0-3
-- 30% "mcq_multi" : QCM plusieurs bonnes réponses, 4 options, correct = tableau d'au moins 2 indices
-- 30% "tf" : Vrai/Faux, options = [], correct = true ou false
-
-QUALITÉ :
-- Énoncé clair, précis, sans ambiguïté
-- Options plausibles mais une seule correcte
-- Pas de doublons
-- Explication concise (1-3 phrases) justifiant la réponse
-- "source_excerpt" : courte phrase du cours dont vient la question
+TYPES :
+- 40% "mcq" : 4 options, correct = index 0-3
+- 30% "mcq_multi" : 4 options, correct = tableau d'au moins 2 indices
+- 30% "tf" : options = [], correct = true ou false
 
 FORMAT JSON STRICT :
-{"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"notions_covered":["notion 1","notion 2"],"summary":"Résumé du cours en 2 phrases","note":"..."}`;
+{"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"notions_covered":["n1","n2"],"summary":"...","note":"..."}`;
 
     const response = await client.chat.completions.create({
       model: modelName(),
@@ -218,7 +206,6 @@ FORMAT JSON STRICT :
 
     const content = response.choices?.[0]?.message?.content;
     if (!content) throw new Error('Réponse IA vide.');
-
     const parsed = JSON.parse(content);
     const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
 
@@ -242,7 +229,6 @@ FORMAT JSON STRICT :
     }).filter(Boolean);
 
     if (!questions.length) throw new Error('Aucune question valide générée.');
-
     const notionsFromQuestions = [...new Set(questions.map(q => q.sourceExcerpt).filter(Boolean))].slice(0, 30);
 
     res.json({
