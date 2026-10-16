@@ -130,7 +130,7 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
 
 const usage = new Map();
 function underDailyLimit(req, res, next) {
-  const limit = 30;
+  const limit = 50;
   const day = new Date().toISOString().slice(0, 10);
   const key = `${req.user.id}:${day}:${req.path}`;
   const used = usage.get(key) || 0;
@@ -147,7 +147,7 @@ function aiClient() {
     maxRetries: 1
   });
 }
-const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
+const modelName = () => process.env.AI_MODEL || 'llama-3.1-8b-instant';
 
 function sanitizeText(text) {
   if (!text) return '';
@@ -167,9 +167,10 @@ function sanitizeText(text) {
   return t.trim();
 }
 
+// Analyse d'un cours rédigé → génère des questions
 app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
   const client = aiClient();
-  if (!client) return res.status(503).json({ error: 'IA non configurée.' });
+  if (!client) return res.status(503).json({ error: 'IA non configurée. Ajoute AI_API_KEY dans Render.' });
   const { subject = 'Matière', title = 'Cours', sourceText, count = 20 } = req.body || {};
   const text = sanitizeText(String(sourceText || '').trim());
   const n = Number(count);
@@ -194,23 +195,19 @@ TYPES :
 - 30% "tf" : options = [], correct = true ou false
 
 FORMAT JSON STRICT :
-{"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"notions_covered":["n1","n2"],"summary":"...","note":"..."}`;
+{"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"summary":"...","note":"..."}`;
 
     const response = await client.chat.completions.create({
-      model: modelName(),
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
+      model: modelName(), temperature: 0.3, response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Matière : ${String(subject).slice(0,200)}\nTitre : ${String(title).slice(0,200)}\n\nCOURS :\n"""\n${text}\n"""\n\nGénère ${n} questions couvrant l'ensemble du cours.` }
+        { role: 'user', content: `Matière : ${String(subject).slice(0,200)}\nTitre : ${String(title).slice(0,200)}\n\nCOURS :\n"""\n${text}\n"""\n\nGénère ${n} questions.` }
       ]
     });
-
     const content = response.choices?.[0]?.message?.content;
     if (!content) throw new Error('Réponse IA vide.');
     const parsed = JSON.parse(content);
     const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
-
     const questions = raw.map((q, i) => {
       const type = ['mcq','mcq_multi','tf'].includes(q.type) ? q.type : null;
       const text2 = String(q.text || '').trim().slice(0, 2000);
@@ -218,44 +215,23 @@ FORMAT JSON STRICT :
       let correct = q.correct;
       if (type === 'tf') { if (typeof correct !== 'boolean') return null; }
       else if (type === 'mcq') { if (!Number.isInteger(correct) || correct < 0 || correct >= options.length || options.length < 2) return null; }
-      else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2 || correct.some(x => !Number.isInteger(x) || x < 0 || x >= options.length) || options.length < 3) return null; correct = [...new Set(correct)]; }
+      else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2) return null; correct = [...new Set(correct)]; }
       if (!type || !text2) return null;
-      return {
-        id: `course-${Date.now()}-${i}`,
-        number: i + 1, type, text: text2,
-        options: type === 'tf' ? [] : options, correct,
-        explanation: String(q.explanation || '').slice(0, 1500),
-        sourceExcerpt: String(q.source_excerpt || '').slice(0, 500),
-        source: 'ai-generated', confidence: null
-      };
+      return { id:`course-${Date.now()}-${i}`, number:i+1, type, text:text2, options: type==='tf'?[]:options, correct, explanation:String(q.explanation||'').slice(0,1500), sourceExcerpt:String(q.source_excerpt||'').slice(0,500), source:'ai-generated', confidence:null };
     }).filter(Boolean);
-
     if (!questions.length) throw new Error('Aucune question valide générée.');
-    const notionsFromQuestions = [...new Set(questions.map(q => q.sourceExcerpt).filter(Boolean))].slice(0, 30);
-
-    res.json({
-      questions,
-      notions: notionsFromQuestions.map(n => ({ topic: n.slice(0, 80), detail: n, importance: 'moyenne' })),
-      summary: String(parsed.summary || '').slice(0, 500),
-      coverage: `${questions.length} questions sur ${n} demandées`,
-      note: String(parsed.note || '').slice(0, 1000),
-      model: modelName()
-    });
+    res.json({ questions, summary: String(parsed.summary || '').slice(0, 500), note: String(parsed.note || '').slice(0, 1000), coverage: `${questions.length}/${n}`, model: modelName() });
   } catch (error) {
     console.error('Erreur analyse:', error?.message || error);
-    const isTimeout = /timeout|aborted|ETIMEDOUT/i.test(error?.message || '');
+    const isTimeout = /timeout|aborted/i.test(error?.message || '');
     const isQuota = /quota|rate.?limit|429/i.test(error?.message || '');
-    res.status(502).json({
-      error: isTimeout ? 'L’IA a mis trop de temps à répondre.' :
-             isQuota ? 'Quota IA dépassé. Réessaie dans quelques minutes.' :
-             'Analyse échouée : ' + (error?.message || 'erreur inconnue')
-    });
+    res.status(502).json({ error: isTimeout ? 'L’IA a mis trop de temps.' : isQuota ? 'Quota IA dépassé.' : 'Analyse échouée : ' + (error?.message || 'inconnue') });
   }
 });
 
 app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
   const client = aiClient();
-  if (!client) return res.status(503).json({ error: 'IA désactivée.' });
+  if (!client) return res.status(503).json({ error: 'IA désactivée. Ajoute AI_API_KEY dans Render.' });
   const { subject = 'Matière', questions } = req.body || {};
   if (!Array.isArray(questions) || !questions.length || questions.length > 100) return res.status(400).json({ error: 'Entre 1 et 100 questions.' });
   const safeQuestions = questions.map((q, i) => ({
@@ -268,7 +244,7 @@ app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
     const response = await client.chat.completions.create({
       model: modelName(), temperature: 0.1, response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: `Réponds aux questions. Format : {"answers":[{"id":"...","correct":...,"explanation":"...","confidence":0.75,"warning":""}]}. mcq=index, mcq_multi=tableau, tf=booléen, short=chaîne.` },
+        { role: 'system', content: `Réponds aux questions. Format : {"answers":[{"id":"...","correct":...,"explanation":"...","confidence":0.75}]}. mcq=index, mcq_multi=tableau, tf=booléen, short=chaîne.` },
         { role: 'user', content: JSON.stringify({ questions: safeQuestions }) }
       ]
     });
@@ -279,8 +255,7 @@ app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
     const answers = (Array.isArray(parsed.answers) ? parsed.answers : []).filter(a => allowed.has(String(a.id))).map(a => ({
       id: String(a.id), correct: a.correct ?? null,
       explanation: String(a.explanation || '').slice(0, 2000),
-      confidence: Number.isFinite(Number(a.confidence)) ? Math.max(0, Math.min(1, Number(a.confidence))) : 0,
-      warning: String(a.warning || '').slice(0, 1000)
+      confidence: Number.isFinite(Number(a.confidence)) ? Math.max(0, Math.min(1, Number(a.confidence))) : 0
     }));
     res.json({ answers, model: modelName() });
   } catch (error) {
@@ -291,7 +266,7 @@ app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
 
 app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
   const client = aiClient();
-  if (!client) return res.status(503).json({ error: 'IA désactivée.' });
+  if (!client) return res.status(503).json({ error: 'IA désactivée. Ajoute AI_API_KEY dans Render.' });
   const { subject = 'Matière', title = 'Cours', sourceText, count = 20 } = req.body || {};
   const text = sanitizeText(String(sourceText || '').trim());
   const n = Number(count);
@@ -328,7 +303,7 @@ Format JSON : {"questions":[{"type":"...","text":"...","options":[...],"correct"
       else if (type === 'mcq') { if (!Number.isInteger(correct) || correct < 0 || correct >= options.length) return null; }
       else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2) return null; }
       if (!type || !text2) return null;
-      return { id: `gen-${Date.now()}-${i}`, number: i+1, type, text: text2, options: type === 'tf' ? [] : options, correct, explanation: String(q.explanation || '').slice(0, 1500), sourceExcerpt: String(q.source_excerpt || '').slice(0, 500), source: 'ai-generated', confidence: null };
+      return { id:`gen-${Date.now()}-${i}`, number:i+1, type, text:text2, options:type==='tf'?[]:options, correct, explanation:String(q.explanation||'').slice(0,1500), sourceExcerpt:String(q.source_excerpt||'').slice(0,500), source:'ai-generated', confidence:null };
     }).filter(Boolean);
     if (!questions.length) throw new Error('Aucune question générée.');
     res.json({ questions, note: String(parsed.note || '').slice(0, 1000), coverage: `${questions.length}/${n}`, model: modelName() });
