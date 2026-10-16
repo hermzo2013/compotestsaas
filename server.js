@@ -17,7 +17,14 @@ app.get('/favicon.ico', (_req, res) => res.sendFile(path.join(__dirname, 'favico
 app.get('/site.jpg', (_req, res) => res.sendFile(path.join(__dirname, 'site.jpg')));
 app.get('/site.png', (_req, res) => res.sendFile(path.join(__dirname, 'site.jpg')));
 app.get('/logo.jpg', (_req, res) => res.sendFile(path.join(__dirname, 'site.jpg')));
-app.get('/api/health', (_req, res) => res.json({ ok: true, aiConfigured: Boolean(process.env.AI_API_KEY), authConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY), adminConfigured: Boolean(process.env.ADMIN_EMAIL && process.env.SUPABASE_SERVICE_ROLE_KEY) }));
+app.get('/api/health', (_req, res) => res.json({
+  ok: true,
+  aiConfigured: Boolean(process.env.AI_API_KEY),
+  authConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY),
+  adminConfigured: Boolean(process.env.ADMIN_EMAIL && process.env.SUPABASE_SERVICE_ROLE_KEY),
+  aiModel: process.env.AI_MODEL || 'llama-3.1-8b-instant',
+  aiBaseUrl: process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1'
+}));
 
 async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
@@ -139,11 +146,14 @@ function underDailyLimit(req, res, next) {
   next();
 }
 function aiClient() {
-  if (!process.env.AI_API_KEY) return null;
+  if (!process.env.AI_API_KEY) {
+    console.error('AI_API_KEY manquante dans les variables d’environnement.');
+    return null;
+  }
   return new OpenAI({
     apiKey: process.env.AI_API_KEY,
     baseURL: process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1',
-    timeout: 120000,
+    timeout: 180000,
     maxRetries: 1
   });
 }
@@ -167,53 +177,123 @@ function sanitizeText(text) {
   return t.trim();
 }
 
-// ===== PROMPT AMÉLIORÉ STYLE DIANE =====
-const SYSTEM_PROMPT_DIANE = `Tu es un assistant pédagogique expert, formé à la méthode Diane.app. Tu génères des quiz de haute qualité pédagogique à partir d'un cours.
+function logError(context, error) {
+  console.error(`=== ERREUR ${context} ===`);
+  console.error('Message:', error?.message);
+  console.error('Status:', error?.status);
+  console.error('Code:', error?.code);
+  console.error('Type:', error?.type);
+  console.error('Detail:', typeof error?.error === 'object' ? JSON.stringify(error.error) : (error?.error || ''));
+  console.error('Stack:', error?.stack?.split('\n').slice(0, 3).join(' | '));
+  console.error('===========================');
+}
 
-RÈGLES ABSOLUES (méthode Diane) :
+function traduireErreurIA(error) {
+  const m = String(error?.message || '').toLowerCase();
+  const status = error?.status;
+  const code = error?.code || '';
+  if (status === 429 || /rate.?limit|quota|too many/i.test(m) || code === 'rate_limit_exceeded') {
+    return 'Quota IA atteint. Réessaie dans 1-2 minutes ou change de modèle dans Render.';
+  }
+  if (/timeout|aborted|etimedout|deadline/i.test(m)) {
+    return 'L’IA a mis trop de temps à répondre. Change AI_MODEL pour llama-3.1-8b-instant dans Render.';
+  }
+  if (/model|decommissioned|not found|does not exist/i.test(m)) {
+    return 'Modèle IA invalide. Vérifie AI_MODEL dans Render. Modèles valides : llama-3.1-8b-instant, llama-3.3-70b-versatile.';
+  }
+  if (/api.?key|unauthorized|401|invalid.*key/i.test(m) || status === 401) {
+    return 'Clé IA invalide. Vérifie AI_API_KEY dans Render (elle doit commencer par gsk_).';
+  }
+  if (/json|parse/i.test(m)) {
+    return 'Le modèle a renvoyé un format invalide. Réessaie.';
+  }
+  if (/context|token|too long|413/i.test(m)) {
+    return 'Texte trop long pour le modèle. Essaie avec un extrait plus court.';
+  }
+  if (/fetch failed|network|enotfound|econnrefused/i.test(m)) {
+    return 'Impossible de joindre le serveur IA. Vérifie AI_BASE_URL dans Render (https://api.groq.com/openai/v1).';
+  }
+  return 'Échec IA : ' + (error?.message || 'inconnue');
+}
 
-1. DISTRACTEURS TIRÉS DU COURS :
-   - Pour chaque QCM, les 3 mauvaises options doivent provenir du document lui-même.
-   - Elles doivent être des notions VOISINES ou des pièges classiques (confusions fréquentes, termes proches, valeurs inversées, exceptions).
-   - JAMAIS d'options inventées ou absurdes.
+// ============ RÉSOUDRE LES RÉPONSES MANQUANTES ============
+app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
+  const client = aiClient();
+  if (!client) return res.status(503).json({ error: 'IA désactivée. Ajoute AI_API_KEY dans Render → Environment.' });
+  const { subject = 'Matière', questions } = req.body || {};
+  if (!Array.isArray(questions) || !questions.length || questions.length > 100) {
+    return res.status(400).json({ error: 'Entre 1 et 100 questions attendues.' });
+  }
 
-2. EXTRACTION DE LA SOURCE :
-   - Chaque question doit contenir "source_excerpt" = la phrase EXACTE du cours dont elle est tirée.
-   - Cette phrase sera affichée à l'apprenant après correction.
+  const safeQuestions = questions.map((q, i) => ({
+    id: String(q.id ?? i),
+    number: q.number ?? null,
+    type: ['tf','mcq','mcq_multi','short','cloze'].includes(q.type) ? q.type : 'short',
+    text: String(q.text || '').slice(0, 3000),
+    options: Array.isArray(q.options) ? q.options.slice(0, 12).map(x => String(x).slice(0, 500)) : [],
+    source: String(q.source || '').slice(0, 500)
+  }));
 
-3. TYPES DE QUESTIONS :
-   - "mcq" : QCM 4 options (1 seule correcte). Idéal pour nuances et pièges.
-   - "mcq_multi" : QCM multi (≥2 correctes). Idéal pour listes et classifications.
-   - "tf" : Vrai/Faux. La version FAUSSE doit être une variation subtile du cours (un mot changé, une date inversée, un nom modifié). JAMAIS une affirmation absurde.
-   - "cloze" : Texte à trous. La phrase est extraite du cours, un mot-clé est masqué (____). Parfait pour dates, formules, noms propres, définitions.
+  console.log(`[answer-questions] ${safeQuestions.length} question(s) · modèle: ${modelName()}`);
 
-4. COUVERTURE :
-   - Identifie TOUTES les notions importantes du cours (définitions, mécanismes, chiffres, exceptions, classifications, propriétés).
-   - Répartis les questions sur TOUT le texte (début, milieu, fin).
-   - Ne pose pas 2 questions sur la même notion sauf si elle est très riche.
+  try {
+    const response = await client.chat.completions.create({
+      model: modelName(),
+      temperature: 0.1,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: `Tu es un assistant qui répond à des questions de quiz en français.
 
-5. QUALITÉ PÉDAGOGIQUE :
-   - Explication : 1-3 phrases justifiant la bonne réponse en citant le cours.
-   - Pas de questions ambiguës ou pièges débiles.
-   - Utilise le vocabulaire exact du cours.
+Renvoie UNIQUEMENT un objet JSON valide au format :
+{"answers":[{"id":"...","correct":...,"explanation":"...","confidence":0.75}]}
 
-FORMAT JSON STRICT :
-{
-  "questions": [
-    {
-      "type": "mcq",
-      "text": "Question claire et précise ?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct": 0,
-      "explanation": "Explication justifiant la réponse.",
-      "source_excerpt": "Phrase exacte du cours d'où vient la question."
+RÈGLES PAR TYPE :
+- "mcq"        → "correct" = index de la bonne option (0, 1, 2 ou 3)
+- "mcq_multi"  → "correct" = tableau d'index (ex. [0,2])
+- "tf"         → "correct" = true ou false
+- "short"      → "correct" = chaîne de caractères
+- "cloze"      → "correct" = le mot manquant (chaîne de caractères)
+
+Réponds à TOUTES les questions fournies. Utilise tes connaissances générales si nécessaire.
+"confidence" est un nombre entre 0 et 1.`
+        },
+        { role: 'user', content: JSON.stringify({ subject, questions: safeQuestions }) }
+      ]
+    });
+
+    const content = response.choices?.[0]?.message?.content;
+    if (!content) throw new Error('Réponse vide du modèle.');
+
+    let parsed;
+    try { parsed = JSON.parse(content); }
+    catch (e) {
+      console.error('JSON invalide reçu:', content.slice(0, 800));
+      throw new Error('JSON invalide renvoyé par le modèle.');
     }
-  ],
-  "summary": "Résumé du cours en 2 phrases.",
-  "note": ""
-}`;
 
-// ============ ANALYSE DE COURS AMÉLIORÉE ============
+    const allowed = new Set(safeQuestions.map(q => q.id));
+    const answers = (Array.isArray(parsed.answers) ? parsed.answers : [])
+      .filter(a => allowed.has(String(a.id)))
+      .map(a => ({
+        id: String(a.id),
+        correct: a.correct ?? null,
+        explanation: String(a.explanation || '').slice(0, 2000),
+        confidence: Number.isFinite(Number(a.confidence)) ? Math.max(0, Math.min(1, Number(a.confidence))) : 0.5
+      }));
+
+    if (!answers.length) throw new Error('Aucune réponse exploitable dans le JSON.');
+
+    console.log(`[answer-questions] ✅ ${answers.length} réponse(s) générée(s)`);
+    res.json({ answers, model: modelName() });
+  } catch (error) {
+    logError('answer-questions', error);
+    res.status(502).json({ error: traduireErreurIA(error) });
+  }
+});
+
+// ============ ANALYSE DE COURS ============
 app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée. Ajoute AI_API_KEY dans Render.' });
@@ -225,35 +305,56 @@ app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
   if (text.length > 80000) return res.status(413).json({ error: 'Texte trop long (max 80 000 caractères).' });
   if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Nombre entre 1 et 100.' });
 
+  console.log(`[analyze-course] ${text.length} caractères · ${n} questions · modèle: ${modelName()}`);
+
   try {
+    const systemPrompt = `Tu es un assistant pédagogique expert (méthode Diane). Tu génères un quiz QCM à partir d'un cours en français.
+
+RÈGLES STRICTES :
+1. DISTRACTEURS TIRÉS DU COURS : les 3 mauvaises options viennent du document (notions voisines, confusions classiques, valeurs inversées). Pas d'invention.
+2. Chaque question doit contenir "source_excerpt" = la phrase EXACTE du cours dont elle est tirée.
+3. Types :
+   - "mcq" : 4 options, 1 seule correcte, "correct" = index 0-3
+   - "mcq_multi" : 4 options, ≥2 correctes, "correct" = tableau d'index
+   - "tf" : "options": [], "correct" = true ou false. La version fausse doit être une variation SUBTILE du cours (un mot changé, une date inversée), jamais absurde.
+   - "cloze" : texte à trous, un mot-clé remplacé par ____ dans "text", pas d'options, "correct" = le mot manquant.
+4. Couvre TOUT le texte (début, milieu, fin). Ne pas poser 2 questions sur la même notion.
+5. N'invente JAMAIS de faits absents du cours.
+
+FORMAT JSON :
+{"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"summary":"...","note":""}`;
+
     const response = await client.chat.completions.create({
       model: modelName(),
       temperature: 0.3,
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT_DIANE.replace('${n}', n) },
-        { role: 'user', content: `Matière : ${String(subject).slice(0,200)}\nTitre : ${String(title).slice(0,200)}\n\nCOURS :\n"""\n${text}\n"""\n\nGénère exactement ${n} questions en respectant la méthode Diane (distracteurs du cours, source_excerpt, variations subtiles).` }
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Matière : ${String(subject).slice(0,200)}\nTitre : ${String(title).slice(0,200)}\n\nCOURS :\n"""\n${text}\n"""\n\nGénère exactement ${n} questions.` }
       ]
     });
 
     const content = response.choices?.[0]?.message?.content;
     if (!content) throw new Error('Réponse IA vide.');
-    const parsed = JSON.parse(content);
-    const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
 
+    let parsed;
+    try { parsed = JSON.parse(content); }
+    catch (e) {
+      console.error('JSON invalide reçu:', content.slice(0, 800));
+      throw new Error('JSON invalide renvoyé par le modèle.');
+    }
+
+    const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
     const questions = raw.map((q, i) => {
       const type = ['mcq','mcq_multi','tf','cloze'].includes(q.type) ? q.type : null;
       const text2 = String(q.text || '').trim().slice(0, 2000);
       if (!type || !text2) return null;
-
       const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => String(x).slice(0, 500)) : [];
       let correct = q.correct;
-
       if (type === 'tf') { if (typeof correct !== 'boolean') return null; }
-      else if (type === 'cloze') { /* pas d'options pour cloze, correct est le mot attendu (string) */ }
+      else if (type === 'cloze') { if (typeof correct !== 'string' || !correct.trim()) return null; }
       else if (type === 'mcq') { if (!Number.isInteger(correct) || correct < 0 || correct >= options.length || options.length < 2) return null; }
       else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2) return null; correct = [...new Set(correct)]; }
-
       return {
         id: `diane-${Date.now()}-${i}`,
         number: i + 1,
@@ -269,6 +370,8 @@ app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
     }).filter(Boolean);
 
     if (!questions.length) throw new Error('Aucune question valide générée.');
+
+    console.log(`[analyze-course] ✅ ${questions.length}/${n} questions générées`);
     res.json({
       questions,
       summary: String(parsed.summary || '').slice(0, 500),
@@ -277,57 +380,15 @@ app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
       model: modelName()
     });
   } catch (error) {
-    console.error('Erreur analyse:', error?.message || error);
-    const isTimeout = /timeout|aborted/i.test(error?.message || '');
-    const isQuota = /quota|rate.?limit|429/i.test(error?.message || '');
-    res.status(502).json({ error: isTimeout ? 'L’IA a mis trop de temps.' : isQuota ? 'Quota IA dépassé.' : 'Analyse échouée : ' + (error?.message || 'inconnue') });
+    logError('analyze-course', error);
+    res.status(502).json({ error: traduireErreurIA(error) });
   }
 });
 
-// ============ RÉSOUDRE RÉPONSES MANQUANTES (prompt amélioré) ============
-app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
-  const client = aiClient();
-  if (!client) return res.status(503).json({ error: 'IA désactivée. Ajoute AI_API_KEY dans Render.' });
-  const { subject = 'Matière', questions } = req.body || {};
-  if (!Array.isArray(questions) || !questions.length || questions.length > 100) return res.status(400).json({ error: 'Entre 1 et 100 questions.' });
-
-  const safeQuestions = questions.map((q, i) => ({
-    id: String(q.id ?? i), number: q.number ?? null,
-    type: ['tf','mcq','mcq_multi','short','cloze'].includes(q.type) ? q.type : 'short',
-    text: String(q.text || '').slice(0, 3000),
-    options: Array.isArray(q.options) ? q.options.slice(0, 12).map(x => String(x).slice(0, 500)) : [],
-    source: String(q.source || '').slice(0, 500)
-  }));
-
-  try {
-    const response = await client.chat.completions.create({
-      model: modelName(),
-      temperature: 0.1,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: `Tu réponds à des questions de quiz. Utilise le contexte fourni (source) pour justifier. Format : {"answers":[{"id":"...","correct":...,"explanation":"...","confidence":0.75}]}. mcq=index, mcq_multi=tableau, tf=booléen, short/cloze=chaîne.` },
-        { role: 'user', content: JSON.stringify({ subject, questions: safeQuestions }) }
-      ]
-    });
-    const content = response.choices?.[0]?.message?.content;
-    if (!content) throw new Error('Réponse vide.');
-    const parsed = JSON.parse(content);
-    const allowed = new Set(safeQuestions.map(q => q.id));
-    const answers = (Array.isArray(parsed.answers) ? parsed.answers : []).filter(a => allowed.has(String(a.id))).map(a => ({
-      id: String(a.id),
-      correct: a.correct ?? null,
-      explanation: String(a.explanation || '').slice(0, 2000),
-      confidence: Number.isFinite(Number(a.confidence)) ? Math.max(0, Math.min(1, Number(a.confidence))) : 0
-    }));
-    res.json({ answers, model: modelName() });
-  } catch (error) {
-    console.error('Erreur IA:', error?.message || error);
-    res.status(502).json({ error: 'Échec IA.' });
-  }
-});
-
-// ============ GÉNÉRATION GÉNÉRIQUE ============
+// ============ GÉNÉRATION GÉNÉRIQUE (alias) ============
 app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
+  req.url = '/analyze-course';
+  // Reroute interne : on appelle la même logique
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA désactivée. Ajoute AI_API_KEY dans Render.' });
   const { subject = 'Matière', title = 'Cours', sourceText, count = 20 } = req.body || {};
@@ -337,19 +398,33 @@ app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
   if (text.length > 60000) return res.status(413).json({ error: 'Texte trop long.' });
   if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Nombre invalide.' });
 
+  console.log(`[generate-questions] ${text.length} caractères · ${n} questions · modèle: ${modelName()}`);
+
   try {
+    const systemPrompt = `Tu es un assistant pédagogique expert (méthode Diane). Tu génères un quiz QCM à partir d'un cours en français.
+
+RÈGLES STRICTES :
+1. DISTRACTEURS TIRÉS DU COURS : les 3 mauvaises options viennent du document.
+2. Chaque question contient "source_excerpt" = phrase EXACTE du cours.
+3. Types : mcq (4 options, 1 correcte, correct=index), mcq_multi (4 options, ≥2 correctes, correct=tableau), tf (options=[], correct=bool, la version fausse est une variation subtile), cloze (texte à trous, correct=mot manquant).
+4. Couvre TOUT le texte. N'invente rien.
+
+FORMAT JSON : {"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"note":""}`;
+
     const response = await client.chat.completions.create({
       model: modelName(),
       temperature: 0.3,
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT_DIANE.replace('${n}', n) },
-        { role: 'user', content: `Cours :\n\n"""\n${text}\n"""\n\nGénère exactement ${n} questions.` }
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Matière : ${subject}\nTitre : ${title}\n\nCours :\n\n"""\n${text}\n"""\n\nGénère exactement ${n} questions.` }
       ]
     });
     const content = response.choices?.[0]?.message?.content;
     if (!content) throw new Error('Réponse vide.');
-    const parsed = JSON.parse(content);
+    let parsed;
+    try { parsed = JSON.parse(content); }
+    catch (e) { throw new Error('JSON invalide renvoyé par le modèle.'); }
     const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
     const questions = raw.map((q, i) => {
       const type = ['mcq','mcq_multi','tf','cloze'].includes(q.type) ? q.type : null;
@@ -358,22 +433,31 @@ app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
       const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => String(x).slice(0, 500)) : [];
       let correct = q.correct;
       if (type === 'tf') { if (typeof correct !== 'boolean') return null; }
+      else if (type === 'cloze') { if (typeof correct !== 'string') return null; }
       else if (type === 'mcq') { if (!Number.isInteger(correct) || correct < 0 || correct >= options.length) return null; }
       else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2) return null; }
       return {
         id: `gen-${Date.now()}-${i}`, number: i+1, type, text: text2,
-        options: type === 'tf' || type === 'cloze' ? [] : options, correct,
+        options: type === 'tf' || type === 'cloze' ? [] : options,
+        correct,
         explanation: String(q.explanation || '').slice(0, 1500),
         sourceExcerpt: String(q.source_excerpt || '').slice(0, 500),
-        source: 'ai-diane', confidence: null
+        source: 'ai-diane',
+        confidence: null
       };
     }).filter(Boolean);
     if (!questions.length) throw new Error('Aucune question générée.');
+    console.log(`[generate-questions] ✅ ${questions.length}/${n} questions`);
     res.json({ questions, note: String(parsed.note || '').slice(0, 1000), coverage: `${questions.length}/${n}`, model: modelName() });
   } catch (error) {
-    console.error('Erreur génération:', error?.message || error);
-    res.status(502).json({ error: 'Génération échouée.' });
+    logError('generate-questions', error);
+    res.status(502).json({ error: traduireErreurIA(error) });
   }
 });
 
-app.listen(port, '0.0.0.0', () => console.log(`CompoTest écoute sur le port ${port}`));
+app.listen(port, '0.0.0.0', () => {
+  console.log(`CompoTest écoute sur le port ${port}`);
+  console.log(`Modèle IA configuré : ${modelName()}`);
+  console.log(`Clé IA présente : ${Boolean(process.env.AI_API_KEY)}`);
+  console.log(`URL IA : ${process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1'}`);
+});
