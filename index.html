@@ -6,7 +6,7 @@
 <link rel="icon" type="image/png" href="/favicon.png" />
 <link rel="apple-touch-icon" href="/favicon.png" />
 <style>
-:root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c;--purple:#7c3aed}
+:root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c;--purple:#7c3aed;--orange:#d97706}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
 header{position:relative;background:linear-gradient(120deg,#132344,#2457d6);color:white;padding:0;overflow:hidden;line-height:0}
 header .banner-img{display:block;width:100%;height:auto;max-height:320px;object-fit:cover;object-position:center}
@@ -28,7 +28,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .notice{padding:11px;border-radius:10px;background:#fff7df;color:#74500b;font-size:13px;margin-top:10px}
 .notice.err{background:#fff0f0;color:#a51f2a}
 .notice.ok{background:#e9f8f1;color:#0e5e3f}
-.result{background:#edf9f2;border:1px solid #c4ecd5;padding:16px;border-radius:12px;margin-top:14px}
+.notice.info{background:#e0f0ff;color:#0b4a82}
 .history-item{padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}.history-item:last-child{border-bottom:0}
 .footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#edf2ff;color:#244fc2}
@@ -73,13 +73,30 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 @keyframes slide{0%{margin-left:0}50%{margin-left:60%}100%{margin-left:0}}
 .progress-info{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-top:6px}
 .progress-info b{color:var(--blue)}
-.sections-box{background:#f8faff;border:1px solid #d5ddeb;border-radius:12px;padding:14px;margin-top:14px}
+
+/* ===== WIZARD ===== */
+.wizard{display:flex;flex-direction:column;gap:16px}
+.step{background:#fff;border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden;transition:all .25s}
+.step.locked{opacity:.55;pointer-events:none}
+.step-header{display:flex;align-items:center;gap:12px;padding:16px 20px;background:#f8faff;border-bottom:1px solid var(--line);cursor:pointer}
+.step-header .step-num{width:34px;height:34px;border-radius:50%;background:#e1e7f0;color:#34435c;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
+.step.done .step-header .step-num{background:var(--green);color:#fff}
+.step.active .step-header .step-num{background:var(--blue);color:#fff}
+.step-header .step-title{flex:1;font-weight:800;font-size:15px;color:var(--navy)}
+.step-header .step-sub{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
+.step-header .step-chev{font-size:14px;color:#6c7890;transition:transform .25s}
+.step.collapsed .step-header .step-chev{transform:rotate(-90deg)}
+.step-body{padding:20px;display:block}
+.step.collapsed .step-body{display:none}
+.step-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;background:#e9f8f1;color:#13734e;margin-left:8px}
+
+.sections-box{background:#f8faff;border:1px solid #d5ddeb;border-radius:12px;padding:14px;margin-top:12px}
 .sections-box h4{margin:0 0 10px;font-size:14px;color:var(--navy)}
-.section-item{display:flex;align-items:flex-start;gap:10px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;transition:all .15s}
+.section-item{display:flex;align-items:flex-start;gap:10px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;transition:all .15s;cursor:pointer}
 .section-item:hover{border-color:#a9bce7;background:#f8faff}
 .section-item.selected{border-color:var(--blue);background:#edf2ff}
 .section-item input[type=checkbox]{width:auto;margin-top:4px;flex-shrink:0}
-.section-item .info{flex:1;cursor:pointer}
+.section-item .info{flex:1}
 .section-item .title{font-weight:700;font-size:14px;margin-bottom:2px}
 .section-item .meta{font-size:11px;color:var(--muted)}
 .range-box{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px}
@@ -87,8 +104,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .range-box label{margin:0;font-size:12px;font-weight:600;flex-shrink:0}
 .range-box input[type=number]{width:80px;padding:8px}
 .selection-summary{background:#e9f8f1;border-left:4px solid var(--green);padding:10px 14px;border-radius:8px;margin-top:12px;font-size:13px}
-.selection-summary b{color:var(--green)}
-.preview-list{max-height:340px;overflow-y:auto;background:#f8faff;border:1px solid #d5ddeb;border-radius:10px;padding:10px;margin-top:12px}
+.preview-list{max-height:300px;overflow-y:auto;background:#f8faff;border:1px solid #d5ddeb;border-radius:10px;padding:10px;margin-top:12px}
 .preview-q{padding:8px 10px;background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:12px}
 .preview-q .num{font-weight:800;color:var(--blue);margin-right:6px}
 .preview-q .type{font-size:10px;background:#edf2ff;color:#244fc2;padding:1px 6px;border-radius:99px;margin-left:6px}
@@ -130,11 +146,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .fsrs-due{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:#f3e8ff;color:#6b21a8}
 .fsrs-due.now{background:#ffe7c9;color:#7a4a00}
 .fsrs-empty{text-align:center;padding:30px 20px;color:var(--muted)}
-.analysis-detail{background:#f8faff;border:1px solid #d5ddeb;border-radius:10px;padding:14px;margin-top:12px;font-size:13px}
-.analysis-detail h4{margin:0 0 8px;font-size:14px;color:var(--navy)}
-.analysis-detail .notion{padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
-.analysis-detail .notion:last-child{border-bottom:0}
-.analysis-detail .notion b{color:var(--blue)}
+
 @media(max-width:768px){
   header .banner-img{max-height:160px}
   header .header-overlay{padding:8px 12px;gap:6px;flex-wrap:wrap;justify-content:center}
@@ -152,6 +164,8 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   .exam-body{padding:0 12px 130px}
   .exam-q{padding:16px}
   .exam-q h3{font-size:15px}
+  .step-header{padding:12px 14px}
+  .step-body{padding:14px}
 }
 </style>
 </head><body>
@@ -224,116 +238,154 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 </section>
 
 <nav class="tabs" role="tablist">
-  <button class="tab active" data-tab="import" role="tab"><span class="icon">📥</span> Importer · Générer · Composer</button>
-  <button class="tab" data-tab="add" role="tab"><span class="icon">✏️</span> Ajouter</button>
+  <button class="tab active" data-tab="import" role="tab"><span class="icon">📥</span> Créer un test</button>
+  <button class="tab" data-tab="add" role="tab"><span class="icon">✏️</span> Ajouter manuellement</button>
   <button class="tab" data-tab="review" role="tab"><span class="icon">⭐</span> Réviser <span class="count" id="fsrsDueCount">0</span></button>
   <button class="tab" data-tab="history" role="tab"><span class="icon">📊</span> Historique</button>
   <button class="tab hide" data-tab="admin" id="adminTab" role="tab"><span class="icon">⚙️</span> Admin</button>
 </nav>
 
+<!-- ============================================= -->
+<!-- ONGLET CRÉER UN TEST — WIZARD EN 3 ÉTAPES -->
+<!-- ============================================= -->
 <section class="tab-content active" data-content="import">
-  <div class="panel">
-    <h2 style="margin-top:0">📥 Importer un document, générer et composer un test</h2>
-    <p class="muted">Importez un <b>PDF</b>, un <b>Word (.docx)</b> ou un <b>texte (.txt)</b>. Le site détecte automatiquement les parties du document. Sélectionnez ensuite les questions à traiter, puis lancez le test.</p>
+  <div class="wizard">
 
-    <div class="grid-2">
-      <div>
-        <label for="quizTitle">Titre du test</label>
-        <input id="quizTitle" placeholder="Ex. Santé publique L1 2021-2022">
+    <!-- ÉTAPE 1 : IMPORTER -->
+    <div class="step active" id="step1">
+      <div class="step-header" data-toggle="step1">
+        <div class="step-num">1</div>
+        <div class="step-title">
+          Importer un document
+          <div class="step-sub">PDF, Word ou texte — max 80 000 caractères</div>
+        </div>
+        <div class="step-chev">▾</div>
       </div>
-      <div>
-        <label for="quizSubject">Matière</label>
-        <input id="quizSubject" placeholder="Ex. Santé publique">
+      <div class="step-body">
+        <div class="grid-2">
+          <div>
+            <label for="quizTitle">Titre du test (facultatif)</label>
+            <input id="quizTitle" placeholder="Ex. Santé publique L1">
+          </div>
+          <div>
+            <label for="quizSubject">Matière (facultatif)</label>
+            <input id="quizSubject" placeholder="Ex. Santé publique">
+          </div>
+        </div>
+
+        <label style="margin-top:14px">Fichier à importer</label>
+        <div class="filebox">
+          <input id="pdfFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
+          <div id="pdfStatus" class="small muted" style="margin-top:6px">Choisis un fichier puis clique sur « Extraire le texte ».</div>
+          <div class="actions">
+            <button id="extractBtn" class="secondary">📄 Extraire le texte</button>
+          </div>
+        </div>
+
+        <div id="textAreaWrap" style="display:none;margin-top:14px">
+          <label for="pdfText">Texte extrait (modifiable)</label>
+          <textarea id="pdfText" style="min-height:160px" placeholder="Le texte extrait apparaîtra ici."></textarea>
+          <div class="small muted" style="margin-top:6px">Tu peux corriger le texte si nécessaire avant de passer à l'analyse.</div>
+        </div>
       </div>
     </div>
 
-    <div class="filebox" style="margin-top:12px">
-      <input id="pdfFile" type="file" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
-      <div id="pdfStatus" class="small muted" style="margin-top:6px">PDF, Word (.docx) ou texte (.txt) — max 80 000 caractères.</div>
-      <div class="actions">
-        <button id="extractBtn" class="secondary">1. Extraire le texte</button>
-        <button id="analyzeBtn">2. Analyser et détecter les parties</button>
+    <!-- ÉTAPE 2 : ANALYSER -->
+    <div class="step locked" id="step2">
+      <div class="step-header" data-toggle="step2">
+        <div class="step-num">2</div>
+        <div class="step-title">
+          Analyser le document
+          <div class="step-sub">Détecte automatiquement les parties et les questions</div>
+        </div>
+        <div class="step-chev">▾</div>
+      </div>
+      <div class="step-body">
+        <div class="notice info" style="margin-top:0">
+          <b>Deux cas possibles :</b><br>
+          • <b>Document numéroté</b> (Q1, Q2, …) → clique sur <b>« Analyser »</b> pour détecter les parties<br>
+          • <b>Cours rédigé</b> (sans questions) → clique sur <b>« Générer depuis le cours »</b> pour créer les questions par IA
+        </div>
+
+        <div class="actions">
+          <button id="analyzeBtn">🔍 Analyser et détecter les parties</button>
+          <button id="generateQuestionsBtn" class="secondary">✨ Générer depuis le cours (IA)</button>
+          <button id="aiBtn" class="ghost">🧠 Résoudre les réponses manquantes (IA)</button>
+        </div>
+
+        <div id="analysisStatus" class="notice" style="display:none"></div>
+        <div id="analysisProgress" style="display:none;margin-top:10px">
+          <div class="progress-bar indeterminate"><span></span></div>
+          <div class="progress-info"><span id="analysisProgressText">Analyse…</span><b id="analysisTimer">0s</b></div>
+        </div>
+        <div id="generationStatus" class="small muted" style="margin-top:10px"></div>
+        <div id="generationProgress" style="display:none;margin-top:10px">
+          <div class="progress-bar indeterminate"><span></span></div>
+          <div class="progress-info"><span id="generationProgressText">Génération…</span><b id="generationTimer">0s</b></div>
+        </div>
       </div>
     </div>
 
-    <label for="pdfText" style="margin-top:16px">Texte extrait (modifiable)</label>
-    <textarea id="pdfText" placeholder="Le texte du fichier apparaîtra ici. Tu peux aussi coller du texte." style="min-height:180px"></textarea>
+    <!-- ÉTAPE 3 : COMPOSER -->
+    <div class="step locked" id="step3">
+      <div class="step-header" data-toggle="step3">
+        <div class="step-num">3</div>
+        <div class="step-title">
+          Composer et lancer le test
+          <div class="step-sub">Sélectionne les questions puis lance l'exercice</div>
+        </div>
+        <div class="step-chev">▾</div>
+      </div>
+      <div class="step-body">
 
-    <div id="analysisStatus" class="notice" style="display:none"></div>
-    <div id="analysisProgress" style="display:none;margin-top:10px">
-      <div class="progress-bar indeterminate"><span></span></div>
-      <div class="progress-info"><span id="analysisProgressText">Analyse…</span><b id="analysisTimer">0s</b></div>
-    </div>
+        <div id="sectionsBox" style="display:none">
+          <h4 style="margin:0 0 10px;font-size:14px;color:var(--navy)">📑 Parties détectées dans le document</h4>
+          <div id="sectionsList"></div>
+          <div class="actions" style="margin-top:8px">
+            <button type="button" class="secondary" id="selectAllSectionsBtn">Tout sélectionner</button>
+            <button type="button" class="ghost" id="deselectAllSectionsBtn">Tout désélectionner</button>
+          </div>
+        </div>
 
-    <div id="sectionsBox" class="sections-box" style="display:none">
-      <h4>📑 Parties détectées dans le document</h4>
-      <div id="sectionsList"></div>
-      <div class="actions" style="margin-top:8px">
-        <button type="button" class="secondary" id="selectAllSectionsBtn">Tout sélectionner</button>
-        <button type="button" class="ghost" id="deselectAllSectionsBtn">Tout désélectionner</button>
+        <div id="rangeBox" class="range-box" style="display:none">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px">🎯 Ou choisir une plage personnalisée</div>
+          <div class="row">
+            <label for="rangeFrom">De la question</label>
+            <input id="rangeFrom" type="number" min="1" value="1">
+            <label for="rangeTo">à</label>
+            <input id="rangeTo" type="number" min="1" value="10">
+            <button type="button" class="secondary" id="applyRangeBtn">Appliquer cette plage</button>
+          </div>
+          <div class="small muted">La numérotation suit celle du document (Q1, Q2, …).</div>
+        </div>
+
+        <div id="selectionSummary" class="selection-summary" style="display:none"></div>
+        <div id="previewList" class="preview-list" style="display:none"></div>
+
+        <div class="actions" style="margin-top:16px">
+          <button id="startQuizFromSelectionBtn" class="success" style="display:none">▶️ Lancer le test</button>
+          <button id="saveQuizBtn" class="secondary" style="display:none">💾 Enregistrer</button>
+          <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:500;font-size:13px">
+            <input id="timerToggle" type="checkbox" style="width:auto"> Chronomètre (10 min)
+          </label>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+
+        <h4 style="margin:0 0 10px;font-size:14px;color:var(--navy)">📚 Mes questionnaires enregistrés</h4>
+        <label for="quizPicker">Sélectionner un test enregistré</label>
+        <select id="quizPicker"><option value="">Aucun test enregistré</option></select>
+        <div class="actions">
+          <button id="startQuiz">Commencer</button>
+          <button id="deleteQuizBtn" class="danger" style="display:none">🗑️ Supprimer</button>
+          <button id="shareQuiz" class="secondary">Exporter JSON</button>
+        </div>
+        <div id="examArea"></div>
+
+        <div id="draftList" style="margin-top:16px"></div>
       </div>
     </div>
 
-    <div id="rangeBox" class="range-box" style="display:none">
-      <div style="font-weight:700;font-size:13px;margin-bottom:8px">🎯 Ou choisir une plage personnalisée</div>
-      <div class="row">
-        <label for="rangeFrom">De la question</label>
-        <input id="rangeFrom" type="number" min="1" value="1">
-        <label for="rangeTo">à</label>
-        <input id="rangeTo" type="number" min="1" value="10">
-        <button type="button" class="secondary" id="applyRangeBtn">Appliquer cette plage</button>
-      </div>
-      <div class="small muted">La numérotation suit celle du document (Q1, Q2, …).</div>
-    </div>
-
-    <div id="selectionSummary" class="selection-summary" style="display:none"></div>
-    <div id="previewList" class="preview-list" style="display:none"></div>
-
-    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
-
-    <h3 style="margin:0 0 6px;font-size:16px">✨ Générer un questionnaire depuis le cours (si document non numéroté)</h3>
-    <p class="small muted" style="margin-top:0">Si le document est un cours rédigé sans questions numérotées, l'IA génère un questionnaire complet.</p>
-
-    <label for="genCount">Nombre de questions à générer</label>
-    <input id="genCount" type="number" min="1" max="100" value="20">
-    <div class="small muted" style="margin-top:6px">Répartition : 40% QCM · 30% QCM multi · 30% Vrai/Faux</div>
-
-    <div class="actions">
-      <button id="generateQuestionsBtn">Générer depuis le cours</button>
-      <button id="aiBtn" class="ghost">Résoudre les réponses manquantes (IA)</button>
-    </div>
-    <div id="generationStatus" class="small muted" style="margin-top:10px"></div>
-    <div id="generationProgress" style="display:none;margin-top:10px">
-      <div class="progress-bar indeterminate"><span></span></div>
-      <div class="progress-info"><span id="generationProgressText">Génération…</span><b id="generationTimer">0s</b></div>
-    </div>
-
-    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
-
-    <h3 style="margin:0 0 6px;font-size:16px">🎯 Composer et lancer le test</h3>
-    <p class="small muted" style="margin-top:0">Lance les questions actuellement sélectionnées.</p>
-
-    <div class="actions">
-      <button id="startQuizFromSelectionBtn" class="success" style="display:none">▶️ Lancer le test avec la sélection</button>
-      <button id="saveQuizBtn" class="secondary" style="display:none">💾 Enregistrer cette sélection</button>
-      <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:500;font-size:13px">
-        <input id="timerToggle" type="checkbox" style="width:auto"> Chronomètre (10 min)
-      </label>
-    </div>
-
-    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
-
-    <h3 style="margin:0 0 6px;font-size:16px">📚 Mes questionnaires enregistrés</h3>
-    <label for="quizPicker">Sélectionner un test enregistré</label>
-    <select id="quizPicker"><option value="">Aucun test enregistré</option></select>
-    <div class="actions">
-      <button id="startQuiz">Commencer</button>
-      <button id="deleteQuizBtn" class="danger" style="display:none">🗑️ Supprimer ce test</button>
-      <button id="shareQuiz" class="secondary">Exporter JSON</button>
-    </div>
-    <div id="examArea"></div>
-
-    <div id="draftList"></div>
   </div>
 </section>
 
@@ -375,7 +427,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 <section class="tab-content" data-content="review">
   <div class="panel">
     <h2 style="margin-top:0">⭐ Réviser (Répétition espacée FSRS-5)</h2>
-    <p class="muted">Les questions sont révisées automatiquement selon ta mémoire. Réponds correctement → la question revient plus tard. Réponds mal → elle revient vite.</p>
+    <p class="muted">Les questions sont révisées automatiquement selon ta mémoire.</p>
     <div class="actions">
       <button id="startReviewBtn">Commencer la révision du jour</button>
       <button id="refreshReviewBtn" class="secondary">Actualiser</button>
@@ -449,19 +501,8 @@ let detectedSections=[];
 let allParsedQuestions=[];
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function identifierToEmail(input){
-  const v=String(input||'').trim().toLowerCase();
-  if(!v)return '';
-  if(v.includes('@'))return v;
-  const safe=v.replace(/[^a-z0-9._-]/g,'');
-  if(!safe)return '';
-  return safe+'@'+INTERNAL_DOMAIN;
-}
-function emailToDisplay(email){
-  const e=String(email||'');
-  if(e.toLowerCase().endsWith('@'+INTERNAL_DOMAIN))return e.substring(0,e.length-INTERNAL_DOMAIN.length-1);
-  return e;
-}
+function identifierToEmail(input){const v=String(input||'').trim().toLowerCase();if(!v)return '';if(v.includes('@'))return v;const safe=v.replace(/[^a-z0-9._-]/g,'');if(!safe)return '';return safe+'@'+INTERNAL_DOMAIN}
+function emailToDisplay(email){const e=String(email||'');if(e.toLowerCase().endsWith('@'+INTERNAL_DOMAIN))return e.substring(0,e.length-INTERNAL_DOMAIN.length-1);return e}
 function typeName(q){return ({mcq:'QCM',mcq_multi:'QCM multi',tf:'Vrai/Faux',short:'Réponse courte'})[q.type]||q.type}
 function hasKey(q){return q.type==='tf'?typeof q.correct==='boolean':q.type==='short'?Boolean(q.expected):Array.isArray(q.correct)?q.correct.length>0:Number.isInteger(q.correct)}
 function correctLabel(q){if(q.type==='tf')return q.correct===true?'Vrai':q.correct===false?'Faux':'?';if(q.type==='short')return q.expected||'?';if(Array.isArray(q.correct))return q.correct.map(i=>q.options?.[i]).filter(Boolean).join(' ; ')||'?';return q.options?.[q.correct]||'?'}
@@ -484,7 +525,7 @@ function cleanExtractedText(text){
   return cleaned.trim();
 }
 
-// ================== FSRS-5 ==================
+// ============ FSRS-5 ============
 const FSRS_W=[0.4072,1.1829,3.1262,15.4722,7.2102,0.5316,1.0651,0.0234,1.616,0.1544,1.0824,1.9813,0.0953,0.2975,2.2042,0.2407,2.9466,0.5034,0.6567];
 const FSRS_DESIRED_RETENTION=0.9;
 const DAY_MS=24*60*60*1000;
@@ -500,60 +541,24 @@ function fsrsNextStability(d,s,r,g){
 }
 function fsrsReview(card,grade){
   const now=Date.now();
-  if(!card||card.reps===0){
-    const s=fsrsInitStability(grade),d=fsrsInitDifficulty(grade);
-    return {state:'review',stability:s,difficulty:d,reps:1,lapses:grade===1?1:0,lastReview:now,due:now+fsrsNextInterval(s)*DAY_MS};
-  }
+  if(!card||card.reps===0){const s=fsrsInitStability(grade),d=fsrsInitDifficulty(grade);return{state:'review',stability:s,difficulty:d,reps:1,lapses:grade===1?1:0,lastReview:now,due:now+fsrsNextInterval(s)*DAY_MS}}
   const elapsed=(now-card.lastReview)/DAY_MS;
   const r=fsrsRetrievability(elapsed,card.stability);
   const nd=fsrsNextDifficulty(card.difficulty,grade);
   const ns=fsrsNextStability(card.difficulty,card.stability,r,grade);
   const nl=grade===1?(card.lapses||0)+1:(card.lapses||0);
-  return {state:'review',stability:ns,difficulty:nd,reps:(card.reps||0)+1,lapses:nl,lastReview:now,due:now+fsrsNextInterval(ns)*DAY_MS};
+  return{state:'review',stability:ns,difficulty:nd,reps:(card.reps||0)+1,lapses:nl,lastReview:now,due:now+fsrsNextInterval(ns)*DAY_MS};
 }
 function fsrsCardKey(q){return (q.text||'').toLowerCase().trim().slice(0,200)}
 function saveFsrs(){localStorage.setItem('compo_fsrs',JSON.stringify(fsrsCards))}
-function fsrsDueCards(){
-  const now=Date.now(),cards=[];
-  for(const [k,c] of Object.entries(fsrsCards))if(c.due<=now)cards.push({key:k,...c});
-  cards.sort((a,b)=>a.due-b.due);
-  return cards;
-}
-function fsrsStats(){
-  const all=Object.values(fsrsCards),now=Date.now();
-  return {total:all.length,due:all.filter(c=>c.due<=now).length,learning:all.filter(c=>c.reps<3).length,mature:all.filter(c=>c.reps>=3).length};
-}
-function renderFsrsStats(){
-  const s=fsrsStats();
-  $('fsrsStats').innerHTML=`<div class="stats" style="margin:0"><div class="stat"><small>Cartes totales</small><strong>${s.total}</strong></div><div class="stat"><small>À réviser</small><strong>${s.due}</strong></div><div class="stat"><small>Matures</small><strong>${s.mature}</strong></div></div>`;
-  $('fsrsDueCount').textContent=s.due;
-  $('fsrsDueCount').style.display=s.due>0?'inline-block':'none';
-}
-function renderFsrsList(){
-  const due=fsrsDueCards();
-  if(!due.length){$('fsrsList').innerHTML='<div class="fsrs-empty">Aucune carte à réviser.<br>Fais un exercice pour créer des cartes.</div>';return}
-  $('fsrsList').innerHTML='<h3 style="font-size:14px;margin:0 0 8px">Cartes à réviser ('+due.length+')</h3>'+
-    due.slice(0,20).map(c=>{
-      const overdue=Math.round((Date.now()-c.due)/DAY_MS);
-      const overdueTxt=overdue>0?`en retard de ${overdue}j`:"aujourd'hui";
-      return `<div class="fsrs-card"><h4>${esc(c.key)}</h4><div class="fsrs-meta"><span>Révisions : <b>${c.reps}</b></span><span>Échecs : <b>${c.lapses||0}</b></span><span>Stabilité : <b>${(c.stability||0).toFixed(1)}j</b></span><span class="fsrs-due now">${overdueTxt}</span></div></div>`;
-    }).join('')+(due.length>20?`<div class="small muted" style="margin-top:8px">… et ${due.length-20} autres</div>`:'');
-}
+function fsrsDueCards(){const now=Date.now(),cards=[];for(const [k,c] of Object.entries(fsrsCards))if(c.due<=now)cards.push({key:k,...c});cards.sort((a,b)=>a.due-b.due);return cards}
+function fsrsStats(){const all=Object.values(fsrsCards),now=Date.now();return{total:all.length,due:all.filter(c=>c.due<=now).length,learning:all.filter(c=>c.reps<3).length,mature:all.filter(c=>c.reps>=3).length}}
+function renderFsrsStats(){const s=fsrsStats();$('fsrsStats').innerHTML=`<div class="stats" style="margin:0"><div class="stat"><small>Cartes totales</small><strong>${s.total}</strong></div><div class="stat"><small>À réviser</small><strong>${s.due}</strong></div><div class="stat"><small>Matures</small><strong>${s.mature}</strong></div></div>`;$('fsrsDueCount').textContent=s.due;$('fsrsDueCount').style.display=s.due>0?'inline-block':'none'}
+function renderFsrsList(){const due=fsrsDueCards();if(!due.length){$('fsrsList').innerHTML='<div class="fsrs-empty">Aucune carte à réviser.</div>';return}$('fsrsList').innerHTML='<h3 style="font-size:14px;margin:0 0 8px">Cartes à réviser ('+due.length+')</h3>'+due.slice(0,20).map(c=>{const overdue=Math.round((Date.now()-c.due)/DAY_MS);const overdueTxt=overdue>0?`en retard de ${overdue}j`:"aujourd'hui";return `<div class="fsrs-card"><h4>${esc(c.key)}</h4><div class="fsrs-meta"><span>Révisions : <b>${c.reps}</b></span><span>Échecs : <b>${c.lapses||0}</b></span><span>Stabilité : <b>${(c.stability||0).toFixed(1)}j</b></span><span class="fsrs-due now">${overdueTxt}</span></div></div>`}).join('')}
 let reviewSession=null;
-function startReviewSession(){
-  const due=fsrsDueCards();
-  if(!due.length){alert('Aucune carte à réviser aujourd\'hui.');return}
-  const allQuestions=[];
-  for(const q of quizzes){for(const question of q.questions){
-    const key=fsrsCardKey(question);
-    if(fsrsCards[key]&&fsrsCards[key].due<=Date.now())allQuestions.push({...question,_fsrsKey:key,_quizTitle:q.title});
-  }}
-  if(!allQuestions.length){alert('Aucune question correspondante.');return}
-  reviewSession={questions:allQuestions,answers:new Array(allQuestions.length).fill(null),current:0,submitted:false,title:'Révision FSRS',subject:'Répétition espacée'};
-  openExamViewFromState(reviewSession,true);
-}
+function startReviewSession(){const due=fsrsDueCards();if(!due.length){alert('Aucune carte à réviser aujourd\'hui.');return}const allQuestions=[];for(const q of quizzes){for(const question of q.questions){const key=fsrsCardKey(question);if(fsrsCards[key]&&fsrsCards[key].due<=Date.now())allQuestions.push({...question,_fsrsKey:key,_quizTitle:q.title})}}if(!allQuestions.length){alert('Aucune question correspondante.');return}reviewSession={questions:allQuestions,answers:new Array(allQuestions.length).fill(null),current:0,submitted:false,title:'Révision FSRS',subject:'Répétition espacée'};openExamViewFromState(reviewSession,true)}
 
-// ================== GÉNÉRATEUR LOCAL DE SECOURS ==================
+// ============ GÉNÉRATEUR LOCAL DE SECOURS ============
 function generateLocalQuestions(text,count){
   const cleaned=cleanExtractedText(text);
   if(!cleaned||cleaned.length<100)return [];
@@ -579,9 +584,7 @@ function generateLocalQuestions(text,count){
     for(const other of shuffled){
       if(other===sentence)continue;
       for(const w of keyWords(other)){
-        if(w!==keyword&&!distractors.includes(w)&&w.length>4&&!sentence.toLowerCase().includes(w.toLowerCase())){
-          distractors.push(w);if(distractors.length>=3)break;
-        }
+        if(w!==keyword&&!distractors.includes(w)&&w.length>4&&!sentence.toLowerCase().includes(w.toLowerCase())){distractors.push(w);if(distractors.length>=3)break}
       }
       if(distractors.length>=3)break;
     }
@@ -595,14 +598,11 @@ function generateLocalQuestions(text,count){
   return questions.slice(0,count);
 }
 
-// ================== DÉTECTION INTELLIGENTE DES SECTIONS ==================
+// ============ DÉTECTION INTELLIGENTE DES SECTIONS ============
 function detectSections(text){
   const lines = text.split('\n');
-  const sections = [];
   const MAX_TITLE_LEN = 80;
   const MIN_TITLE_LEN = 6;
-
-  // Liste noire : ne jamais considérer ces lignes comme des titres
   const blacklist = [
     /^Page\s*\d+/i, /^\d+$/, /^Q\d+/i, /^Q\s*\d+/i,
     /^QCD$/i, /^QCM$/i, /^QCD\s*:?\s*$/i, /^QCM\s*:?\s*$/i,
@@ -611,117 +611,72 @@ function detectSections(text){
     /^Voici/i, /^Combien/i, /^Quel(le)?s?$/i, /^Lequel/i,
     /^Correction/i, /^Solution/i, /^Réponse/i, /^Note/i,
     /^[A-Z]\.\s/, /^[a-z]\.\s/, /^[A-H]\)/,
-    /^\s*[\[\(].*[\]\)]\s*$/,
     /^https?:/i, /^www\./i,
     /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/,
-    /^[IVX]+\.\s*$/i,
-    /^\s*[-•*·]\s/, // puces
-    /^\s*[§¶]\s*/,
-    /^[()\[\]{}<>«»"']+$/, // ponctuation seule
+    /^\s*[-•*·]\s/,
   ];
-
-  function isBlacklisted(line){
-    return blacklist.some(rx => rx.test(line));
-  }
-
-  // Score de "title-ness" : plus le score est élevé, plus c'est probablement un titre
+  function isBlacklisted(line){return blacklist.some(rx => rx.test(line))}
   function titleScore(raw){
     if(!raw) return -1;
     const line = raw.trim();
     if(line.length < MIN_TITLE_LEN || line.length > MAX_TITLE_LEN) return -1;
     if(isBlacklisted(line)) return -1;
-
     const words = line.split(/\s+/);
     if(words.length < 2 || words.length > 14) return -1;
-
-    // Ratio de mots en MAJUSCULES
     const upperWords = words.filter(w => /^[A-ZÀ-Ý][A-ZÀ-Ý0-9\-']{1,}$/.test(w)).length;
     const upperRatio = upperWords / words.length;
-
-    // Ratio de caractères majuscules
     const letters = line.replace(/[^A-Za-zÀ-ÿ]/g, '');
     const caps = line.replace(/[^A-ZÀ-Ý]/g, '');
     const capRatio = letters.length > 0 ? caps.length / letters.length : 0;
-
-    // Ne pas compter les titres qui finissent par ":" ou qui sont des questions
     const endsWithColon = /:\s*$/.test(line);
     const startsWithQ = /^Q\s*\d+/i.test(line);
     const hasQuestionMark = /\?\s*$/.test(line);
-
     let score = 0;
-
-    // Titre en MAJUSCULES (le plus fiable)
-    if(upperRatio >= 0.7) score += 5;
-    else if(upperRatio >= 0.5) score += 3;
-
-    // Titre en Title Case (majuscule au début de chaque mot)
+    if(upperRatio >= 0.7) score += 5; else if(upperRatio >= 0.5) score += 3;
     const titleCaseWords = words.filter(w => /^[A-ZÀ-Ý][a-zà-ÿ]/.test(w)).length;
     if(titleCaseWords / words.length >= 0.6) score += 3;
-
-    // Score de ratio de majuscules
-    if(capRatio >= 0.7) score += 3;
-    else if(capRatio >= 0.5) score += 1;
-
-    // Pénalités
+    if(capRatio >= 0.7) score += 3; else if(capRatio >= 0.5) score += 1;
     if(startsWithQ) score -= 5;
     if(hasQuestionMark) score -= 4;
     if(endsWithColon) score -= 1;
-    if(/^#{1,4}\s+/.test(raw)) score += 4; // Markdown heading
+    if(/^#{1,4}\s+/.test(raw)) score += 4;
     if(/^(?:PARTIE|CHAPITRE|TITRE|SECTION|THEME|THÈME|MODULE|UNITÉ|UNITE)\s+[IVX0-9]/i.test(line)) score += 6;
-
     return score;
   }
-
   const candidates = [];
   for(let i = 0; i < lines.length; i++){
-    const raw = lines[i];
-    const score = titleScore(raw);
-    if(score >= 4){
-      candidates.push({ line: i, title: raw.trim().replace(/^#+\s*/, '').replace(/\s+/g, ' '), score });
-    }
+    const score = titleScore(lines[i]);
+    if(score >= 4) candidates.push({ line: i, title: lines[i].trim().replace(/^#+\s*/, '').replace(/\s+/g, ' '), score });
   }
-
-  // Fusionne les doublons proches (même titre à 3 lignes d'intervalle)
   const merged = [];
   for(const c of candidates){
     if(merged.length && c.line - merged[merged.length - 1].line < 3 && c.title.toLowerCase() === merged[merged.length - 1].title.toLowerCase()) continue;
     merged.push(c);
   }
-
-  // Calcul des plages
   for(let i = 0; i < merged.length; i++){
     merged[i].startIndex = merged[i].line;
     merged[i].endIndex = i < merged.length - 1 ? merged[i+1].line : lines.length;
     merged[i].id = 'sec-' + i;
   }
-
-  // Filtrage : on ne garde que les sections qui contiennent au moins 3 questions
   const sectionsFiltered = [];
   for(const s of merged){
-    // Compte les questions numérotées dans cette section
     let count = 0;
     for(let i = s.startIndex; i < s.endIndex; i++){
       if(/^\s*(?:Q\s*)?\d{1,3}[.)]\s+\S/i.test(lines[i])) count++;
     }
     if(count >= 3) sectionsFiltered.push({ ...s, questionCount: count });
   }
-
   return { sections: sectionsFiltered, lines };
 }
 
-// ================== PARSING DES QUESTIONS PAR SECTION ==================
 function parseAllQuestions(text, sections){
   const lines = text.split('\n');
   const result = [];
   const qstart = /^(?:[✓✔☑]\s*)?(?:Q\s*)?(\d{1,3})[.)]\s+(.+)$/i;
-
   function sectionForLine(lineIdx){
-    for(const s of sections){
-      if(lineIdx >= s.startIndex && lineIdx < s.endIndex) return s.title;
-    }
+    for(const s of sections) if(lineIdx >= s.startIndex && lineIdx < s.endIndex) return s.title;
     return 'Général';
   }
-
   let currentQ = null;
   for(let i = 0; i < lines.length; i++){
     const line = lines[i].trim();
@@ -729,16 +684,8 @@ function parseAllQuestions(text, sections){
     const m = line.match(qstart);
     if(m){
       if(currentQ) result.push(currentQ);
-      currentQ = {
-        number: Number(m[1]),
-        text: m[2],
-        lines: [],
-        section: sectionForLine(i),
-        lineIdx: i
-      };
-    } else if(currentQ){
-      currentQ.lines.push(line);
-    }
+      currentQ = { number: Number(m[1]), text: m[2], lines: [], section: sectionForLine(i), lineIdx: i };
+    } else if(currentQ){ currentQ.lines.push(line); }
   }
   if(currentQ) result.push(currentQ);
 
@@ -753,19 +700,10 @@ function parseAllQuestions(text, sections){
       if(/^(?:Page\s+\d+)/i.test(line)) continue;
       textParts.push(line);
     }
-    const q = {
-      text: [b.text, ...textParts].join(' ').replace(/\s+/g,' ').trim(),
-      options, explanation: '', source: 'unresolved', confidence: null,
-      number: b.number, section: b.section, lineIdx: b.lineIdx
-    };
-
-    // Détection Vrai/Faux par défaut pour les QCD
+    const q = { text: [b.text, ...textParts].join(' ').replace(/\s+/g,' ').trim(), options, explanation: '', source: 'unresolved', confidence: null, number: b.number, section: b.section, lineIdx: b.lineIdx };
     const sectionUpper = String(b.section || '').toUpperCase();
     if(key !== null){ q.type='tf'; q.correct=key; q.source='pdf-marked'; }
-    else if(/QCD/i.test(sectionUpper) || /VRAI.*FAUX/i.test(sectionUpper) || /COCHEZ\s+A/i.test(text)){
-      q.type = 'tf';
-      // On laisse l'IA déterminer correct
-    }
+    else if(/QCD/i.test(sectionUpper) || /VRAI.*FAUX/i.test(sectionUpper) || /COCHEZ\s+A/i.test(text)){ q.type = 'tf'; }
     else if(options.length){
       q.type = /QCM|MULTI/i.test(sectionUpper) && marked.length > 1 ? 'mcq_multi' : (marked.length > 1 ? 'mcq_multi' : 'mcq');
       if(marked.length){ q.correct = q.type === 'mcq_multi' ? marked : marked[0]; q.source = 'pdf-marked'; }
@@ -776,7 +714,7 @@ function parseAllQuestions(text, sections){
   return out;
 }
 
-// ================== CLOUD ==================
+// ============ CLOUD ============
 async function apiFetch(url,options={}){
   const client=window.compTestAuth;
   const {data:{session}}=await client.auth.getSession();
@@ -803,7 +741,38 @@ function persist(){
   if(window.comptestSaveCloud)window.comptestSaveCloud(quizzes,historyData);
 }
 
-// ================== ONGLETS ==================
+// ============ WIZARD: GESTION DES ÉTAPES ============
+function unlockStep(id){
+  const el = $(id);
+  if(!el) return;
+  el.classList.remove('locked');
+  el.classList.add('active');
+  const chev = el.querySelector('.step-chev');
+  if(chev) el.classList.remove('collapsed');
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function markStepDone(id){
+  const el = $(id);
+  if(!el) return;
+  el.classList.remove('active','locked');
+  el.classList.add('done');
+}
+function collapseStep(id){
+  const el = $(id);
+  if(el) el.classList.add('collapsed');
+}
+function initWizard(){
+  document.querySelectorAll('.step-header').forEach(h => {
+    h.addEventListener('click', () => {
+      const step = h.closest('.step');
+      if(step.classList.contains('locked')) return;
+      step.classList.toggle('collapsed');
+    });
+  });
+}
+initWizard();
+
+// ============ ONGLETS ============
 function initTabs(){
   document.querySelectorAll('.tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
@@ -816,22 +785,13 @@ function initTabs(){
 }
 initTabs();
 
-// ================== AUTH ==================
+// ============ AUTH ============
 function showAuthError(message,diag){
   $('authError').textContent=message||'';
   const box=$('authDiag');
   if(diag){box.style.display='block';box.textContent=diag}else{box.style.display='none';box.textContent=''}
 }
-function setSignedOut(message=''){
-  activeUserId=null;isAdminUser=false;
-  $('authGate').style.display='block';
-  $('appMain').style.display='none';
-  $('logoutBtn').hidden=true;
-  $('passwordPanelBtn').hidden=true;
-  $('adminTab').classList.add('hide');
-  $('authUserLabel').textContent='Espace privé · Connexion requise';
-  if(message)showAuthError(message);
-}
+function setSignedOut(message=''){activeUserId=null;isAdminUser=false;$('authGate').style.display='block';$('appMain').style.display='none';$('logoutBtn').hidden=true;$('passwordPanelBtn').hidden=true;$('adminTab').classList.add('hide');$('authUserLabel').textContent='Espace privé · Connexion requise';if(message)showAuthError(message)}
 function traduireErreurAuth(error){
   const msg=String(error?.message||'').toLowerCase();
   const code=String(error?.code||'').toLowerCase();
@@ -863,28 +823,18 @@ async function initSaaS(){
     }catch(err){showAuthError('Erreur : '+(err?.message||err))}
     finally{btn.disabled=false;btn.textContent='Se connecter'}
   });
-
   $('forgotPasswordBtn').addEventListener('click',async()=>{
     const email=identifierToEmail($('loginEmail').value);
     if(!email){showAuthError('Saisis ton identifiant.');return}
     if(email.endsWith('@'+INTERNAL_DOMAIN)){showAuthError('Identifiant interne. Contacte l’administrateur.');return}
     if(!confirm(`Envoyer un e-mail à ${email} ?`))return;
     const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/index.html'});
-    if(error)showAuthError('Envoi impossible : '+error.message);
-    else showAuthError('Si un compte existe, un e-mail a été envoyé.');
+    if(error)showAuthError('Envoi impossible : '+error.message); else showAuthError('Si un compte existe, un e-mail a été envoyé.');
   });
-
   $('logoutBtn').addEventListener('click',async()=>{await client.auth.signOut();setSignedOut('Déconnecté.');});
   $('passwordPanelBtn').addEventListener('click',()=>{$('passwordPanel').style.display=$('passwordPanel').style.display==='none'?'block':'none';});
   $('closePasswordPanel').addEventListener('click',()=>$('passwordPanel').style.display='none');
-
-  document.querySelectorAll('.pwd-toggle').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const t=document.getElementById(btn.dataset.target);
-      if(t)t.type=t.type==='password'?'text':'password';
-    });
-  });
-
+  document.querySelectorAll('.pwd-toggle').forEach(btn=>{btn.addEventListener('click',()=>{const t=document.getElementById(btn.dataset.target);if(t)t.type=t.type==='password'?'text':'password';})});
   $('passwordForm').addEventListener('submit',async e=>{
     e.preventDefault();
     if(!isAdminUser){$('passwordStatus').textContent='Seul l’administrateur peut modifier son mot de passe ici.';return}
@@ -901,10 +851,8 @@ async function initSaaS(){
     if(!error){$('passwordStatus').textContent='✅ Mot de passe modifié.';$('newPassword').value='';$('newPasswordConfirm').value='';}
     else $('passwordStatus').textContent='Erreur : '+error.message;
   });
-
   const {data:{session},error}=await client.auth.getSession();
-  if(error)setSignedOut('Recharge la page.');
-  else await activateSession(session);
+  if(error)setSignedOut('Recharge la page.'); else await activateSession(session);
 }
 async function activateSession(session){
   if(!session){setSignedOut();return}
@@ -914,19 +862,8 @@ async function activateSession(session){
   $('appMain').style.display='block';
   $('logoutBtn').hidden=false;
   $('authUserLabel').textContent=emailToDisplay(session.user.email||'Connecté');
-
   isAdminUser=false;
-  try{
-    await adminApi('/api/admin/users');
-    isAdminUser=true;
-    $('adminTab').classList.remove('hide');
-    $('passwordPanelBtn').hidden=false;
-    loadAdminUsers();
-  }catch{
-    $('adminTab').classList.add('hide');
-    $('passwordPanelBtn').hidden=true;
-  }
-
+  try{await adminApi('/api/admin/users');isAdminUser=true;$('adminTab').classList.remove('hide');$('passwordPanelBtn').hidden=false;loadAdminUsers()}catch{$('adminTab').classList.add('hide');$('passwordPanelBtn').hidden=true}
   try{
     const {data:cloudRow,error}=await window.compTestAuth.from('comptest_data').select('quizzes,history').eq('user_id',activeUserId).maybeSingle();
     if(error){console.error(error);return}
@@ -944,13 +881,8 @@ async function activateSession(session){
   renderAll();renderFsrsStats();renderFsrsList();
 }
 
-// ================== ADMIN ==================
-async function adminApi(url,options={}){
-  const r=await apiFetch(url,options);
-  const data=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(data.error||'Erreur admin.');
-  return data;
-}
+// ============ ADMIN ============
+async function adminApi(url,options={}){const r=await apiFetch(url,options);const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Erreur admin.');return data}
 function safeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function loadAdminUsers(){
   const box=$('adminUsersList');box.textContent='Chargement…';
@@ -1001,7 +933,7 @@ $('adminUsersList').addEventListener('click',async e=>{
   }catch(err){alert(err.message)}
 });
 
-// ================== RENDER ==================
+// ============ RENDER ============
 function renderAll(){
   $('statTests').textContent=historyData.length;
   const avg=historyData.length?historyData.reduce((a,x)=>a+x.score,0)/historyData.length:0;
@@ -1013,26 +945,24 @@ function renderAll(){
   $('history').innerHTML=historyData.length?[...historyData].reverse().slice(0,12).map(h=>
     `<div class="history-item"><b>${esc(h.title)}</b><br><span class="muted">${esc(h.subject||'Sans matière')} · ${esc(h.date)}</span><br><b>${Number(h.score).toFixed(1)}/20</b> <span class="muted">(${h.correct}/${h.total})</span></div>`
   ).join(''):'<div class="muted small">Aucun test terminé.</div>';
-  $('draftList').innerHTML=drafts.length?`<h3 style="font-size:15px;margin:18px 0 6px">Questions prêtes (${drafts.length})</h3>
+  $('draftList').innerHTML=drafts.length?`<h4 style="font-size:14px;margin:18px 0 6px;color:var(--navy)">Questions prêtes (${drafts.length})</h4>
     <div class="small muted">${drafts.filter(hasKey).length} avec réponse · ${drafts.filter(q=>!hasKey(q)).length} sans réponse</div>`+
-    drafts.map((q,i)=>`<div class="question"><strong>${i+1}. ${esc(q.text)}</strong>
+    drafts.slice(0, 30).map((q,i)=>`<div class="question"><strong>${i+1}. ${esc(q.text)}</strong>
       <div class="qmeta"><span class="badge">${esc(typeName(q))}</span>${q.section?`<span class="badge section">${esc(q.section.slice(0,40))}</span>`:''}</div>
       ${q.options?.length?'<div class="small">'+q.options.map((o,j)=>`${q.correct===j||(Array.isArray(q.correct)&&q.correct.includes(j))?'✓ ':''}${String.fromCharCode(65+j)}. ${esc(o)}`).join('<br>')+'</div>':''}
       <div class="small" style="margin-top:6px"><b>Réponse :</b> ${esc(correctLabel(q))}</div>
       ${q.explanation?`<p class="small muted">${esc(q.explanation)}</p>`:''}
-      <button class="ghost" style="padding:5px 8px;margin-top:7px" onclick="removeDraft(${i})">Retirer</button>
-    </div>`).join(''):'';
+    </div>`).join('') + (drafts.length > 30 ? `<div class="small muted">… et ${drafts.length - 30} autres</div>` : ''):'';
 }
 window.removeDraft=i=>{drafts.splice(i,1);renderAll()};
 
-// ================== IMPORT ==================
+// ============ IMPORT ============
 $('qType').addEventListener('change',()=>{
   const t=$('qType').value;
   $('mcqFields').classList.toggle('hide',!['mcq','mcq_multi'].includes(t));
   $('tfFields').classList.toggle('hide',t!=='tf');
   $('shortFields').classList.toggle('hide',t!=='short');
 });
-
 function pdfTextWithLines(content){
   const items=(content.items||[]).filter(x=>x.str&&x.str.trim()).map(x=>({s:x.str,x:x.transform?.[4]??0,y:x.transform?.[5]??0}));
   items.sort((a,b)=>Math.abs(a.y-b.y)>2?b.y-a.y:a.x-b.x);
@@ -1044,31 +974,10 @@ function pdfTextWithLines(content){
   if(line.trim())lines.push(line.trim());
   return lines.join('\n');
 }
-async function extractPdf(file){
-  const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-  const pages=[];
-  for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p);pages.push(pdfTextWithLines(await page.getTextContent()))}
-  return cleanExtractedText(pages.join('\n\n'));
-}
-async function extractDocx(file){
-  if(!window.JSZip)throw new Error('JSZip non chargé.');
-  const zip=await JSZip.loadAsync(await file.arrayBuffer());
-  const docXml=zip.file('word/document.xml');
-  if(!docXml)throw new Error('Word invalide.');
-  const xml=await docXml.async('string');
-  const parser=new DOMParser();
-  const doc=parser.parseFromString(xml,'application/xml');
-  const paragraphs=doc.getElementsByTagNameNS('*','p');
-  const lines=[];
-  for(let i=0;i<paragraphs.length;i++){
-    const texts=paragraphs[i].getElementsByTagNameNS('*','t');
-    let line='';
-    for(let j=0;j<texts.length;j++)line+=texts[j].textContent||'';
-    lines.push(line.trim());
-  }
-  return cleanExtractedText(lines.join('\n'));
-}
+async function extractPdf(file){const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;const pages=[];for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p);pages.push(pdfTextWithLines(await page.getTextContent()))}return cleanExtractedText(pages.join('\n\n'))}
+async function extractDocx(file){if(!window.JSZip)throw new Error('JSZip non chargé.');const zip=await JSZip.loadAsync(await file.arrayBuffer());const docXml=zip.file('word/document.xml');if(!docXml)throw new Error('Word invalide.');const xml=await docXml.async('string');const parser=new DOMParser();const doc=parser.parseFromString(xml,'application/xml');const paragraphs=doc.getElementsByTagNameNS('*','p');const lines=[];for(let i=0;i<paragraphs.length;i++){const texts=paragraphs[i].getElementsByTagNameNS('*','t');let line='';for(let j=0;j<texts.length;j++)line+=texts[j].textContent||'';lines.push(line.trim())}return cleanExtractedText(lines.join('\n'))}
 async function extractTxt(file){return cleanExtractedText(await file.text())}
+
 $('extractBtn').onclick=async()=>{
   const file=$('pdfFile').files[0];
   if(!file){$('pdfStatus').textContent='Choisis un fichier.';return}
@@ -1083,19 +992,23 @@ $('extractBtn').onclick=async()=>{
     else{$('pdfStatus').textContent='Format non reconnu.';return}
     $('pdfText').value=text;
     $('quizTitle').value=$('quizTitle').value||file.name.replace(/\.[^.]+$/,'');
-    if(text.length<200){$('pdfStatus').innerHTML=`⚠️ Extrait : ${text.length} caractères seulement.<br><span class="muted">Le PDF contient peut-être beaucoup de caractères parasites ou est scanné.</span>`}
-    else{$('pdfStatus').textContent=`✅ Extrait : ${text.length} caractères (nettoyé). Clique sur « Analyser ».`}
+    if(text.length<200){$('pdfStatus').innerHTML=`⚠️ Extrait : ${text.length} caractères seulement.`}
+    else{$('pdfStatus').innerHTML=`✅ Extrait : ${text.length} caractères.<br><span class="muted">Tu peux passer à l'étape 2 → Analyse.</span>`}
+    $('textAreaWrap').style.display='block';
+    // Déverrouille l'étape 2
+    markStepDone('step1');
+    collapseStep('step1');
+    unlockStep('step2');
   }catch(e){$('pdfStatus').textContent='Erreur : '+(e.message||'illisible.')}
   finally{btn.disabled=false}
 };
 
-// ================== ANALYSE ET DÉTECTION DES SECTIONS ==================
+// ============ ANALYSE ============
 async function analyzeDocument(){
   const rawOriginal=$('pdfText').value.trim();
   if(!rawOriginal){$('analysisStatus').style.display='block';$('analysisStatus').className='notice err';$('analysisStatus').textContent='Aucun texte à analyser.';return}
-  if(rawOriginal.length<80){$('analysisStatus').style.display='block';$('analysisStatus').className='notice err';$('analysisStatus').textContent='Texte trop court (min 80 caractères).';return}
+  if(rawOriginal.length<80){$('analysisStatus').style.display='block';$('analysisStatus').className='notice err';$('analysisStatus').textContent='Texte trop court.';return}
   const raw=cleanExtractedText(rawOriginal);
-  if(raw.length<80){$('analysisStatus').style.display='block';$('analysisStatus').className='notice err';$('analysisStatus').textContent='Après nettoyage, le texte est trop court.';return}
 
   const btn=$('analyzeBtn');btn.disabled=true;const oldText=btn.textContent;btn.textContent='Analyse…';
   $('analysisStatus').style.display='block';
@@ -1109,36 +1022,29 @@ async function analyzeDocument(){
   $('startQuizFromSelectionBtn').style.display='none';
   $('saveQuizBtn').style.display='none';
 
-  // Pause pour permettre à l'UI de se rafraîchir
   await new Promise(r => setTimeout(r, 50));
 
-  // Détection des sections
   const { sections } = detectSections(raw);
   detectedSections = sections;
   allParsedQuestions = parseAllQuestions(raw, sections);
-
   const numberedCount = allParsedQuestions.length;
   const sectionsWithCount = sections.filter(s => s.questionCount > 0);
-
   $('analysisProgress').style.display='none';
 
   if(numberedCount >= 3 && sectionsWithCount.length >= 1){
     $('analysisStatus').className='notice ok';
-    $('analysisStatus').innerHTML = `✅ <b>${numberedCount} question(s)</b> détectée(s) dans <b>${sectionsWithCount.length} partie(s)</b>. Sélectionne les parties à traiter.`;
+    $('analysisStatus').innerHTML = `✅ <b>${numberedCount} question(s)</b> dans <b>${sectionsWithCount.length} partie(s)</b>. Sélectionne les parties à l'étape 3.`;
     $('sectionsBox').style.display='block';
     $('sectionsList').innerHTML = sectionsWithCount.map(s =>
       `<label class="section-item selected" data-section="${esc(s.title)}">
         <input type="checkbox" checked data-section-title="${esc(s.title)}">
         <div class="info">
           <div class="title">📑 ${esc(s.title)}</div>
-          <div class="meta">${s.questionCount} question(s) · lignes ${s.startIndex + 1} à ${s.endIndex} · score ${s.score}</div>
+          <div class="meta">${s.questionCount} question(s)</div>
         </div>
       </label>`
     ).join('');
-
-    document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => {
-      cb.addEventListener('change', updateSelectionFromSections);
-    });
+    document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => cb.addEventListener('change', updateSelectionFromSections));
     document.querySelectorAll('#sectionsList .section-item').forEach(item => {
       item.addEventListener('click', (e) => {
         if (e.target.tagName === 'INPUT') return;
@@ -1147,33 +1053,18 @@ async function analyzeDocument(){
         updateSelectionFromSections();
       });
     });
-
     $('rangeBox').style.display = 'block';
     const numbers = allParsedQuestions.map(q => q.number).filter(n => Number.isFinite(n));
-    if (numbers.length) {
-      $('rangeFrom').value = Math.min(...numbers);
-      $('rangeTo').value = Math.max(...numbers);
-      $('rangeFrom').max = Math.max(...numbers);
-      $('rangeTo').max = Math.max(...numbers);
-    }
-
+    if (numbers.length) { $('rangeFrom').value = Math.min(...numbers); $('rangeTo').value = Math.max(...numbers); $('rangeFrom').max = Math.max(...numbers); $('rangeTo').max = Math.max(...numbers); }
     updateSelectionFromSections();
   } else if(numberedCount >= 3){
-    // Aucune section détectée mais des questions oui
     $('analysisStatus').className='notice';
-    $('analysisStatus').innerHTML = `✅ <b>${numberedCount} question(s)</b> détectée(s). Aucune partie distincte identifiée. Utilise la plage de questions.`;
-    // On crée une section fictive "Document complet"
-    const fake = { id: 'sec-all', title: 'Document complet', startIndex: 0, endIndex: raw.split('\n').length, questionCount: numberedCount, score: 0 };
+    $('analysisStatus').innerHTML = `✅ <b>${numberedCount} question(s)</b> détectée(s). Utilise la plage de questions.`;
+    const fake = { id:'sec-all', title:'Document complet', startIndex:0, endIndex:raw.split('\n').length, questionCount:numberedCount, score:0 };
     detectedSections = [fake];
     allParsedQuestions = parseAllQuestions(raw, detectedSections);
     $('sectionsBox').style.display='block';
-    $('sectionsList').innerHTML = `<label class="section-item selected" data-section="${esc(fake.title)}">
-      <input type="checkbox" checked data-section-title="${esc(fake.title)}">
-      <div class="info">
-        <div class="title">📑 ${esc(fake.title)}</div>
-        <div class="meta">${fake.questionCount} question(s) · document entier</div>
-      </div>
-    </label>`;
+    $('sectionsList').innerHTML = `<label class="section-item selected" data-section="Document complet"><input type="checkbox" checked data-section-title="Document complet"><div class="info"><div class="title">📑 Document complet</div><div class="meta">${numberedCount} question(s)</div></div></label>`;
     document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => cb.addEventListener('change', updateSelectionFromSections));
     document.querySelectorAll('#sectionsList .section-item').forEach(item => item.addEventListener('click', (e) => {
       if (e.target.tagName === 'INPUT') return;
@@ -1186,15 +1077,18 @@ async function analyzeDocument(){
     if (numbers.length) { $('rangeFrom').value = Math.min(...numbers); $('rangeTo').value = Math.max(...numbers); }
     updateSelectionFromSections();
   } else {
-    // Cours rédigé
     $('analysisStatus').className='notice';
-    $('analysisStatus').innerHTML = '📚 Document détecté comme cours rédigé (pas de questions numérotées). Utilise le bouton "Générer depuis le cours" ci-dessous.';
+    $('analysisStatus').innerHTML = '📚 Document détecté comme cours rédigé. Utilise le bouton <b>« Générer depuis le cours (IA) »</b>.';
   }
+
+  markStepDone('step2');
+  collapseStep('step2');
+  unlockStep('step3');
   btn.disabled = false; btn.textContent = oldText;
 }
 $('analyzeBtn').onclick=analyzeDocument;
 
-// ================== SÉLECTION MULTIPLE ==================
+// ============ SÉLECTION ============
 function updateSelectionFromSections(){
   const checked = [...document.querySelectorAll('#sectionsList input[type=checkbox]:checked')].map(cb => cb.dataset.sectionTitle);
   document.querySelectorAll('#sectionsList .section-item').forEach(item => {
@@ -1209,98 +1103,54 @@ function renderSelectionPreview(filtered, checkedSections){
   const summary = $('selectionSummary');
   const preview = $('previewList');
   if(!filtered.length){
-    summary.style.display = 'none';
-    preview.style.display = 'none';
-    $('startQuizFromSelectionBtn').style.display = 'none';
-    $('saveQuizBtn').style.display = 'none';
+    summary.style.display='none';preview.style.display='none';
+    $('startQuizFromSelectionBtn').style.display='none';
+    $('saveQuizBtn').style.display='none';
     return;
   }
-  summary.style.display = 'block';
-  const tf = filtered.filter(q=>q.type==='tf').length;
-  const mcq = filtered.filter(q=>q.type==='mcq').length;
-  const mcqm = filtered.filter(q=>q.type==='mcq_multi').length;
-  const noKey = filtered.filter(q=>!hasKey(q)).length;
-  summary.innerHTML = `✅ <b>${filtered.length} question(s)</b> sélectionnée(s) · ${checkedSections.length} partie(s)<br>
-    <span class="small">Vrai/Faux : ${tf} · QCM : ${mcq} · QCM multi : ${mcqm} · Sans réponse : ${noKey}</span>`;
-
-  preview.style.display = 'block';
-  preview.innerHTML = filtered.slice(0, 50).map(q =>
-    `<div class="preview-q">
-      <span class="num">Q${q.number}</span>${esc(q.text.slice(0, 180))}${q.text.length > 180 ? '…' : ''}
-      <span class="type">${esc(typeName(q))}</span>
-    </div>`
-  ).join('') + (filtered.length > 50 ? `<div class="small muted" style="padding:6px">… et ${filtered.length - 50} autres questions</div>` : '');
-
-  $('startQuizFromSelectionBtn').style.display = 'inline-block';
-  $('saveQuizBtn').style.display = 'inline-block';
+  summary.style.display='block';
+  const tf=filtered.filter(q=>q.type==='tf').length,mcq=filtered.filter(q=>q.type==='mcq').length,mcqm=filtered.filter(q=>q.type==='mcq_multi').length,noKey=filtered.filter(q=>!hasKey(q)).length;
+  summary.innerHTML=`✅ <b>${filtered.length} question(s)</b> sélectionnée(s) · ${checkedSections.length} partie(s)<br><span class="small">Vrai/Faux : ${tf} · QCM : ${mcq} · QCM multi : ${mcqm} · Sans réponse : ${noKey}</span>`;
+  preview.style.display='block';
+  preview.innerHTML=filtered.slice(0,30).map(q=>`<div class="preview-q"><span class="num">Q${q.number}</span>${esc(q.text.slice(0,180))}${q.text.length>180?'…':''} <span class="type">${esc(typeName(q))}</span></div>`).join('')+(filtered.length>30?`<div class="small muted" style="padding:6px">… et ${filtered.length-30} autres</div>`:'');
+  $('startQuizFromSelectionBtn').style.display='inline-block';
+  $('saveQuizBtn').style.display='inline-block';
   renderAll();
 }
-$('selectAllSectionsBtn').onclick = () => {
-  document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => cb.checked = true);
-  updateSelectionFromSections();
-};
-$('deselectAllSectionsBtn').onclick = () => {
-  document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => cb.checked = false);
-  updateSelectionFromSections();
-};
-$('applyRangeBtn').onclick = () => {
-  const from = Number($('rangeFrom').value);
-  const to = Number($('rangeTo').value);
-  if(!Number.isFinite(from) || !Number.isFinite(to) || from > to){alert('Plage invalide.');return}
-  const filtered = allParsedQuestions.filter(q => q.number >= from && q.number <= to);
+$('selectAllSectionsBtn').onclick=()=>{document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb=>cb.checked=true);updateSelectionFromSections()};
+$('deselectAllSectionsBtn').onclick=()=>{document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb=>cb.checked=false);updateSelectionFromSections()};
+$('applyRangeBtn').onclick=()=>{
+  const from=Number($('rangeFrom').value),to=Number($('rangeTo').value);
+  if(!Number.isFinite(from)||!Number.isFinite(to)||from>to){alert('Plage invalide.');return}
+  const filtered=allParsedQuestions.filter(q=>q.number>=from&&q.number<=to);
   if(!filtered.length){alert('Aucune question dans cette plage.');return}
-  drafts = filtered.map(q => ({ ...q }));
-  $('selectionSummary').style.display = 'block';
-  $('selectionSummary').innerHTML = `🎯 <b>Plage Q${from} à Q${to}</b> · ${filtered.length} question(s)`;
-  $('previewList').style.display = 'block';
-  $('previewList').innerHTML = filtered.slice(0, 50).map(q =>
-    `<div class="preview-q"><span class="num">Q${q.number}</span>${esc(q.text.slice(0, 180))}${q.text.length > 180 ? '…' : ''} <span class="type">${esc(typeName(q))}</span></div>`
-  ).join('');
-  $('startQuizFromSelectionBtn').style.display = 'inline-block';
-  $('saveQuizBtn').style.display = 'inline-block';
+  drafts=filtered.map(q=>({...q}));
+  $('selectionSummary').style.display='block';
+  $('selectionSummary').innerHTML=`🎯 <b>Plage Q${from} à Q${to}</b> · ${filtered.length} question(s)`;
+  $('previewList').style.display='block';
+  $('previewList').innerHTML=filtered.slice(0,30).map(q=>`<div class="preview-q"><span class="num">Q${q.number}</span>${esc(q.text.slice(0,180))}${q.text.length>180?'…':''} <span class="type">${esc(typeName(q))}</span></div>`).join('');
+  $('startQuizFromSelectionBtn').style.display='inline-block';
+  $('saveQuizBtn').style.display='inline-block';
   renderAll();
 };
 
-// ================== IA GÉNÉRATION POUR COURS RÉDIGÉ ==================
+// ============ GÉNÉRATION IA ============
 let generationTicker=null;
 $('generateQuestionsBtn').onclick=async()=>{
   const sourceText=cleanExtractedText($('pdfText').value.trim());
-  const count=Number($('genCount').value);
+  const count=Number(20);
   if(sourceText.length<80){$('generationStatus').textContent='Texte trop court.';return}
-  if(!Number.isInteger(count)||count<1||count>100){$('generationStatus').textContent='Nombre entre 1 et 100.';return}
-
-  // Vérifie d'abord que l'IA est configurée
-  try {
-    const health = await fetch('/api/health').then(r => r.json());
-    if(!health.aiConfigured){
-      $('generationStatus').innerHTML = '❌ <b>IA désactivée sur le serveur.</b><br>Ajoute la variable <code>AI_API_KEY</code> dans Render → Environment, puis redéploie.';
-      return;
-    }
-  } catch(e) { /* on continue, on tentera quand même */ }
-
+  try { const health=await fetch('/api/health').then(r=>r.json()); if(!health.aiConfigured){ $('generationStatus').innerHTML='❌ <b>IA désactivée sur le serveur.</b><br>Ajoute <code>AI_API_KEY</code> dans Render.'; return; } } catch(e){}
   const btn=$('generateQuestionsBtn');btn.disabled=true;btn.textContent='Génération…';
   const startTime=Date.now();
   $('generationStatus').textContent='';
   $('generationProgress').style.display='block';
-  $('generationProgressText').textContent='Analyse IA du cours en cours…';
+  $('generationProgressText').textContent='Analyse IA…';
   if(generationTicker)clearInterval(generationTicker);
-  generationTicker=setInterval(()=>{
-    const elapsed=Math.round((Date.now()-startTime)/1000);
-    $('generationTimer').textContent=elapsed+'s';
-    if(elapsed<15)$('generationProgressText').textContent='📚 Lecture du cours…';
-    else if(elapsed<30)$('generationProgressText').textContent='🧠 Extraction des notions…';
-    else if(elapsed<60)$('generationProgressText').textContent='✍️ Rédaction des questions…';
-    else $('generationProgressText').textContent='⏳ Presque terminé…';
-  },500);
-
+  generationTicker=setInterval(()=>{const elapsed=Math.round((Date.now()-startTime)/1000);$('generationTimer').textContent=elapsed+'s';if(elapsed<15)$('generationProgressText').textContent='📚 Lecture du cours…';else if(elapsed<30)$('generationProgressText').textContent='🧠 Extraction des notions…';else if(elapsed<60)$('generationProgressText').textContent='✍️ Rédaction des questions…';else $('generationProgressText').textContent='⏳ Presque terminé…'},500);
   try{
-    const controller=new AbortController();
-    const timeoutId=setTimeout(()=>controller.abort(),100000);
-    const r=await apiFetch('/api/generate-questions',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({subject:$('quizSubject').value.trim()||'Matière non précisée',title:$('quizTitle').value.trim()||'Cours importé',sourceText,count}),
-      signal:controller.signal
-    });
+    const controller=new AbortController();const timeoutId=setTimeout(()=>controller.abort(),100000);
+    const r=await apiFetch('/api/generate-questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:$('quizSubject').value.trim()||'Matière non précisée',title:$('quizTitle').value.trim()||'Cours importé',sourceText,count}),signal:controller.signal});
     clearTimeout(timeoutId);
     const data=await r.json().catch(()=>({error:'Réponse illisible'}));
     if(!r.ok)throw new Error(data.error||`Erreur ${r.status}`);
@@ -1314,22 +1164,24 @@ $('generateQuestionsBtn').onclick=async()=>{
     $('startQuizFromSelectionBtn').style.display='inline-block';
     $('saveQuizBtn').style.display='inline-block';
     renderAll();
+    markStepDone('step2');collapseStep('step2');unlockStep('step3');
   }catch(e){
     console.warn('IA échouée, bascule locale :',e.message);
     const local=generateLocalQuestions(sourceText,count);
     if(local.length){
       drafts=local;
-      $('generationStatus').innerHTML=`⚠️ Mode secours : ${local.length} question(s) générée(s) localement (IA indisponible ou trop lente).`;
+      $('generationStatus').innerHTML=`⚠️ Mode secours : ${local.length} question(s) générée(s) localement (IA indisponible).`;
       $('startQuizFromSelectionBtn').style.display='inline-block';
       $('saveQuizBtn').style.display='inline-block';
       renderAll();
+      markStepDone('step2');collapseStep('step2');unlockStep('step3');
     }else{
       $('generationStatus').innerHTML=`❌ Échec : ${e.message}`;
     }
   }finally{
     if(generationTicker){clearInterval(generationTicker);generationTicker=null}
     $('generationProgress').style.display='none';
-    btn.disabled=false;btn.textContent='Générer depuis le cours';
+    btn.disabled=false;btn.textContent='✨ Générer depuis le cours (IA)';
   }
 };
 
@@ -1347,30 +1199,21 @@ $('aiBtn').onclick=async()=>{
       if(!q)continue;
       if(q.type==='tf'&&typeof a.correct==='boolean')q.correct=a.correct;
       else if(q.type==='short'&&typeof a.correct==='string')q.expected=a.correct.trim();
-      else if(q.type==='mcq'||q.type==='mcq_multi'){
-        let c=a.correct;
-        if(Array.isArray(c))q.correct=c;
-        else if(Number.isInteger(c))q.correct=q.type==='mcq_multi'?[c]:c;
-      }
+      else if(q.type==='mcq'||q.type==='mcq_multi'){let c=a.correct;if(Array.isArray(c))q.correct=c;else if(Number.isInteger(c))q.correct=q.type==='mcq_multi'?[c]:c;}
       if(hasKey(q)){q.source='ai';q.explanation=a.explanation||'';q.confidence=a.confidence}
     }
     $('analysisStatus').textContent='Réponses IA ajoutées.';
     renderAll();
   }catch(e){$('analysisStatus').style.display='block';$('analysisStatus').className='notice err';$('analysisStatus').textContent='Erreur IA : '+e.message}
-  finally{btn.disabled=false;btn.textContent='Résoudre les réponses manquantes (IA)'}
+  finally{btn.disabled=false;btn.textContent='🧠 Résoudre les réponses manquantes (IA)'}
 };
 
-// ================== AJOUT MANUEL ==================
+// ============ AJOUT MANUEL ============
 $('addQuestion').onclick=()=>{
   const text=$('qText').value.trim(),type=$('qType').value;
   if(!text){alert('Écris un énoncé.');return}
   const q={text,type,explanation:$('qExplanation').value.trim(),source:'manual',section:'Manuel',number:drafts.length+1};
-  if(type==='mcq'||type==='mcq_multi'){
-    q.options=$('qOptions').value.split('\n').map(x=>x.trim()).filter(Boolean);
-    const nums=$('qCorrect').value.split(',').map(x=>Number(x.trim())-1);
-    if(q.options.length<2||nums.some(n=>n<0||n>=q.options.length)){alert('Vérifie options et réponses.');return}
-    q.correct=type==='mcq_multi'?nums:nums[0];
-  }
+  if(type==='mcq'||type==='mcq_multi'){q.options=$('qOptions').value.split('\n').map(x=>x.trim()).filter(Boolean);const nums=$('qCorrect').value.split(',').map(x=>Number(x.trim())-1);if(q.options.length<2||nums.some(n=>n<0||n>=q.options.length)){alert('Vérifie options et réponses.');return}q.correct=type==='mcq_multi'?nums:nums[0];}
   if(type==='tf')q.correct=$('qTF').value==='true';
   if(type==='short'){q.expected=$('qExpected').value.trim();if(!q.expected){alert('Réponse attendue ?');return}}
   drafts.push(q);
@@ -1378,7 +1221,6 @@ $('addQuestion').onclick=()=>{
   renderAll();
   alert('Question ajoutée.');
 };
-
 $('saveQuiz').onclick=()=>{
   const title=$('quizTitle').value.trim(),subject=$('quizSubject').value.trim();
   if(!title){alert('Donne un titre.');return}
@@ -1388,7 +1230,6 @@ $('saveQuiz').onclick=()=>{
   persist();
   alert('Questionnaire enregistré.');
 };
-
 $('saveQuizBtn').onclick=()=>{
   const title=$('quizTitle').value.trim(),subject=$('quizSubject').value.trim();
   if(!title){alert('Donne un titre.');return}
@@ -1397,7 +1238,6 @@ $('saveQuizBtn').onclick=()=>{
   persist();
   alert(`✅ Questionnaire "${title}" enregistré avec ${drafts.length} question(s).`);
 };
-
 $('startQuizFromSelectionBtn').onclick=()=>{
   if(!drafts.length){alert('Aucune question sélectionnée.');return}
   const title=$('quizTitle').value.trim()||'Test à partir de la sélection';
@@ -1405,25 +1245,11 @@ $('startQuizFromSelectionBtn').onclick=()=>{
   openExamView({title,subject,questions:drafts.map(q=>({...q,options:q.options?[...q.options]:undefined}))});
 };
 
-// ================== EXAM ==================
+// ============ EXAM ============
 let examState=null;
 function openExamView(quiz){openExamViewFromState({...quiz,answers:new Array(quiz.questions.length).fill(null),current:0,submitted:false},false)}
-function openExamViewFromState(state,isReview){
-  examState=state;
-  examState.isReview=!!isReview;
-  $('examTitle').textContent=state.title;
-  $('examMeta').textContent=`${state.questions.length} question(s) · ${state.subject}`;
-  $('examView').style.display='block';
-  document.body.style.overflow='hidden';
-  renderExam();
-}
-function closeExamView(){
-  if(!examState)return;
-  if(!examState.submitted&&!confirm('Quitter ? Les réponses seront perdues.'))return;
-  $('examView').style.display='none';
-  document.body.style.overflow='';
-  examState=null;
-}
+function openExamViewFromState(state,isReview){examState=state;examState.isReview=!!isReview;$('examTitle').textContent=state.title;$('examMeta').textContent=`${state.questions.length} question(s) · ${state.subject}`;$('examView').style.display='block';document.body.style.overflow='hidden';renderExam()}
+function closeExamView(){if(!examState)return;if(!examState.submitted&&!confirm('Quitter ? Les réponses seront perdues.'))return;$('examView').style.display='none';document.body.style.overflow='';examState=null}
 $('examQuitBtn').onclick=closeExamView;
 
 function renderExam(){
@@ -1431,36 +1257,15 @@ function renderExam(){
   const total=examState.questions.length;
   const answered=examState.answers.filter(a=>a!==null&&!(Array.isArray(a)&&a.length===0)).length;
   const isSubmitted=examState.submitted;
-
   let dotsHtml='';
-  for(let i=0;i<total;i++){
-    let cls='dot';
-    if(isSubmitted){const ok=isAnswerCorrect(examState.questions[i],examState.answers[i]);cls+=ok?' correct':' wrong'}
-    else{if(i===examState.current)cls+=' current';if(examState.answers[i]!==null&&!(Array.isArray(examState.answers[i])&&examState.answers[i].length===0))cls+=' answered'}
-    dotsHtml+=`<button class="${cls}" type="button" data-goto="${i}">${i+1}</button>`;
-  }
-
+  for(let i=0;i<total;i++){let cls='dot';if(isSubmitted){const ok=isAnswerCorrect(examState.questions[i],examState.answers[i]);cls+=ok?' correct':' wrong'}else{if(i===examState.current)cls+=' current';if(examState.answers[i]!==null&&!(Array.isArray(examState.answers[i])&&examState.answers[i].length===0))cls+=' answered'}dotsHtml+=`<button class="${cls}" type="button" data-goto="${i}">${i+1}</button>`}
   if(isSubmitted){
     const questionsHtml=examState.questions.map((q,i)=>{
-      const ua=examState.answers[i],ok=isAnswerCorrect(q,ua);
-      let body='';
-      if(q.type==='mcq'||q.type==='mcq_multi'){
-        body='<div class="exam-opts">'+q.options.map((o,j)=>{
-          const isCorrect=q.type==='mcq'?j===q.correct:(Array.isArray(q.correct)&&q.correct.includes(j));
-          const isChosen=q.type==='mcq'?ua===j:(Array.isArray(ua)&&ua.includes(j));
-          let cls='exam-opt';if(isCorrect)cls+=' correct';else if(isChosen)cls+=' wrong';
-          return `<div class="${cls}"><span>${String.fromCharCode(65+j)}. ${esc(o)}${isCorrect?' ✓':''}${isChosen&&!isCorrect?' (ton choix)':''}</span></div>`;
-        }).join('')+'</div>';
-      }else if(q.type==='tf'){
-        body='<div class="exam-opts">'+[true,false].map(v=>{
-          const isCorrect=q.correct===v,isChosen=ua===v;let cls='exam-opt';
-          if(isCorrect)cls+=' correct';else if(isChosen)cls+=' wrong';
-          return `<div class="${cls}"><span>${v?'Vrai':'Faux'}${isCorrect?' ✓':''}${isChosen&&!isCorrect?' (ton choix)':''}</span></div>`;
-        }).join('')+'</div>';
-      }else{
-        body=`<div class="small"><b>Ta réponse :</b> ${esc(ua||'(vide)')}</div><div class="correct-block"><b>Attendu :</b> ${esc(q.expected||'—')}</div>`;
-      }
-      return `<div class="exam-q"><div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div><h3>${esc(q.text)}</h3>${body}<div class="correct-block"><b>${ok?'✅ Bonne réponse':'❌ Incorrect'}</b>${q.type!=='short'?' — attendu : <b>'+esc(correctLabel(q))+'</b>':''}</div>${q.explanation?`<div class="explain-block"><b>Explication :</b> ${esc(q.explanation)}</div>`:''}</div>`;
+      const ua=examState.answers[i],ok=isAnswerCorrect(q,ua);let body='';
+      if(q.type==='mcq'||q.type==='mcq_multi'){body='<div class="exam-opts">'+q.options.map((o,j)=>{const isCorrect=q.type==='mcq'?j===q.correct:(Array.isArray(q.correct)&&q.correct.includes(j));const isChosen=q.type==='mcq'?ua===j:(Array.isArray(ua)&&ua.includes(j));let cls='exam-opt';if(isCorrect)cls+=' correct';else if(isChosen)cls+=' wrong';return `<div class="${cls}"><span>${String.fromCharCode(65+j)}. ${esc(o)}${isCorrect?' ✓':''}${isChosen&&!isCorrect?' (ton choix)':''}</span></div>`}).join('')+'</div>'}
+      else if(q.type==='tf'){body='<div class="exam-opts">'+[true,false].map(v=>{const isCorrect=q.correct===v,isChosen=ua===v;let cls='exam-opt';if(isCorrect)cls+=' correct';else if(isChosen)cls+=' wrong';return `<div class="${cls}"><span>${v?'Vrai':'Faux'}${isCorrect?' ✓':''}${isChosen&&!isCorrect?' (ton choix)':''}</span></div>`}).join('')+'</div>'}
+      else{body=`<div class="small"><b>Ta réponse :</b> ${esc(ua||'(vide)')}</div><div class="correct-block"><b>Attendu :</b> ${esc(q.expected||'—')}</div>`}
+      return `<div class="exam-q"><div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div><h3>${esc(q.text)}</h3>${body}<div class="correct-block"><b>${ok?'✅ Bonne réponse':'❌ Incorrect'}</b>${q.type!=='short'?' — attendu : <b>'+esc(correctLabel(q))+'</b>':''}</div>${q.explanation?`<div class="explain-block"><b>Explication :</b> ${esc(q.explanation)}</div>`:''}</div>`
     }).join('');
     const scorable=examState.questions.filter(hasKey).length;
     const correctCount=examState.questions.reduce((a,q,i)=>a+(hasKey(q)&&isAnswerCorrect(q,examState.answers[i])?1:0),0);
@@ -1470,135 +1275,49 @@ function renderExam(){
     $('examActionsBar').innerHTML=`<div class="progress-info">Terminé · <b>${correctCount}/${scorable}</b></div><div style="display:flex;gap:8px"><button type="button" class="secondary" id="examRestartBtn">🔄 Recommencer</button><button type="button" id="examCloseBtn">← Retour</button></div>`;
     $('examRestartBtn').onclick=()=>{examState.answers=new Array(total).fill(null);examState.current=0;examState.submitted=false;renderExam()};
     $('examCloseBtn').onclick=closeExamView;
-    if(!examState.isReview&&!examState._fsrsSaved){
-      examState._fsrsSaved=true;
-      const pct=scorable?correctCount/scorable:0;
-      let grade;
-      if(pct<0.5)grade=1;
-      else if(pct<0.75)grade=2;
-      else if(pct<0.95)grade=3;
-      else grade=4;
-      for(const q of examState.questions){
-        const key=fsrsCardKey(q);
-        fsrsCards[key]=fsrsReview(fsrsCards[key],grade);
-      }
-      saveFsrs();
-    }
+    if(!examState.isReview&&!examState._fsrsSaved){examState._fsrsSaved=true;const pct=scorable?correctCount/scorable:0;let grade;if(pct<0.5)grade=1;else if(pct<0.75)grade=2;else if(pct<0.95)grade=3;else grade=4;for(const q of examState.questions){const key=fsrsCardKey(q);fsrsCards[key]=fsrsReview(fsrsCards[key],grade)}saveFsrs()}
   }else{
-    const i=examState.current,q=examState.questions[i],ua=examState.answers[i];
-    let body='';
-    if(q.type==='mcq'||q.type==='mcq_multi'){
-      const multi=q.type==='mcq_multi';
-      body='<div class="exam-opts">'+q.options.map((o,j)=>{
-        const chosen=multi?(Array.isArray(ua)&&ua.includes(j)):(ua===j);
-        return `<label class="exam-opt${chosen?' selected':''}"><input type="${multi?'checkbox':'radio'}" name="examq" value="${j}" ${chosen?'checked':''}><span>${String.fromCharCode(65+j)}. ${esc(o)}</span></label>`;
-      }).join('')+'</div>';
-    }else if(q.type==='tf'){
-      body='<div class="exam-opts">'+[true,false].map(v=>{
-        const chosen=ua===v;
-        return `<label class="exam-opt${chosen?' selected':''}"><input type="radio" name="examq" value="${v}" ${chosen?'checked':''}><span>${v?'Vrai':'Faux'}</span></label>`;
-      }).join('')+'</div>';
-    }else{
-      body=`<input type="text" id="examShortInput" placeholder="Ta réponse…" value="${esc(ua||'')}">`;
-    }
+    const i=examState.current,q=examState.questions[i],ua=examState.answers[i];let body='';
+    if(q.type==='mcq'||q.type==='mcq_multi'){const multi=q.type==='mcq_multi';body='<div class="exam-opts">'+q.options.map((o,j)=>{const chosen=multi?(Array.isArray(ua)&&ua.includes(j)):(ua===j);return `<label class="exam-opt${chosen?' selected':''}"><input type="${multi?'checkbox':'radio'}" name="examq" value="${j}" ${chosen?'checked':''}><span>${String.fromCharCode(65+j)}. ${esc(o)}</span></label>`}).join('')+'</div>'}
+    else if(q.type==='tf'){body='<div class="exam-opts">'+[true,false].map(v=>{const chosen=ua===v;return `<label class="exam-opt${chosen?' selected':''}"><input type="radio" name="examq" value="${v}" ${chosen?'checked':''}><span>${v?'Vrai':'Faux'}</span></label>`}).join('')+'</div>'}
+    else{body=`<input type="text" id="examShortInput" placeholder="Ta réponse…" value="${esc(ua||'')}">`}
     $('examBody').innerHTML=`<div class="exam-q"><div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div><h3>${esc(q.text)}</h3>${body}</div><div class="exam-nav"><div class="dots">${dotsHtml}</div></div>`;
     $('examActionsBar').innerHTML=`<div class="progress-info">Question <b>${i+1}</b>/${total} · <b>${answered}</b> répondue(s)</div><div style="display:flex;gap:8px"><button type="button" class="secondary" id="examPrevBtn" ${i===0?'disabled':''}>← Précédent</button>${i<total-1?`<button type="button" id="examNextBtn">Suivant →</button>`:`<button type="button" class="success" id="examSubmitBtn">✓ Soumettre</button>`}${i<total-1?`<button type="button" class="ghost" id="examSubmitBtn2">Soumettre</button>`:''}</div>`;
     if($('examPrevBtn'))$('examPrevBtn').onclick=()=>{captureCurrentAnswer();examState.current--;renderExam()};
     if($('examNextBtn'))$('examNextBtn').onclick=()=>{captureCurrentAnswer();examState.current++;renderExam()};
     if($('examSubmitBtn'))$('examSubmitBtn').onclick=submitExam;
     if($('examSubmitBtn2'))$('examSubmitBtn2').onclick=submitExam;
-    document.querySelectorAll('#examBody .exam-opt input').forEach(inp=>{
-      inp.addEventListener('change',()=>{
-        const q=examState.questions[examState.current];
-        if(q.type==='mcq_multi')examState.answers[examState.current]=[...document.querySelectorAll('#examBody input[name="examq"]:checked')].map(x=>Number(x.value));
-        else if(q.type==='tf')examState.answers[examState.current]=inp.value==='true';
-        else examState.answers[examState.current]=Number(inp.value);
-        document.querySelectorAll('#examBody .exam-opt').forEach(el=>el.classList.remove('selected'));
-        document.querySelectorAll('#examBody input[name="examq"]:checked').forEach(x=>x.closest('.exam-opt').classList.add('selected'));
-      });
-    });
+    document.querySelectorAll('#examBody .exam-opt input').forEach(inp=>{inp.addEventListener('change',()=>{const q=examState.questions[examState.current];if(q.type==='mcq_multi')examState.answers[examState.current]=[...document.querySelectorAll('#examBody input[name="examq"]:checked')].map(x=>Number(x.value));else if(q.type==='tf')examState.answers[examState.current]=inp.value==='true';else examState.answers[examState.current]=Number(inp.value);document.querySelectorAll('#examBody .exam-opt').forEach(el=>el.classList.remove('selected'));document.querySelectorAll('#examBody input[name="examq"]:checked').forEach(x=>x.closest('.exam-opt').classList.add('selected'))})});
     if($('examShortInput'))$('examShortInput').addEventListener('input',e=>{examState.answers[examState.current]=e.target.value});
   }
-  document.querySelectorAll('#examBody .dot').forEach(d=>{
-    d.onclick=()=>{if(examState.submitted)return;captureCurrentAnswer();examState.current=Number(d.dataset.goto);renderExam()};
-  });
+  document.querySelectorAll('#examBody .dot').forEach(d=>{d.onclick=()=>{if(examState.submitted)return;captureCurrentAnswer();examState.current=Number(d.dataset.goto);renderExam()}});
 }
-function captureCurrentAnswer(){
-  if(!examState||examState.submitted)return;
-  const q=examState.questions[examState.current];
-  if(q.type==='short'){const inp=$('examShortInput');if(inp)examState.answers[examState.current]=inp.value}
-}
-function isAnswerCorrect(q,ua){
-  if(!hasKey(q)||ua===null||ua===undefined)return false;
-  if(q.type==='mcq')return ua===q.correct;
-  if(q.type==='mcq_multi'){const c=Array.isArray(ua)?[...ua].sort():[];const e=(Array.isArray(q.correct)?q.correct:[q.correct]).slice().sort();return c.length===e.length&&c.every((v,j)=>v===e[j])}
-  if(q.type==='tf')return ua===q.correct;
-  if(q.type==='short')return String(ua).trim().toLowerCase()===String(q.expected).toLowerCase();
-  return false;
-}
+function captureCurrentAnswer(){if(!examState||examState.submitted)return;const q=examState.questions[examState.current];if(q.type==='short'){const inp=$('examShortInput');if(inp)examState.answers[examState.current]=inp.value}}
+function isAnswerCorrect(q,ua){if(!hasKey(q)||ua===null||ua===undefined)return false;if(q.type==='mcq')return ua===q.correct;if(q.type==='mcq_multi'){const c=Array.isArray(ua)?[...ua].sort():[];const e=(Array.isArray(q.correct)?q.correct:[q.correct]).slice().sort();return c.length===e.length&&c.every((v,j)=>v===e[j])}if(q.type==='tf')return ua===q.correct;if(q.type==='short')return String(ua).trim().toLowerCase()===String(q.expected).toLowerCase();return false}
 function submitExam(){
   if(!examState)return;
   captureCurrentAnswer();
   const unanswered=examState.answers.filter(a=>a===null||(typeof a==='string'&&a.trim()==='')).length;
   if(unanswered>0&&!confirm(`${unanswered} sans réponse. Soumettre ?`))return;
   examState.submitted=true;
-  if(examState.isReview){
-    examState.questions.forEach((q,i)=>{
-      const key=q._fsrsKey||fsrsCardKey(q);
-      const ok=isAnswerCorrect(q,examState.answers[i]);
-      const grade=ok?3:1;
-      fsrsCards[key]=fsrsReview(fsrsCards[key],grade);
-    });
-    saveFsrs();
-  }else{
+  if(examState.isReview){examState.questions.forEach((q,i)=>{const key=q._fsrsKey||fsrsCardKey(q);const ok=isAnswerCorrect(q,examState.answers[i]);const grade=ok?3:1;fsrsCards[key]=fsrsReview(fsrsCards[key],grade)});saveFsrs()}
+  else{
     const scorable=examState.questions.filter(hasKey).length;
     const correctCount=examState.questions.reduce((a,q,i)=>a+(hasKey(q)&&isAnswerCorrect(q,examState.answers[i])?1:0),0);
     const score=scorable?20*correctCount/scorable:0;
     historyData.push({title:examState.title,subject:examState.subject,score,correct:correctCount,total:scorable,date:new Date().toLocaleString('fr-FR')});
-    if(!quizzes.some(q=>q.title===examState.title)){
-      quizzes.push({title:examState.title,subject:examState.subject,questions:examState.questions.map(q=>({...q,options:q.options?[...q.options]:undefined})),created:new Date().toISOString()});
-    }
+    if(!quizzes.some(q=>q.title===examState.title)){quizzes.push({title:examState.title,subject:examState.subject,questions:examState.questions.map(q=>({...q,options:q.options?[...q.options]:undefined})),created:new Date().toISOString()})}
     persist();
   }
   renderExam();
 }
 $('startReviewBtn').onclick=startReviewSession;
 $('refreshReviewBtn').onclick=()=>{renderFsrsStats();renderFsrsList()};
-$('shareQuiz').onclick=()=>{
-  const idx=Number($('quizPicker').value);
-  if(!quizzes[idx]){alert('Choisis un questionnaire.');return}
-  const blob=new Blob([JSON.stringify(quizzes[idx],null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='compoTest-'+quizzes[idx].title.replace(/[^a-z0-9]/gi,'-')+'.json';a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-};
-$('deleteQuizBtn').onclick=()=>{
-  const idx=Number($('quizPicker').value);
-  if(!quizzes[idx]){alert('Choisis un questionnaire.');return}
-  if(!confirm(`Supprimer définitivement "${quizzes[idx].title}" ?`))return;
-  quizzes.splice(idx,1);
-  persist();
-  alert('Questionnaire supprimé.');
-};
-$('exportHistory').onclick=()=>{
-  const blob=new Blob([JSON.stringify({quizzes,history:historyData},null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='compoTest-historique.json';a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-};
-$('clearData').onclick=()=>{
-  if(confirm('Effacer tous les tests, résultats et cartes FSRS ?')){
-    quizzes=[];historyData=[];drafts=[];fsrsCards={};
-    localStorage.removeItem('compo_fsrs');
-    persist();
-    $('examArea').innerHTML='';
-    renderFsrsStats();renderFsrsList();
-  }
-};
-$('startQuiz').onclick=()=>{
-  const idx=Number($('quizPicker').value);
-  const quiz=quizzes[idx];
-  if(!quiz){alert('Choisis un questionnaire.');return}
-  openExamView({title:quiz.title,subject:quiz.subject,questions:quiz.questions.map(q=>({...q,options:q.options?[...q.options]:undefined}))});
-};
+$('shareQuiz').onclick=()=>{const idx=Number($('quizPicker').value);if(!quizzes[idx]){alert('Choisis un questionnaire.');return}const blob=new Blob([JSON.stringify(quizzes[idx],null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='compoTest-'+quizzes[idx].title.replace(/[^a-z0-9]/gi,'-')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+$('deleteQuizBtn').onclick=()=>{const idx=Number($('quizPicker').value);if(!quizzes[idx]){alert('Choisis un questionnaire.');return}if(!confirm(`Supprimer "${quizzes[idx].title}" ?`))return;quizzes.splice(idx,1);persist();alert('Supprimé.')};
+$('exportHistory').onclick=()=>{const blob=new Blob([JSON.stringify({quizzes,history:historyData},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='compoTest-historique.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+$('clearData').onclick=()=>{if(confirm('Effacer toutes les données ?')){quizzes=[];historyData=[];drafts=[];fsrsCards={};localStorage.removeItem('compo_fsrs');persist();$('examArea').innerHTML='';renderFsrsStats();renderFsrsList()}};
+$('startQuiz').onclick=()=>{const idx=Number($('quizPicker').value);const quiz=quizzes[idx];if(!quiz){alert('Choisis un questionnaire.');return}openExamView({title:quiz.title,subject:quiz.subject,questions:quiz.questions.map(q=>({...q,options:q.options?[...q.options]:undefined}))})};
 
 renderAll();
 renderFsrsStats();
