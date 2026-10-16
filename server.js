@@ -167,7 +167,53 @@ function sanitizeText(text) {
   return t.trim();
 }
 
-// Analyse d'un cours rédigé → génère des questions
+// ===== PROMPT AMÉLIORÉ STYLE DIANE =====
+const SYSTEM_PROMPT_DIANE = `Tu es un assistant pédagogique expert, formé à la méthode Diane.app. Tu génères des quiz de haute qualité pédagogique à partir d'un cours.
+
+RÈGLES ABSOLUES (méthode Diane) :
+
+1. DISTRACTEURS TIRÉS DU COURS :
+   - Pour chaque QCM, les 3 mauvaises options doivent provenir du document lui-même.
+   - Elles doivent être des notions VOISINES ou des pièges classiques (confusions fréquentes, termes proches, valeurs inversées, exceptions).
+   - JAMAIS d'options inventées ou absurdes.
+
+2. EXTRACTION DE LA SOURCE :
+   - Chaque question doit contenir "source_excerpt" = la phrase EXACTE du cours dont elle est tirée.
+   - Cette phrase sera affichée à l'apprenant après correction.
+
+3. TYPES DE QUESTIONS :
+   - "mcq" : QCM 4 options (1 seule correcte). Idéal pour nuances et pièges.
+   - "mcq_multi" : QCM multi (≥2 correctes). Idéal pour listes et classifications.
+   - "tf" : Vrai/Faux. La version FAUSSE doit être une variation subtile du cours (un mot changé, une date inversée, un nom modifié). JAMAIS une affirmation absurde.
+   - "cloze" : Texte à trous. La phrase est extraite du cours, un mot-clé est masqué (____). Parfait pour dates, formules, noms propres, définitions.
+
+4. COUVERTURE :
+   - Identifie TOUTES les notions importantes du cours (définitions, mécanismes, chiffres, exceptions, classifications, propriétés).
+   - Répartis les questions sur TOUT le texte (début, milieu, fin).
+   - Ne pose pas 2 questions sur la même notion sauf si elle est très riche.
+
+5. QUALITÉ PÉDAGOGIQUE :
+   - Explication : 1-3 phrases justifiant la bonne réponse en citant le cours.
+   - Pas de questions ambiguës ou pièges débiles.
+   - Utilise le vocabulaire exact du cours.
+
+FORMAT JSON STRICT :
+{
+  "questions": [
+    {
+      "type": "mcq",
+      "text": "Question claire et précise ?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct": 0,
+      "explanation": "Explication justifiant la réponse.",
+      "source_excerpt": "Phrase exacte du cours d'où vient la question."
+    }
+  ],
+  "summary": "Résumé du cours en 2 phrases.",
+  "note": ""
+}`;
+
+// ============ ANALYSE DE COURS AMÉLIORÉE ============
 app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée. Ajoute AI_API_KEY dans Render.' });
@@ -180,47 +226,56 @@ app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
   if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Nombre entre 1 et 100.' });
 
   try {
-    const systemPrompt = `Tu es un assistant pédagogique expert. Tu vas lire un cours en français et produire un questionnaire QCM complet.
-
-MÉTHODE STRICTE :
-1. Lis INTÉGRALEMENT le texte fourni.
-2. Identifie TOUTES les notions testables : définitions, classifications, mécanismes, chiffres clés, exceptions, propriétés, valeurs seuils.
-3. Génère EXACTEMENT ${n} questions couvrant un MAXIMUM de notions différentes.
-4. Répartis les questions sur TOUT le texte. N'invente JAMAIS de faits.
-5. Si le cours liste des éléments, génère une question par élément important.
-
-TYPES :
-- 40% "mcq" : 4 options, correct = index 0-3
-- 30% "mcq_multi" : 4 options, correct = tableau d'au moins 2 indices
-- 30% "tf" : options = [], correct = true ou false
-
-FORMAT JSON STRICT :
-{"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"summary":"...","note":"..."}`;
-
     const response = await client.chat.completions.create({
-      model: modelName(), temperature: 0.3, response_format: { type: 'json_object' },
+      model: modelName(),
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Matière : ${String(subject).slice(0,200)}\nTitre : ${String(title).slice(0,200)}\n\nCOURS :\n"""\n${text}\n"""\n\nGénère ${n} questions.` }
+        { role: 'system', content: SYSTEM_PROMPT_DIANE.replace('${n}', n) },
+        { role: 'user', content: `Matière : ${String(subject).slice(0,200)}\nTitre : ${String(title).slice(0,200)}\n\nCOURS :\n"""\n${text}\n"""\n\nGénère exactement ${n} questions en respectant la méthode Diane (distracteurs du cours, source_excerpt, variations subtiles).` }
       ]
     });
+
     const content = response.choices?.[0]?.message?.content;
     if (!content) throw new Error('Réponse IA vide.');
     const parsed = JSON.parse(content);
     const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
+
     const questions = raw.map((q, i) => {
-      const type = ['mcq','mcq_multi','tf'].includes(q.type) ? q.type : null;
+      const type = ['mcq','mcq_multi','tf','cloze'].includes(q.type) ? q.type : null;
       const text2 = String(q.text || '').trim().slice(0, 2000);
+      if (!type || !text2) return null;
+
       const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => String(x).slice(0, 500)) : [];
       let correct = q.correct;
+
       if (type === 'tf') { if (typeof correct !== 'boolean') return null; }
+      else if (type === 'cloze') { /* pas d'options pour cloze, correct est le mot attendu (string) */ }
       else if (type === 'mcq') { if (!Number.isInteger(correct) || correct < 0 || correct >= options.length || options.length < 2) return null; }
       else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2) return null; correct = [...new Set(correct)]; }
-      if (!type || !text2) return null;
-      return { id:`course-${Date.now()}-${i}`, number:i+1, type, text:text2, options: type==='tf'?[]:options, correct, explanation:String(q.explanation||'').slice(0,1500), sourceExcerpt:String(q.source_excerpt||'').slice(0,500), source:'ai-generated', confidence:null };
+
+      return {
+        id: `diane-${Date.now()}-${i}`,
+        number: i + 1,
+        type,
+        text: text2,
+        options: type === 'tf' || type === 'cloze' ? [] : options,
+        correct,
+        explanation: String(q.explanation || '').slice(0, 1500),
+        sourceExcerpt: String(q.source_excerpt || '').slice(0, 500),
+        source: 'ai-diane',
+        confidence: null
+      };
     }).filter(Boolean);
+
     if (!questions.length) throw new Error('Aucune question valide générée.');
-    res.json({ questions, summary: String(parsed.summary || '').slice(0, 500), note: String(parsed.note || '').slice(0, 1000), coverage: `${questions.length}/${n}`, model: modelName() });
+    res.json({
+      questions,
+      summary: String(parsed.summary || '').slice(0, 500),
+      note: String(parsed.note || '').slice(0, 1000),
+      coverage: `${questions.length}/${n}`,
+      model: modelName()
+    });
   } catch (error) {
     console.error('Erreur analyse:', error?.message || error);
     const isTimeout = /timeout|aborted/i.test(error?.message || '');
@@ -229,23 +284,29 @@ FORMAT JSON STRICT :
   }
 });
 
+// ============ RÉSOUDRE RÉPONSES MANQUANTES (prompt amélioré) ============
 app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA désactivée. Ajoute AI_API_KEY dans Render.' });
   const { subject = 'Matière', questions } = req.body || {};
   if (!Array.isArray(questions) || !questions.length || questions.length > 100) return res.status(400).json({ error: 'Entre 1 et 100 questions.' });
+
   const safeQuestions = questions.map((q, i) => ({
     id: String(q.id ?? i), number: q.number ?? null,
-    type: ['tf','mcq','mcq_multi','short'].includes(q.type) ? q.type : 'short',
+    type: ['tf','mcq','mcq_multi','short','cloze'].includes(q.type) ? q.type : 'short',
     text: String(q.text || '').slice(0, 3000),
-    options: Array.isArray(q.options) ? q.options.slice(0, 12).map(x => String(x).slice(0, 500)) : []
+    options: Array.isArray(q.options) ? q.options.slice(0, 12).map(x => String(x).slice(0, 500)) : [],
+    source: String(q.source || '').slice(0, 500)
   }));
+
   try {
     const response = await client.chat.completions.create({
-      model: modelName(), temperature: 0.1, response_format: { type: 'json_object' },
+      model: modelName(),
+      temperature: 0.1,
+      response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: `Réponds aux questions. Format : {"answers":[{"id":"...","correct":...,"explanation":"...","confidence":0.75}]}. mcq=index, mcq_multi=tableau, tf=booléen, short=chaîne.` },
-        { role: 'user', content: JSON.stringify({ questions: safeQuestions }) }
+        { role: 'system', content: `Tu réponds à des questions de quiz. Utilise le contexte fourni (source) pour justifier. Format : {"answers":[{"id":"...","correct":...,"explanation":"...","confidence":0.75}]}. mcq=index, mcq_multi=tableau, tf=booléen, short/cloze=chaîne.` },
+        { role: 'user', content: JSON.stringify({ subject, questions: safeQuestions }) }
       ]
     });
     const content = response.choices?.[0]?.message?.content;
@@ -253,7 +314,8 @@ app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
     const parsed = JSON.parse(content);
     const allowed = new Set(safeQuestions.map(q => q.id));
     const answers = (Array.isArray(parsed.answers) ? parsed.answers : []).filter(a => allowed.has(String(a.id))).map(a => ({
-      id: String(a.id), correct: a.correct ?? null,
+      id: String(a.id),
+      correct: a.correct ?? null,
       explanation: String(a.explanation || '').slice(0, 2000),
       confidence: Number.isFinite(Number(a.confidence)) ? Math.max(0, Math.min(1, Number(a.confidence))) : 0
     }));
@@ -264,6 +326,7 @@ app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
   }
 });
 
+// ============ GÉNÉRATION GÉNÉRIQUE ============
 app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA désactivée. Ajoute AI_API_KEY dans Render.' });
@@ -275,18 +338,12 @@ app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
   if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Nombre invalide.' });
 
   try {
-    const systemPrompt = `Génère ${n} questions QCM à partir du cours fourni.
-
-Répartition : 40% mcq (4 options, correct=index), 30% mcq_multi (4 options, ≥2 corrects), 30% tf (options=[], correct=bool).
-
-Lis TOUT le texte. Couvre un maximum de notions. N'invente rien.
-
-Format JSON : {"questions":[{"type":"...","text":"...","options":[...],"correct":...,"explanation":"...","source_excerpt":"..."}],"note":"..."}`;
-
     const response = await client.chat.completions.create({
-      model: modelName(), temperature: 0.3, response_format: { type: 'json_object' },
+      model: modelName(),
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: SYSTEM_PROMPT_DIANE.replace('${n}', n) },
         { role: 'user', content: `Cours :\n\n"""\n${text}\n"""\n\nGénère exactement ${n} questions.` }
       ]
     });
@@ -295,15 +352,21 @@ Format JSON : {"questions":[{"type":"...","text":"...","options":[...],"correct"
     const parsed = JSON.parse(content);
     const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
     const questions = raw.map((q, i) => {
-      const type = ['mcq','mcq_multi','tf'].includes(q.type) ? q.type : null;
+      const type = ['mcq','mcq_multi','tf','cloze'].includes(q.type) ? q.type : null;
       const text2 = String(q.text || '').trim().slice(0, 2000);
+      if (!type || !text2) return null;
       const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => String(x).slice(0, 500)) : [];
       let correct = q.correct;
       if (type === 'tf') { if (typeof correct !== 'boolean') return null; }
       else if (type === 'mcq') { if (!Number.isInteger(correct) || correct < 0 || correct >= options.length) return null; }
       else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2) return null; }
-      if (!type || !text2) return null;
-      return { id:`gen-${Date.now()}-${i}`, number:i+1, type, text:text2, options:type==='tf'?[]:options, correct, explanation:String(q.explanation||'').slice(0,1500), sourceExcerpt:String(q.source_excerpt||'').slice(0,500), source:'ai-generated', confidence:null };
+      return {
+        id: `gen-${Date.now()}-${i}`, number: i+1, type, text: text2,
+        options: type === 'tf' || type === 'cloze' ? [] : options, correct,
+        explanation: String(q.explanation || '').slice(0, 1500),
+        sourceExcerpt: String(q.source_excerpt || '').slice(0, 500),
+        source: 'ai-diane', confidence: null
+      };
     }).filter(Boolean);
     if (!questions.length) throw new Error('Aucune question générée.');
     res.json({ questions, note: String(parsed.note || '').slice(0, 1000), coverage: `${questions.length}/${n}`, model: modelName() });
