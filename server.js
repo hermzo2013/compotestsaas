@@ -182,9 +182,7 @@ function logError(context, error) {
   console.error('Message:', error?.message);
   console.error('Status:', error?.status);
   console.error('Code:', error?.code);
-  console.error('Type:', error?.type);
   console.error('Detail:', typeof error?.error === 'object' ? JSON.stringify(error.error) : (error?.error || ''));
-  console.error('Stack:', error?.stack?.split('\n').slice(0, 3).join(' | '));
   console.error('===========================');
 }
 
@@ -192,42 +190,236 @@ function traduireErreurIA(error) {
   const m = String(error?.message || '').toLowerCase();
   const status = error?.status;
   const code = error?.code || '';
-  if (status === 429 || /rate.?limit|quota|too many/i.test(m) || code === 'rate_limit_exceeded') {
-    return 'Quota IA atteint. Réessaie dans 1-2 minutes ou change de modèle dans Render.';
-  }
-  if (/timeout|aborted|etimedout|deadline/i.test(m)) {
-    return 'L’IA a mis trop de temps à répondre. Change AI_MODEL pour llama-3.1-8b-instant dans Render.';
-  }
-  if (/model|decommissioned|not found|does not exist/i.test(m)) {
-    return 'Modèle IA invalide. Vérifie AI_MODEL dans Render. Modèles valides : llama-3.1-8b-instant, llama-3.3-70b-versatile.';
-  }
-  if (/api.?key|unauthorized|401|invalid.*key/i.test(m) || status === 401) {
-    return 'Clé IA invalide. Vérifie AI_API_KEY dans Render (elle doit commencer par gsk_).';
-  }
-  if (/json|parse/i.test(m)) {
-    return 'Le modèle a renvoyé un format invalide. Réessaie.';
-  }
-  if (/context|token|too long|413/i.test(m)) {
-    return 'Texte trop long pour le modèle. Essaie avec un extrait plus court.';
-  }
-  if (/fetch failed|network|enotfound|econnrefused/i.test(m)) {
-    return 'Impossible de joindre le serveur IA. Vérifie AI_BASE_URL dans Render (https://api.groq.com/openai/v1).';
-  }
+  if (status === 429 || /rate.?limit|quota|too many/i.test(m) || code === 'rate_limit_exceeded') return 'Quota IA atteint. Réessaie dans 1-2 minutes.';
+  if (/timeout|aborted|etimedout|deadline/i.test(m)) return 'L’IA a mis trop de temps. Réessaie.';
+  if (/model|decommissioned|not found|does not exist/i.test(m)) return 'Modèle IA invalide. Vérifie AI_MODEL dans Render.';
+  if (/api.?key|unauthorized|401|invalid.*key/i.test(m) || status === 401) return 'Clé IA invalide. Vérifie AI_API_KEY dans Render.';
+  if (/json|parse/i.test(m)) return 'Format invalide du modèle. Réessaie.';
+  if (/context|token|too long|413/i.test(m)) return 'Texte trop long. Essaie avec un extrait plus court.';
+  if (/fetch failed|network|enotfound|econnrefused/i.test(m)) return 'Impossible de joindre le serveur IA. Vérifie AI_BASE_URL dans Render.';
   return 'Échec IA : ' + (error?.message || 'inconnue');
 }
+
+// ============ DIANE-LIKE : GÉNÉRATION EN 3 PASSES ============
+
+// Passe 1 : Extraction des concepts (Knowledge Graph léger)
+async function extractConcepts(client, text, subject) {
+  const systemPrompt = `Tu es un expert en analyse pédagogique. Tu vas analyser un cours et en extraire les concepts fondamentaux.
+
+OBJECTIF : Identifier TOUS les éléments qui méritent d'être testés dans un quiz de qualité.
+
+Pour chaque concept, tu identifies :
+- "concept" : le nom court (5-8 mots max)
+- "type" : "définition" | "classification" | "mécanisme" | "chiffre" | "exception" | "cause" | "conséquence" | "propriété"
+- "detail" : explication fidèle au cours (2-4 phrases, vocabulaire du cours)
+- "section" : section du cours (si identifiable)
+
+INSTRUCTIONS :
+1. Lis TOUT le texte, du début à la fin.
+2. Extrait entre 15 et 50 concepts selon la richesse du cours.
+3. Ne saute pas les définitions courtes, les listes, les chiffres.
+4. Reste FIDÈLE au vocabulaire du cours.
+5. N'invente AUCUN fait.
+
+FORMAT JSON STRICT :
+{"concepts":[{"concept":"...","type":"...","detail":"...","section":"..."}],"summary":"Résumé du cours en 3-4 phrases."}`;
+
+  const response = await client.chat.completions.create({
+    model: modelName(),
+    temperature: 0.2,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Matière : ${subject}\n\nCOURS :\n"""\n${text}\n"""\n\nExtrait tous les concepts testables.` }
+    ]
+  });
+
+  const content = response.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Extraction des concepts : réponse vide.');
+  try { return JSON.parse(content); } catch(e) { throw new Error('Extraction des concepts : JSON invalide.'); }
+}
+
+// Passe 2 : Génération des questions avec distracteurs du cours
+async function generateQuestionsFromConcepts(client, concepts, summary, subject, n) {
+  const conceptsJson = JSON.stringify({ concepts, summary });
+
+  const systemPrompt = `Tu es un assistant pédagogique expert (méthode Diane.app). Tu génères un quiz à partir des concepts extraits d'un cours.
+
+RÈGLES ABSOLUES :
+
+1. DISTRACTEURS TIRÉS DU COURS :
+   - Pour chaque QCM, les 3 mauvaises options doivent être des concepts VOISINS ou des pièges classiques extraits du cours.
+   - Utilise les autres concepts de la liste pour fabriquer les distracteurs.
+   - JAMAIS d'options inventées ou absurdes.
+   - Les distracteurs doivent être plausibles : si le cours parle de "VIH" et "VHB", utilise l'un comme distracteur de l'autre.
+
+2. VRAI/FAUX SUBTIL :
+   - La version FAUSSE est une variation subtile du cours : un mot changé, une date inversée, un nom modifié, une relation causale inversée.
+   - JAMAIS d'affirmation absurde.
+
+3. TEXTE À TROUS :
+   - Extrait une phrase EXACTE du cours (via le concept) et masque un mot-clé par ____.
+   - Le mot masqué doit être un terme important : date, nom propre, chiffre, terme technique.
+
+4. SOURCE EXACTE :
+   - Chaque question contient "source_excerpt" = la phrase exacte du cours d'où elle vient.
+   - Utilise les "detail" des concepts fournis.
+
+5. EXPLICATION PÉDAGOGIQUE :
+   - 1-3 phrases justifiant la bonne réponse avec le vocabulaire du cours.
+   - Explique pourquoi les autres options sont fausses si pertinent.
+
+FORMAT JSON :
+{"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"note":""}`;
+
+  const response = await client.chat.completions.create({
+    model: modelName(),
+    temperature: 0.3,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Matière : ${subject}\nNombre de questions à générer : ${n}\n\nCONCEPTS EXTRAITS DU COURS :\n${conceptsJson}\n\nGénère exactement ${n} questions.` }
+    ]
+  });
+
+  const content = response.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Génération : réponse vide.');
+  try { return JSON.parse(content); } catch(e) { throw new Error('Génération : JSON invalide.'); }
+}
+
+// Passe 3 : Vérification croisée
+async function verifyQuestions(client, questions) {
+  const questionsJson = JSON.stringify({ questions });
+
+  const systemPrompt = `Tu es un vérificateur pédagogique strict. Tu reçois des questions de quiz générées à partir d'un cours. Ta mission : vérifier que CHAQUE question est valide.
+
+CRITÈRES DE VALIDATION :
+1. La réponse correcte est-elle UNIQUE et non ambiguë ?
+2. Les distracteurs (mauvaises options) sont-ils PLAUSIBLES et issus du cours ?
+3. L'explication justifie-t-elle correctement la bonne réponse ?
+4. La source ("source_excerpt") est-elle présente et pertinente ?
+5. La question n'est-elle pas triviale ou sans intérêt pédagogique ?
+
+Pour chaque question, tu ajoutes :
+- "verified" : true ou false
+- "issues" : liste des problèmes détectés (vide si aucun)
+- "corrected_explanation" : explication améliorée si nécessaire
+
+Renvoie les questions avec ces champs ajoutés.
+
+FORMAT JSON :
+{"questions":[{"type":"...","text":"...","options":[...],"correct":...,"explanation":"...","source_excerpt":"...","verified":true,"issues":[],"corrected_explanation":"..."}]}`;
+
+  const response = await client.chat.completions.create({
+    model: modelName(),
+    temperature: 0.1,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: questionsJson }
+    ]
+  });
+
+  const content = response.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Vérification : réponse vide.');
+  try { return JSON.parse(content); } catch(e) { throw new Error('Vérification : JSON invalide.'); }
+}
+
+// ============ ROUTE PRINCIPALE : ANALYSE EN 3 PASSES ============
+app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
+  const client = aiClient();
+  if (!client) return res.status(503).json({ error: 'IA non configurée. Ajoute AI_API_KEY dans Render.' });
+  const { subject = 'Matière', title = 'Cours', sourceText, count = 20 } = req.body || {};
+  const text = sanitizeText(String(sourceText || '').trim());
+  const n = Number(count);
+
+  if (text.length < 150) return res.status(400).json({ error: 'Texte trop court après nettoyage (min 150 caractères).' });
+  if (text.length > 60000) return res.status(413).json({ error: 'Texte trop long (max 60 000 caractères).' });
+  if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Nombre entre 1 et 100.' });
+
+  console.log(`[analyze-course] ${text.length} caractères · ${n} questions · modèle: ${modelName()}`);
+
+  try {
+    // PASSE 1 : Extraction des concepts
+    console.log('[analyze-course] Passe 1/3 : extraction des concepts...');
+    const extraction = await extractConcepts(client, text, subject);
+    const concepts = Array.isArray(extraction.concepts) ? extraction.concepts : [];
+    if (!concepts.length) throw new Error('Aucun concept extrait du cours.');
+    console.log(`[analyze-course] ✅ ${concepts.length} concepts extraits`);
+
+    // PASSE 2 : Génération des questions
+    console.log('[analyze-course] Passe 2/3 : génération des questions...');
+    const generation = await generateQuestionsFromConcepts(client, concepts, extraction.summary || '', subject, n);
+    const rawQuestions = Array.isArray(generation.questions) ? generation.questions : [];
+    if (!rawQuestions.length) throw new Error('Aucune question générée.');
+    console.log(`[analyze-course] ✅ ${rawQuestions.length} questions générées`);
+
+    // PASSE 3 : Vérification croisée
+    console.log('[analyze-course] Passe 3/3 : vérification croisée...');
+    const verification = await verifyQuestions(client, rawQuestions);
+    const verifiedQuestions = Array.isArray(verification.questions) ? verification.questions : rawQuestions;
+    console.log(`[analyze-course] ✅ ${verifiedQuestions.length} questions vérifiées`);
+
+    // Filtrage et normalisation
+    const questions = verifiedQuestions.map((q, i) => {
+      const type = ['mcq','mcq_multi','tf','cloze'].includes(q.type) ? q.type : null;
+      const text2 = String(q.text || '').trim().slice(0, 2000);
+      if (!type || !text2) return null;
+      const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => String(x).slice(0, 500)) : [];
+      let correct = q.correct;
+      if (type === 'tf') { if (typeof correct !== 'boolean') return null; }
+      else if (type === 'cloze') { if (typeof correct !== 'string' || !correct.trim()) return null; }
+      else if (type === 'mcq') { if (!Number.isInteger(correct) || correct < 0 || correct >= options.length || options.length < 2) return null; }
+      else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2) return null; correct = [...new Set(correct)]; }
+
+      // Marquer les questions non vérifiées
+      const isVerified = q.verified !== false;
+
+      return {
+        id: `diane-${Date.now()}-${i}`,
+        number: i + 1,
+        type,
+        text: text2,
+        options: type === 'tf' || type === 'cloze' ? [] : options,
+        correct,
+        explanation: String(q.corrected_explanation || q.explanation || '').slice(0, 1500),
+        sourceExcerpt: String(q.source_excerpt || '').slice(0, 500),
+        source: 'ai-diane',
+        confidence: isVerified ? 0.9 : 0.6,
+        verified: isVerified,
+        issues: Array.isArray(q.issues) ? q.issues.slice(0, 3) : []
+      };
+    }).filter(Boolean);
+
+    if (!questions.length) throw new Error('Aucune question valide générée après vérification.');
+
+    const verifiedCount = questions.filter(q => q.verified).length;
+    console.log(`[analyze-course] ✅ ${questions.length}/${n} questions finales (${verifiedCount} vérifiées)`);
+
+    res.json({
+      questions,
+      concepts: concepts.slice(0, 20),
+      summary: String(extraction.summary || '').slice(0, 500),
+      note: String(generation.note || '').slice(0, 1000),
+      coverage: `${questions.length}/${n}`,
+      verified: verifiedCount,
+      model: modelName()
+    });
+  } catch (error) {
+    logError('analyze-course', error);
+    res.status(502).json({ error: traduireErreurIA(error) });
+  }
+});
 
 // ============ RÉSOUDRE LES RÉPONSES MANQUANTES ============
 app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA désactivée. Ajoute AI_API_KEY dans Render → Environment.' });
   const { subject = 'Matière', questions } = req.body || {};
-  if (!Array.isArray(questions) || !questions.length || questions.length > 100) {
-    return res.status(400).json({ error: 'Entre 1 et 100 questions attendues.' });
-  }
+  if (!Array.isArray(questions) || !questions.length || questions.length > 100) return res.status(400).json({ error: 'Entre 1 et 100 questions attendues.' });
 
   const safeQuestions = questions.map((q, i) => ({
-    id: String(q.id ?? i),
-    number: q.number ?? null,
+    id: String(q.id ?? i), number: q.number ?? null,
     type: ['tf','mcq','mcq_multi','short','cloze'].includes(q.type) ? q.type : 'short',
     text: String(q.text || '').slice(0, 3000),
     options: Array.isArray(q.options) ? q.options.slice(0, 12).map(x => String(x).slice(0, 500)) : [],
@@ -242,37 +434,24 @@ app.post('/api/answer-questions', underDailyLimit, async (req, res) => {
       temperature: 0.1,
       response_format: { type: 'json_object' },
       messages: [
-        {
-          role: 'system',
-          content: `Tu es un assistant qui répond à des questions de quiz en français.
+        { role: 'system', content: `Tu réponds à des questions de quiz en français. Renvoie UNIQUEMENT un objet JSON au format : {"answers":[{"id":"...","correct":...,"explanation":"...","confidence":0.75}]}.
 
-Renvoie UNIQUEMENT un objet JSON valide au format :
-{"answers":[{"id":"...","correct":...,"explanation":"...","confidence":0.75}]}
+RÈGLES :
+- mcq → correct = index (0-3)
+- mcq_multi → correct = tableau d'indices
+- tf → correct = true ou false
+- short ou cloze → correct = chaîne de caractères
+- explanation = justification courte (1-2 phrases)
+- confidence = nombre entre 0 et 1
 
-RÈGLES PAR TYPE :
-- "mcq"        → "correct" = index de la bonne option (0, 1, 2 ou 3)
-- "mcq_multi"  → "correct" = tableau d'index (ex. [0,2])
-- "tf"         → "correct" = true ou false
-- "short"      → "correct" = chaîne de caractères
-- "cloze"      → "correct" = le mot manquant (chaîne de caractères)
-
-Réponds à TOUTES les questions fournies. Utilise tes connaissances générales si nécessaire.
-"confidence" est un nombre entre 0 et 1.`
-        },
+Réponds à TOUTES les questions. Utilise tes connaissances générales si nécessaire.` },
         { role: 'user', content: JSON.stringify({ subject, questions: safeQuestions }) }
       ]
     });
-
     const content = response.choices?.[0]?.message?.content;
     if (!content) throw new Error('Réponse vide du modèle.');
-
     let parsed;
-    try { parsed = JSON.parse(content); }
-    catch (e) {
-      console.error('JSON invalide reçu:', content.slice(0, 800));
-      throw new Error('JSON invalide renvoyé par le modèle.');
-    }
-
+    try { parsed = JSON.parse(content); } catch(e) { throw new Error('JSON invalide renvoyé par le modèle.'); }
     const allowed = new Set(safeQuestions.map(q => q.id));
     const answers = (Array.isArray(parsed.answers) ? parsed.answers : [])
       .filter(a => allowed.has(String(a.id)))
@@ -282,9 +461,7 @@ Réponds à TOUTES les questions fournies. Utilise tes connaissances générales
         explanation: String(a.explanation || '').slice(0, 2000),
         confidence: Number.isFinite(Number(a.confidence)) ? Math.max(0, Math.min(1, Number(a.confidence))) : 0.5
       }));
-
     if (!answers.length) throw new Error('Aucune réponse exploitable dans le JSON.');
-
     console.log(`[answer-questions] ✅ ${answers.length} réponse(s) générée(s)`);
     res.json({ answers, model: modelName() });
   } catch (error) {
@@ -293,102 +470,9 @@ Réponds à TOUTES les questions fournies. Utilise tes connaissances générales
   }
 });
 
-// ============ ANALYSE DE COURS ============
-app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
-  const client = aiClient();
-  if (!client) return res.status(503).json({ error: 'IA non configurée. Ajoute AI_API_KEY dans Render.' });
-  const { subject = 'Matière', title = 'Cours', sourceText, count = 20 } = req.body || {};
-  const text = sanitizeText(String(sourceText || '').trim());
-  const n = Number(count);
-
-  if (text.length < 150) return res.status(400).json({ error: 'Texte trop court après nettoyage (min 150 caractères).' });
-  if (text.length > 80000) return res.status(413).json({ error: 'Texte trop long (max 80 000 caractères).' });
-  if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Nombre entre 1 et 100.' });
-
-  console.log(`[analyze-course] ${text.length} caractères · ${n} questions · modèle: ${modelName()}`);
-
-  try {
-    const systemPrompt = `Tu es un assistant pédagogique expert (méthode Diane). Tu génères un quiz QCM à partir d'un cours en français.
-
-RÈGLES STRICTES :
-1. DISTRACTEURS TIRÉS DU COURS : les 3 mauvaises options viennent du document (notions voisines, confusions classiques, valeurs inversées). Pas d'invention.
-2. Chaque question doit contenir "source_excerpt" = la phrase EXACTE du cours dont elle est tirée.
-3. Types :
-   - "mcq" : 4 options, 1 seule correcte, "correct" = index 0-3
-   - "mcq_multi" : 4 options, ≥2 correctes, "correct" = tableau d'index
-   - "tf" : "options": [], "correct" = true ou false. La version fausse doit être une variation SUBTILE du cours (un mot changé, une date inversée), jamais absurde.
-   - "cloze" : texte à trous, un mot-clé remplacé par ____ dans "text", pas d'options, "correct" = le mot manquant.
-4. Couvre TOUT le texte (début, milieu, fin). Ne pas poser 2 questions sur la même notion.
-5. N'invente JAMAIS de faits absents du cours.
-
-FORMAT JSON :
-{"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"summary":"...","note":""}`;
-
-    const response = await client.chat.completions.create({
-      model: modelName(),
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Matière : ${String(subject).slice(0,200)}\nTitre : ${String(title).slice(0,200)}\n\nCOURS :\n"""\n${text}\n"""\n\nGénère exactement ${n} questions.` }
-      ]
-    });
-
-    const content = response.choices?.[0]?.message?.content;
-    if (!content) throw new Error('Réponse IA vide.');
-
-    let parsed;
-    try { parsed = JSON.parse(content); }
-    catch (e) {
-      console.error('JSON invalide reçu:', content.slice(0, 800));
-      throw new Error('JSON invalide renvoyé par le modèle.');
-    }
-
-    const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
-    const questions = raw.map((q, i) => {
-      const type = ['mcq','mcq_multi','tf','cloze'].includes(q.type) ? q.type : null;
-      const text2 = String(q.text || '').trim().slice(0, 2000);
-      if (!type || !text2) return null;
-      const options = Array.isArray(q.options) ? q.options.slice(0, 8).map(x => String(x).slice(0, 500)) : [];
-      let correct = q.correct;
-      if (type === 'tf') { if (typeof correct !== 'boolean') return null; }
-      else if (type === 'cloze') { if (typeof correct !== 'string' || !correct.trim()) return null; }
-      else if (type === 'mcq') { if (!Number.isInteger(correct) || correct < 0 || correct >= options.length || options.length < 2) return null; }
-      else if (type === 'mcq_multi') { if (!Array.isArray(correct) || correct.length < 2) return null; correct = [...new Set(correct)]; }
-      return {
-        id: `diane-${Date.now()}-${i}`,
-        number: i + 1,
-        type,
-        text: text2,
-        options: type === 'tf' || type === 'cloze' ? [] : options,
-        correct,
-        explanation: String(q.explanation || '').slice(0, 1500),
-        sourceExcerpt: String(q.source_excerpt || '').slice(0, 500),
-        source: 'ai-diane',
-        confidence: null
-      };
-    }).filter(Boolean);
-
-    if (!questions.length) throw new Error('Aucune question valide générée.');
-
-    console.log(`[analyze-course] ✅ ${questions.length}/${n} questions générées`);
-    res.json({
-      questions,
-      summary: String(parsed.summary || '').slice(0, 500),
-      note: String(parsed.note || '').slice(0, 1000),
-      coverage: `${questions.length}/${n}`,
-      model: modelName()
-    });
-  } catch (error) {
-    logError('analyze-course', error);
-    res.status(502).json({ error: traduireErreurIA(error) });
-  }
-});
-
-// ============ GÉNÉRATION GÉNÉRIQUE (alias) ============
+// ============ GÉNÉRATION GÉNÉRIQUE (alias vers analyze-course) ============
 app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
-  req.url = '/analyze-course';
-  // Reroute interne : on appelle la même logique
+  // Redirige vers la logique d'analyse
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA désactivée. Ajoute AI_API_KEY dans Render.' });
   const { subject = 'Matière', title = 'Cours', sourceText, count = 20 } = req.body || {};
@@ -398,35 +482,24 @@ app.post('/api/generate-questions', underDailyLimit, async (req, res) => {
   if (text.length > 60000) return res.status(413).json({ error: 'Texte trop long.' });
   if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Nombre invalide.' });
 
-  console.log(`[generate-questions] ${text.length} caractères · ${n} questions · modèle: ${modelName()}`);
+  console.log(`[generate-questions] ${text.length} caractères · ${n} questions`);
 
   try {
-    const systemPrompt = `Tu es un assistant pédagogique expert (méthode Diane). Tu génères un quiz QCM à partir d'un cours en français.
+    // Passe 1 : extraction
+    const extraction = await extractConcepts(client, text, subject);
+    const concepts = Array.isArray(extraction.concepts) ? extraction.concepts : [];
+    if (!concepts.length) throw new Error('Aucun concept extrait.');
 
-RÈGLES STRICTES :
-1. DISTRACTEURS TIRÉS DU COURS : les 3 mauvaises options viennent du document.
-2. Chaque question contient "source_excerpt" = phrase EXACTE du cours.
-3. Types : mcq (4 options, 1 correcte, correct=index), mcq_multi (4 options, ≥2 correctes, correct=tableau), tf (options=[], correct=bool, la version fausse est une variation subtile), cloze (texte à trous, correct=mot manquant).
-4. Couvre TOUT le texte. N'invente rien.
+    // Passe 2 : génération
+    const generation = await generateQuestionsFromConcepts(client, concepts, extraction.summary || '', subject, n);
+    const rawQuestions = Array.isArray(generation.questions) ? generation.questions : [];
+    if (!rawQuestions.length) throw new Error('Aucune question générée.');
 
-FORMAT JSON : {"questions":[{"type":"mcq","text":"...","options":["a","b","c","d"],"correct":0,"explanation":"...","source_excerpt":"..."}],"note":""}`;
+    // Passe 3 : vérification
+    const verification = await verifyQuestions(client, rawQuestions);
+    const verifiedQuestions = Array.isArray(verification.questions) ? verification.questions : rawQuestions;
 
-    const response = await client.chat.completions.create({
-      model: modelName(),
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Matière : ${subject}\nTitre : ${title}\n\nCours :\n\n"""\n${text}\n"""\n\nGénère exactement ${n} questions.` }
-      ]
-    });
-    const content = response.choices?.[0]?.message?.content;
-    if (!content) throw new Error('Réponse vide.');
-    let parsed;
-    try { parsed = JSON.parse(content); }
-    catch (e) { throw new Error('JSON invalide renvoyé par le modèle.'); }
-    const raw = Array.isArray(parsed.questions) ? parsed.questions : [];
-    const questions = raw.map((q, i) => {
+    const questions = verifiedQuestions.map((q, i) => {
       const type = ['mcq','mcq_multi','tf','cloze'].includes(q.type) ? q.type : null;
       const text2 = String(q.text || '').trim().slice(0, 2000);
       if (!type || !text2) return null;
@@ -440,15 +513,27 @@ FORMAT JSON : {"questions":[{"type":"mcq","text":"...","options":["a","b","c","d
         id: `gen-${Date.now()}-${i}`, number: i+1, type, text: text2,
         options: type === 'tf' || type === 'cloze' ? [] : options,
         correct,
-        explanation: String(q.explanation || '').slice(0, 1500),
+        explanation: String(q.corrected_explanation || q.explanation || '').slice(0, 1500),
         sourceExcerpt: String(q.source_excerpt || '').slice(0, 500),
         source: 'ai-diane',
-        confidence: null
+        confidence: q.verified !== false ? 0.9 : 0.6,
+        verified: q.verified !== false,
+        issues: Array.isArray(q.issues) ? q.issues.slice(0, 3) : []
       };
     }).filter(Boolean);
-    if (!questions.length) throw new Error('Aucune question générée.');
-    console.log(`[generate-questions] ✅ ${questions.length}/${n} questions`);
-    res.json({ questions, note: String(parsed.note || '').slice(0, 1000), coverage: `${questions.length}/${n}`, model: modelName() });
+
+    if (!questions.length) throw new Error('Aucune question valide après vérification.');
+
+    console.log(`[generate-questions] ✅ ${questions.length}/${n} questions finales`);
+    res.json({
+      questions,
+      concepts: concepts.slice(0, 20),
+      summary: String(extraction.summary || '').slice(0, 500),
+      note: String(generation.note || '').slice(0, 1000),
+      coverage: `${questions.length}/${n}`,
+      verified: questions.filter(q => q.verified).length,
+      model: modelName()
+    });
   } catch (error) {
     logError('generate-questions', error);
     res.status(502).json({ error: traduireErreurIA(error) });
