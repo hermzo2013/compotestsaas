@@ -74,7 +74,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .progress-info{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-top:6px}
 .progress-info b{color:var(--blue)}
 
-/* ===== WIZARD ===== */
+/* WIZARD */
 .wizard{display:flex;flex-direction:column;gap:16px}
 .step{background:#fff;border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden;transition:all .25s}
 .step.locked{opacity:.55;pointer-events:none}
@@ -88,7 +88,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .step.collapsed .step-header .step-chev{transform:rotate(-90deg)}
 .step-body{padding:20px;display:block}
 .step.collapsed .step-body{display:none}
-.step-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;background:#e9f8f1;color:#13734e;margin-left:8px}
 
 .sections-box{background:#f8faff;border:1px solid #d5ddeb;border-radius:12px;padding:14px;margin-top:12px}
 .sections-box h4{margin:0 0 10px;font-size:14px;color:var(--navy)}
@@ -245,13 +244,8 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   <button class="tab hide" data-tab="admin" id="adminTab" role="tab"><span class="icon">⚙️</span> Admin</button>
 </nav>
 
-<!-- ============================================= -->
-<!-- ONGLET CRÉER UN TEST — WIZARD EN 3 ÉTAPES -->
-<!-- ============================================= -->
 <section class="tab-content active" data-content="import">
   <div class="wizard">
-
-    <!-- ÉTAPE 1 : IMPORTER -->
     <div class="step active" id="step1">
       <div class="step-header" data-toggle="step1">
         <div class="step-num">1</div>
@@ -290,13 +284,12 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
       </div>
     </div>
 
-    <!-- ÉTAPE 2 : ANALYSER -->
     <div class="step locked" id="step2">
       <div class="step-header" data-toggle="step2">
         <div class="step-num">2</div>
         <div class="step-title">
           Analyser le document
-          <div class="step-sub">Détecte automatiquement les parties et les questions</div>
+          <div class="step-sub">Détecte les parties ou génère les questions par IA</div>
         </div>
         <div class="step-chev">▾</div>
       </div>
@@ -304,8 +297,12 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
         <div class="notice info" style="margin-top:0">
           <b>Deux cas possibles :</b><br>
           • <b>Document numéroté</b> (Q1, Q2, …) → clique sur <b>« Analyser »</b> pour détecter les parties<br>
-          • <b>Cours rédigé</b> (sans questions) → clique sur <b>« Générer depuis le cours »</b> pour créer les questions par IA
+          • <b>Cours rédigé</b> (sans questions) → clique sur <b>« Générer depuis le cours »</b> pour créer les questions par IA (méthode Diane : distracteurs du cours, extraits, variations subtiles)
         </div>
+
+        <label for="genCount" style="margin-top:14px">Nombre de questions à générer (si cours rédigé)</label>
+        <input id="genCount" type="number" min="10" max="50" value="20">
+        <div class="small muted" style="margin-top:4px">Méthode Diane : QCM avec distracteurs du cours · Texte à trous · Vrai/Faux avec variations subtiles</div>
 
         <div class="actions">
           <button id="analyzeBtn">🔍 Analyser et détecter les parties</button>
@@ -326,7 +323,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
       </div>
     </div>
 
-    <!-- ÉTAPE 3 : COMPOSER -->
     <div class="step locked" id="step3">
       <div class="step-header" data-toggle="step3">
         <div class="step-num">3</div>
@@ -337,7 +333,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
         <div class="step-chev">▾</div>
       </div>
       <div class="step-body">
-
         <div id="sectionsBox" style="display:none">
           <h4 style="margin:0 0 10px;font-size:14px;color:var(--navy)">📑 Parties détectées dans le document</h4>
           <div id="sectionsList"></div>
@@ -385,7 +380,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
         <div id="draftList" style="margin-top:16px"></div>
       </div>
     </div>
-
   </div>
 </section>
 
@@ -399,6 +393,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
       <option value="mcq">QCM (une bonne réponse)</option>
       <option value="mcq_multi">QCM (plusieurs bonnes réponses)</option>
       <option value="tf">Vrai / Faux</option>
+      <option value="cloze">Texte à trous</option>
       <option value="short">Réponse courte</option>
     </select>
     <div id="mcqFields">
@@ -503,9 +498,14 @@ let allParsedQuestions=[];
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function identifierToEmail(input){const v=String(input||'').trim().toLowerCase();if(!v)return '';if(v.includes('@'))return v;const safe=v.replace(/[^a-z0-9._-]/g,'');if(!safe)return '';return safe+'@'+INTERNAL_DOMAIN}
 function emailToDisplay(email){const e=String(email||'');if(e.toLowerCase().endsWith('@'+INTERNAL_DOMAIN))return e.substring(0,e.length-INTERNAL_DOMAIN.length-1);return e}
-function typeName(q){return ({mcq:'QCM',mcq_multi:'QCM multi',tf:'Vrai/Faux',cloze:'Texte à trous',short:'Réponse courte'})[q.t
-function hasKey(q){return q.type==='tf'?typeof q.correct==='boolean':q.type==='short'?Boolean(q.expected):Array.isArray(q.correct)?q.correct.length>0:Number.isInteger(q.correct)}
-function correctLabel(q){n q.expected||'?';if(Array.isArray(q.correct))return q.correct.map(i=>q.options?.[i]).filter(Boolean).join(' ; ')||'?';return q.options?.[q.correct]||'?'}
+function typeName(q){return ({mcq:'QCM',mcq_multi:'QCM multi',tf:'Vrai/Faux',cloze:'Texte à trous',short:'Réponse courte'})[q.type]||q.type}
+function hasKey(q){return q.type==='tf'?typeof q.correct==='boolean':q.type==='short'||q.type==='cloze'?Boolean(q.correct||q.expected):Array.isArray(q.correct)?q.correct.length>0:Number.isInteger(q.correct)}
+function correctLabel(q){
+  if(q.type==='tf')return q.correct===true?'Vrai':q.correct===false?'Faux':'?';
+  if(q.type==='short'||q.type==='cloze')return q.correct||q.expected||'?';
+  if(Array.isArray(q.correct))return q.correct.map(i=>q.options?.[i]).filter(Boolean).join(' ; ')||'?';
+  return q.options?.[q.correct]||'?';
+}
 
 function cleanExtractedText(text){
   if(!text)return '';
@@ -525,7 +525,7 @@ function cleanExtractedText(text){
   return cleaned.trim();
 }
 
-// ============ FSRS-5 ============
+// ===== FSRS-5 =====
 const FSRS_W=[0.4072,1.1829,3.1262,15.4722,7.2102,0.5316,1.0651,0.0234,1.616,0.1544,1.0824,1.9813,0.0953,0.2975,2.2042,0.2407,2.9466,0.5034,0.6567];
 const FSRS_DESIRED_RETENTION=0.9;
 const DAY_MS=24*60*60*1000;
@@ -558,7 +558,7 @@ function renderFsrsList(){const due=fsrsDueCards();if(!due.length){$('fsrsList')
 let reviewSession=null;
 function startReviewSession(){const due=fsrsDueCards();if(!due.length){alert('Aucune carte à réviser aujourd\'hui.');return}const allQuestions=[];for(const q of quizzes){for(const question of q.questions){const key=fsrsCardKey(question);if(fsrsCards[key]&&fsrsCards[key].due<=Date.now())allQuestions.push({...question,_fsrsKey:key,_quizTitle:q.title})}}if(!allQuestions.length){alert('Aucune question correspondante.');return}reviewSession={questions:allQuestions,answers:new Array(allQuestions.length).fill(null),current:0,submitted:false,title:'Révision FSRS',subject:'Répétition espacée'};openExamViewFromState(reviewSession,true)}
 
-// ============ GÉNÉRATEUR LOCAL DE SECOURS ============
+// ===== GÉNÉRATEUR LOCAL DE SECOURS =====
 function generateLocalQuestions(text,count){
   const cleaned=cleanExtractedText(text);
   if(!cleaned||cleaned.length<100)return [];
@@ -598,7 +598,7 @@ function generateLocalQuestions(text,count){
   return questions.slice(0,count);
 }
 
-// ============ DÉTECTION INTELLIGENTE DES SECTIONS ============
+// ===== DÉTECTION INTELLIGENTE DES SECTIONS =====
 function detectSections(text){
   const lines = text.split('\n');
   const MAX_TITLE_LEN = 80;
@@ -714,7 +714,7 @@ function parseAllQuestions(text, sections){
   return out;
 }
 
-// ============ CLOUD ============
+// ===== CLOUD =====
 async function apiFetch(url,options={}){
   const client=window.compTestAuth;
   const {data:{session}}=await client.auth.getSession();
@@ -741,38 +741,21 @@ function persist(){
   if(window.comptestSaveCloud)window.comptestSaveCloud(quizzes,historyData);
 }
 
-// ============ WIZARD: GESTION DES ÉTAPES ============
-function unlockStep(id){
-  const el = $(id);
-  if(!el) return;
-  el.classList.remove('locked');
-  el.classList.add('active');
-  const chev = el.querySelector('.step-chev');
-  if(chev) el.classList.remove('collapsed');
-  el.scrollIntoView({behavior:'smooth', block:'start'});
-}
-function markStepDone(id){
-  const el = $(id);
-  if(!el) return;
-  el.classList.remove('active','locked');
-  el.classList.add('done');
-}
-function collapseStep(id){
-  const el = $(id);
-  if(el) el.classList.add('collapsed');
-}
+// ===== WIZARD =====
+function unlockStep(id){const el=$(id);if(!el)return;el.classList.remove('locked');el.classList.add('active');el.classList.remove('collapsed');el.scrollIntoView({behavior:'smooth',block:'start'})}
+function markStepDone(id){const el=$(id);if(!el)return;el.classList.remove('active','locked');el.classList.add('done')}
+function collapseStep(id){const el=$(id);if(el)el.classList.add('collapsed')}
 function initWizard(){
-  document.querySelectorAll('.step-header').forEach(h => {
-    h.addEventListener('click', () => {
-      const step = h.closest('.step');
-      if(step.classList.contains('locked')) return;
+  document.querySelectorAll('.step-header').forEach(h=>{
+    h.addEventListener('click',()=>{
+      const step=h.closest('.step');
+      if(step.classList.contains('locked'))return;
       step.classList.toggle('collapsed');
     });
   });
 }
 initWizard();
 
-// ============ ONGLETS ============
 function initTabs(){
   document.querySelectorAll('.tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
@@ -785,12 +768,8 @@ function initTabs(){
 }
 initTabs();
 
-// ============ AUTH ============
-function showAuthError(message,diag){
-  $('authError').textContent=message||'';
-  const box=$('authDiag');
-  if(diag){box.style.display='block';box.textContent=diag}else{box.style.display='none';box.textContent=''}
-}
+// ===== AUTH =====
+function showAuthError(message,diag){$('authError').textContent=message||'';const box=$('authDiag');if(diag){box.style.display='block';box.textContent=diag}else{box.style.display='none';box.textContent=''}}
 function setSignedOut(message=''){activeUserId=null;isAdminUser=false;$('authGate').style.display='block';$('appMain').style.display='none';$('logoutBtn').hidden=true;$('passwordPanelBtn').hidden=true;$('adminTab').classList.add('hide');$('authUserLabel').textContent='Espace privé · Connexion requise';if(message)showAuthError(message)}
 function traduireErreurAuth(error){
   const msg=String(error?.message||'').toLowerCase();
@@ -810,7 +789,6 @@ async function initSaaS(){
   const client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   window.compTestAuth=client;
   client.auth.onAuthStateChange((_e,session)=>setTimeout(()=>activateSession(session),0));
-
   $('loginForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const btn=$('loginBtn');btn.disabled=true;btn.textContent='Connexion…';showAuthError('');
@@ -881,7 +859,7 @@ async function activateSession(session){
   renderAll();renderFsrsStats();renderFsrsList();
 }
 
-// ============ ADMIN ============
+// ===== ADMIN =====
 async function adminApi(url,options={}){const r=await apiFetch(url,options);const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Erreur admin.');return data}
 function safeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function loadAdminUsers(){
@@ -933,7 +911,7 @@ $('adminUsersList').addEventListener('click',async e=>{
   }catch(err){alert(err.message)}
 });
 
-// ============ RENDER ============
+// ===== RENDER =====
 function renderAll(){
   $('statTests').textContent=historyData.length;
   const avg=historyData.length?historyData.reduce((a,x)=>a+x.score,0)/historyData.length:0;
@@ -948,20 +926,21 @@ function renderAll(){
   $('draftList').innerHTML=drafts.length?`<h4 style="font-size:14px;margin:18px 0 6px;color:var(--navy)">Questions prêtes (${drafts.length})</h4>
     <div class="small muted">${drafts.filter(hasKey).length} avec réponse · ${drafts.filter(q=>!hasKey(q)).length} sans réponse</div>`+
     drafts.slice(0, 30).map((q,i)=>`<div class="question"><strong>${i+1}. ${esc(q.text)}</strong>
-      <div class="qmeta"><span class="badge">${esc(typeName(q))}</span>${q.section?`<span class="badge section">${esc(q.section.slice(0,40))}</span>`:''}</div>
+      <div class="qmeta"><span class="badge">${esc(typeName(q))}</span>${q.section?`<span class="badge section">${esc(q.section.slice(0,40))}</span>`:''}${q.source==='ai-diane'?'<span class="badge ok">IA Diane</span>':''}</div>
       ${q.options?.length?'<div class="small">'+q.options.map((o,j)=>`${q.correct===j||(Array.isArray(q.correct)&&q.correct.includes(j))?'✓ ':''}${String.fromCharCode(65+j)}. ${esc(o)}`).join('<br>')+'</div>':''}
       <div class="small" style="margin-top:6px"><b>Réponse :</b> ${esc(correctLabel(q))}</div>
+      ${q.sourceExcerpt?`<p class="small" style="background:#fef3c7;padding:6px 8px;border-radius:6px;color:#7a4a00"><b>📖 Source :</b> ${esc(q.sourceExcerpt)}</p>`:''}
       ${q.explanation?`<p class="small muted">${esc(q.explanation)}</p>`:''}
     </div>`).join('') + (drafts.length > 30 ? `<div class="small muted">… et ${drafts.length - 30} autres</div>` : ''):'';
 }
 window.removeDraft=i=>{drafts.splice(i,1);renderAll()};
 
-// ============ IMPORT ============
+// ===== IMPORT =====
 $('qType').addEventListener('change',()=>{
   const t=$('qType').value;
   $('mcqFields').classList.toggle('hide',!['mcq','mcq_multi'].includes(t));
   $('tfFields').classList.toggle('hide',t!=='tf');
-  $('shortFields').classList.toggle('hide',t!=='short');
+  $('shortFields').classList.toggle('hide',!['short','cloze'].includes(t));
 });
 function pdfTextWithLines(content){
   const items=(content.items||[]).filter(x=>x.str&&x.str.trim()).map(x=>({s:x.str,x:x.transform?.[4]??0,y:x.transform?.[5]??0}));
@@ -995,7 +974,6 @@ $('extractBtn').onclick=async()=>{
     if(text.length<200){$('pdfStatus').innerHTML=`⚠️ Extrait : ${text.length} caractères seulement.`}
     else{$('pdfStatus').innerHTML=`✅ Extrait : ${text.length} caractères.<br><span class="muted">Tu peux passer à l'étape 2 → Analyse.</span>`}
     $('textAreaWrap').style.display='block';
-    // Déverrouille l'étape 2
     markStepDone('step1');
     collapseStep('step1');
     unlockStep('step2');
@@ -1003,7 +981,7 @@ $('extractBtn').onclick=async()=>{
   finally{btn.disabled=false}
 };
 
-// ============ ANALYSE ============
+// ===== ANALYSE =====
 async function analyzeDocument(){
   const rawOriginal=$('pdfText').value.trim();
   if(!rawOriginal){$('analysisStatus').style.display='block';$('analysisStatus').className='notice err';$('analysisStatus').textContent='Aucun texte à analyser.';return}
@@ -1081,14 +1059,12 @@ async function analyzeDocument(){
     $('analysisStatus').innerHTML = '📚 Document détecté comme cours rédigé. Utilise le bouton <b>« Générer depuis le cours (IA) »</b>.';
   }
 
-  markStepDone('step2');
-  collapseStep('step2');
-  unlockStep('step3');
+  markStepDone('step2');collapseStep('step2');unlockStep('step3');
   btn.disabled = false; btn.textContent = oldText;
 }
 $('analyzeBtn').onclick=analyzeDocument;
 
-// ============ SÉLECTION ============
+// ===== SÉLECTION =====
 function updateSelectionFromSections(){
   const checked = [...document.querySelectorAll('#sectionsList input[type=checkbox]:checked')].map(cb => cb.dataset.sectionTitle);
   document.querySelectorAll('#sectionsList .section-item').forEach(item => {
@@ -1109,8 +1085,8 @@ function renderSelectionPreview(filtered, checkedSections){
     return;
   }
   summary.style.display='block';
-  const tf=filtered.filter(q=>q.type==='tf').length,mcq=filtered.filter(q=>q.type==='mcq').length,mcqm=filtered.filter(q=>q.type==='mcq_multi').length,noKey=filtered.filter(q=>!hasKey(q)).length;
-  summary.innerHTML=`✅ <b>${filtered.length} question(s)</b> sélectionnée(s) · ${checkedSections.length} partie(s)<br><span class="small">Vrai/Faux : ${tf} · QCM : ${mcq} · QCM multi : ${mcqm} · Sans réponse : ${noKey}</span>`;
+  const tf=filtered.filter(q=>q.type==='tf').length,mcq=filtered.filter(q=>q.type==='mcq').length,mcqm=filtered.filter(q=>q.type==='mcq_multi').length,cloze=filtered.filter(q=>q.type==='cloze').length,noKey=filtered.filter(q=>!hasKey(q)).length;
+  summary.innerHTML=`✅ <b>${filtered.length} question(s)</b> sélectionnée(s) · ${checkedSections.length} partie(s)<br><span class="small">Vrai/Faux : ${tf} · QCM : ${mcq} · QCM multi : ${mcqm} · Texte à trous : ${cloze} · Sans réponse : ${noKey}</span>`;
   preview.style.display='block';
   preview.innerHTML=filtered.slice(0,30).map(q=>`<div class="preview-q"><span class="num">Q${q.number}</span>${esc(q.text.slice(0,180))}${q.text.length>180?'…':''} <span class="type">${esc(typeName(q))}</span></div>`).join('')+(filtered.length>30?`<div class="small muted" style="padding:6px">… et ${filtered.length-30} autres</div>`:'');
   $('startQuizFromSelectionBtn').style.display='inline-block';
@@ -1134,11 +1110,11 @@ $('applyRangeBtn').onclick=()=>{
   renderAll();
 };
 
-// ============ GÉNÉRATION IA ============
+// ===== GÉNÉRATION IA =====
 let generationTicker=null;
 $('generateQuestionsBtn').onclick=async()=>{
   const sourceText=cleanExtractedText($('pdfText').value.trim());
-  const count=Number(20);
+  const count=Number($('genCount').value)||20;
   if(sourceText.length<80){$('generationStatus').textContent='Texte trop court.';return}
   try { const health=await fetch('/api/health').then(r=>r.json()); if(!health.aiConfigured){ $('generationStatus').innerHTML='❌ <b>IA désactivée sur le serveur.</b><br>Ajoute <code>AI_API_KEY</code> dans Render.'; return; } } catch(e){}
   const btn=$('generateQuestionsBtn');btn.disabled=true;btn.textContent='Génération…';
@@ -1154,13 +1130,13 @@ $('generateQuestionsBtn').onclick=async()=>{
     clearTimeout(timeoutId);
     const data=await r.json().catch(()=>({error:'Réponse illisible'}));
     if(!r.ok)throw new Error(data.error||`Erreur ${r.status}`);
-    const made=(data.questions||[]).map((q,i)=>({...q,number:i+1,section:'Généré par IA',source:'ai-generated'}));
+    const made=(data.questions||[]).map((q,i)=>({...q,number:i+1,section:'Généré par IA',source:'ai-diane'}));
     drafts=made;
     if(!$('quizTitle').value.trim())$('quizTitle').value='Questionnaire généré';
     const elapsed=Math.round((Date.now()-startTime)/1000);
-    $('generationStatus').innerHTML=`✅ ${made.length} question(s) générée(s) en ${elapsed}s.`;
+    $('generationStatus').innerHTML=`✅ ${made.length} question(s) générée(s) par IA Diane en ${elapsed}s.`;
     $('selectionSummary').style.display='block';
-    $('selectionSummary').innerHTML=`🤖 ${made.length} question(s) générée(s) par IA`;
+    $('selectionSummary').innerHTML=`🤖 ${made.length} question(s) générée(s) par IA Diane`;
     $('startQuizFromSelectionBtn').style.display='inline-block';
     $('saveQuizBtn').style.display='inline-block';
     renderAll();
@@ -1191,14 +1167,14 @@ $('aiBtn').onclick=async()=>{
   if(!pending.length){$('analysisStatus').style.display='block';$('analysisStatus').className='notice';$('analysisStatus').textContent='Toutes les questions ont une réponse.';return}
   const btn=$('aiBtn');btn.disabled=true;btn.textContent='Analyse…';
   try{
-    const r=await apiFetch('/api/answer-questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:$('quizSubject').value.trim(),questions:pending.map((q,i)=>({id:String(q.number??i),type:q.type,text:q.text,options:q.options||[]}))})});
+    const r=await apiFetch('/api/answer-questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:$('quizSubject').value.trim(),questions:pending.map((q,i)=>({id:String(q.number??i),type:q.type,text:q.text,options:q.options||[],source:q.sourceExcerpt||''}))})});
     const data=await r.json().catch(()=>({error:'Réponse illisible'}));
     if(!r.ok)throw new Error(data.error||'Erreur');
     for(const a of data.answers||[]){
       const q=drafts.find(x=>String(x.number)===String(a.id));
       if(!q)continue;
       if(q.type==='tf'&&typeof a.correct==='boolean')q.correct=a.correct;
-      else if(q.type==='short'&&typeof a.correct==='string')q.expected=a.correct.trim();
+      else if((q.type==='short'||q.type==='cloze')&&typeof a.correct==='string')q.correct=a.correct.trim();
       else if(q.type==='mcq'||q.type==='mcq_multi'){let c=a.correct;if(Array.isArray(c))q.correct=c;else if(Number.isInteger(c))q.correct=q.type==='mcq_multi'?[c]:c;}
       if(hasKey(q)){q.source='ai';q.explanation=a.explanation||'';q.confidence=a.confidence}
     }
@@ -1208,14 +1184,14 @@ $('aiBtn').onclick=async()=>{
   finally{btn.disabled=false;btn.textContent='🧠 Résoudre les réponses manquantes (IA)'}
 };
 
-// ============ AJOUT MANUEL ============
+// ===== AJOUT MANUEL =====
 $('addQuestion').onclick=()=>{
   const text=$('qText').value.trim(),type=$('qType').value;
   if(!text){alert('Écris un énoncé.');return}
   const q={text,type,explanation:$('qExplanation').value.trim(),source:'manual',section:'Manuel',number:drafts.length+1};
   if(type==='mcq'||type==='mcq_multi'){q.options=$('qOptions').value.split('\n').map(x=>x.trim()).filter(Boolean);const nums=$('qCorrect').value.split(',').map(x=>Number(x.trim())-1);if(q.options.length<2||nums.some(n=>n<0||n>=q.options.length)){alert('Vérifie options et réponses.');return}q.correct=type==='mcq_multi'?nums:nums[0];}
   if(type==='tf')q.correct=$('qTF').value==='true';
-  if(type==='short'){q.expected=$('qExpected').value.trim();if(!q.expected){alert('Réponse attendue ?');return}}
+  if(type==='short'||type==='cloze'){q.correct=$('qExpected').value.trim();if(!q.correct){alert('Réponse attendue ?');return}}
   drafts.push(q);
   $('qText').value='';$('qExplanation').value='';
   renderAll();
@@ -1245,7 +1221,7 @@ $('startQuizFromSelectionBtn').onclick=()=>{
   openExamView({title,subject,questions:drafts.map(q=>({...q,options:q.options?[...q.options]:undefined}))});
 };
 
-// ============ EXAM ============
+// ===== EXAM =====
 let examState=null;
 function openExamView(quiz){openExamViewFromState({...quiz,answers:new Array(quiz.questions.length).fill(null),current:0,submitted:false},false)}
 function openExamViewFromState(state,isReview){examState=state;examState.isReview=!!isReview;$('examTitle').textContent=state.title;$('examMeta').textContent=`${state.questions.length} question(s) · ${state.subject}`;$('examView').style.display='block';document.body.style.overflow='hidden';renderExam()}
@@ -1255,17 +1231,18 @@ $('examQuitBtn').onclick=closeExamView;
 function renderExam(){
   if(!examState)return;
   const total=examState.questions.length;
-  const answered=examState.answers.filter(a=>a!==null&&!(Array.isArray(a)&&a.length===0)).length;
+  const answered=examState.answers.filter(a=>a!==null&&!(Array.isArray(a)&&a.length===0)&&a!=='').length;
   const isSubmitted=examState.submitted;
   let dotsHtml='';
-  for(let i=0;i<total;i++){let cls='dot';if(isSubmitted){const ok=isAnswerCorrect(examState.questions[i],examState.answers[i]);cls+=ok?' correct':' wrong'}else{if(i===examState.current)cls+=' current';if(examState.answers[i]!==null&&!(Array.isArray(examState.answers[i])&&examState.answers[i].length===0))cls+=' answered'}dotsHtml+=`<button class="${cls}" type="button" data-goto="${i}">${i+1}</button>`}
+  for(let i=0;i<total;i++){let cls='dot';if(isSubmitted){const ok=isAnswerCorrect(examState.questions[i],examState.answers[i]);cls+=ok?' correct':' wrong'}else{if(i===examState.current)cls+=' current';if(examState.answers[i]!==null&&!(Array.isArray(examState.answers[i])&&examState.answers[i].length===0)&&examState.answers[i]!=='')cls+=' answered'}dotsHtml+=`<button class="${cls}" type="button" data-goto="${i}">${i+1}</button>`}
   if(isSubmitted){
     const questionsHtml=examState.questions.map((q,i)=>{
       const ua=examState.answers[i],ok=isAnswerCorrect(q,ua);let body='';
       if(q.type==='mcq'||q.type==='mcq_multi'){body='<div class="exam-opts">'+q.options.map((o,j)=>{const isCorrect=q.type==='mcq'?j===q.correct:(Array.isArray(q.correct)&&q.correct.includes(j));const isChosen=q.type==='mcq'?ua===j:(Array.isArray(ua)&&ua.includes(j));let cls='exam-opt';if(isCorrect)cls+=' correct';else if(isChosen)cls+=' wrong';return `<div class="${cls}"><span>${String.fromCharCode(65+j)}. ${esc(o)}${isCorrect?' ✓':''}${isChosen&&!isCorrect?' (ton choix)':''}</span></div>`}).join('')+'</div>'}
       else if(q.type==='tf'){body='<div class="exam-opts">'+[true,false].map(v=>{const isCorrect=q.correct===v,isChosen=ua===v;let cls='exam-opt';if(isCorrect)cls+=' correct';else if(isChosen)cls+=' wrong';return `<div class="${cls}"><span>${v?'Vrai':'Faux'}${isCorrect?' ✓':''}${isChosen&&!isCorrect?' (ton choix)':''}</span></div>`}).join('')+'</div>'}
-      else{body=`<div class="small"><b>Ta réponse :</b> ${esc(ua||'(vide)')}</div><div class="correct-block"><b>Attendu :</b> ${esc(q.expected||'—')}</div>`}
-      return `<div class="exam-q"><div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div><h3>${esc(q.text)}</h3>${body}<div class="correct-block"><b>${ok?'✅ Bonne réponse':'❌ Incorrect'}</b>${q.type!=='short'?' — attendu : <b>'+esc(correctLabel(q))+'</b>':''}</div>${q.explanation?`<div class="explain-block"><b>Explication :</b> ${esc(q.explanation)}</div>`:''}</div>`
+      else if(q.type==='cloze'){body=`<div class="small"><b>Ta réponse :</b> ${esc(ua||'(vide)')}</div><div class="correct-block"><b>Mot attendu :</b> ${esc(q.correct||'—')}</div>`}
+      else{body=`<div class="small"><b>Ta réponse :</b> ${esc(ua||'(vide)')}</div><div class="correct-block"><b>Attendu :</b> ${esc(q.correct||q.expected||'—')}</div>`}
+      return `<div class="exam-q"><div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div><h3>${esc(q.text)}</h3>${body}<div class="correct-block"><b>${ok?'✅ Bonne réponse':'❌ Incorrect'}</b>${q.type!=='short'&&q.type!=='cloze'?' — attendu : <b>'+esc(correctLabel(q))+'</b>':''}</div>${q.sourceExcerpt?`<div class="explain-block" style="background:#fef3c7;border-left-color:#d97706"><b>📖 Extrait du cours :</b> ${esc(q.sourceExcerpt)}</div>`:''}${q.explanation?`<div class="explain-block"><b>Explication :</b> ${esc(q.explanation)}</div>`:''}</div>`
     }).join('');
     const scorable=examState.questions.filter(hasKey).length;
     const correctCount=examState.questions.reduce((a,q,i)=>a+(hasKey(q)&&isAnswerCorrect(q,examState.answers[i])?1:0),0);
@@ -1280,6 +1257,7 @@ function renderExam(){
     const i=examState.current,q=examState.questions[i],ua=examState.answers[i];let body='';
     if(q.type==='mcq'||q.type==='mcq_multi'){const multi=q.type==='mcq_multi';body='<div class="exam-opts">'+q.options.map((o,j)=>{const chosen=multi?(Array.isArray(ua)&&ua.includes(j)):(ua===j);return `<label class="exam-opt${chosen?' selected':''}"><input type="${multi?'checkbox':'radio'}" name="examq" value="${j}" ${chosen?'checked':''}><span>${String.fromCharCode(65+j)}. ${esc(o)}</span></label>`}).join('')+'</div>'}
     else if(q.type==='tf'){body='<div class="exam-opts">'+[true,false].map(v=>{const chosen=ua===v;return `<label class="exam-opt${chosen?' selected':''}"><input type="radio" name="examq" value="${v}" ${chosen?'checked':''}><span>${v?'Vrai':'Faux'}</span></label>`}).join('')+'</div>'}
+    else if(q.type==='cloze'){body=`<input type="text" id="examShortInput" placeholder="Mot manquant…" value="${esc(ua||'')}">`}
     else{body=`<input type="text" id="examShortInput" placeholder="Ta réponse…" value="${esc(ua||'')}">`}
     $('examBody').innerHTML=`<div class="exam-q"><div><span class="num">${i+1}</span><span class="type-badge">${esc(typeName(q))}</span></div><h3>${esc(q.text)}</h3>${body}</div><div class="exam-nav"><div class="dots">${dotsHtml}</div></div>`;
     $('examActionsBar').innerHTML=`<div class="progress-info">Question <b>${i+1}</b>/${total} · <b>${answered}</b> répondue(s)</div><div style="display:flex;gap:8px"><button type="button" class="secondary" id="examPrevBtn" ${i===0?'disabled':''}>← Précédent</button>${i<total-1?`<button type="button" id="examNextBtn">Suivant →</button>`:`<button type="button" class="success" id="examSubmitBtn">✓ Soumettre</button>`}${i<total-1?`<button type="button" class="ghost" id="examSubmitBtn2">Soumettre</button>`:''}</div>`;
@@ -1292,12 +1270,19 @@ function renderExam(){
   }
   document.querySelectorAll('#examBody .dot').forEach(d=>{d.onclick=()=>{if(examState.submitted)return;captureCurrentAnswer();examState.current=Number(d.dataset.goto);renderExam()}});
 }
-function captureCurrentAnswer(){if(!examState||examState.submitted)return;const q=examState.questions[examState.current];if(q.type==='short'){const inp=$('examShortInput');if(inp)examState.answers[examState.current]=inp.value}}
-function isAnswerCorrect(q,ua){if(!hasKey(q)||ua===null||ua===undefined)return false;if(q.type==='mcq')return ua===q.correct;if(q.type==='mcq_multi'){const c=Array.isArray(ua)?[...ua].sort():[];const e=(Array.isArray(q.correct)?q.correct:[q.correct]).slice().sort();return c.length===e.length&&c.every((v,j)=>v===e[j])}if(q.type==='tf')return ua===q.correct;if(q.type==='short')return String(ua).trim().toLowerCase()===String(q.expected).toLowerCase();return false}
+function captureCurrentAnswer(){if(!examState||examState.submitted)return;const q=examState.questions[examState.current];if(q.type==='short'||q.type==='cloze'){const inp=$('examShortInput');if(inp)examState.answers[examState.current]=inp.value}}
+function isAnswerCorrect(q,ua){
+  if(!hasKey(q)||ua===null||ua===undefined)return false;
+  if(q.type==='mcq')return ua===q.correct;
+  if(q.type==='mcq_multi'){const c=Array.isArray(ua)?[...ua].sort():[];const e=(Array.isArray(q.correct)?q.correct:[q.correct]).slice().sort();return c.length===e.length&&c.every((v,j)=>v===e[j])}
+  if(q.type==='tf')return ua===q.correct;
+  if(q.type==='short'||q.type==='cloze'){const expected=(q.correct||q.expected||'').toString().trim().toLowerCase();const given=String(ua).trim().toLowerCase();return given.length>0&&(given===expected||expected.includes(given)&&given.length>=3)}
+  return false;
+}
 function submitExam(){
   if(!examState)return;
   captureCurrentAnswer();
-  const unanswered=examState.answers.filter(a=>a===null||(typeof a==='string'&&a.trim()==='')).length;
+  const unanswered=examState.answers.filter(a=>a===null||a===undefined||(typeof a==='string'&&a.trim()==='')).length;
   if(unanswered>0&&!confirm(`${unanswered} sans réponse. Soumettre ?`))return;
   examState.submitted=true;
   if(examState.isReview){examState.questions.forEach((q,i)=>{const key=q._fsrsKey||fsrsCardKey(q);const ok=isAnswerCorrect(q,examState.answers[i]);const grade=ok?3:1;fsrsCards[key]=fsrsReview(fsrsCards[key],grade)});saveFsrs()}
