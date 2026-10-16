@@ -503,9 +503,9 @@ let allParsedQuestions=[];
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function identifierToEmail(input){const v=String(input||'').trim().toLowerCase();if(!v)return '';if(v.includes('@'))return v;const safe=v.replace(/[^a-z0-9._-]/g,'');if(!safe)return '';return safe+'@'+INTERNAL_DOMAIN}
 function emailToDisplay(email){const e=String(email||'');if(e.toLowerCase().endsWith('@'+INTERNAL_DOMAIN))return e.substring(0,e.length-INTERNAL_DOMAIN.length-1);return e}
-function typeName(q){return ({mcq:'QCM',mcq_multi:'QCM multi',tf:'Vrai/Faux',short:'Réponse courte'})[q.type]||q.type}
+function typeName(q){return ({mcq:'QCM',mcq_multi:'QCM multi',tf:'Vrai/Faux',cloze:'Texte à trous',short:'Réponse courte'})[q.t
 function hasKey(q){return q.type==='tf'?typeof q.correct==='boolean':q.type==='short'?Boolean(q.expected):Array.isArray(q.correct)?q.correct.length>0:Number.isInteger(q.correct)}
-function correctLabel(q){if(q.type==='tf')return q.correct===true?'Vrai':q.correct===false?'Faux':'?';if(q.type==='short')return q.expected||'?';if(Array.isArray(q.correct))return q.correct.map(i=>q.options?.[i]).filter(Boolean).join(' ; ')||'?';return q.options?.[q.correct]||'?'}
+function correctLabel(q){n q.expected||'?';if(Array.isArray(q.correct))return q.correct.map(i=>q.options?.[i]).filter(Boolean).join(' ; ')||'?';return q.options?.[q.correct]||'?'}
 
 function cleanExtractedText(text){
   if(!text)return '';
