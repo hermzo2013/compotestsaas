@@ -14,6 +14,9 @@ app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.h
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
 app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
 app.get('/favicon.ico', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
+app.get('/site.jpg', (_req, res) => res.sendFile(path.join(__dirname, 'site.jpg')));
+app.get('/site.png', (_req, res) => res.sendFile(path.join(__dirname, 'site.jpg')));
+app.get('/logo.jpg', (_req, res) => res.sendFile(path.join(__dirname, 'site.jpg')));
 app.get('/api/health', (_req, res) => res.json({ ok: true, aiConfigured: Boolean(process.env.AI_API_KEY), authConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY), adminConfigured: Boolean(process.env.ADMIN_EMAIL && process.env.SUPABASE_SERVICE_ROLE_KEY) }));
 
 async function authenticate(req, res, next) {
