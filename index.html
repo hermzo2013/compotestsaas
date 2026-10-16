@@ -26,6 +26,8 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .small{font-size:12px}.hide{display:none!important}
 .notice{padding:11px;border-radius:10px;background:#fff7df;color:#74500b;font-size:13px;margin-top:10px}
+.notice.err{background:#fff0f0;color:#a51f2a}
+.notice.ok{background:#e9f8f1;color:#0e5e3f}
 .result{background:#edf9f2;border:1px solid #c4ecd5;padding:16px;border-radius:12px;margin-top:14px}
 .history-item{padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}.history-item:last-child{border-bottom:0}
 .footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
@@ -443,9 +445,8 @@ let fsrsCards=JSON.parse(localStorage.getItem('compo_fsrs')||'{}');
 let examTimer=null, secondsLeft=600;
 let isAdminUser=false;
 let activeUserId=null, cloudWriteChain=Promise.resolve();
-let detectedSections=[];        // Sections détectées dans le PDF
-let selectedQuestionIds=new Set(); // IDs des questions sélectionnées
-let allParsedQuestions=[];      // Toutes les questions extraites avec leur section
+let detectedSections=[];
+let allParsedQuestions=[];
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function identifierToEmail(input){
@@ -591,75 +592,134 @@ function generateLocalQuestions(text,count){
     questions.push({id:`local-${Date.now()}-${questions.length}`,number:questions.length+1,type:'mcq',text:`Complète la phrase :\n"${blanked}"`,options,correct:correctIndex,explanation:`Phrase originale du cours : "${sentence}"`,sourceExcerpt:sentence.slice(0,200),source:'local-fallback',confidence:0.4});
     usedSentences.add(sentence);
   }
-  for(const sentence of shuffled){
-    if(questions.length>=count)break;
-    if(usedSentences.has(sentence))continue;
-    const words=keyWords(sentence);
-    if(words.length<3)continue;
-    const isTrue=Math.random()>0.5;
-    let qText=sentence;
-    if(!isTrue){
-      const candidates=words.filter(w=>w.length>5);
-      if(!candidates.length)continue;
-      const wrongWord=candidates[Math.floor(Math.random()*candidates.length)];
-      const pool=[];
-      for(const other of shuffled){
-        if(other===sentence)continue;
-        for(const w of keyWords(other)){if(w!==wrongWord&&!pool.includes(w)&&w.length>5)pool.push(w)}
-      }
-      if(!pool.length)continue;
-      const replacement=pool[Math.floor(Math.random()*pool.length)];
-      const regex=new RegExp(`\\b${wrongWord.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`,'i');
-      qText=sentence.replace(regex,replacement);
-    }
-    questions.push({id:`local-tf-${Date.now()}-${questions.length}`,number:questions.length+1,type:'tf',text:`Vrai ou Faux ?\n"${qText}"`,options:[],correct:isTrue,explanation:isTrue?'Affirmation exacte d\'après le cours.':`Correction : "${sentence}"`,sourceExcerpt:sentence.slice(0,200),source:'local-fallback',confidence:0.4});
-    usedSentences.add(sentence);
-  }
   return questions.slice(0,count);
 }
 
-// ================== DÉTECTION DES SECTIONS ==================
+// ================== DÉTECTION INTELLIGENTE DES SECTIONS ==================
 function detectSections(text){
-  // Détecte les lignes qui ressemblent à des titres de section :
-  // - lignes en MAJUSCULES (>8 chars, <80 chars)
-  // - lignes commençant par ## , I- , PARTIE X, CHAPITRE X
   const lines = text.split('\n');
   const sections = [];
-  const sectionPattern = /^\s*(?:#{1,4}\s+)?(?:PARTIE\s+[IVX0-9]+|CHAPITRE\s+[IVX0-9]+|[IVX]+[-.)]|[0-9]{1,2}[-.)]\s+[A-ZÀ-Ý])/i;
+  const MAX_TITLE_LEN = 80;
+  const MIN_TITLE_LEN = 6;
+
+  // Liste noire : ne jamais considérer ces lignes comme des titres
+  const blacklist = [
+    /^Page\s*\d+/i, /^\d+$/, /^Q\d+/i, /^Q\s*\d+/i,
+    /^QCD$/i, /^QCM$/i, /^QCD\s*:?\s*$/i, /^QCM\s*:?\s*$/i,
+    /^Cochez/i, /^Écrivez/i, /^Ecrivez/i, /^Cochez\s+(les|a|A)/i,
+    /^Sélectionnez/i, /^Sélection/i, /^Identifiez/i, /^Parmi/i,
+    /^Voici/i, /^Combien/i, /^Quel(le)?s?$/i, /^Lequel/i,
+    /^Correction/i, /^Solution/i, /^Réponse/i, /^Note/i,
+    /^[A-Z]\.\s/, /^[a-z]\.\s/, /^[A-H]\)/,
+    /^\s*[\[\(].*[\]\)]\s*$/,
+    /^https?:/i, /^www\./i,
+    /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/,
+    /^[IVX]+\.\s*$/i,
+    /^\s*[-•*·]\s/, // puces
+    /^\s*[§¶]\s*/,
+    /^[()\[\]{}<>«»"']+$/, // ponctuation seule
+  ];
+
+  function isBlacklisted(line){
+    return blacklist.some(rx => rx.test(line));
+  }
+
+  // Score de "title-ness" : plus le score est élevé, plus c'est probablement un titre
+  function titleScore(raw){
+    if(!raw) return -1;
+    const line = raw.trim();
+    if(line.length < MIN_TITLE_LEN || line.length > MAX_TITLE_LEN) return -1;
+    if(isBlacklisted(line)) return -1;
+
+    const words = line.split(/\s+/);
+    if(words.length < 2 || words.length > 14) return -1;
+
+    // Ratio de mots en MAJUSCULES
+    const upperWords = words.filter(w => /^[A-ZÀ-Ý][A-ZÀ-Ý0-9\-']{1,}$/.test(w)).length;
+    const upperRatio = upperWords / words.length;
+
+    // Ratio de caractères majuscules
+    const letters = line.replace(/[^A-Za-zÀ-ÿ]/g, '');
+    const caps = line.replace(/[^A-ZÀ-Ý]/g, '');
+    const capRatio = letters.length > 0 ? caps.length / letters.length : 0;
+
+    // Ne pas compter les titres qui finissent par ":" ou qui sont des questions
+    const endsWithColon = /:\s*$/.test(line);
+    const startsWithQ = /^Q\s*\d+/i.test(line);
+    const hasQuestionMark = /\?\s*$/.test(line);
+
+    let score = 0;
+
+    // Titre en MAJUSCULES (le plus fiable)
+    if(upperRatio >= 0.7) score += 5;
+    else if(upperRatio >= 0.5) score += 3;
+
+    // Titre en Title Case (majuscule au début de chaque mot)
+    const titleCaseWords = words.filter(w => /^[A-ZÀ-Ý][a-zà-ÿ]/.test(w)).length;
+    if(titleCaseWords / words.length >= 0.6) score += 3;
+
+    // Score de ratio de majuscules
+    if(capRatio >= 0.7) score += 3;
+    else if(capRatio >= 0.5) score += 1;
+
+    // Pénalités
+    if(startsWithQ) score -= 5;
+    if(hasQuestionMark) score -= 4;
+    if(endsWithColon) score -= 1;
+    if(/^#{1,4}\s+/.test(raw)) score += 4; // Markdown heading
+    if(/^(?:PARTIE|CHAPITRE|TITRE|SECTION|THEME|THÈME|MODULE|UNITÉ|UNITE)\s+[IVX0-9]/i.test(line)) score += 6;
+
+    return score;
+  }
+
+  const candidates = [];
   for(let i = 0; i < lines.length; i++){
-    const raw = lines[i].trim();
-    if(!raw || raw.length < 5 || raw.length > 100) continue;
-    // Titre tout en majuscules
-    const words = raw.split(/\s+/);
-    const upperWords = words.filter(w => /^[A-ZÀ-Ý][A-ZÀ-Ý0-9-]{2,}$/.test(w)).length;
-    const isUpperTitle = words.length >= 2 && words.length <= 12 && upperWords / words.length > 0.7;
-    // Titre avec préfixe
-    const isPrefixed = sectionPattern.test(raw);
-    if(isUpperTitle || isPrefixed){
-      sections.push({ line: i, title: raw.replace(/^#+\s*/, '').trim(), startIndex: i });
+    const raw = lines[i];
+    const score = titleScore(raw);
+    if(score >= 4){
+      candidates.push({ line: i, title: raw.trim().replace(/^#+\s*/, '').replace(/\s+/g, ' '), score });
     }
   }
-  // Regroupe par sections et calcule les plages
-  for(let i = 0; i < sections.length; i++){
-    sections[i].endIndex = i < sections.length - 1 ? sections[i+1].startIndex : lines.length;
-    sections[i].id = 'sec-' + i;
+
+  // Fusionne les doublons proches (même titre à 3 lignes d'intervalle)
+  const merged = [];
+  for(const c of candidates){
+    if(merged.length && c.line - merged[merged.length - 1].line < 3 && c.title.toLowerCase() === merged[merged.length - 1].title.toLowerCase()) continue;
+    merged.push(c);
   }
-  return { sections, lines };
+
+  // Calcul des plages
+  for(let i = 0; i < merged.length; i++){
+    merged[i].startIndex = merged[i].line;
+    merged[i].endIndex = i < merged.length - 1 ? merged[i+1].line : lines.length;
+    merged[i].id = 'sec-' + i;
+  }
+
+  // Filtrage : on ne garde que les sections qui contiennent au moins 3 questions
+  const sectionsFiltered = [];
+  for(const s of merged){
+    // Compte les questions numérotées dans cette section
+    let count = 0;
+    for(let i = s.startIndex; i < s.endIndex; i++){
+      if(/^\s*(?:Q\s*)?\d{1,3}[.)]\s+\S/i.test(lines[i])) count++;
+    }
+    if(count >= 3) sectionsFiltered.push({ ...s, questionCount: count });
+  }
+
+  return { sections: sectionsFiltered, lines };
 }
 
 // ================== PARSING DES QUESTIONS PAR SECTION ==================
 function parseAllQuestions(text, sections){
-  // Parse toutes les questions numérotées avec leur section
   const lines = text.split('\n');
   const result = [];
   const qstart = /^(?:[✓✔☑]\s*)?(?:Q\s*)?(\d{1,3})[.)]\s+(.+)$/i;
 
-  // Associe chaque ligne à une section
   function sectionForLine(lineIdx){
     for(const s of sections){
       if(lineIdx >= s.startIndex && lineIdx < s.endIndex) return s.title;
     }
-    return 'Sans section';
+    return 'Général';
   }
 
   let currentQ = null;
@@ -682,7 +742,6 @@ function parseAllQuestions(text, sections){
   }
   if(currentQ) result.push(currentQ);
 
-  // Transforme en questions structurées
   const out = [];
   for(const b of result){
     let textParts = [], options = [], marked = [], key = null;
@@ -699,15 +758,16 @@ function parseAllQuestions(text, sections){
       options, explanation: '', source: 'unresolved', confidence: null,
       number: b.number, section: b.section, lineIdx: b.lineIdx
     };
-    // Détection Vrai/Faux spécifique pour les QCD
+
+    // Détection Vrai/Faux par défaut pour les QCD
+    const sectionUpper = String(b.section || '').toUpperCase();
     if(key !== null){ q.type='tf'; q.correct=key; q.source='pdf-marked'; }
-    else if(/cochez\s+a\s+pour\s+les\s+affirmations\s+vraies/i.test(b.section) || /QCD/i.test(b.section)){
-      // QCD : Vrai/Faux implicite
+    else if(/QCD/i.test(sectionUpper) || /VRAI.*FAUX/i.test(sectionUpper) || /COCHEZ\s+A/i.test(text)){
       q.type = 'tf';
-      q.correct = null; // À déterminer par l'IA
+      // On laisse l'IA déterminer correct
     }
     else if(options.length){
-      q.type = /réponses? multiples|plusieurs bonnes réponses/i.test(b.section) ? 'mcq_multi' : (marked.length > 1 ? 'mcq_multi' : 'mcq');
+      q.type = /QCM|MULTI/i.test(sectionUpper) && marked.length > 1 ? 'mcq_multi' : (marked.length > 1 ? 'mcq_multi' : 'mcq');
       if(marked.length){ q.correct = q.type === 'mcq_multi' ? marked : marked[0]; q.source = 'pdf-marked'; }
     }
     else q.type = 'short';
@@ -956,7 +1016,7 @@ function renderAll(){
   $('draftList').innerHTML=drafts.length?`<h3 style="font-size:15px;margin:18px 0 6px">Questions prêtes (${drafts.length})</h3>
     <div class="small muted">${drafts.filter(hasKey).length} avec réponse · ${drafts.filter(q=>!hasKey(q)).length} sans réponse</div>`+
     drafts.map((q,i)=>`<div class="question"><strong>${i+1}. ${esc(q.text)}</strong>
-      <div class="qmeta"><span class="badge">${esc(typeName(q))}</span>${q.section?`<span class="badge section">${esc(q.section.slice(0,30))}</span>`:''}${q.source==='local-fallback'?'<span class="badge warn">Mode secours</span>':''}</div>
+      <div class="qmeta"><span class="badge">${esc(typeName(q))}</span>${q.section?`<span class="badge section">${esc(q.section.slice(0,40))}</span>`:''}</div>
       ${q.options?.length?'<div class="small">'+q.options.map((o,j)=>`${q.correct===j||(Array.isArray(q.correct)&&q.correct.includes(j))?'✓ ':''}${String.fromCharCode(65+j)}. ${esc(o)}`).join('<br>')+'</div>':''}
       <div class="small" style="margin-top:6px"><b>Réponse :</b> ${esc(correctLabel(q))}</div>
       ${q.explanation?`<p class="small muted">${esc(q.explanation)}</p>`:''}
@@ -1030,53 +1090,52 @@ $('extractBtn').onclick=async()=>{
 };
 
 // ================== ANALYSE ET DÉTECTION DES SECTIONS ==================
-let analysisTicker=null;
 async function analyzeDocument(){
   const rawOriginal=$('pdfText').value.trim();
-  if(!rawOriginal){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Aucun texte à analyser.';return}
-  if(rawOriginal.length<80){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Texte trop court (min 80 caractères).';return}
+  if(!rawOriginal){$('analysisStatus').style.display='block';$('analysisStatus').className='notice err';$('analysisStatus').textContent='Aucun texte à analyser.';return}
+  if(rawOriginal.length<80){$('analysisStatus').style.display='block';$('analysisStatus').className='notice err';$('analysisStatus').textContent='Texte trop court (min 80 caractères).';return}
   const raw=cleanExtractedText(rawOriginal);
-  if(raw.length<80){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Après nettoyage, le texte est trop court.';return}
+  if(raw.length<80){$('analysisStatus').style.display='block';$('analysisStatus').className='notice err';$('analysisStatus').textContent='Après nettoyage, le texte est trop court.';return}
 
   const btn=$('analyzeBtn');btn.disabled=true;const oldText=btn.textContent;btn.textContent='Analyse…';
-  $('analysisStatus').style.display='block';$('analysisStatus').textContent='';
+  $('analysisStatus').style.display='block';
+  $('analysisStatus').className='notice';
+  $('analysisStatus').textContent='Détection des parties en cours…';
   $('analysisProgress').style.display='block';
   $('sectionsBox').style.display='none';
   $('rangeBox').style.display='none';
+  $('selectionSummary').style.display='none';
+  $('previewList').style.display='none';
+  $('startQuizFromSelectionBtn').style.display='none';
+  $('saveQuizBtn').style.display='none';
 
-  // 1) Détection des sections
+  // Pause pour permettre à l'UI de se rafraîchir
+  await new Promise(r => setTimeout(r, 50));
+
+  // Détection des sections
   const { sections } = detectSections(raw);
   detectedSections = sections;
-  // 2) Parsing des questions avec section
   allParsedQuestions = parseAllQuestions(raw, sections);
 
   const numberedCount = allParsedQuestions.length;
-  const sectionsWithCount = sections.map(s => {
-    const qs = allParsedQuestions.filter(q => q.section === s.title);
-    return { ...s, questionCount: qs.length };
-  }).filter(s => s.questionCount > 0);
+  const sectionsWithCount = sections.filter(s => s.questionCount > 0);
 
   $('analysisProgress').style.display='none';
 
-  if(numberedCount >= 3){
-    // Document numéroté → affiche les sections
+  if(numberedCount >= 3 && sectionsWithCount.length >= 1){
+    $('analysisStatus').className='notice ok';
     $('analysisStatus').innerHTML = `✅ <b>${numberedCount} question(s)</b> détectée(s) dans <b>${sectionsWithCount.length} partie(s)</b>. Sélectionne les parties à traiter.`;
-    $('docTypeBox') && ($('docTypeBox').style.display='none');
-
-    // Affiche la boîte de sections
     $('sectionsBox').style.display='block';
-    $('sectionsList').innerHTML = sectionsWithCount.map(s => {
-      const checked = 'checked';
-      return `<label class="section-item selected" data-section="${esc(s.title)}">
-        <input type="checkbox" ${checked} data-section-title="${esc(s.title)}">
+    $('sectionsList').innerHTML = sectionsWithCount.map(s =>
+      `<label class="section-item selected" data-section="${esc(s.title)}">
+        <input type="checkbox" checked data-section-title="${esc(s.title)}">
         <div class="info">
           <div class="title">📑 ${esc(s.title)}</div>
-          <div class="meta">${s.questionCount} question(s) · lignes ${s.startIndex + 1} à ${s.endIndex}</div>
+          <div class="meta">${s.questionCount} question(s) · lignes ${s.startIndex + 1} à ${s.endIndex} · score ${s.score}</div>
         </div>
-      </label>`;
-    }).join('');
+      </label>`
+    ).join('');
 
-    // Bind des checkboxes
     document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => {
       cb.addEventListener('change', updateSelectionFromSections);
     });
@@ -1089,7 +1148,6 @@ async function analyzeDocument(){
       });
     });
 
-    // Plage personnalisée
     $('rangeBox').style.display = 'block';
     const numbers = allParsedQuestions.map(q => q.number).filter(n => Number.isFinite(n));
     if (numbers.length) {
@@ -1100,28 +1158,50 @@ async function analyzeDocument(){
     }
 
     updateSelectionFromSections();
-    btn.disabled = false; btn.textContent = oldText;
-    return;
+  } else if(numberedCount >= 3){
+    // Aucune section détectée mais des questions oui
+    $('analysisStatus').className='notice';
+    $('analysisStatus').innerHTML = `✅ <b>${numberedCount} question(s)</b> détectée(s). Aucune partie distincte identifiée. Utilise la plage de questions.`;
+    // On crée une section fictive "Document complet"
+    const fake = { id: 'sec-all', title: 'Document complet', startIndex: 0, endIndex: raw.split('\n').length, questionCount: numberedCount, score: 0 };
+    detectedSections = [fake];
+    allParsedQuestions = parseAllQuestions(raw, detectedSections);
+    $('sectionsBox').style.display='block';
+    $('sectionsList').innerHTML = `<label class="section-item selected" data-section="${esc(fake.title)}">
+      <input type="checkbox" checked data-section-title="${esc(fake.title)}">
+      <div class="info">
+        <div class="title">📑 ${esc(fake.title)}</div>
+        <div class="meta">${fake.questionCount} question(s) · document entier</div>
+      </div>
+    </label>`;
+    document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => cb.addEventListener('change', updateSelectionFromSections));
+    document.querySelectorAll('#sectionsList .section-item').forEach(item => item.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      const cb = item.querySelector('input[type=checkbox]');
+      cb.checked = !cb.checked;
+      updateSelectionFromSections();
+    }));
+    $('rangeBox').style.display='block';
+    const numbers = allParsedQuestions.map(q => q.number).filter(n => Number.isFinite(n));
+    if (numbers.length) { $('rangeFrom').value = Math.min(...numbers); $('rangeTo').value = Math.max(...numbers); }
+    updateSelectionFromSections();
+  } else {
+    // Cours rédigé
+    $('analysisStatus').className='notice';
+    $('analysisStatus').innerHTML = '📚 Document détecté comme cours rédigé (pas de questions numérotées). Utilise le bouton "Générer depuis le cours" ci-dessous.';
   }
-
-  // Sinon → cours rédigé, on tente l'IA
-  $('analysisStatus').innerHTML = '📚 Document détecté comme cours rédigé (pas de questions numérotées). Utilise le bouton "Générer depuis le cours" ci-dessous.';
   btn.disabled = false; btn.textContent = oldText;
 }
 $('analyzeBtn').onclick=analyzeDocument;
-$('parseTextBtn') && ($('parseTextBtn').onclick=analyzeDocument);
 
 // ================== SÉLECTION MULTIPLE ==================
 function updateSelectionFromSections(){
   const checked = [...document.querySelectorAll('#sectionsList input[type=checkbox]:checked')].map(cb => cb.dataset.sectionTitle);
-  // Marque visuellement
   document.querySelectorAll('#sectionsList .section-item').forEach(item => {
     const cb = item.querySelector('input[type=checkbox]');
     item.classList.toggle('selected', cb.checked);
   });
-  // Filtre les questions
   const filtered = allParsedQuestions.filter(q => checked.includes(q.section));
-  selectedQuestionIds = new Set(filtered.map(q => `${q.section}::${q.number}`));
   drafts = filtered.map(q => ({ ...q }));
   renderSelectionPreview(filtered, checked);
 }
@@ -1155,7 +1235,6 @@ function renderSelectionPreview(filtered, checkedSections){
   $('saveQuizBtn').style.display = 'inline-block';
   renderAll();
 }
-
 $('selectAllSectionsBtn').onclick = () => {
   document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => cb.checked = true);
   updateSelectionFromSections();
@@ -1189,6 +1268,16 @@ $('generateQuestionsBtn').onclick=async()=>{
   const count=Number($('genCount').value);
   if(sourceText.length<80){$('generationStatus').textContent='Texte trop court.';return}
   if(!Number.isInteger(count)||count<1||count>100){$('generationStatus').textContent='Nombre entre 1 et 100.';return}
+
+  // Vérifie d'abord que l'IA est configurée
+  try {
+    const health = await fetch('/api/health').then(r => r.json());
+    if(!health.aiConfigured){
+      $('generationStatus').innerHTML = '❌ <b>IA désactivée sur le serveur.</b><br>Ajoute la variable <code>AI_API_KEY</code> dans Render → Environment, puis redéploie.';
+      return;
+    }
+  } catch(e) { /* on continue, on tentera quand même */ }
+
   const btn=$('generateQuestionsBtn');btn.disabled=true;btn.textContent='Génération…';
   const startTime=Date.now();
   $('generationStatus').textContent='';
@@ -1230,7 +1319,7 @@ $('generateQuestionsBtn').onclick=async()=>{
     const local=generateLocalQuestions(sourceText,count);
     if(local.length){
       drafts=local;
-      $('generationStatus').innerHTML=`⚠️ Mode secours : ${local.length} question(s) générée(s) localement (IA indisponible).`;
+      $('generationStatus').innerHTML=`⚠️ Mode secours : ${local.length} question(s) générée(s) localement (IA indisponible ou trop lente).`;
       $('startQuizFromSelectionBtn').style.display='inline-block';
       $('saveQuizBtn').style.display='inline-block';
       renderAll();
@@ -1247,7 +1336,7 @@ $('generateQuestionsBtn').onclick=async()=>{
 $('aiBtn').onclick=async()=>{
   if(!drafts.length){await analyzeDocument()}
   const pending=drafts.filter(q=>!hasKey(q));
-  if(!pending.length){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Toutes les questions ont une réponse.';return}
+  if(!pending.length){$('analysisStatus').style.display='block';$('analysisStatus').className='notice';$('analysisStatus').textContent='Toutes les questions ont une réponse.';return}
   const btn=$('aiBtn');btn.disabled=true;btn.textContent='Analyse…';
   try{
     const r=await apiFetch('/api/answer-questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subject:$('quizSubject').value.trim(),questions:pending.map((q,i)=>({id:String(q.number??i),type:q.type,text:q.text,options:q.options||[]}))})});
@@ -1267,7 +1356,7 @@ $('aiBtn').onclick=async()=>{
     }
     $('analysisStatus').textContent='Réponses IA ajoutées.';
     renderAll();
-  }catch(e){$('analysisStatus').style.display='block';$('analysisStatus').textContent='Erreur IA : '+e.message}
+  }catch(e){$('analysisStatus').style.display='block';$('analysisStatus').className='notice err';$('analysisStatus').textContent='Erreur IA : '+e.message}
   finally{btn.disabled=false;btn.textContent='Résoudre les réponses manquantes (IA)'}
 };
 
