@@ -9,7 +9,9 @@
 :root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c;--purple:#7c3aed}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
 header{background:linear-gradient(120deg,#132344,#2457d6);color:white;padding:20px max(20px,calc((100% - 1120px)/2))}
-.brand{font-size:24px;font-weight:800;letter-spacing:-.5px}.brand span{color:#8fe4c0}.tagline{opacity:.85;margin-top:4px;font-size:13px}
+.brand{font-size:24px;font-weight:800;letter-spacing:-.5px}.brand span{color:#8fe4c0}
+.brand-logo{display:block;height:70px;width:auto;max-width:100%}
+.tagline{opacity:.85;margin-top:8px;font-size:13px}
 .wrap{max-width:1120px;margin:20px auto;padding:0 18px}
 h1{font-size:24px;margin:0 0 6px}p{line-height:1.5}.muted{color:var(--muted)}
 .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px}
@@ -119,7 +121,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
   .tab{padding:9px 11px;font-size:12px}
   .tab .icon{font-size:14px}
   header{padding:16px}
-  .brand{font-size:20px}
+  .brand-logo{height:48px}
   .header-actions{float:none;margin-top:10px}
   .header-actions button{padding:6px 9px;font-size:11px}
   .wrap{padding:0 12px;margin-top:14px}
@@ -153,7 +155,9 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
     <button id="passwordPanelBtn" type="button" hidden>🔑 Mot de passe</button>
     <button id="logoutBtn" type="button" hidden>Se déconnecter</button>
   </div>
-  <div class="brand">Compo<span>Test</span></div>
+  <div class="brand">
+    <img src="/site.jpg" alt="CompoTest" class="brand-logo">
+  </div>
   <div class="tagline">Apprendre · Composer · Progresser</div>
 </header>
 
@@ -418,7 +422,6 @@ function typeName(q){return ({mcq:'QCM',mcq_multi:'QCM multi',tf:'Vrai/Faux',sho
 function hasKey(q){return q.type==='tf'?typeof q.correct==='boolean':q.type==='short'?Boolean(q.expected):Array.isArray(q.correct)?q.correct.length>0:Number.isInteger(q.correct)}
 function correctLabel(q){if(q.type==='tf')return q.correct===true?'Vrai':q.correct===false?'Faux':'?';if(q.type==='short')return q.expected||'?';if(Array.isArray(q.correct))return q.correct.map(i=>q.options?.[i]).filter(Boolean).join(' ; ')||'?';return q.options?.[q.correct]||'?'}
 
-// ================== NETTOYAGE ==================
 function cleanExtractedText(text){
   if(!text)return '';
   let cleaned=text;
@@ -437,7 +440,6 @@ function cleanExtractedText(text){
   return cleaned.trim();
 }
 
-// ================== FSRS-5 ==================
 const FSRS_W=[0.4072,1.1829,3.1262,15.4722,7.2102,0.5316,1.0651,0.0234,1.616,0.1544,1.0824,1.9813,0.0953,0.2975,2.2042,0.2407,2.9466,0.5034,0.6567];
 const FSRS_DESIRED_RETENTION=0.9;
 const DAY_MS=24*60*60*1000;
@@ -506,7 +508,6 @@ function startReviewSession(){
   openExamViewFromState(reviewSession,true);
 }
 
-// ================== GÉNÉRATEUR LOCAL ==================
 function generateLocalQuestions(text,count){
   const cleaned=cleanExtractedText(text);
   if(!cleaned||cleaned.length<100)return [];
@@ -572,7 +573,6 @@ function generateLocalQuestions(text,count){
   return questions.slice(0,count);
 }
 
-// ================== CLOUD ==================
 async function apiFetch(url,options={}){
   const client=window.compTestAuth;
   const {data:{session}}=await client.auth.getSession();
@@ -599,7 +599,6 @@ function persist(){
   if(window.comptestSaveCloud)window.comptestSaveCloud(quizzes,historyData);
 }
 
-// ================== ONGLETS ==================
 function initTabs(){
   document.querySelectorAll('.tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
@@ -612,7 +611,6 @@ function initTabs(){
 }
 initTabs();
 
-// ================== AUTH ==================
 function showAuthError(message,diag){
   $('authError').textContent=message||'';
   const box=$('authDiag');
@@ -740,7 +738,6 @@ async function activateSession(session){
   renderAll();renderFsrsStats();renderFsrsList();
 }
 
-// ================== ADMIN ==================
 async function adminApi(url,options={}){
   const r=await apiFetch(url,options);
   const data=await r.json().catch(()=>({}));
@@ -797,7 +794,6 @@ $('adminUsersList').addEventListener('click',async e=>{
   }catch(err){alert(err.message)}
 });
 
-// ================== RENDER ==================
 function renderAll(){
   $('statTests').textContent=historyData.length;
   const avg=historyData.length?historyData.reduce((a,x)=>a+x.score,0)/historyData.length:0;
@@ -821,7 +817,6 @@ function renderAll(){
 }
 window.removeDraft=i=>{drafts.splice(i,1);renderAll()};
 
-// ================== IMPORT ==================
 $('qType').addEventListener('change',()=>{
   const t=$('qType').value;
   $('mcqFields').classList.toggle('hide',!['mcq','mcq_multi'].includes(t));
@@ -879,7 +874,7 @@ $('extractBtn').onclick=async()=>{
     else{$('pdfStatus').textContent='Format non reconnu.';return}
     $('pdfText').value=text;
     $('quizTitle').value=$('quizTitle').value||file.name.replace(/\.[^.]+$/,'');
-    if(text.length<200){$('pdfStatus').innerHTML=`⚠️ Extrait : ${text.length} caractères seulement.<br><span class="muted">Le PDF contient peut-être beaucoup de caractères parasites ou est scanné. Vérifie le texte ci-dessous.</span>`}
+    if(text.length<200){$('pdfStatus').innerHTML=`⚠️ Extrait : ${text.length} caractères seulement.<br><span class="muted">Le PDF contient peut-être beaucoup de caractères parasites ou est scanné.</span>`}
     else{$('pdfStatus').textContent=`✅ Extrait : ${text.length} caractères (nettoyé).`}
   }catch(e){$('pdfStatus').textContent='Erreur : '+(e.message||'illisible.')}
   finally{btn.disabled=false}
@@ -924,7 +919,6 @@ function setSubjectFromText(){
   }
 }
 
-// ================== ANALYSE ==================
 let analysisTicker=null;
 async function analyzeDocument(){
   const rawOriginal=$('pdfText').value.trim();
@@ -1041,7 +1035,6 @@ async function analyzeDocument(){
 $('analyzeBtn').onclick=analyzeDocument;
 $('parseTextBtn').onclick=analyzeDocument;
 
-// ================== GÉNÉRATION ==================
 let generationTicker=null;
 $('generateQuestionsBtn').onclick=async()=>{
   const sourceText=cleanExtractedText($('pdfText').value.trim());
@@ -1161,7 +1154,6 @@ $('saveQuiz').onclick=()=>{
   alert('Questionnaire enregistré.');
 };
 
-// ================== EXAM ==================
 let examState=null;
 function openExamView(quiz){openExamViewFromState({...quiz,answers:new Array(quiz.questions.length).fill(null),current:0,submitted:false},false)}
 function openExamViewFromState(state,isReview){
