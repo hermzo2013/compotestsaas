@@ -179,15 +179,14 @@ app.post('/api/analyze-course', underDailyLimit, async (req, res) => {
   if (!Number.isInteger(n) || n < 1 || n > 100) return res.status(400).json({ error: 'Nombre entre 1 et 100.' });
 
   try {
-    const systemPrompt = `Tu es un assistant pédagogique expert en sciences médicales et biologiques. Tu vas lire un cours en français et produire un questionnaire QCM complet.
+    const systemPrompt = `Tu es un assistant pédagogique expert. Tu vas lire un cours en français et produire un questionnaire QCM complet.
 
 MÉTHODE STRICTE :
-1. Lis INTÉGRALEMENT le texte fourni, du début à la fin.
-2. Identifie TOUTES les notions testables : définitions, classifications, mécanismes, chiffres clés, exceptions, causes/conséquences, propriétés, indications cliniques, valeurs seuils.
+1. Lis INTÉGRALEMENT le texte fourni.
+2. Identifie TOUTES les notions testables : définitions, classifications, mécanismes, chiffres clés, exceptions, propriétés, valeurs seuils.
 3. Génère EXACTEMENT ${n} questions couvrant un MAXIMUM de notions différentes.
-4. Répartis les questions sur TOUT le texte (début, milieu, fin). Ne te concentre pas sur les premières pages.
-5. N'invente JAMAIS de faits absents du cours.
-6. Si le cours liste des éléments ("3 types de...", "les 5 classes..."), tu DOIS générer une question pour chaque élément important.
+4. Répartis les questions sur TOUT le texte. N'invente JAMAIS de faits.
+5. Si le cours liste des éléments, génère une question par élément important.
 
 TYPES :
 - 40% "mcq" : 4 options, correct = index 0-3
