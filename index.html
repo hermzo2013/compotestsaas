@@ -31,6 +31,7 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 .footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#edf2ff;color:#244fc2}
 .badge.ok{background:#e9f8f1;color:#13734e}.badge.warn{background:#fff4d9;color:#805500}.badge.err{background:#fff0f0;color:#a51f2a}.badge.fsrs{background:#f3e8ff;color:#6b21a8}
+.badge.section{background:#e0f0ff;color:#0b4a82}
 .tabs{display:flex;gap:4px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:16px;overflow-x:auto;box-shadow:0 2px 8px #18315b06}
 .tabs::-webkit-scrollbar{height:6px}.tabs::-webkit-scrollbar-thumb{background:#d5ddeb;border-radius:99px}
 .tab{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:9px;border:0;background:transparent;color:#34435c;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;transition:all .15s}
@@ -70,6 +71,26 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 @keyframes slide{0%{margin-left:0}50%{margin-left:60%}100%{margin-left:0}}
 .progress-info{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-top:6px}
 .progress-info b{color:var(--blue)}
+.sections-box{background:#f8faff;border:1px solid #d5ddeb;border-radius:12px;padding:14px;margin-top:14px}
+.sections-box h4{margin:0 0 10px;font-size:14px;color:var(--navy)}
+.section-item{display:flex;align-items:flex-start;gap:10px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;transition:all .15s}
+.section-item:hover{border-color:#a9bce7;background:#f8faff}
+.section-item.selected{border-color:var(--blue);background:#edf2ff}
+.section-item input[type=checkbox]{width:auto;margin-top:4px;flex-shrink:0}
+.section-item .info{flex:1;cursor:pointer}
+.section-item .title{font-weight:700;font-size:14px;margin-bottom:2px}
+.section-item .meta{font-size:11px;color:var(--muted)}
+.range-box{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px}
+.range-box .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.range-box label{margin:0;font-size:12px;font-weight:600;flex-shrink:0}
+.range-box input[type=number]{width:80px;padding:8px}
+.selection-summary{background:#e9f8f1;border-left:4px solid var(--green);padding:10px 14px;border-radius:8px;margin-top:12px;font-size:13px}
+.selection-summary b{color:var(--green)}
+.preview-list{max-height:340px;overflow-y:auto;background:#f8faff;border:1px solid #d5ddeb;border-radius:10px;padding:10px;margin-top:12px}
+.preview-q{padding:8px 10px;background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:12px}
+.preview-q .num{font-weight:800;color:var(--blue);margin-right:6px}
+.preview-q .type{font-size:10px;background:#edf2ff;color:#244fc2;padding:1px 6px;border-radius:99px;margin-left:6px}
+
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:1000;overflow-y:auto}
 #examView .exam-header{background:linear-gradient(120deg,#132344,#2457d6);color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;position:sticky;top:0;z-index:10}
 #examView .exam-header h2{margin:0;font-size:19px}
@@ -201,9 +222,8 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 </section>
 
 <nav class="tabs" role="tablist">
-  <button class="tab active" data-tab="import" role="tab"><span class="icon">📥</span> Importer & Générer</button>
+  <button class="tab active" data-tab="import" role="tab"><span class="icon">📥</span> Importer · Générer · Composer</button>
   <button class="tab" data-tab="add" role="tab"><span class="icon">✏️</span> Ajouter</button>
-  <button class="tab" data-tab="compose" role="tab"><span class="icon">🎯</span> Composer</button>
   <button class="tab" data-tab="review" role="tab"><span class="icon">⭐</span> Réviser <span class="count" id="fsrsDueCount">0</span></button>
   <button class="tab" data-tab="history" role="tab"><span class="icon">📊</span> Historique</button>
   <button class="tab hide" data-tab="admin" id="adminTab" role="tab"><span class="icon">⚙️</span> Admin</button>
@@ -211,17 +231,17 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
 
 <section class="tab-content active" data-content="import">
   <div class="panel">
-    <h2 style="margin-top:0">📥 Importer un document et générer un questionnaire</h2>
-    <p class="muted">Formats : <b>PDF</b>, <b>Word (.docx)</b>, <b>texte (.txt)</b>. Le site détecte automatiquement si c'est un questionnaire numéroté ou un cours rédigé, et s'adapte.</p>
+    <h2 style="margin-top:0">📥 Importer un document, générer et composer un test</h2>
+    <p class="muted">Importez un <b>PDF</b>, un <b>Word (.docx)</b> ou un <b>texte (.txt)</b>. Le site détecte automatiquement les parties du document. Sélectionnez ensuite les questions à traiter, puis lancez le test.</p>
 
     <div class="grid-2">
       <div>
         <label for="quizTitle">Titre du test</label>
-        <input id="quizTitle" placeholder="Ex. Pharmacologie générale 2026">
+        <input id="quizTitle" placeholder="Ex. Santé publique L1 2021-2022">
       </div>
       <div>
         <label for="quizSubject">Matière</label>
-        <input id="quizSubject" placeholder="Ex. Immunologie">
+        <input id="quizSubject" placeholder="Ex. Santé publique">
       </div>
     </div>
 
@@ -230,45 +250,86 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
       <div id="pdfStatus" class="small muted" style="margin-top:6px">PDF, Word (.docx) ou texte (.txt) — max 80 000 caractères.</div>
       <div class="actions">
         <button id="extractBtn" class="secondary">1. Extraire le texte</button>
-        <button id="analyzeBtn">2. Analyser le document</button>
+        <button id="analyzeBtn">2. Analyser et détecter les parties</button>
       </div>
     </div>
 
-    <div id="docTypeBox" class="notice" style="display:none;margin-top:12px"></div>
-
     <label for="pdfText" style="margin-top:16px">Texte extrait (modifiable)</label>
-    <textarea id="pdfText" placeholder="Le texte du fichier apparaîtra ici. Tu peux aussi coller du texte." style="min-height:200px"></textarea>
-
-    <div class="actions">
-      <button id="parseTextBtn" class="secondary">Analyser le texte collé</button>
-      <button id="aiBtn" class="ghost">Résoudre les réponses manquantes (IA)</button>
-    </div>
+    <textarea id="pdfText" placeholder="Le texte du fichier apparaîtra ici. Tu peux aussi coller du texte." style="min-height:180px"></textarea>
 
     <div id="analysisStatus" class="notice" style="display:none"></div>
     <div id="analysisProgress" style="display:none;margin-top:10px">
       <div class="progress-bar indeterminate"><span></span></div>
       <div class="progress-info"><span id="analysisProgressText">Analyse…</span><b id="analysisTimer">0s</b></div>
     </div>
-    <div id="analysisDetail" class="analysis-detail" style="display:none"></div>
+
+    <div id="sectionsBox" class="sections-box" style="display:none">
+      <h4>📑 Parties détectées dans le document</h4>
+      <div id="sectionsList"></div>
+      <div class="actions" style="margin-top:8px">
+        <button type="button" class="secondary" id="selectAllSectionsBtn">Tout sélectionner</button>
+        <button type="button" class="ghost" id="deselectAllSectionsBtn">Tout désélectionner</button>
+      </div>
+    </div>
+
+    <div id="rangeBox" class="range-box" style="display:none">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px">🎯 Ou choisir une plage personnalisée</div>
+      <div class="row">
+        <label for="rangeFrom">De la question</label>
+        <input id="rangeFrom" type="number" min="1" value="1">
+        <label for="rangeTo">à</label>
+        <input id="rangeTo" type="number" min="1" value="10">
+        <button type="button" class="secondary" id="applyRangeBtn">Appliquer cette plage</button>
+      </div>
+      <div class="small muted">La numérotation suit celle du document (Q1, Q2, …).</div>
+    </div>
+
+    <div id="selectionSummary" class="selection-summary" style="display:none"></div>
+    <div id="previewList" class="preview-list" style="display:none"></div>
 
     <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
 
-    <h3 style="margin:0 0 6px;font-size:16px">✨ Générer un questionnaire depuis le cours</h3>
-    <p class="small muted" style="margin-top:0">L'IA lit l'intégralité du texte et génère des questions couvrant un maximum de notions.</p>
+    <h3 style="margin:0 0 6px;font-size:16px">✨ Générer un questionnaire depuis le cours (si document non numéroté)</h3>
+    <p class="small muted" style="margin-top:0">Si le document est un cours rédigé sans questions numérotées, l'IA génère un questionnaire complet.</p>
 
-    <label for="genCount">Nombre de questions</label>
+    <label for="genCount">Nombre de questions à générer</label>
     <input id="genCount" type="number" min="1" max="100" value="20">
     <div class="small muted" style="margin-top:6px">Répartition : 40% QCM · 30% QCM multi · 30% Vrai/Faux</div>
 
     <div class="actions">
       <button id="generateQuestionsBtn">Générer depuis le cours</button>
-      <button id="startGeneratedExamBtn" class="success" style="display:none">📝 Traiter les exercices</button>
+      <button id="aiBtn" class="ghost">Résoudre les réponses manquantes (IA)</button>
     </div>
     <div id="generationStatus" class="small muted" style="margin-top:10px"></div>
     <div id="generationProgress" style="display:none;margin-top:10px">
       <div class="progress-bar indeterminate"><span></span></div>
       <div class="progress-info"><span id="generationProgressText">Génération…</span><b id="generationTimer">0s</b></div>
     </div>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+
+    <h3 style="margin:0 0 6px;font-size:16px">🎯 Composer et lancer le test</h3>
+    <p class="small muted" style="margin-top:0">Lance les questions actuellement sélectionnées.</p>
+
+    <div class="actions">
+      <button id="startQuizFromSelectionBtn" class="success" style="display:none">▶️ Lancer le test avec la sélection</button>
+      <button id="saveQuizBtn" class="secondary" style="display:none">💾 Enregistrer cette sélection</button>
+      <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:500;font-size:13px">
+        <input id="timerToggle" type="checkbox" style="width:auto"> Chronomètre (10 min)
+      </label>
+    </div>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+
+    <h3 style="margin:0 0 6px;font-size:16px">📚 Mes questionnaires enregistrés</h3>
+    <label for="quizPicker">Sélectionner un test enregistré</label>
+    <select id="quizPicker"><option value="">Aucun test enregistré</option></select>
+    <div class="actions">
+      <button id="startQuiz">Commencer</button>
+      <button id="deleteQuizBtn" class="danger" style="display:none">🗑️ Supprimer ce test</button>
+      <button id="shareQuiz" class="secondary">Exporter JSON</button>
+    </div>
+    <div id="examArea"></div>
 
     <div id="draftList"></div>
   </div>
@@ -306,22 +367,6 @@ button.danger{background:#fff0f0;color:#b82e36}button.success{background:#16865c
       <button id="addQuestion">Ajouter</button>
       <button id="saveQuiz" class="secondary">Enregistrer le test</button>
     </div>
-  </div>
-</section>
-
-<section class="tab-content" data-content="compose">
-  <div class="panel">
-    <h2 style="margin-top:0">🎯 Composer un test</h2>
-    <label for="quizPicker">Questionnaire enregistré</label>
-    <select id="quizPicker"><option value="">Aucun test enregistré</option></select>
-    <div class="actions">
-      <button id="startQuiz">Commencer</button>
-      <button id="shareQuiz" class="secondary">Exporter JSON</button>
-      <label style="display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:500;font-size:13px">
-        <input id="timerToggle" type="checkbox" style="width:auto"> Chronomètre (10 min)
-      </label>
-    </div>
-    <div id="examArea"></div>
   </div>
 </section>
 
@@ -398,6 +443,9 @@ let fsrsCards=JSON.parse(localStorage.getItem('compo_fsrs')||'{}');
 let examTimer=null, secondsLeft=600;
 let isAdminUser=false;
 let activeUserId=null, cloudWriteChain=Promise.resolve();
+let detectedSections=[];        // Sections détectées dans le PDF
+let selectedQuestionIds=new Set(); // IDs des questions sélectionnées
+let allParsedQuestions=[];      // Toutes les questions extraites avec leur section
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function identifierToEmail(input){
@@ -435,6 +483,7 @@ function cleanExtractedText(text){
   return cleaned.trim();
 }
 
+// ================== FSRS-5 ==================
 const FSRS_W=[0.4072,1.1829,3.1262,15.4722,7.2102,0.5316,1.0651,0.0234,1.616,0.1544,1.0824,1.9813,0.0953,0.2975,2.2042,0.2407,2.9466,0.5034,0.6567];
 const FSRS_DESIRED_RETENTION=0.9;
 const DAY_MS=24*60*60*1000;
@@ -503,6 +552,7 @@ function startReviewSession(){
   openExamViewFromState(reviewSession,true);
 }
 
+// ================== GÉNÉRATEUR LOCAL DE SECOURS ==================
 function generateLocalQuestions(text,count){
   const cleaned=cleanExtractedText(text);
   if(!cleaned||cleaned.length<100)return [];
@@ -568,6 +618,105 @@ function generateLocalQuestions(text,count){
   return questions.slice(0,count);
 }
 
+// ================== DÉTECTION DES SECTIONS ==================
+function detectSections(text){
+  // Détecte les lignes qui ressemblent à des titres de section :
+  // - lignes en MAJUSCULES (>8 chars, <80 chars)
+  // - lignes commençant par ## , I- , PARTIE X, CHAPITRE X
+  const lines = text.split('\n');
+  const sections = [];
+  const sectionPattern = /^\s*(?:#{1,4}\s+)?(?:PARTIE\s+[IVX0-9]+|CHAPITRE\s+[IVX0-9]+|[IVX]+[-.)]|[0-9]{1,2}[-.)]\s+[A-ZÀ-Ý])/i;
+  for(let i = 0; i < lines.length; i++){
+    const raw = lines[i].trim();
+    if(!raw || raw.length < 5 || raw.length > 100) continue;
+    // Titre tout en majuscules
+    const words = raw.split(/\s+/);
+    const upperWords = words.filter(w => /^[A-ZÀ-Ý][A-ZÀ-Ý0-9-]{2,}$/.test(w)).length;
+    const isUpperTitle = words.length >= 2 && words.length <= 12 && upperWords / words.length > 0.7;
+    // Titre avec préfixe
+    const isPrefixed = sectionPattern.test(raw);
+    if(isUpperTitle || isPrefixed){
+      sections.push({ line: i, title: raw.replace(/^#+\s*/, '').trim(), startIndex: i });
+    }
+  }
+  // Regroupe par sections et calcule les plages
+  for(let i = 0; i < sections.length; i++){
+    sections[i].endIndex = i < sections.length - 1 ? sections[i+1].startIndex : lines.length;
+    sections[i].id = 'sec-' + i;
+  }
+  return { sections, lines };
+}
+
+// ================== PARSING DES QUESTIONS PAR SECTION ==================
+function parseAllQuestions(text, sections){
+  // Parse toutes les questions numérotées avec leur section
+  const lines = text.split('\n');
+  const result = [];
+  const qstart = /^(?:[✓✔☑]\s*)?(?:Q\s*)?(\d{1,3})[.)]\s+(.+)$/i;
+
+  // Associe chaque ligne à une section
+  function sectionForLine(lineIdx){
+    for(const s of sections){
+      if(lineIdx >= s.startIndex && lineIdx < s.endIndex) return s.title;
+    }
+    return 'Sans section';
+  }
+
+  let currentQ = null;
+  for(let i = 0; i < lines.length; i++){
+    const line = lines[i].trim();
+    if(!line) continue;
+    const m = line.match(qstart);
+    if(m){
+      if(currentQ) result.push(currentQ);
+      currentQ = {
+        number: Number(m[1]),
+        text: m[2],
+        lines: [],
+        section: sectionForLine(i),
+        lineIdx: i
+      };
+    } else if(currentQ){
+      currentQ.lines.push(line);
+    }
+  }
+  if(currentQ) result.push(currentQ);
+
+  // Transforme en questions structurées
+  const out = [];
+  for(const b of result){
+    let textParts = [], options = [], marked = [], key = null;
+    for(const line of b.lines){
+      const k = line.match(/(?:✓|✔|☑)\s*R[eé]ponse correcte\s*:\s*(VRAI|FAUX|TRUE|FALSE)/i);
+      if(k){ key = /^(VRAI|TRUE)$/i.test(k[1]); continue; }
+      const opt = line.match(/^([✓✔☑]\s*)?([A-H])[.)]\s*(.+)$/i);
+      if(opt){ options.push(opt[3].trim()); if(opt[1]) marked.push(options.length-1); continue; }
+      if(/^(?:Page\s+\d+)/i.test(line)) continue;
+      textParts.push(line);
+    }
+    const q = {
+      text: [b.text, ...textParts].join(' ').replace(/\s+/g,' ').trim(),
+      options, explanation: '', source: 'unresolved', confidence: null,
+      number: b.number, section: b.section, lineIdx: b.lineIdx
+    };
+    // Détection Vrai/Faux spécifique pour les QCD
+    if(key !== null){ q.type='tf'; q.correct=key; q.source='pdf-marked'; }
+    else if(/cochez\s+a\s+pour\s+les\s+affirmations\s+vraies/i.test(b.section) || /QCD/i.test(b.section)){
+      // QCD : Vrai/Faux implicite
+      q.type = 'tf';
+      q.correct = null; // À déterminer par l'IA
+    }
+    else if(options.length){
+      q.type = /réponses? multiples|plusieurs bonnes réponses/i.test(b.section) ? 'mcq_multi' : (marked.length > 1 ? 'mcq_multi' : 'mcq');
+      if(marked.length){ q.correct = q.type === 'mcq_multi' ? marked : marked[0]; q.source = 'pdf-marked'; }
+    }
+    else q.type = 'short';
+    out.push(q);
+  }
+  return out;
+}
+
+// ================== CLOUD ==================
 async function apiFetch(url,options={}){
   const client=window.compTestAuth;
   const {data:{session}}=await client.auth.getSession();
@@ -594,6 +743,7 @@ function persist(){
   if(window.comptestSaveCloud)window.comptestSaveCloud(quizzes,historyData);
 }
 
+// ================== ONGLETS ==================
 function initTabs(){
   document.querySelectorAll('.tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
@@ -606,6 +756,7 @@ function initTabs(){
 }
 initTabs();
 
+// ================== AUTH ==================
 function showAuthError(message,diag){
   $('authError').textContent=message||'';
   const box=$('authDiag');
@@ -733,6 +884,7 @@ async function activateSession(session){
   renderAll();renderFsrsStats();renderFsrsList();
 }
 
+// ================== ADMIN ==================
 async function adminApi(url,options={}){
   const r=await apiFetch(url,options);
   const data=await r.json().catch(()=>({}));
@@ -789,6 +941,7 @@ $('adminUsersList').addEventListener('click',async e=>{
   }catch(err){alert(err.message)}
 });
 
+// ================== RENDER ==================
 function renderAll(){
   $('statTests').textContent=historyData.length;
   const avg=historyData.length?historyData.reduce((a,x)=>a+x.score,0)/historyData.length:0;
@@ -800,10 +953,10 @@ function renderAll(){
   $('history').innerHTML=historyData.length?[...historyData].reverse().slice(0,12).map(h=>
     `<div class="history-item"><b>${esc(h.title)}</b><br><span class="muted">${esc(h.subject||'Sans matière')} · ${esc(h.date)}</span><br><b>${Number(h.score).toFixed(1)}/20</b> <span class="muted">(${h.correct}/${h.total})</span></div>`
   ).join(''):'<div class="muted small">Aucun test terminé.</div>';
-  $('draftList').innerHTML=drafts.length?`<h3 style="font-size:15px;margin:18px 0 6px">Questions détectées (${drafts.length})</h3>
+  $('draftList').innerHTML=drafts.length?`<h3 style="font-size:15px;margin:18px 0 6px">Questions prêtes (${drafts.length})</h3>
     <div class="small muted">${drafts.filter(hasKey).length} avec réponse · ${drafts.filter(q=>!hasKey(q)).length} sans réponse</div>`+
     drafts.map((q,i)=>`<div class="question"><strong>${i+1}. ${esc(q.text)}</strong>
-      <div class="qmeta"><span class="badge">${esc(typeName(q))}</span>${q.source==='local-fallback'?'<span class="badge warn">Mode secours</span>':''}</div>
+      <div class="qmeta"><span class="badge">${esc(typeName(q))}</span>${q.section?`<span class="badge section">${esc(q.section.slice(0,30))}</span>`:''}${q.source==='local-fallback'?'<span class="badge warn">Mode secours</span>':''}</div>
       ${q.options?.length?'<div class="small">'+q.options.map((o,j)=>`${q.correct===j||(Array.isArray(q.correct)&&q.correct.includes(j))?'✓ ':''}${String.fromCharCode(65+j)}. ${esc(o)}`).join('<br>')+'</div>':''}
       <div class="small" style="margin-top:6px"><b>Réponse :</b> ${esc(correctLabel(q))}</div>
       ${q.explanation?`<p class="small muted">${esc(q.explanation)}</p>`:''}
@@ -812,6 +965,7 @@ function renderAll(){
 }
 window.removeDraft=i=>{drafts.splice(i,1);renderAll()};
 
+// ================== IMPORT ==================
 $('qType').addEventListener('change',()=>{
   const t=$('qType').value;
   $('mcqFields').classList.toggle('hide',!['mcq','mcq_multi'].includes(t));
@@ -870,50 +1024,12 @@ $('extractBtn').onclick=async()=>{
     $('pdfText').value=text;
     $('quizTitle').value=$('quizTitle').value||file.name.replace(/\.[^.]+$/,'');
     if(text.length<200){$('pdfStatus').innerHTML=`⚠️ Extrait : ${text.length} caractères seulement.<br><span class="muted">Le PDF contient peut-être beaucoup de caractères parasites ou est scanné.</span>`}
-    else{$('pdfStatus').textContent=`✅ Extrait : ${text.length} caractères (nettoyé).`}
+    else{$('pdfStatus').textContent=`✅ Extrait : ${text.length} caractères (nettoyé). Clique sur « Analyser ».`}
   }catch(e){$('pdfStatus').textContent='Erreur : '+(e.message||'illisible.')}
   finally{btn.disabled=false}
 };
-function parseQuestions(raw){
-  const lines=raw.replace(/\r/g,'').split('\n').map(s=>s.trim()).filter(Boolean);
-  let section='',blocks=[],current=null;
-  const qstart=/^(?:[✓✔☑]\s*)?(\d{1,3})[.)]\s+(.+)$/;
-  for(const line of lines){
-    if(/^Partie\s+\d+/i.test(line)){section=line;continue}
-    const m=line.match(qstart);
-    if(m){if(current)blocks.push(current);current={number:Number(m[1]),text:m[2],lines:[],section};continue}
-    if(current)current.lines.push(line);
-  }
-  if(current)blocks.push(current);
-  const out=[];
-  for(const b of blocks){
-    let textParts=[],options=[],marked=[],key=null;
-    for(const line of b.lines){
-      const k=line.match(/(?:✓|✔|☑)\s*R[eé]ponse correcte\s*:\s*(VRAI|FAUX|TRUE|FALSE)/i);
-      if(k){key=/^(VRAI|TRUE)$/i.test(k[1]);continue}
-      const opt=line.match(/^([✓✔☑]\s*)?([A-H])[.)]\s*(.+)$/i);
-      if(opt){options.push(opt[3].trim());if(opt[1])marked.push(options.length-1);continue}
-      if(/^(?:Page\s+\d+)/i.test(line))continue;
-      textParts.push(line);
-    }
-    const q={text:[b.text,...textParts].join(' ').replace(/\s+/g,' ').trim(),options,explanation:'',source:'unresolved',confidence:null,number:b.number,section:b.section};
-    if(key!==null){q.type='tf';q.correct=key;q.source='pdf-marked'}
-    else if(options.length){
-      q.type=/réponses? multiples|plusieurs bonnes réponses/i.test(b.section)?'mcq_multi':(marked.length>1?'mcq_multi':'mcq');
-      if(marked.length){q.correct=q.type==='mcq_multi'?marked:marked[0];q.source='pdf-marked'}
-    }
-    else q.type='short';
-    out.push(q);
-  }
-  return out;
-}
-function setSubjectFromText(){
-  if(!$('quizSubject').value.trim()){
-    const m=$('pdfText').value.match(/(?:EXERCICE DE |COURS DE )([^\n]+)/i);
-    if(m)$('quizSubject').value=m[1].trim();
-  }
-}
 
+// ================== ANALYSE ET DÉTECTION DES SECTIONS ==================
 let analysisTicker=null;
 async function analyzeDocument(){
   const rawOriginal=$('pdfText').value.trim();
@@ -924,112 +1040,149 @@ async function analyzeDocument(){
 
   const btn=$('analyzeBtn');btn.disabled=true;const oldText=btn.textContent;btn.textContent='Analyse…';
   $('analysisStatus').style.display='block';$('analysisStatus').textContent='';
-  $('docTypeBox').style.display='none';
-  $('analysisDetail').style.display='none';
   $('analysisProgress').style.display='block';
+  $('sectionsBox').style.display='none';
+  $('rangeBox').style.display='none';
 
-  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
-  const numberPattern=/^\s*(?:[✓✔☑]\s*)?(\d{1,3})[.)]\s+\S/;
-  const optionPattern=/^\s*([✓✔☑]\s*)?([A-H])[.)]\s+\S/;
-  let numberedCount=0,optionsCount=0;
-  for(const line of lines){if(numberPattern.test(line))numberedCount++;if(optionPattern.test(line))optionsCount++}
-  const numberedRatio=numberedCount/Math.max(1,lines.length);
-  const optionsRatio=optionsCount/Math.max(1,lines.length);
+  // 1) Détection des sections
+  const { sections } = detectSections(raw);
+  detectedSections = sections;
+  // 2) Parsing des questions avec section
+  allParsedQuestions = parseAllQuestions(raw, sections);
 
-  let docType='course';
-  let typeLabel='📚 Cours rédigé (sans questions numérotées)';
-  if(numberedRatio>0.05&&optionsRatio>0.03){docType='numbered';typeLabel='📋 Questionnaire numéroté'}
-  else if(numberedCount>=3){docType='mixed';typeLabel='📋 Document mixte'}
-
-  $('docTypeBox').style.display='block';
-  $('docTypeBox').innerHTML=`<b>Type détecté :</b> ${typeLabel}<br><span class="small">${numberedCount} ligne(s) numérotée(s) · ${optionsCount} option(s) · ${raw.length} caractères nets</span>`;
-
-  if(docType==='numbered'||docType==='mixed'){
-    const parsed=parseQuestions(raw);
-    const withKeys=parsed.filter(hasKey).length;
-    if(parsed.length>=3){
-      drafts=parsed;setSubjectFromText();
-      if(withKeys>0){$('analysisStatus').textContent=`✅ ${parsed.length} question(s) détectée(s), ${withKeys} avec réponse, ${parsed.length-withKeys} sans.`}
-      else{$('analysisStatus').textContent=`📋 ${parsed.length} question(s) détectée(s) sans réponse. Clique sur « Résoudre les réponses manquantes » pour l'IA.`}
-      renderAll();
-      btn.disabled=false;btn.textContent=oldText;
-      $('analysisProgress').style.display='none';
-      return;
-    }
-  }
-
-  const count=Math.max(10,Math.min(Number($('genCount').value)||20,50));
-  const startTime=Date.now();
-  let aiSucceeded=false,data=null;
-
-  $('analysisProgressText').textContent='📚 Analyse IA du cours en cours…';
-  if(analysisTicker)clearInterval(analysisTicker);
-  analysisTicker=setInterval(()=>{
-    const elapsed=Math.round((Date.now()-startTime)/1000);
-    $('analysisTimer').textContent=elapsed+'s';
-    if(elapsed<15)$('analysisProgressText').textContent='📚 Lecture du cours…';
-    else if(elapsed<30)$('analysisProgressText').textContent='🧠 Extraction des notions clés…';
-    else if(elapsed<60)$('analysisProgressText').textContent='✍️ Rédaction des questions…';
-    else $('analysisProgressText').textContent='⏳ Presque terminé, patience…';
-  },500);
-
-  try{
-    const controller=new AbortController();
-    const timeoutId=setTimeout(()=>controller.abort(),100000);
-    const r=await apiFetch('/api/analyze-course',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({subject:$('quizSubject').value.trim()||'Matière non précisée',title:$('quizTitle').value.trim()||'Cours analysé',sourceText:raw,count}),
-      signal:controller.signal
-    });
-    clearTimeout(timeoutId);
-    data=await r.json().catch(()=>({error:'Réponse illisible'}));
-    if(!r.ok)throw new Error(data.error||`Erreur ${r.status}`);
-    aiSucceeded=true;
-  }catch(err){
-    console.warn('IA échouée, bascule locale :',err.message);
-  }finally{
-    if(analysisTicker){clearInterval(analysisTicker);analysisTicker=null}
-  }
-
-  const elapsed=Math.round((Date.now()-startTime)/1000);
-
-  if(aiSucceeded&&data&&data.questions&&data.questions.length){
-    drafts=data.questions.map((q,i)=>({...q,number:i+1,source:'ai-generated'}));
-    if(data.notions&&data.notions.length){
-      $('analysisDetail').style.display='block';
-      $('analysisDetail').innerHTML=`<h4>🧠 Notions extraites (${data.notions.length})</h4>`+
-        (data.summary?`<p class="muted small" style="margin:0 0 10px">${esc(data.summary)}</p>`:'')+
-        data.notions.slice(0,15).map(n=>`<div class="notion"><b>${esc(n.topic||'Notion')}</b> — <span class="muted">${esc((n.detail||'').slice(0,200))}</span></div>`).join('');
-    }
-    $('analysisStatus').innerHTML=`✅ ${drafts.length} question(s) générée(s) par IA en ${elapsed}s.`;
-    if(!$('quizTitle').value.trim())$('quizTitle').value='Questionnaire issu du cours';
-    $('startGeneratedExamBtn').style.display='inline-block';
-    renderAll();
-  }else{
-    $('analysisProgressText').textContent='⚠️ L\'IA n\'a pas répondu à temps, génération locale…';
-    $('analysisStatus').innerHTML='<span class="muted">Génération locale en cours…</span>';
-    await new Promise(r=>setTimeout(r,100));
-    const localQuestions=generateLocalQuestions(raw,count);
-    if(localQuestions.length){
-      drafts=localQuestions;
-      $('analysisStatus').innerHTML=`⚠️ <b>Mode secours activé.</b> ${localQuestions.length} question(s) générée(s) localement.<br><span class="small muted">L'IA n'a pas répondu dans les 100 secondes. Ces questions sont basiques — vérifie-les.</span>`;
-      $('analysisDetail').style.display='block';
-      $('analysisDetail').innerHTML=`<h4>ℹ️ Mode secours</h4><p class="small muted" style="margin:0">Le serveur IA (Groq) n'a pas répondu à temps. Le générateur local a extrait ${localQuestions.length} questions directement du texte.</p>`;
-      if(!$('quizTitle').value.trim())$('quizTitle').value='Questionnaire (mode secours)';
-      $('startGeneratedExamBtn').style.display='inline-block';
-      renderAll();
-    }else{
-      $('analysisStatus').innerHTML=`❌ Impossible de générer des questions.<br><span class="small muted">Texte trop court, trop pollué ou mal structuré.</span>`;
-    }
-  }
+  const numberedCount = allParsedQuestions.length;
+  const sectionsWithCount = sections.map(s => {
+    const qs = allParsedQuestions.filter(q => q.section === s.title);
+    return { ...s, questionCount: qs.length };
+  }).filter(s => s.questionCount > 0);
 
   $('analysisProgress').style.display='none';
-  btn.disabled=false;btn.textContent=oldText;
+
+  if(numberedCount >= 3){
+    // Document numéroté → affiche les sections
+    $('analysisStatus').innerHTML = `✅ <b>${numberedCount} question(s)</b> détectée(s) dans <b>${sectionsWithCount.length} partie(s)</b>. Sélectionne les parties à traiter.`;
+    $('docTypeBox') && ($('docTypeBox').style.display='none');
+
+    // Affiche la boîte de sections
+    $('sectionsBox').style.display='block';
+    $('sectionsList').innerHTML = sectionsWithCount.map(s => {
+      const checked = 'checked';
+      return `<label class="section-item selected" data-section="${esc(s.title)}">
+        <input type="checkbox" ${checked} data-section-title="${esc(s.title)}">
+        <div class="info">
+          <div class="title">📑 ${esc(s.title)}</div>
+          <div class="meta">${s.questionCount} question(s) · lignes ${s.startIndex + 1} à ${s.endIndex}</div>
+        </div>
+      </label>`;
+    }).join('');
+
+    // Bind des checkboxes
+    document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => {
+      cb.addEventListener('change', updateSelectionFromSections);
+    });
+    document.querySelectorAll('#sectionsList .section-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        const cb = item.querySelector('input[type=checkbox]');
+        cb.checked = !cb.checked;
+        updateSelectionFromSections();
+      });
+    });
+
+    // Plage personnalisée
+    $('rangeBox').style.display = 'block';
+    const numbers = allParsedQuestions.map(q => q.number).filter(n => Number.isFinite(n));
+    if (numbers.length) {
+      $('rangeFrom').value = Math.min(...numbers);
+      $('rangeTo').value = Math.max(...numbers);
+      $('rangeFrom').max = Math.max(...numbers);
+      $('rangeTo').max = Math.max(...numbers);
+    }
+
+    updateSelectionFromSections();
+    btn.disabled = false; btn.textContent = oldText;
+    return;
+  }
+
+  // Sinon → cours rédigé, on tente l'IA
+  $('analysisStatus').innerHTML = '📚 Document détecté comme cours rédigé (pas de questions numérotées). Utilise le bouton "Générer depuis le cours" ci-dessous.';
+  btn.disabled = false; btn.textContent = oldText;
 }
 $('analyzeBtn').onclick=analyzeDocument;
-$('parseTextBtn').onclick=analyzeDocument;
+$('parseTextBtn') && ($('parseTextBtn').onclick=analyzeDocument);
 
+// ================== SÉLECTION MULTIPLE ==================
+function updateSelectionFromSections(){
+  const checked = [...document.querySelectorAll('#sectionsList input[type=checkbox]:checked')].map(cb => cb.dataset.sectionTitle);
+  // Marque visuellement
+  document.querySelectorAll('#sectionsList .section-item').forEach(item => {
+    const cb = item.querySelector('input[type=checkbox]');
+    item.classList.toggle('selected', cb.checked);
+  });
+  // Filtre les questions
+  const filtered = allParsedQuestions.filter(q => checked.includes(q.section));
+  selectedQuestionIds = new Set(filtered.map(q => `${q.section}::${q.number}`));
+  drafts = filtered.map(q => ({ ...q }));
+  renderSelectionPreview(filtered, checked);
+}
+function renderSelectionPreview(filtered, checkedSections){
+  const summary = $('selectionSummary');
+  const preview = $('previewList');
+  if(!filtered.length){
+    summary.style.display = 'none';
+    preview.style.display = 'none';
+    $('startQuizFromSelectionBtn').style.display = 'none';
+    $('saveQuizBtn').style.display = 'none';
+    return;
+  }
+  summary.style.display = 'block';
+  const tf = filtered.filter(q=>q.type==='tf').length;
+  const mcq = filtered.filter(q=>q.type==='mcq').length;
+  const mcqm = filtered.filter(q=>q.type==='mcq_multi').length;
+  const noKey = filtered.filter(q=>!hasKey(q)).length;
+  summary.innerHTML = `✅ <b>${filtered.length} question(s)</b> sélectionnée(s) · ${checkedSections.length} partie(s)<br>
+    <span class="small">Vrai/Faux : ${tf} · QCM : ${mcq} · QCM multi : ${mcqm} · Sans réponse : ${noKey}</span>`;
+
+  preview.style.display = 'block';
+  preview.innerHTML = filtered.slice(0, 50).map(q =>
+    `<div class="preview-q">
+      <span class="num">Q${q.number}</span>${esc(q.text.slice(0, 180))}${q.text.length > 180 ? '…' : ''}
+      <span class="type">${esc(typeName(q))}</span>
+    </div>`
+  ).join('') + (filtered.length > 50 ? `<div class="small muted" style="padding:6px">… et ${filtered.length - 50} autres questions</div>` : '');
+
+  $('startQuizFromSelectionBtn').style.display = 'inline-block';
+  $('saveQuizBtn').style.display = 'inline-block';
+  renderAll();
+}
+
+$('selectAllSectionsBtn').onclick = () => {
+  document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => cb.checked = true);
+  updateSelectionFromSections();
+};
+$('deselectAllSectionsBtn').onclick = () => {
+  document.querySelectorAll('#sectionsList input[type=checkbox]').forEach(cb => cb.checked = false);
+  updateSelectionFromSections();
+};
+$('applyRangeBtn').onclick = () => {
+  const from = Number($('rangeFrom').value);
+  const to = Number($('rangeTo').value);
+  if(!Number.isFinite(from) || !Number.isFinite(to) || from > to){alert('Plage invalide.');return}
+  const filtered = allParsedQuestions.filter(q => q.number >= from && q.number <= to);
+  if(!filtered.length){alert('Aucune question dans cette plage.');return}
+  drafts = filtered.map(q => ({ ...q }));
+  $('selectionSummary').style.display = 'block';
+  $('selectionSummary').innerHTML = `🎯 <b>Plage Q${from} à Q${to}</b> · ${filtered.length} question(s)`;
+  $('previewList').style.display = 'block';
+  $('previewList').innerHTML = filtered.slice(0, 50).map(q =>
+    `<div class="preview-q"><span class="num">Q${q.number}</span>${esc(q.text.slice(0, 180))}${q.text.length > 180 ? '…' : ''} <span class="type">${esc(typeName(q))}</span></div>`
+  ).join('');
+  $('startQuizFromSelectionBtn').style.display = 'inline-block';
+  $('saveQuizBtn').style.display = 'inline-block';
+  renderAll();
+};
+
+// ================== IA GÉNÉRATION POUR COURS RÉDIGÉ ==================
 let generationTicker=null;
 $('generateQuestionsBtn').onclick=async()=>{
   const sourceText=cleanExtractedText($('pdfText').value.trim());
@@ -1062,12 +1215,15 @@ $('generateQuestionsBtn').onclick=async()=>{
     clearTimeout(timeoutId);
     const data=await r.json().catch(()=>({error:'Réponse illisible'}));
     if(!r.ok)throw new Error(data.error||`Erreur ${r.status}`);
-    const made=(data.questions||[]).map((q,i)=>({...q,number:i+1,source:'ai-generated'}));
+    const made=(data.questions||[]).map((q,i)=>({...q,number:i+1,section:'Généré par IA',source:'ai-generated'}));
     drafts=made;
     if(!$('quizTitle').value.trim())$('quizTitle').value='Questionnaire généré';
     const elapsed=Math.round((Date.now()-startTime)/1000);
     $('generationStatus').innerHTML=`✅ ${made.length} question(s) générée(s) en ${elapsed}s.`;
-    $('startGeneratedExamBtn').style.display='inline-block';
+    $('selectionSummary').style.display='block';
+    $('selectionSummary').innerHTML=`🤖 ${made.length} question(s) générée(s) par IA`;
+    $('startQuizFromSelectionBtn').style.display='inline-block';
+    $('saveQuizBtn').style.display='inline-block';
     renderAll();
   }catch(e){
     console.warn('IA échouée, bascule locale :',e.message);
@@ -1075,7 +1231,8 @@ $('generateQuestionsBtn').onclick=async()=>{
     if(local.length){
       drafts=local;
       $('generationStatus').innerHTML=`⚠️ Mode secours : ${local.length} question(s) générée(s) localement (IA indisponible).`;
-      $('startGeneratedExamBtn').style.display='inline-block';
+      $('startQuizFromSelectionBtn').style.display='inline-block';
+      $('saveQuizBtn').style.display='inline-block';
       renderAll();
     }else{
       $('generationStatus').innerHTML=`❌ Échec : ${e.message}`;
@@ -1085,13 +1242,6 @@ $('generateQuestionsBtn').onclick=async()=>{
     $('generationProgress').style.display='none';
     btn.disabled=false;btn.textContent='Générer depuis le cours';
   }
-};
-
-$('startGeneratedExamBtn').onclick=()=>{
-  if(!drafts.length){alert('Aucune question.');return}
-  const title=$('quizTitle').value.trim()||'Exercices';
-  const subject=$('quizSubject').value.trim()||'Non précisée';
-  openExamView({title,subject,questions:drafts.map(q=>({...q,options:q.options?[...q.options]:undefined}))});
 };
 
 $('aiBtn').onclick=async()=>{
@@ -1121,10 +1271,11 @@ $('aiBtn').onclick=async()=>{
   finally{btn.disabled=false;btn.textContent='Résoudre les réponses manquantes (IA)'}
 };
 
+// ================== AJOUT MANUEL ==================
 $('addQuestion').onclick=()=>{
   const text=$('qText').value.trim(),type=$('qType').value;
   if(!text){alert('Écris un énoncé.');return}
-  const q={text,type,explanation:$('qExplanation').value.trim(),source:'manual'};
+  const q={text,type,explanation:$('qExplanation').value.trim(),source:'manual',section:'Manuel',number:drafts.length+1};
   if(type==='mcq'||type==='mcq_multi'){
     q.options=$('qOptions').value.split('\n').map(x=>x.trim()).filter(Boolean);
     const nums=$('qCorrect').value.split(',').map(x=>Number(x.trim())-1);
@@ -1149,6 +1300,23 @@ $('saveQuiz').onclick=()=>{
   alert('Questionnaire enregistré.');
 };
 
+$('saveQuizBtn').onclick=()=>{
+  const title=$('quizTitle').value.trim(),subject=$('quizSubject').value.trim();
+  if(!title){alert('Donne un titre.');return}
+  if(!drafts.length){alert('Aucune question sélectionnée.');return}
+  quizzes.push({title,subject,questions:drafts.map(q=>({...q,options:q.options?[...q.options]:undefined})),created:new Date().toISOString()});
+  persist();
+  alert(`✅ Questionnaire "${title}" enregistré avec ${drafts.length} question(s).`);
+};
+
+$('startQuizFromSelectionBtn').onclick=()=>{
+  if(!drafts.length){alert('Aucune question sélectionnée.');return}
+  const title=$('quizTitle').value.trim()||'Test à partir de la sélection';
+  const subject=$('quizSubject').value.trim()||'Non précisée';
+  openExamView({title,subject,questions:drafts.map(q=>({...q,options:q.options?[...q.options]:undefined}))});
+};
+
+// ================== EXAM ==================
 let examState=null;
 function openExamView(quiz){openExamViewFromState({...quiz,answers:new Array(quiz.questions.length).fill(null),current:0,submitted:false},false)}
 function openExamViewFromState(state,isReview){
@@ -1313,6 +1481,14 @@ $('shareQuiz').onclick=()=>{
   const blob=new Blob([JSON.stringify(quizzes[idx],null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='compoTest-'+quizzes[idx].title.replace(/[^a-z0-9]/gi,'-')+'.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$('deleteQuizBtn').onclick=()=>{
+  const idx=Number($('quizPicker').value);
+  if(!quizzes[idx]){alert('Choisis un questionnaire.');return}
+  if(!confirm(`Supprimer définitivement "${quizzes[idx].title}" ?`))return;
+  quizzes.splice(idx,1);
+  persist();
+  alert('Questionnaire supprimé.');
 };
 $('exportHistory').onclick=()=>{
   const blob=new Blob([JSON.stringify({quizzes,history:historyData},null,2)],{type:'application/json'});
