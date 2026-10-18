@@ -332,31 +332,64 @@ $('pdfFile').addEventListener('change', async function() {
 async function fetchWithAuth(url, body) {
   const { data: { session } } = await supabaseClient.auth.getSession();
   const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify(body) });
-  const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Erreur serveur'); return data;
+  const data = await res.json(); 
+  if (!res.ok) throw new Error(data.error || 'Erreur serveur'); 
+  return data;
 }
 
 $('generatePostTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value.trim(); if(!text) return;
-  const btn = $('generatePostTestBtn'); btn.innerHTML = '⏳ Génération...'; btn.disabled = true;
+  const btn = $('generatePostTestBtn'); const old = btn.innerHTML;
+  btn.innerHTML = '⏳ Génération...'; btn.disabled = true;
   try {
     const data = await fetchWithAuth('/api/generate-post-test', { text });
     if(data.questions && data.questions.length > 0) {
       $('analysisStatus').className = 'notice ok'; $('analysisStatus').textContent = `✅ ${data.questions.length} questions générées !`;
       startExam({ title: 'Post-Test IA', questions: data.questions });
+    } else {
+      throw new Error("Aucune question renvoyée par l'IA.");
     }
-  } catch (err) { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ ' + err.message; }
-  finally { btn.innerHTML = '✨ GÉNÉRER 50 QUESTIONS (IA)'; btn.disabled = false; }
+  } catch (err) { 
+    $('analysisStatus').className = 'notice err'; 
+    $('analysisStatus').style.display = 'block';
+    $('analysisStatus').textContent = '❌ ' + err.message; 
+  }
+  finally { btn.innerHTML = old; btn.disabled = false; }
 });
 
+// === LE BOUTON D'EXTRACTION AVEC GESTION D'ERREUR ===
 $('extractTestBtn').addEventListener('click', async () => {
-  const text = $('pdfText').value; if(!text) return;
+  const text = $('pdfText').value; 
+  if(!text) { 
+    $('analysisStatus').className = 'notice err'; $('analysisStatus').style.display = 'block';
+    $('analysisStatus').textContent = '❌ Le texte est vide. Extrayez un document d\'abord.';
+    return; 
+  }
+  
+  const btn = $('extractTestBtn'); 
+  const old = btn.innerHTML;
+  btn.innerHTML = '⏳ Extraction...'; 
+  btn.disabled = true;
+  $('analysisStatus').style.display = 'none';
+
   try {
     const data = await fetchWithAuth('/api/parse-existing-quiz', { text });
     if(data.questions && data.questions.length > 0) {
-      $('analysisStatus').className = 'notice ok'; $('analysisStatus').textContent = `✅ ${data.questions.length} questions extraites !`;
+      $('analysisStatus').className = 'notice ok'; 
+      $('analysisStatus').style.display = 'block';
+      $('analysisStatus').textContent = `✅ ${data.questions.length} questions extraites !`;
       startExam({ title: 'Questionnaire importé', questions: data.questions });
+    } else {
+      throw new Error("Aucune question reconnue dans le texte.");
     }
-  } catch (err) { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ ' + err.message; }
+  } catch (err) { 
+    $('analysisStatus').className = 'notice err'; 
+    $('analysisStatus').style.display = 'block';
+    $('analysisStatus').textContent = '❌ ' + err.message; 
+  } finally { 
+    btn.innerHTML = old; 
+    btn.disabled = false; 
+  }
 });
 
 function startExam(quiz) {
