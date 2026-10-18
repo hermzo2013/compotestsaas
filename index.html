@@ -1,18 +1,25 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>CompoTest</title>
+<!-- ✅ Favicon -->
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
 <style>
 :root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c;--red:#e11d48}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
-header{background:linear-gradient(120deg,#132344,#2457d6);color:white;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
-.brand{font-size:22px;font-weight:800}.brand span{color:#8fe4c0}
-.header-actions{display:flex;gap:10px;align-items:center;font-size:13px}
-.header-actions button{padding:6px 12px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;cursor:pointer;transition:.2s}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+header{background:linear-gradient(120deg,#132344,#2457d6);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800}
+.brand img{height:32px;width:32px;border-radius:8px;background:#fff;object-fit:contain;padding:2px}
+.brand span{color:#8fe4c0}
+.header-actions{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
+.header-actions span#userLabel{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-actions button{padding:6px 10px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;cursor:pointer;transition:.2s;font-size:12px;white-space:nowrap}
 .header-actions button:hover{background:rgba(255,255,255,.25)}
 .btn-admin{background:#f59e0b!important;border-color:#f59e0b!important;color:#fff!important;font-weight:800;}
-.wrap{max-width:900px;margin:30px auto;padding:0 20px}
+.wrap{max-width:900px;margin:30px auto;padding:0 20px;width:100%;flex:1}
 .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.03);margin-bottom:20px}
 h1{font-size:24px;margin-top:0}
 label{display:block;font-size:13px;font-weight:700;margin:15px 0 5px}
@@ -41,7 +48,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 #adminModal.show{display:flex}
 .admin-modal-content{background:#fff;border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow-y:auto;padding:30px;box-shadow:0 10px 40px rgba(0,0,0,.2)}
 .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:15px}
-.admin-tabs{display:flex;gap:10px;margin-bottom:20px}
+.admin-tabs{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
 .admin-tab-btn{padding:10px 20px;border-radius:8px;background:#f0f3f8;color:var(--muted);font-weight:700;cursor:pointer;border:0}
 .admin-tab-btn.active{background:var(--blue);color:#fff}
 
@@ -67,24 +74,49 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .exam-result-box{background:#e9f8f1;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
 .exam-result-box.wrong{background:#fff1f2;border-color:var(--red)}
 .exam-explain{font-size:13px;color:#475569;margin-top:12px;padding:12px;background:#f8faff;border-radius:8px;border-left:2px solid var(--blue)}
-@media(max-width:600px){ .grid-2{grid-template-columns:1fr} .exam-body{padding:0 12px} .exam-actions { flex-direction: column; gap: 10px; padding: 10px; } .exam-actions-right { width: 100%; justify-content: space-between; } .exam-actions-right button { flex: 1; } }
+
+/* SIGNATURE FOOTER */
+.app-footer{text-align:center;padding:20px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);background:#fff;margin-top:20px}
+.app-footer b{color:var(--blue)}
+
+/* RESPONSIVE MOBILE */
+@media(max-width:600px){ 
+  .grid-2{grid-template-columns:1fr} 
+  .exam-body{padding:0 12px} 
+  .exam-actions { flex-direction: column; gap: 10px; padding: 10px; } 
+  .exam-actions-right { width: 100%; justify-content: space-between; } 
+  .exam-actions-right button { flex: 1; } 
+  
+  /* Header mobile : passage en colonne */
+  header{flex-direction:column;align-items:stretch;padding:10px}
+  .header-actions{justify-content:space-between;gap:6px}
+  .header-actions span#userLabel{max-width:100%;font-weight:700}
+  .header-actions button{flex:1;text-align:center;padding:8px 6px;font-size:11px}
+  .admin-modal-content{padding:20px 15px}
+  .admin-tabs{flex-direction:column}
+  .admin-tab-btn{width:100%}
+}
 </style>
 </head><body>
 
 <header>
-  <div class="brand">Compo<span>Test</span></div>
+  <div class="brand">
+    <img src="/favicon.png" alt="Logo CompoTest">
+    Compo<span>Test</span>
+  </div>
   <div class="header-actions">
     <span id="userLabel">Non connecté</span>
-    <button id="adminBtn" class="btn-admin" style="display:none">⚙️ Menu Admin</button>
+    <button id="adminBtn" class="btn-admin" style="display:none">⚙️ Admin</button>
     <button id="pwdBtn" style="display:none">🔑 Mot de passe</button>
     <button id="logoutBtn" style="display:none">Déconnexion</button>
   </div>
 </header>
 
 <section id="authGate" class="wrap" style="display:none">
-  <div class="panel" style="max-width:400px;margin:50px auto">
+  <div class="panel" style="max-width:400px;margin:30px auto;text-align:center">
+    <img src="/favicon.png" alt="Logo" style="width:80px;height:80px;border-radius:16px;margin-bottom:15px;object-fit:contain">
     <h1 style="text-align:center">Connexion</h1>
-    <form id="loginForm">
+    <form id="loginForm" style="text-align:left">
       <label for="loginEmail">Identifiant ou Email</label>
       <input id="loginEmail" type="text" required>
       <label for="loginPassword">Mot de passe</label>
@@ -139,6 +171,11 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   </div>
 </main>
 
+<!-- ✅ SIGNATURE FOOTER -->
+<footer class="app-footer">
+  dev. par <b>NSC-GROUP</b> ( THC )
+</footer>
+
 <!-- MODALE ADMIN -->
 <div id="adminModal">
   <div class="admin-modal-content">
@@ -153,28 +190,25 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
       <button class="admin-tab-btn" data-atab="role">👑 Attribuer un rôle</button>
     </div>
 
-    <!-- Création de compte -->
     <div id="atab-create" class="atab-content">
       <form id="adminCreateForm" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-        <div style="flex:1"><label>Nom d'utilisateur</label><input id="newName" required placeholder="maroane"></div>
-        <div style="flex:1"><label>Email interne</label><input id="newEmail" required placeholder="maroane@comptest.local"></div>
-        <div style="flex:1"><label>Mot de passe</label><input id="newPassword" type="text" required minlength="6"></div>
+        <div style="flex:1;min-width:180px"><label>Nom d'utilisateur</label><input id="newName" required placeholder="maroane"></div>
+        <div style="flex:1;min-width:180px"><label>Email interne</label><input id="newEmail" required placeholder="maroane@comptest.local"></div>
+        <div style="flex:1;min-width:180px"><label>Mot de passe</label><input id="newPassword" type="text" required minlength="6"></div>
         <button type="submit" style="margin-bottom:2px">Créer</button>
       </form>
       <div id="adminStatus" style="font-size:13px;margin-top:10px;color:var(--green)"></div>
     </div>
 
-    <!-- Modification de mot de passe -->
     <div id="atab-password" class="atab-content hide">
-      <p style="color:var(--muted);font-size:13px">Sélectionnez un utilisateur dans la liste ci-dessous ou saisissez son email pour réinitialiser son mot de passe.</p>
+      <p style="color:var(--muted);font-size:13px">Sélectionnez un utilisateur ou saisissez son email pour réinitialiser son mot de passe.</p>
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:15px">
-        <div style="flex:1"><label>Email de l'utilisateur</label><input id="pwdEmail" placeholder="maroane@comptest.local"></div>
-        <div style="flex:1"><label>Nouveau mot de passe</label><input id="pwdNew" type="text" minlength="6"></div>
+        <div style="flex:1;min-width:180px"><label>Email de l'utilisateur</label><input id="pwdEmail" placeholder="maroane@comptest.local"></div>
+        <div style="flex:1;min-width:180px"><label>Nouveau mot de passe</label><input id="pwdNew" type="text" minlength="6"></div>
         <button onclick="adminChangePassword()" style="margin-bottom:2px">Modifier</button>
       </div>
     </div>
 
-    <!-- Attribution de rôle -->
     <div id="atab-role" class="atab-content hide">
       <p style="color:var(--muted);font-size:13px">Sélectionnez un utilisateur pour lui attribuer ou retirer le rôle Administrateur.</p>
       <div style="margin-top:15px">
@@ -182,15 +216,14 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
         <select id="roleUserId" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ccc">
           <option value="">-- Chargement des utilisateurs... --</option>
         </select>
-        <div style="display:flex;gap:10px;margin-top:15px">
-          <button class="success" onclick="adminSetRole(true)">👑 Promouvoir Admin</button>
-          <button class="danger" onclick="adminSetRole(false)">⬇️ Retirer Admin</button>
+        <div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap">
+          <button class="success" onclick="adminSetRole(true)" style="flex:1;min-width:140px">👑 Promouvoir Admin</button>
+          <button class="danger" onclick="adminSetRole(false)" style="flex:1;min-width:140px">⬇️ Retirer Admin</button>
         </div>
         <div id="roleStatus" style="font-size:13px;margin-top:15px"></div>
       </div>
     </div>
 
-    <!-- Tableau des utilisateurs (pour le menu déroulant) -->
     <h3 style="margin-top:30px">Comptes existants</h3>
     <div id="adminUsersList">Chargement...</div>
   </div>
@@ -252,7 +285,6 @@ function handleSession(session) {
     currentUser = session.user;
     $('authGate').style.display = 'none';
     $('mainApp').style.display = 'block';
-    $('pwdBtn').style.display = 'block';
     $('logoutBtn').style.display = 'block';
     let displayName = currentUser.user_metadata?.full_name || (currentUser.email || '').split('@')[0];
     $('userLabel').textContent = "👤 " + displayName;
@@ -262,6 +294,9 @@ function handleSession(session) {
       currentUser.app_metadata?.role === 'admin' ||
       Boolean(ADMIN_EMAIL && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase());
 
+    // ✅ Bouton Mot de passe masqué pour les non-admins
+    $('pwdBtn').style.display = isAdmin ? 'block' : 'none';
+    // Bouton Admin
     $('adminBtn').style.display = isAdmin ? 'block' : 'none';
     if(isAdmin) loadAdminUsers();
     loadCloudData();
@@ -298,7 +333,7 @@ $('pwdBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
-// MODALE ADMIN & LOGIQUE
+// MODALE ADMIN
 // ==========================================
 $('adminBtn').addEventListener('click', () => {
   $('adminModal').classList.add('show');
@@ -329,7 +364,6 @@ async function loadAdminUsers() {
       return;
     }
     
-    // Mettre à jour le select de rôle
     const roleSelect = $('roleUserId');
     roleSelect.innerHTML = `<option value="">-- Sélectionner un utilisateur --</option>` + data.users.map(u => 
       `<option value="${u.id}">${esc(u.name)} (${esc(u.email)}) ${u.isAdmin ? '👑' : ''}</option>`
@@ -377,7 +411,6 @@ async function adminChangePassword() {
   if (!email || !pwd || pwd.length < 6) return alert("Veuillez remplir l'email et un mot de passe de 6 caractères minimum.");
   
   const { data: { session } } = await supabaseClient.auth.getSession();
-  // On doit d'abord trouver l'ID de l'utilisateur par son email
   const resUsers = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
   const dataUsers = await resUsers.json();
   const user = dataUsers.users.find(u => u.email.toLowerCase() === email);
