@@ -14,7 +14,6 @@ app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
 
-// ... (Le middleware d'authentification et les routes Admin restent identiques) ...
 async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return res.status(401).json({ error: 'Connecte-toi.' });
@@ -47,6 +46,7 @@ async function supabaseAdmin(pathname, options = {}) {
   return body;
 }
 
+// Routes Admin (Identiques)
 app.get('/api/admin/users', requireAdmin, async (_req, res) => {
   try {
     const data = await supabaseAdmin('users?page=1&per_page=100');
@@ -81,106 +81,91 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// ALGORITHME V9 : MACHINE À ÉTATS
+// ALGORITHME V8 : SCISSION BASÉE SUR LES SECTIONS
 // ==========================================
 function parseQuizText(text) {
-  // Nettoyage basique
+  // On normalise le texte en ajoutant des espaces après les Q et les options
   let clean = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ').replace(/Page\s+\d+/gi, ' ');
-  // Ajout d'espaces pour séparer les Q, les numéros et les options
-  clean = clean.replace(/((?:Q\s*)?\d{1,3}[\.\)])([A-ZÀ-Ýa-z])/gi, '$1 $2');
-  clean = clean.replace(/([A-D][\.\)\-])([A-ZÀ-Ýa-z])/gi, '$1 $2');
+  clean = clean.replace(/((?:Q\s*)?\d{1,3}[\.\)])([A-ZÀ-Ýa-z])/gi, '$1 $2'); // Q1.La -> Q1. La
+  clean = clean.replace(/([A-D][\.\)\-])([A-ZÀ-Ýa-z])/gi, '$1 $2'); // A-La -> A- La
 
+  // On sépare les blocs de questions
+  let blocks = clean.split(/(?=\s(?:Q\s*)?\d{1,3}[\.\)]\s)/gi);
   let questions = [];
-  // On sépare en blocs de texte pour analyser ligne par ligne
-  let lines = clean.split('\n');
-  let currentMode = 'UNKNOWN'; // 'TF', 'QCM', ou 'UNKNOWN'
-  let currentQ = null;
+  let currentSection = 'Général';
 
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i].trim();
-    if (!line) continue;
+  for (let block of blocks) {
+    block = block.trim();
+    if (!block) continue;
 
-    // 1. DÉTECTION DE LA CONSIGNE (Machine à états)
-    if (/QCD|Cochez A pour les.*VRAIES|Ecrire A pour les.*VRAIES/i.test(line)) {
-      currentMode = 'TF';
-      continue;
-    }
-    if (/QCM|Cochez les bonnes réponses|choix multiples/i.test(line)) {
-      currentMode = 'QCM';
-      continue;
+    // Détection du changement de section (ex: "SYSTEME NATIONAL DE SANTE", "GENERALITES SUR LE PEV")
+    const sectionMatch = block.match(/(SYSTEME NATIONAL DE SANTE|GENERALITES SUR LE PEV|SOINS DE SANTE PRIMAIRE)/i);
+    if (sectionMatch) {
+      currentSection = sectionMatch[0].toUpperCase();
     }
 
-    // 2. DÉTECTION DU DÉBUT D'UNE QUESTION
-    const qMatch = line.match(/^(?:Q\s*)?(\d{1,3})[\.\)]\s(.*)/i);
-    if (qMatch) {
-      if (currentQ) questions.push(currentQ); // Sauvegarde la question précédente
-      
-      let qText = qMatch[2];
-      let options = [];
-      
-      // On cherche si des options sont collées sur la même ligne (ex: A. texte B. texte)
-      let parts = qText.split(/(?=\s[A-D][\.\)\-]\s)/i);
-      qText = parts[0].trim();
-      if (parts.length > 1) {
-        for (let j = 1; j < parts.length; j++) {
-          options.push(parts[j].replace(/^\s*[A-D][\.\)\-]\s/i, '').trim());
-        }
+    const matchNum = block.match(/^(?:Q\s*)?(\d{1,3})[\.\)]\s(.*)/i);
+    if (!matchNum) continue;
+    
+    let num = parseInt(matchNum[1]);
+    let content = matchNum[2];
+
+    // On cherche les options (A, B, C, D). 
+    // Le regex cherche un espace, puis A/B/C/D, puis un point/tiret, puis un espace.
+    let parts = content.split(/(?=\s[A-D][\.\)\-]\s)/i);
+    let qText = parts[0].trim();
+    let options = [];
+    
+    if (parts.length > 1) {
+      for (let i = 1; i < parts.length; i++) {
+        let optText = parts[i].replace(/^\s*[A-D][\.\)\-]\s/i, '').trim();
+        if (optText) options.push(optText);
       }
+    }
 
-      currentQ = {
-        number: parseInt(qMatch[1]),
+    // Détection du type
+    let type = 'mcq';
+    // Si on a trouvé des options A, B, C, c'est un QCM
+    if (options.length > 0) {
+      type = 'mcq';
+    } else {
+      // Si pas d'options, c'est du QCD (Vrai/Faux)
+      type = 'tf';
+      options = ['Vrai', 'Faux'];
+    }
+
+    qText = qText.replace(/\s+/g, ' ').trim();
+
+    if (qText.length > 5) {
+      questions.push({
+        number: num,
         text: qText,
         options: options,
         correct: 0, 
-        type: currentMode === 'TF' ? 'tf' : 'mcq' // Par défaut selon la consigne
-      };
-      continue;
-    }
-
-    // 3. DÉTECTION DES OPTIONS (si on est déjà dans une question)
-    if (currentQ) {
-      const optMatch = line.match(/^([A-D])[\.\)\-]\s(.*)/i);
-      if (optMatch) {
-        currentQ.options.push(optMatch[2].trim());
-      } else if (/Vrai|Faux/i.test(line) && currentQ.options.length === 0) {
-        // Si c'est une ligne avec juste Vrai/Faux
-        currentQ.options = ['Vrai', 'Faux'];
-        currentQ.type = 'tf';
-      } else {
-        // C'est la suite du texte de la question
-        currentQ.text += ' ' + line;
-      }
+        type: type,
+        section: currentSection
+      });
     }
   }
-  if (currentQ) questions.push(currentQ);
 
-  // 4. NETTOYAGE FINAL ET ATTRIBUTION DES TYPES
-  questions.forEach(q => {
-    // Si on a trouvé des options A, B, C, on force le type QCM
-    if (q.options.length >= 2) {
-      q.type = 'mcq';
-    } 
-    // Si la consigne était Vrai/Faux mais qu'on n'a pas d'options, on met Vrai/Faux
-    else if (q.type === 'tf') {
-      q.options = ['Vrai', 'Faux'];
-    } 
-    // Fallback si on a rien trouvé
-    else {
-      q.type = 'short';
-      q.options = [];
-    }
-  });
-
-  // 5. CORRIGÉ
+  // Gestion du corrigé (Fichier INFAS : "1B 2B 3A...")
   const gridMatch = text.match(/(?:1\s*[-:]?\s*[A-D][\s\n]*){3,}/i);
   if (gridMatch) {
     const answers = {};
     const pairs = gridMatch[0].match(/(\d{1,3})\s*[-:]?\s*([A-D])/gi);
-    if(pairs) pairs.forEach(p => { const m = p.match(/(\d{1,3})\s*[-:]?\s*([A-D])/i); if(m) answers[parseInt(m[1])] = m[2].toUpperCase(); });
+    if(pairs) {
+      pairs.forEach(p => {
+        const m = p.match(/(\d{1,3})\s*[-:]?\s*([A-D])/i);
+        if(m) answers[parseInt(m[1])] = m[2].toUpperCase();
+      });
+    }
+
     questions.forEach(q => {
-      if (answers[q.number] && q.type === 'mcq') {
-        const optIndex = answers[q.number].charCodeAt(0) - 65;
-        if (optIndex >= 0 && optIndex < q.options.length) q.correct = optIndex;
+      if (answers[q.number]) {
+        const optIndex = answers[q.number].charCodeAt(0) - 65; // A=0, B=1
+        if (optIndex >= 0 && optIndex < q.options.length) {
+          q.correct = optIndex;
+        }
       }
     });
   }
