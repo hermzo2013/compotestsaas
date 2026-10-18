@@ -46,7 +46,7 @@ async function supabaseAdmin(pathname, options = {}) {
   return body;
 }
 
-// Routes Admin
+// Routes Admin (Identiques)
 app.get('/api/admin/users', requireAdmin, async (_req, res) => {
   try {
     const data = await supabaseAdmin('users?page=1&per_page=100');
@@ -81,77 +81,59 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// ALGORITHME D'EXTRACTION V7 (Correction QCM vs QCD)
+// ALGORITHME V8 : SCISSION BASÉE SUR LES SECTIONS
 // ==========================================
 function parseQuizText(text) {
-  // Nettoyage basique
+  // On normalise le texte en ajoutant des espaces après les Q et les options
   let clean = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ').replace(/Page\s+\d+/gi, ' ');
-  
-  // Ajout d'espaces après les points des questions et options (ex: "Q1.Quelle" -> "Q1. Quelle")
-  clean = clean.replace(/((?:Q\s*)?\d{1,3}[\.\)])([A-ZÀ-Ýa-z])/gi, '$1 $2');
-  clean = clean.replace(/([A-D][\.\)])([A-ZÀ-Ýa-z])/gi, '$1 $2');
+  clean = clean.replace(/((?:Q\s*)?\d{1,3}[\.\)])([A-ZÀ-Ýa-z])/gi, '$1 $2'); // Q1.La -> Q1. La
+  clean = clean.replace(/([A-D][\.\)\-])([A-ZÀ-Ýa-z])/gi, '$1 $2'); // A-La -> A- La
 
-  // On sépare les blocs sur les numéros de question
+  // On sépare les blocs de questions
   let blocks = clean.split(/(?=\s(?:Q\s*)?\d{1,3}[\.\)]\s)/gi);
   let questions = [];
+  let currentSection = 'Général';
 
   for (let block of blocks) {
     block = block.trim();
     if (!block) continue;
-    
-    // On récupère le numéro et le contenu
+
+    // Détection du changement de section (ex: "SYSTEME NATIONAL DE SANTE", "GENERALITES SUR LE PEV")
+    const sectionMatch = block.match(/(SYSTEME NATIONAL DE SANTE|GENERALITES SUR LE PEV|SOINS DE SANTE PRIMAIRE)/i);
+    if (sectionMatch) {
+      currentSection = sectionMatch[0].toUpperCase();
+    }
+
     const matchNum = block.match(/^(?:Q\s*)?(\d{1,3})[\.\)]\s(.*)/i);
     if (!matchNum) continue;
     
     let num = parseInt(matchNum[1]);
     let content = matchNum[2];
 
-    // On cherche s'il y a des options (A, B, C, D)
-    // On cherche un pattern " A) " ou " A. " dans le contenu
-    let parts = content.split(/(?=\s[A-D][\.\)]\s)/i);
+    // On cherche les options (A, B, C, D). 
+    // Le regex cherche un espace, puis A/B/C/D, puis un point/tiret, puis un espace.
+    let parts = content.split(/(?=\s[A-D][\.\)\-]\s)/i);
     let qText = parts[0].trim();
     let options = [];
     
     if (parts.length > 1) {
       for (let i = 1; i < parts.length; i++) {
-        let optText = parts[i].replace(/^\s*[A-D][\.\)]\s/i, '').trim();
+        let optText = parts[i].replace(/^\s*[A-D][\.\)\-]\s/i, '').trim();
         if (optText) options.push(optText);
       }
     }
 
-    // Logique de détection du type
+    // Détection du type
     let type = 'mcq';
+    // Si on a trouvé des options A, B, C, c'est un QCM
     if (options.length > 0) {
-      // C'est un QCM car on a trouvé des A, B, C
       type = 'mcq';
     } else {
-      // Si pas d'options, on regarde le contexte
-      // Si le texte contient "VRAI/FAUX" ou si c'est le premier bloc d'un document QCD
-      let isTF = /vrai|faux|QCD/i.test(qText);
-      
-      // Si c'est un vrai QCM avec options collées sans espace (ex: "A.La B.Le")
-      // On tente un split de secours sur les lettres majuscules suivies d'un point
-      if(!isTF) {
-         let fallbackSplit = qText.split(/(?=\b[A-D]\.)/);
-         if(fallbackSplit.length > 2) {
-            qText = fallbackSplit[0].trim();
-            for(let i=1; i<fallbackSplit.length; i++){
-               let opt = fallbackSplit[i].replace(/^[A-D]\.\s*/, '').trim();
-               if(opt) options.push(opt);
-            }
-            type = 'mcq';
-         } else {
-            // C'est vraiment un QCD (Vrai/Faux)
-            type = 'tf';
-            options = ['Vrai', 'Faux'];
-         }
-      } else {
-         type = 'tf';
-         options = ['Vrai', 'Faux'];
-      }
+      // Si pas d'options, c'est du QCD (Vrai/Faux)
+      type = 'tf';
+      options = ['Vrai', 'Faux'];
     }
 
-    // On nettoie le texte
     qText = qText.replace(/\s+/g, ' ').trim();
 
     if (qText.length > 5) {
@@ -160,12 +142,13 @@ function parseQuizText(text) {
         text: qText,
         options: options,
         correct: 0, 
-        type: type
+        type: type,
+        section: currentSection
       });
     }
   }
 
-  // Gestion du tableau de corrigé (ex: "1B 2A 3C" ou "1. B 2. A")
+  // Gestion du corrigé (Fichier INFAS : "1B 2B 3A...")
   const gridMatch = text.match(/(?:1\s*[-:]?\s*[A-D][\s\n]*){3,}/i);
   if (gridMatch) {
     const answers = {};
