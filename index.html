@@ -25,7 +25,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .notice.ok{background:#e9f8f1;color:#0e5e3f;border-color:#10b981}
 
 /* ===========================
-   CSS DU TEST (CORRIGÉ ET PROPRE)
+   CSS DU TEST (CORRIGÉ AVEC !IMPORTANT)
    =========================== */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:100px}
 .exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
@@ -35,42 +35,51 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .exam-card h3{font-size:17px;margin-top:0;margin-bottom:20px;line-height:1.5;color:#1e293b;text-align:left}
 .exam-q-num{display:inline-block;background:var(--blue);color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:99px;margin-bottom:12px}
 
-/* LE FIX EST ICI */
-.exam-options { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+/* LE FIX EST ICI : on force le flex et l'alignement */
+.exam-options { display: flex !important; flex-direction: column !important; gap: 12px !important; width: 100% !important; }
 .exam-opt { 
-  display: flex; 
-  align-items: flex-start; /* Aligne le bouton radio en haut */
-  gap: 12px; 
-  padding: 14px; 
-  border: 1.5px solid var(--line); 
-  border-radius: 10px; 
-  cursor: pointer; 
-  background: #fff;
-  transition: .1s;
+  display: flex !important; 
+  flex-direction: row !important; 
+  align-items: flex-start !important; 
+  justify-content: flex-start !important;
+  gap: 15px !important; 
+  padding: 16px !important; 
+  border: 1.5px solid var(--line) !important; 
+  border-radius: 10px !important; 
+  cursor: pointer !important; 
+  background: #fff !important;
+  transition: .1s !important;
+  text-align: left !important;
 }
-.exam-opt:hover { background: #f8faff; border-color: #a9bce7; }
-.exam-opt.selected { border-color: var(--blue); background: #edf2ff; }
-.exam-opt.correct { border-color: var(--green); background: #e9f8f1; }
-.exam-opt.wrong { border-color: var(--red); background: #fff1f2; }
+.exam-opt:hover { background: #f8faff !important; border-color: #a9bce7 !important; }
+.exam-opt.selected { border-color: var(--blue) !important; background: #edf2ff !important; }
+.exam-opt.correct { border-color: var(--green) !important; background: #e9f8f1 !important; }
+.exam-opt.wrong { border-color: var(--red) !important; background: #fff1f2 !important; }
 
-/* Le radio ne rétrécit pas, le texte prend l'espace restant */
+/* Le bouton radio reste petit à gauche */
 .exam-opt input[type="radio"], .exam-opt input[type="checkbox"] { 
-  margin-top: 3px; 
-  cursor: pointer; 
-  flex-shrink: 0; 
+  margin: 2px 0 0 0 !important; 
+  padding: 0 !important;
+  width: 20px !important; 
+  height: 20px !important;
+  cursor: pointer !important; 
+  flex-shrink: 0 !important; 
+  display: inline-block !important;
 }
+/* Le texte prend toute la place à droite */
 .exam-opt span { 
-  flex: 1; 
-  text-align: left; 
-  line-height: 1.4;
-  word-wrap: break-word;
+  flex: 1 !important; 
+  text-align: left !important; 
+  line-height: 1.4 !important;
+  word-wrap: break-word !important;
+  display: block !important;
 }
 
 .exam-input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:10px;text-align:left}
 
 /* BARRE D'ACTIONS EN BAS */
 .exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
-.exam-actions-left { font-size: 14px; color: var(--muted); }
+.exam-actions-left { font-size: 14px; color: var(--muted); font-weight: bold; }
 .exam-actions-right { display: flex; gap: 10px; }
 
 .exam-result-box{background:#e9f8f1;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
@@ -309,11 +318,9 @@ function renderExamQuestion() {
   $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
   
   if (i === total - 1) {
-    // Si c'est la dernière question, on cache "Suivant" et on montre "Soumettre"
     $('examNextBtn').style.display = 'none';
     $('examSubmitBtn').style.display = 'block';
   } else {
-    // Sinon, on montre "Suivant" et on cache "Soumettre"
     $('examNextBtn').style.display = 'block';
     $('examSubmitBtn').style.display = 'none';
   }
@@ -390,7 +397,6 @@ $('examPrevBtn').addEventListener('click', () => {
   } 
 });
 
-// LOGIQUE DU BOUTON SOUMETTRE
 $('examSubmitBtn').addEventListener('click', () => {
   if(examState.submitted) return;
   if(!confirm('Soumettre le test et voir la correction ?')) return;
@@ -409,7 +415,6 @@ $('examSubmitBtn').addEventListener('click', () => {
   const score = (correctCount / examState.questions.length * 20).toFixed(1);
   $('examProgressText').innerHTML = `<b style="color:var(--green);font-size:16px">Note : ${score}/20 (${correctCount}/${examState.questions.length})</b>`;
   
-  // Affiche la correction de la première question
   examState.currentIndex = 0;
   renderExamQuestion();
 });
