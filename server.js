@@ -10,8 +10,12 @@ const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
 app.use(express.json({ limit: '4mb' }));
 
+// Servir les fichiers statiques (favicon.png, images, etc.)
+app.use(express.static(__dirname, { maxAge: '1d' }));
+
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
 
 // ==========================================
@@ -134,14 +138,11 @@ app.patch('/api/admin/users/:id/status', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ✅ NOUVELLE ROUTE : Attribution de rôle
 app.patch('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
   try {
     const isAdmin = req.body.is_admin === true;
-    // On met à jour les app_metadata pour définir le rôle admin
     const current = await supabaseAdmin(`users/${req.params.id}`);
     const app_metadata = { ...(current.app_metadata || {}), is_admin: isAdmin };
-    
     await supabaseAdmin(`users/${req.params.id}`, {
       method: 'PUT',
       body: JSON.stringify({ app_metadata })
@@ -158,7 +159,7 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
 });
 
 // ==========================================
-// IA & EXTRACTION (V10 inchangé)
+// IA & EXTRACTION
 // ==========================================
 function aiClient() {
   if (!process.env.AI_API_KEY) return null;
