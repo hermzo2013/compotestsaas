@@ -13,60 +13,24 @@ app.use(express.json({ limit: '2mb' }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
-app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
-app.get('/site.jpg', (_req, res) => res.sendFile(path.join(__dirname, 'site.jpg')));
+app.get('/api/health', (_req, res) => res.json({ ok: true, aiConfigured: Boolean(process.env.AI_API_KEY) }));
 
-app.get('/api/health', (_req, res) => res.json({
-  ok: true,
-  aiConfigured: Boolean(process.env.AI_API_KEY),
-  authConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY),
-  aiModel: process.env.AI_MODEL || 'openai/gpt-oss-20b'
-}));
-
-// ==========================================
-// MIDDLEWARE D'AUTHENTIFICATION (Corrigé)
-// ==========================================
 async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) {
-    return res.status(401).json({ error: 'Connecte-toi à CompoTest pour utiliser cette fonction.' });
-  }
-
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-    return res.status(503).json({ error: 'Supabase non configuré côté serveur.' });
-  }
-
+  if (!token) return res.status(401).json({ error: 'Connecte-toi à CompoTest pour utiliser cette fonction.' });
   try {
     const response = await fetch(`${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/user`, {
-      headers: { 
-        apikey: process.env.SUPABASE_ANON_KEY, 
-        Authorization: `Bearer ${token}` 
-      }
+      headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }
     });
-
-    if (!response.ok) {
-      return res.status(401).json({ error: 'Session expirée ou invalide. Reconnecte-toi.' });
-    }
-
+    if (!response.ok) return res.status(401).json({ error: 'Session expirée.' });
     const user = await response.json();
-    if (!user?.id || !user?.email) {
-      return res.status(401).json({ error: 'Session utilisateur invalide.' });
-    }
-
+    if (!user?.id) return res.status(401).json({ error: 'Session invalide.' });
     req.user = { id: user.id, email: user.email };
     next();
-  } catch (error) {
-    console.error('Erreur Auth:', error);
-    return res.status(503).json({ error: 'Vérification de session indisponible.' });
-  }
+  } catch { return res.status(503).json({ error: 'Vérification indisponible.' }); }
 }
-
-// Applique l'authentification à toutes les routes /api sauf /health
 app.use('/api', (req, res, next) => req.path === '/health' ? next() : authenticate(req, res, next));
 
-// ==========================================
-// IA (Groq)
-// ==========================================
 function aiClient() {
   if (!process.env.AI_API_KEY) return null;
   return new OpenAI({
@@ -78,25 +42,31 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION LOCALE (Questionnaires existants)
+// 1. EXTRACTION LOCALE (Corrigée)
 // ==========================================
 function extractQuestionsLocally(text) {
-  const lines = text.split('\n');
+  // Normalisation : on s'assure qu'il y a un espace après le point des numéros (ex: "1.Quelle" -> "1. Quelle")
+  let cleanText = text.replace(/(\d+[\.\)])([A-ZÀ-Ýa-z])/g, '$1 $2');
+  
+  // Regex plus souple pour les questions (1., Q1., 1), etc.)
+  const qRegex = /^(?:Q\s*)?(\d{1,3})[\.\)]\s+(.+)$/i;
+  // Regex pour les options (A., A), a. , etc.)
+  const optRegex = /^([A-D])[\.\)]\s+(.+)$/i;
+
+  const lines = cleanText.split('\n');
   let questions = [];
   let currentQ = null;
-  
-  const qRegex = /^(?:Q\s*)?(\d{1,3})[.)]\s+(.+)$/i;
-  const optRegex = /^([A-D])[.)]\s+(.+)$/i;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
-    if (/^1\s*[A-D]/.test(line) || /^1\s*[-:]\s*[A-D]/.test(line)) break;
+    // Détection du corrigé en bas de page (on arrête l'extraction)
+    if (/^1\s*[A-D]/.test(line) && line.length < 50) break;
 
     const qMatch = line.match(qRegex);
     if (qMatch) {
-      if (currentQ) questions.push(currentQ);
+      if (currentQ && currentQ.options.length > 0) questions.push(currentQ);
       currentQ = {
         number: parseInt(qMatch[1]),
         text: qMatch[2].trim(),
@@ -112,53 +82,66 @@ function extractQuestionsLocally(text) {
       if (optMatch) {
         let optText = optMatch[2].trim();
         let isCorrect = false;
+        
+        // Détection des réponses marquées (ex: PDF avec ✓)
         if (optText.includes('✓') || optText.includes('Réponse correcte') || line.includes('✓')) {
           isCorrect = true;
           optText = optText.replace(/✓|Réponse correcte.*/gi, '').trim();
         }
+        
         currentQ.options.push(optText);
         if (isCorrect) currentQ.correct = currentQ.options.length - 1;
       } else if (!line.match(/^Page\s+\d+/i)) {
+        // Détection Vrai/Faux
         if (line.match(/Réponse correcte\s*:\s*(VRAI|FAUX)/i)) {
           currentQ.type = 'tf';
           currentQ.correct = line.toUpperCase().includes('VRAI');
-        } else {
+        } else if (currentQ.options.length === 0) {
+          // C'est la suite du texte de la question
           currentQ.text += ' ' + line;
         }
       }
     }
   }
-  if (currentQ) questions.push(currentQ);
+  if (currentQ && currentQ.options.length > 0) questions.push(currentQ);
 
-  const corrigeBlockMatch = text.match(/1\s*B\s*11\s*B\s*21\s*A[\s\S]*/i); 
-  if (corrigeBlockMatch) {
-    const grid = corrigeBlockMatch[0].match(/(\d{1,3})\s*([A-D])/g);
-    if (grid) {
-      const answers = {};
-      grid.forEach(item => {
-        const match = item.match(/(\d{1,3})\s*([A-D])/);
-        if (match) answers[parseInt(match[1])] = match[2];
-      });
-      questions.forEach(q => {
-        if (answers[q.number] && q.options.length > 0) {
-          const optIndex = answers[q.number].charCodeAt(0) - 65;
-          if (optIndex >= 0 && optIndex < q.options.length) q.correct = optIndex;
+  // Gestion du tableau de corrigé (Fichier INFAS : "1B 11B 21A...")
+  const gridMatch = text.match(/(\d{1,3}\s*[A-D][\s\n]*){5,}/g);
+  if (gridMatch) {
+    const answers = {};
+    gridMatch.forEach(block => {
+      const pairs = block.match(/(\d{1,3})\s*([A-D])/g);
+      if(pairs) {
+        pairs.forEach(p => {
+          const m = p.match(/(\d{1,3})\s*([A-D])/);
+          if(m) answers[m[1]] = m[2];
+        });
+      }
+    });
+
+    questions.forEach(q => {
+      if (answers[q.number]) {
+        const optIndex = answers[q.number].charCodeAt(0) - 65; // A=0, B=1
+        if (optIndex >= 0 && optIndex < q.options.length) {
+          q.correct = optIndex;
         }
-      });
-    }
+      }
+    });
   }
-  return questions.filter(q => q.options.length >= 2);
+
+  // Fallback : si pas de corrigé, on met la réponse A par défaut pour que le test soit soumissible
+  questions.forEach(q => { if (q.correct === null) q.correct = 0; });
+
+  return questions;
 }
 
 // ==========================================
-// ROUTES
+// 2. ROUTES
 // ==========================================
 app.post('/api/parse-existing-quiz', (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'Texte manquant' });
-  console.log(`[parse-existing] Analyse de ${text.length} caractères...`);
   const questions = extractQuestionsLocally(text);
-  console.log(`[parse-existing] ${questions.length} questions extraites.`);
   res.json({ questions });
 });
 
@@ -166,31 +149,44 @@ app.post('/api/generate-post-test', async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
   
-  const { subject, title, sourceText, count = 15 } = req.body;
-  const text = sourceText.trim();
-  const n = Math.min(count, 30);
-
-  console.log(`[post-test] Début génération de ${n} questions...`);
+  const { subject, title, sourceText, count = 10 } = req.body;
+  const text = sourceText.slice(0, 15000); // On limite pour éviter le Timeout
+  const n = Math.min(count, 20);
 
   try {
-    const extractionPrompt = `Extrait les 15 à 20 concepts clés de ce cours. Format JSON : {"concepts": [{"terme": "Nom", "definition": "Définition"}]}`;
-    const extractRes = await client.chat.completions.create({
-      model: modelName(), temperature: 0.1, response_format: { type: 'json_object' },
-      messages: [{ role: 'system', content: extractionPrompt }, { role: 'user', content: text.slice(0, 20000) }]
-    });
-    const concepts = JSON.parse(extractRes.choices[0].message.content).concepts || [];
+    // On force le français et un format JSON très strict
+    const prompt = `Tu es un professeur francophone. Crée un post-test de ${n} questions en FRANÇAIS basé sur le texte suivant.
+    
+    RÈGLES ABSOLUES :
+    - Langue : Français uniquement.
+    - Types : QCM (4 options), Vrai/Faux, ou texte à trous.
+    - Ne recopie pas le cours. Formule des questions claires.
+    
+    Format JSON strict :
+    {
+      "questions": [
+        {"type": "mcq", "text": "Question ?", "options": ["A", "B", "C", "D"], "correct": 0, "explanation": "Explication"}
+      ]
+    }`;
 
-    const generatePrompt = `Tu es un professeur. Crée un post-test de ${n} questions basé sur ces concepts. RÈGLES : 1. Ne recopie pas. Formule de vraies questions. 2. 40% "mcq", 30% "mcq_multi", 30% "tf". Format JSON : {"questions": [{"type": "mcq", "text": "...", "options": ["A", "B", "C", "D"], "correct": 0, "explanation": "..."}]}`;
-    const generateRes = await client.chat.completions.create({
-      model: modelName(), temperature: 0.4, response_format: { type: 'json_object' },
-      messages: [{ role: 'system', content: generatePrompt }, { role: 'user', content: JSON.stringify(concepts) }]
+    const response = await client.chat.completions.create({
+      model: modelName(), temperature: 0.3, response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: prompt },
+        { role: 'user', content: text }
+      ]
     });
 
-    const questions = (JSON.parse(generateRes.choices[0].message.content).questions || []).map((q, i) => ({
-      id: `gen-${i}`, number: i + 1, type: q.type, text: q.text, options: q.options || [], correct: q.correct, explanation: q.explanation || ''
+    const parsed = JSON.parse(response.choices[0].message.content);
+    const questions = (parsed.questions || []).map((q, i) => ({
+      id: `gen-${i}`, number: i + 1, 
+      type: q.type || 'mcq', 
+      text: q.text, 
+      options: q.options || [], 
+      correct: typeof q.correct === 'number' ? q.correct : 0, 
+      explanation: q.explanation || ''
     }));
 
-    console.log(`[post-test] ${questions.length} questions générées.`);
     res.json({ questions });
   } catch (error) {
     console.error('[post-test] Erreur:', error.message);
