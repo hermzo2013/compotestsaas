@@ -32,6 +32,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .admin-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:15px}
 .admin-table th,.admin-table td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
 .admin-table th{color:var(--muted)}
+.badge-admin{display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;margin-left:6px}
 
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:100px}
 .exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
@@ -180,10 +181,24 @@ if(window.supabase && cfg.SUPABASE_URL) supabaseClient = window.supabase.createC
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
+// ==========================================
+// AUTHENTIFICATION
+// ==========================================
 async function initAuth() {
-  if (!supabaseClient) return;
+  if (!supabaseClient) {
+    console.error('Supabase non configuré. Vérifie config.js');
+    return;
+  }
   supabaseClient.auth.onAuthStateChange((_event, session) => { handleSession(session); });
   const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    // Force le refresh pour récupérer app_metadata à jour
+    const { data } = await supabaseClient.auth.getUser();
+    if (data?.user) {
+      handleSession({ user: data.user });
+      return;
+    }
+  }
   handleSession(session);
 }
 
@@ -194,11 +209,18 @@ function handleSession(session) {
     $('mainApp').style.display = 'block';
     $('pwdBtn').style.display = 'block';
     $('logoutBtn').style.display = 'block';
-    
-    let displayName = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
+
+    let displayName = currentUser.user_metadata?.full_name || (currentUser.email || '').split('@')[0];
     $('userLabel').textContent = "👤 " + displayName;
 
-    isAdmin = (currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+    // ✅ Détection admin via app_metadata (fiable) + fallback email
+    isAdmin =
+      currentUser.app_metadata?.is_admin === true ||
+      currentUser.app_metadata?.role === 'admin' ||
+      Boolean(ADMIN_EMAIL && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+
+    console.log('[CompoTest] isAdmin =', isAdmin, '| app_metadata =', currentUser.app_metadata);
+
     $('tabAdminBtn').style.display = isAdmin ? 'block' : 'none';
     if(isAdmin) loadAdminUsers();
     loadCloudData();
@@ -234,15 +256,24 @@ $('pwdBtn').addEventListener('click', async () => {
   else alert("✅ Mot de passe modifié avec succès !");
 });
 
+// ==========================================
+// ADMIN
+// ==========================================
 $('adminCreateForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = $('newName').value.trim();
   const email = $('newEmail').value.trim();
   const pwd = $('newPassword').value;
   const { data: { session } } = await supabaseClient.auth.getSession();
-  const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ name, email, password: pwd }) });
+  if (!session) return alert("Session expirée, reconnecte-toi.");
+  const res = await fetch('/api/admin/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify({ name, email, password: pwd })
+  });
   const data = await res.json();
   if (res.ok) {
+    $('adminStatus').style.color = "var(--green)";
     $('adminStatus').textContent = "✅ Compte créé avec succès !";
     $('adminCreateForm').reset();
     loadAdminUsers();
@@ -254,36 +285,75 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
 
 async function loadAdminUsers() {
   const { data: { session } } = await supabaseClient.auth.getSession();
-  const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
-  const data = await res.json();
-  if (!data.users) return;
-  $('adminUsersList').innerHTML = `<table class="admin-table"><thead><tr><th>Nom</th><th>Email</th><th>Statut</th><th>Actions</th></tr></thead><tbody>
-      ${data.users.map(u => `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.banned ? '<span style="color:var(--red)">Désactivé</span>' : '<span style="color:var(--green)">Actif</span>'}</td><td>
-            <button class="secondary" onclick="resetUserPwd('${u.id}')">🔑 MDP</button>
-            <button class="${u.banned ? 'secondary' : 'danger'}" onclick="toggleUserStatus('${u.id}', ${!u.banned})">${u.banned ? 'Réactiver' : 'Désactiver'}</button>
-          </td></tr>`).join('')}
-  </tbody></table>`;
+  if (!session) return;
+  try {
+    const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+    const data = await res.json();
+    if (!res.ok) {
+      $('adminUsersList').innerHTML = `<p style="color:var(--red)">Erreur : ${esc(data.error || 'inconnue')}</p>`;
+      return;
+    }
+    if (!data.users || data.users.length === 0) {
+      $('adminUsersList').innerHTML = '<p style="color:var(--muted)">Aucun compte.</p>';
+      return;
+    }
+    $('adminUsersList').innerHTML = `<table class="admin-table"><thead><tr><th>Nom</th><th>Email</th><th>Statut</th><th>Actions</th></tr></thead><tbody>
+      ${data.users.map(u => `<tr>
+        <td><b>${esc(u.name)}</b>${u.isAdmin ? '<span class="badge-admin">ADMIN</span>' : ''}</td>
+        <td>${esc(u.email)}</td>
+        <td>${u.banned ? '<span style="color:var(--red)">Désactivé</span>' : '<span style="color:var(--green)">Actif</span>'}</td>
+        <td>
+          <button class="secondary" onclick="resetUserPwd('${u.id}')">🔑 MDP</button>
+          <button class="${u.banned ? 'secondary' : 'danger'}" onclick="toggleUserStatus('${u.id}', ${!u.banned})">${u.banned ? 'Réactiver' : 'Désactiver'}</button>
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+  } catch (err) {
+    $('adminUsersList').innerHTML = `<p style="color:var(--red)">Erreur réseau : ${esc(err.message)}</p>`;
+  }
 }
 
 window.resetUserPwd = async (id) => {
   const newPwd = prompt("Nouveau mot de passe (6 caractères min) :");
   if (!newPwd || newPwd.length < 6) return;
   const { data: { session } } = await supabaseClient.auth.getSession();
-  await fetch(`/api/admin/users/${id}/password`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ password: newPwd }) });
-  alert("✅ Mot de passe réinitialisé !");
+  const res = await fetch(`/api/admin/users/${id}/password`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify({ password: newPwd })
+  });
+  if (res.ok) alert("✅ Mot de passe réinitialisé !");
+  else {
+    const d = await res.json();
+    alert("❌ " + (d.error || 'Erreur'));
+  }
 };
 
 window.toggleUserStatus = async (id, banned) => {
   if(!confirm(banned ? "Désactiver ce compte ?" : "Réactiver ce compte ?")) return;
   const { data: { session } } = await supabaseClient.auth.getSession();
-  await fetch(`/api/admin/users/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ banned }) });
-  loadAdminUsers();
+  const res = await fetch(`/api/admin/users/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify({ banned })
+  });
+  if (res.ok) loadAdminUsers();
+  else {
+    const d = await res.json();
+    alert("❌ " + (d.error || 'Erreur'));
+  }
 };
 
+// ==========================================
+// CLOUD DATA / HISTORIQUE
+// ==========================================
 async function loadCloudData() {
   if (!currentUser) return;
   const { data } = await supabaseClient.from('comptest_data').select('history').eq('user_id', currentUser.id).maybeSingle();
-  if (data && data.history) { historyData = data.history; localStorage.setItem('comptest_history', JSON.stringify(historyData)); }
+  if (data && data.history) {
+    historyData = data.history;
+    localStorage.setItem('comptest_history', JSON.stringify(historyData));
+  }
   renderHistory();
 }
 
@@ -291,24 +361,42 @@ async function saveHistory(entry) {
   historyData.push(entry);
   localStorage.setItem('comptest_history', JSON.stringify(historyData));
   renderHistory();
-  if (currentUser) await supabaseClient.from('comptest_data').upsert({ user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  if (currentUser) await supabaseClient.from('comptest_data').upsert(
+    { user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' }
+  );
 }
 
 function renderHistory() {
   const list = $('historyList');
   if (historyData.length === 0) { list.innerHTML = '<p style="color:var(--muted)">Aucun test terminé.</p>'; return; }
-  list.innerHTML = [...historyData].reverse().map(h => `<div class="history-item"><div><div style="font-weight:700">${esc(h.title)}</div><div style="font-size:12px;color:var(--muted)">${new Date(h.date).toLocaleString('fr-FR')}</div></div><div style="font-size:20px;font-weight:800;color:var(--green)">${h.score.toFixed(1)}/20</div></div>`).join('');
+  list.innerHTML = [...historyData].reverse().map(h =>
+    `<div class="history-item">
+      <div>
+        <div style="font-weight:700">${esc(h.title)}</div>
+        <div style="font-size:12px;color:var(--muted)">${new Date(h.date).toLocaleString('fr-FR')}</div>
+      </div>
+      <div style="font-size:20px;font-weight:800;color:var(--green)">${h.score.toFixed(1)}/20</div>
+    </div>`
+  ).join('');
 }
 
+// ==========================================
+// TABS
+// ==========================================
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hide'));
     tab.classList.add('active');
-    $('tab-' + tab.dataset.tab).classList.remove('hide');
+    const target = $('tab-' + tab.dataset.tab);
+    if (target) target.classList.remove('hide');
   });
 });
 
+// ==========================================
+// EXTRACTION PDF / DOCX / TXT
+// ==========================================
 $('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
     $('fileName').textContent = this.files[0].name;
@@ -317,22 +405,63 @@ $('pdfFile').addEventListener('change', async function() {
       let text = ''; const file = this.files[0]; const name = file.name.toLowerCase();
       if(name.endsWith('.pdf')){
         const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-        let pages=[]; for(let p=1;p<=pdf.numPages;p++){ const page=await pdf.getPage(p); const content=await page.getTextContent(); pages.push(content.items.map(i=>i.str).join(' ')); }
-        text=pages.join('\n');
+        let pages=[];
+        for(let p=1;p<=pdf.numPages;p++){
+          const page=await pdf.getPage(p);
+          const content=await page.getTextContent();
+          // Regrouper par lignes approximatives (y positions)
+          const items = content.items.map(i => ({ str: i.str, y: i.transform[5] }));
+          const lines = [];
+          let currentY = null, currentLine = [];
+          items.forEach(it => {
+            if (currentY === null || Math.abs(it.y - currentY) < 3) {
+              currentLine.push(it.str);
+              currentY = currentY === null ? it.y : currentY;
+            } else {
+              lines.push(currentLine.join(' '));
+              currentLine = [it.str];
+              currentY = it.y;
+            }
+          });
+          if (currentLine.length) lines.push(currentLine.join(' '));
+          pages.push(lines.join('\n'));
+        }
+        text = pages.join('\n');
       } else if(name.endsWith('.docx')){
-        const zip=await JSZip.loadAsync(await file.arrayBuffer()); const docXml=zip.file('word/document.xml'); const xml=await docXml.async('string');
-        text = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-      } else { text=await file.text(); }
+        const zip=await JSZip.loadAsync(await file.arrayBuffer());
+        const docXml=zip.file('word/document.xml');
+        const xml=await docXml.async('string');
+        text = xml
+          .replace(/<\/w:p>/g, '\n')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/[ \t]+/g, ' ');
+      } else {
+        text=await file.text();
+      }
       $('pdfText').value = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
-      $('textAreaWrap').classList.remove('hide'); $('actionButtons').style.display = 'flex'; status.textContent = `✅ ${text.length} caractères.`;
-    } catch(e) { status.textContent = 'Erreur : ' + e.message; }
+      $('textAreaWrap').classList.remove('hide');
+      $('actionButtons').style.display = 'flex';
+      status.textContent = `✅ ${text.length} caractères.`;
+    } catch(e) {
+      status.textContent = 'Erreur : ' + e.message;
+      console.error(e);
+    }
   }
 });
 
+// ==========================================
+// APPELS API
+// ==========================================
 async function fetchWithAuth(url, body) {
   const { data: { session } } = await supabaseClient.auth.getSession();
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify(body) });
-  const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Erreur serveur'); return data;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || data.message || 'Erreur serveur');
+  return data;
 }
 
 $('generatePostTestBtn').addEventListener('click', async () => {
@@ -341,11 +470,20 @@ $('generatePostTestBtn').addEventListener('click', async () => {
   try {
     const data = await fetchWithAuth('/api/generate-post-test', { text });
     if(data.questions && data.questions.length > 0) {
-      $('analysisStatus').className = 'notice ok'; $('analysisStatus').textContent = `✅ ${data.questions.length} questions générées !`;
+      $('analysisStatus').className = 'notice ok';
+      $('analysisStatus').textContent = `✅ ${data.questions.length} questions générées !`;
       startExam({ title: 'Post-Test IA', questions: data.questions });
+    } else {
+      $('analysisStatus').className = 'notice err';
+      $('analysisStatus').textContent = '❌ Aucune question générée.';
     }
-  } catch (err) { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ ' + err.message; }
-  finally { btn.innerHTML = '✨ GÉNÉRER 50 QUESTIONS (IA)'; btn.disabled = false; }
+  } catch (err) {
+    $('analysisStatus').className = 'notice err';
+    $('analysisStatus').textContent = '❌ ' + err.message;
+  } finally {
+    btn.innerHTML = '✨ GÉNÉRER 50 QUESTIONS (IA)';
+    btn.disabled = false;
+  }
 });
 
 $('extractTestBtn').addEventListener('click', async () => {
@@ -353,33 +491,62 @@ $('extractTestBtn').addEventListener('click', async () => {
   try {
     const data = await fetchWithAuth('/api/parse-existing-quiz', { text });
     if(data.questions && data.questions.length > 0) {
-      $('analysisStatus').className = 'notice ok'; $('analysisStatus').textContent = `✅ ${data.questions.length} questions extraites !`;
+      $('analysisStatus').className = 'notice ok';
+      $('analysisStatus').textContent = `✅ ${data.questions.length} questions extraites !`;
       startExam({ title: 'Questionnaire importé', questions: data.questions });
+    } else {
+      $('analysisStatus').className = 'notice err';
+      $('analysisStatus').textContent = '❌ ' + (data.message || 'Aucune question reconnue dans le texte.');
     }
-  } catch (err) { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ ' + err.message; }
+  } catch (err) {
+    $('analysisStatus').className = 'notice err';
+    $('analysisStatus').textContent = '❌ ' + err.message;
+  }
 });
 
+// ==========================================
+// EXAMEN
+// ==========================================
 function startExam(quiz) {
-  examState = { title: quiz.title, questions: quiz.questions, answers: new Array(quiz.questions.length).fill(null), currentIndex: 0, submitted: false };
-  $('examTitle').textContent = quiz.title; $('examMeta').textContent = `${quiz.questions.length} questions`;
-  $('examView').style.display = 'block'; document.body.style.overflow = 'hidden'; renderExamQuestion();
+  examState = {
+    title: quiz.title,
+    questions: quiz.questions,
+    answers: new Array(quiz.questions.length).fill(null),
+    currentIndex: 0,
+    submitted: false
+  };
+  $('examTitle').textContent = quiz.title;
+  $('examMeta').textContent = `${quiz.questions.length} questions`;
+  $('examView').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  renderExamQuestion();
 }
 
 $('examQuitBtn').addEventListener('click', () => {
   if(!examState.submitted && !confirm('Quitter ? Les réponses seront perdues.')) return;
-  $('examView').style.display = 'none'; document.body.style.overflow = 'auto'; examState = null;
+  $('examView').style.display = 'none';
+  document.body.style.overflow = 'auto';
+  examState = null;
 });
 
 function renderExamQuestion() {
-  const i = examState.currentIndex; const q = examState.questions[i]; const ua = examState.answers[i]; const total = examState.questions.length;
+  const i = examState.currentIndex;
+  const q = examState.questions[i];
+  const ua = examState.answers[i];
+  const total = examState.questions.length;
 
   $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
   $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
-  if (i === total - 1) { $('examNextBtn').style.display = 'none'; $('examSubmitBtn').style.display = 'block'; }
-  else { $('examNextBtn').style.display = 'block'; $('examSubmitBtn').style.display = 'none'; }
+  if (i === total - 1) {
+    $('examNextBtn').style.display = 'none';
+    $('examSubmitBtn').style.display = 'block';
+  } else {
+    $('examNextBtn').style.display = 'block';
+    $('examSubmitBtn').style.display = 'none';
+  }
 
   let html = `<div class="exam-card"><span class="exam-q-num">Q${i + 1}</span><h3>${esc(q.text)}</h3>`;
-    
+
   if(q.options && q.options.length > 0) {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
@@ -388,7 +555,8 @@ function renderExamQuestion() {
       let cls = 'exam-opt' + (isSelected ? ' selected' : '');
       if(examState.submitted) {
         const isCorrect = isMulti ? q.correct.includes(j) : q.correct === j;
-        if(isCorrect) cls += ' correct'; else if(isSelected && !isCorrect) cls += ' wrong';
+        if(isCorrect) cls += ' correct';
+        else if(isSelected && !isCorrect) cls += ' wrong';
       }
       html += `<label class="${cls}"><input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}><span>${esc(opt)}</span></label>`;
     });
@@ -422,19 +590,35 @@ function renderExamQuestion() {
 function checkAnswer(q, ua) {
   if (ua === null || ua === undefined) return false;
   if (q.type === 'mcq' || q.type === 'tf') return ua === q.correct;
-  if (q.type === 'mcq_multi') { if(!Array.isArray(ua)) return false; const a = [...ua].sort(); const b = [...q.correct].sort(); return a.length === b.length && a.every((v,i) => v === b[i]); }
+  if (q.type === 'mcq_multi') {
+    if(!Array.isArray(ua)) return false;
+    const a = [...ua].sort(); const b = [...q.correct].sort();
+    return a.length === b.length && a.every((v,i) => v === b[i]);
+  }
   if (q.type === 'short') return String(ua).toLowerCase().trim() === String(q.correct).toLowerCase().trim();
   return false;
 }
 
-$('examNextBtn').addEventListener('click', () => { if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); } });
-$('examPrevBtn').addEventListener('click', () => { if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); } });
+$('examNextBtn').addEventListener('click', () => {
+  if(examState.currentIndex < examState.questions.length - 1) {
+    examState.currentIndex++;
+    renderExamQuestion();
+  }
+});
+$('examPrevBtn').addEventListener('click', () => {
+  if(examState.currentIndex > 0) {
+    examState.currentIndex--;
+    renderExamQuestion();
+  }
+});
 
 $('examSubmitBtn').addEventListener('click', async () => {
   if(examState.submitted) return;
   if(!confirm('Soumettre le test et voir la correction ?')) return;
   examState.submitted = true;
-  $('examNextBtn').style.display = 'none'; $('examPrevBtn').style.display = 'none'; $('examSubmitBtn').style.display = 'none';
+  $('examNextBtn').style.display = 'none';
+  $('examPrevBtn').style.display = 'none';
+  $('examSubmitBtn').style.display = 'none';
   let correctCount = 0;
   examState.questions.forEach((q, i) => { if(checkAnswer(q, examState.answers[i])) correctCount++; });
   const score = (correctCount / examState.questions.length * 20);
