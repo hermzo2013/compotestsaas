@@ -33,7 +33,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .admin-table th,.admin-table td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
 .admin-table th{color:var(--muted)}
 
-/* CSS EXAM (déjà corrigé) */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:100px}
 .exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
 .exam-header h2{margin:0;font-size:18px}
@@ -69,7 +68,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   </div>
 </header>
 
-<!-- AUTH SCREEN -->
 <section id="authGate" class="wrap" style="display:none">
   <div class="panel" style="max-width:400px;margin:50px auto">
     <h1 style="text-align:center">Connexion</h1>
@@ -91,7 +89,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
     <button class="tab hide" id="tabAdminBtn" data-tab="admin">⚙️ Admin</button>
   </div>
 
-  <!-- TAB CREATE -->
   <div id="tab-create" class="tab-content">
     <div class="panel">
       <h1>Importer un document</h1>
@@ -122,7 +119,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
     </div>
   </div>
 
-  <!-- TAB HISTORY -->
   <div id="tab-history" class="tab-content hide">
     <div class="panel">
       <h1>Mon Historique</h1>
@@ -130,11 +126,9 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
     </div>
   </div>
 
-  <!-- TAB ADMIN -->
   <div id="tab-admin" class="tab-content hide">
     <div class="panel">
       <h1>Administration des comptes</h1>
-      
       <h3>Créer un compte</h3>
       <form id="adminCreateForm" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
         <div style="flex:1"><label>Nom d'utilisateur</label><input id="newName" required placeholder="maroane"></div>
@@ -143,14 +137,12 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
         <button type="submit" style="margin-bottom:2px">Créer</button>
       </form>
       <div id="adminStatus" style="font-size:13px;margin-top:10px;color:var(--green)"></div>
-
       <h3 style="margin-top:30px">Comptes existants</h3>
       <div id="adminUsersList">Chargement...</div>
     </div>
   </div>
 </main>
 
-<!-- EXAM VIEW -->
 <div id="examView">
   <div class="exam-header">
     <div><h2 id="examTitle">Test</h2><div id="examMeta" style="font-size:12px;opacity:.8"></div></div>
@@ -188,15 +180,9 @@ if(window.supabase && cfg.SUPABASE_URL) supabaseClient = window.supabase.createC
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
-// ==========================================
-// AUTH & PROFIL (Nom d'utilisateur)
-// ==========================================
 async function initAuth() {
   if (!supabaseClient) return;
-
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
-    handleSession(session);
-  });
+  supabaseClient.auth.onAuthStateChange((_event, session) => { handleSession(session); });
   const { data: { session } } = await supabaseClient.auth.getSession();
   handleSession(session);
 }
@@ -209,18 +195,12 @@ function handleSession(session) {
     $('pwdBtn').style.display = 'block';
     $('logoutBtn').style.display = 'block';
     
-    // Affichage du nom d'utilisateur (user_metadata ou partie avant @)
-    let displayName = currentUser.user_metadata?.full_name;
-    if (!displayName) {
-      displayName = currentUser.email.split('@')[0];
-    }
+    let displayName = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
     $('userLabel').textContent = "👤 " + displayName;
 
-    // Vérification Admin
     isAdmin = (currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
     $('tabAdminBtn').style.display = isAdmin ? 'block' : 'none';
     if(isAdmin) loadAdminUsers();
-
     loadCloudData();
   } else {
     currentUser = null; isAdmin = false;
@@ -232,16 +212,13 @@ function handleSession(session) {
     $('tabAdminBtn').style.display = 'none';
   }
 }
-
 initAuth();
 
 $('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = $('loginEmail').value.trim();
   const pwd = $('loginPassword').value;
-  // Si pas de @, on ajoute le domaine interne
   const emailToUse = email.includes('@') ? email : email.toLowerCase() + '@comptest.local';
-  
   const { error } = await supabaseClient.auth.signInWithPassword({ email: emailToUse, password: pwd });
   if (error) $('authError').textContent = 'Erreur : Identifiant ou mot de passe incorrect.';
   else $('authError').textContent = '';
@@ -249,7 +226,6 @@ $('loginForm').addEventListener('submit', async (e) => {
 
 $('logoutBtn').addEventListener('click', () => supabaseClient.auth.signOut());
 
-// Changement de mot de passe
 $('pwdBtn').addEventListener('click', async () => {
   const newPwd = prompt("Entrez votre nouveau mot de passe (6 caractères minimum) :");
   if (!newPwd || newPwd.length < 6) return alert("Mot de passe trop court.");
@@ -258,21 +234,13 @@ $('pwdBtn').addEventListener('click', async () => {
   else alert("✅ Mot de passe modifié avec succès !");
 });
 
-// ==========================================
-// GESTION ADMIN (Création, Liste, Suppression)
-// ==========================================
 $('adminCreateForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const name = $('newName').value.trim();
   const email = $('newEmail').value.trim();
   const pwd = $('newPassword').value;
-  
   const { data: { session } } = await supabaseClient.auth.getSession();
-  const res = await fetch('/api/admin/users', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-    body: JSON.stringify({ name, email, password: pwd })
-  });
+  const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ name, email, password: pwd }) });
   const data = await res.json();
   if (res.ok) {
     $('adminStatus').textContent = "✅ Compte créé avec succès !";
@@ -286,61 +254,36 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
 
 async function loadAdminUsers() {
   const { data: { session } } = await supabaseClient.auth.getSession();
-  const res = await fetch('/api/admin/users', {
-    headers: { 'Authorization': `Bearer ${session.access_token}` }
-  });
+  const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
   const data = await res.json();
   if (!data.users) return;
-  
-  $('adminUsersList').innerHTML = `<table class="admin-table">
-    <thead><tr><th>Nom</th><th>Email</th><th>Statut</th><th>Actions</th></tr></thead>
-    <tbody>
-      ${data.users.map(u => `
-        <tr>
-          <td><b>${esc(u.name)}</b></td>
-          <td>${esc(u.email)}</td>
-          <td>${u.banned ? '<span style="color:var(--red)">Désactivé</span>' : '<span style="color:var(--green)">Actif</span>'}</td>
-          <td>
+  $('adminUsersList').innerHTML = `<table class="admin-table"><thead><tr><th>Nom</th><th>Email</th><th>Statut</th><th>Actions</th></tr></thead><tbody>
+      ${data.users.map(u => `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.banned ? '<span style="color:var(--red)">Désactivé</span>' : '<span style="color:var(--green)">Actif</span>'}</td><td>
             <button class="secondary" onclick="resetUserPwd('${u.id}')">🔑 MDP</button>
             <button class="${u.banned ? 'secondary' : 'danger'}" onclick="toggleUserStatus('${u.id}', ${!u.banned})">${u.banned ? 'Réactiver' : 'Désactiver'}</button>
-          </td>
-        </tr>
-      `).join('')}
-    </tbody>
-  </table>`;
+          </td></tr>`).join('')}
+  </tbody></table>`;
 }
 
 window.resetUserPwd = async (id) => {
   const newPwd = prompt("Nouveau mot de passe (6 caractères min) :");
   if (!newPwd || newPwd.length < 6) return;
   const { data: { session } } = await supabaseClient.auth.getSession();
-  await fetch(`/api/admin/users/${id}/password`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-    body: JSON.stringify({ password: newPwd })
-  });
+  await fetch(`/api/admin/users/${id}/password`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ password: newPwd }) });
   alert("✅ Mot de passe réinitialisé !");
 };
 
 window.toggleUserStatus = async (id, banned) => {
   if(!confirm(banned ? "Désactiver ce compte ?" : "Réactiver ce compte ?")) return;
   const { data: { session } } = await supabaseClient.auth.getSession();
-  await fetch(`/api/admin/users/${id}/status`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-    body: JSON.stringify({ banned })
-  });
+  await fetch(`/api/admin/users/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify({ banned }) });
   loadAdminUsers();
 };
 
-// ==========================================
-// HISTORIQUE ET SAUVEGARDE
-// ==========================================
 async function loadCloudData() {
   if (!currentUser) return;
   const { data } = await supabaseClient.from('comptest_data').select('history').eq('user_id', currentUser.id).maybeSingle();
-  if (data && data.history) {
-    historyData = data.history;
-    localStorage.setItem('comptest_history', JSON.stringify(historyData));
-  }
+  if (data && data.history) { historyData = data.history; localStorage.setItem('comptest_history', JSON.stringify(historyData)); }
   renderHistory();
 }
 
@@ -348,29 +291,15 @@ async function saveHistory(entry) {
   historyData.push(entry);
   localStorage.setItem('comptest_history', JSON.stringify(historyData));
   renderHistory();
-  if (currentUser) {
-    await supabaseClient.from('comptest_data').upsert({ user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
-  }
+  if (currentUser) await supabaseClient.from('comptest_data').upsert({ user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 }
 
 function renderHistory() {
   const list = $('historyList');
-  if (historyData.length === 0) {
-    list.innerHTML = '<p style="color:var(--muted)">Aucun test terminé pour le moment.</p>';
-    return;
-  }
-  list.innerHTML = [...historyData].reverse().map(h => `
-    <div class="history-item">
-      <div>
-        <div style="font-weight:700">${esc(h.title)}</div>
-        <div style="font-size:12px;color:var(--muted)">${new Date(h.date).toLocaleString('fr-FR')}</div>
-      </div>
-      <div style="font-size:20px;font-weight:800;color:var(--green)">${h.score.toFixed(1)}/20</div>
-    </div>
-  `).join('');
+  if (historyData.length === 0) { list.innerHTML = '<p style="color:var(--muted)">Aucun test terminé.</p>'; return; }
+  list.innerHTML = [...historyData].reverse().map(h => `<div class="history-item"><div><div style="font-weight:700">${esc(h.title)}</div><div style="font-size:12px;color:var(--muted)">${new Date(h.date).toLocaleString('fr-FR')}</div></div><div style="font-size:20px;font-weight:800;color:var(--green)">${h.score.toFixed(1)}/20</div></div>`).join('');
 }
 
-// TABS
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -380,123 +309,77 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-// ==========================================
-// IMPORT ET IA (Inchangé)
-// ==========================================
 $('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
     $('fileName').textContent = this.files[0].name;
-    const status=$('pdfStatus');
-    status.textContent='Extraction...';
+    const status=$('pdfStatus'); status.textContent='Extraction...';
     try {
-      let text = '';
-      const file = this.files[0];
-      const name = file.name.toLowerCase();
+      let text = ''; const file = this.files[0]; const name = file.name.toLowerCase();
       if(name.endsWith('.pdf')){
         const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-        let pages=[];
-        for(let p=1;p<=pdf.numPages;p++){
-          const page=await pdf.getPage(p);
-          const content=await page.getTextContent();
-          pages.push(content.items.map(i=>i.str).join(' '));
-        }
+        let pages=[]; for(let p=1;p<=pdf.numPages;p++){ const page=await pdf.getPage(p); const content=await page.getTextContent(); pages.push(content.items.map(i=>i.str).join(' ')); }
         text=pages.join('\n');
       } else if(name.endsWith('.docx')){
-        const zip=await JSZip.loadAsync(await file.arrayBuffer());
-        const docXml=zip.file('word/document.xml');
-        const xml=await docXml.async('string');
+        const zip=await JSZip.loadAsync(await file.arrayBuffer()); const docXml=zip.file('word/document.xml'); const xml=await docXml.async('string');
         text = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-      } else {
-        text=await file.text();
-      }
+      } else { text=await file.text(); }
       $('pdfText').value = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
-      $('textAreaWrap').classList.remove('hide');
-      $('actionButtons').style.display = 'flex';
-      status.textContent = `✅ ${text.length} caractères.`;
+      $('textAreaWrap').classList.remove('hide'); $('actionButtons').style.display = 'flex'; status.textContent = `✅ ${text.length} caractères.`;
     } catch(e) { status.textContent = 'Erreur : ' + e.message; }
   }
 });
 
 async function fetchWithAuth(url, body) {
   const { data: { session } } = await supabaseClient.auth.getSession();
-  const res = await fetch(url, {
-    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-    body: JSON.stringify(body)
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-  return data;
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` }, body: JSON.stringify(body) });
+  const data = await res.json(); if (!res.ok) throw new Error(data.error || 'Erreur serveur'); return data;
 }
 
 $('generatePostTestBtn').addEventListener('click', async () => {
-  const text = $('pdfText').value.trim();
-  if(!text) return;
-  const btn = $('generatePostTestBtn');
-  btn.innerHTML = '⏳ Génération...';
-  btn.disabled = true;
+  const text = $('pdfText').value.trim(); if(!text) return;
+  const btn = $('generatePostTestBtn'); btn.innerHTML = '⏳ Génération...'; btn.disabled = true;
   try {
     const data = await fetchWithAuth('/api/generate-post-test', { text });
     if(data.questions && data.questions.length > 0) {
-      $('analysisStatus').className = 'notice ok';
-      $('analysisStatus').textContent = `✅ ${data.questions.length} questions générées !`;
+      $('analysisStatus').className = 'notice ok'; $('analysisStatus').textContent = `✅ ${data.questions.length} questions générées !`;
       startExam({ title: 'Post-Test IA', questions: data.questions });
     }
-  } catch (err) {
-    $('analysisStatus').className = 'notice err';
-    $('analysisStatus').textContent = '❌ ' + err.message;
-  } finally { btn.innerHTML = '✨ GÉNÉRER 50 QUESTIONS (IA)'; btn.disabled = false; }
+  } catch (err) { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ ' + err.message; }
+  finally { btn.innerHTML = '✨ GÉNÉRER 50 QUESTIONS (IA)'; btn.disabled = false; }
 });
 
 $('extractTestBtn').addEventListener('click', async () => {
-  const text = $('pdfText').value;
-  if(!text) return;
+  const text = $('pdfText').value; if(!text) return;
   try {
     const data = await fetchWithAuth('/api/parse-existing-quiz', { text });
     if(data.questions && data.questions.length > 0) {
-      $('analysisStatus').className = 'notice ok';
-      $('analysisStatus').textContent = `✅ ${data.questions.length} questions extraites !`;
+      $('analysisStatus').className = 'notice ok'; $('analysisStatus').textContent = `✅ ${data.questions.length} questions extraites !`;
       startExam({ title: 'Questionnaire importé', questions: data.questions });
     }
-  } catch (err) {
-    $('analysisStatus').className = 'notice err';
-    $('analysisStatus').textContent = '❌ ' + err.message;
-  }
+  } catch (err) { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ ' + err.message; }
 });
 
-// ==========================================
-// MOTEUR DU TEST
-// ==========================================
 function startExam(quiz) {
   examState = { title: quiz.title, questions: quiz.questions, answers: new Array(quiz.questions.length).fill(null), currentIndex: 0, submitted: false };
-  $('examTitle').textContent = quiz.title;
-  $('examMeta').textContent = `${quiz.questions.length} questions`;
-  $('examView').style.display = 'block';
-  document.body.style.overflow = 'hidden';
-  renderExamQuestion();
+  $('examTitle').textContent = quiz.title; $('examMeta').textContent = `${quiz.questions.length} questions`;
+  $('examView').style.display = 'block'; document.body.style.overflow = 'hidden'; renderExamQuestion();
 }
 
 $('examQuitBtn').addEventListener('click', () => {
   if(!examState.submitted && !confirm('Quitter ? Les réponses seront perdues.')) return;
-  $('examView').style.display = 'none';
-  document.body.style.overflow = 'auto';
-  examState = null;
+  $('examView').style.display = 'none'; document.body.style.overflow = 'auto'; examState = null;
 });
 
 function renderExamQuestion() {
-  const i = examState.currentIndex;
-  const q = examState.questions[i];
-  const ua = examState.answers[i];
-  const total = examState.questions.length;
+  const i = examState.currentIndex; const q = examState.questions[i]; const ua = examState.answers[i]; const total = examState.questions.length;
 
   $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
   $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
-  if (i === total - 1) {
-    $('examNextBtn').style.display = 'none'; $('examSubmitBtn').style.display = 'block';
-  } else {
-    $('examNextBtn').style.display = 'block'; $('examSubmitBtn').style.display = 'none';
-  }
+  if (i === total - 1) { $('examNextBtn').style.display = 'none'; $('examSubmitBtn').style.display = 'block'; }
+  else { $('examNextBtn').style.display = 'block'; $('examSubmitBtn').style.display = 'none'; }
 
   let html = `<div class="exam-card"><span class="exam-q-num">Q${i + 1}</span><h3>${esc(q.text)}</h3>`;
+    
   if(q.options && q.options.length > 0) {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
@@ -539,11 +422,7 @@ function renderExamQuestion() {
 function checkAnswer(q, ua) {
   if (ua === null || ua === undefined) return false;
   if (q.type === 'mcq' || q.type === 'tf') return ua === q.correct;
-  if (q.type === 'mcq_multi') {
-     if(!Array.isArray(ua)) return false;
-     const a = [...ua].sort(); const b = [...q.correct].sort();
-     return a.length === b.length && a.every((v,i) => v === b[i]);
-  }
+  if (q.type === 'mcq_multi') { if(!Array.isArray(ua)) return false; const a = [...ua].sort(); const b = [...q.correct].sort(); return a.length === b.length && a.every((v,i) => v === b[i]); }
   if (q.type === 'short') return String(ua).toLowerCase().trim() === String(q.correct).toLowerCase().trim();
   return false;
 }
@@ -556,12 +435,10 @@ $('examSubmitBtn').addEventListener('click', async () => {
   if(!confirm('Soumettre le test et voir la correction ?')) return;
   examState.submitted = true;
   $('examNextBtn').style.display = 'none'; $('examPrevBtn').style.display = 'none'; $('examSubmitBtn').style.display = 'none';
-  
   let correctCount = 0;
   examState.questions.forEach((q, i) => { if(checkAnswer(q, examState.answers[i])) correctCount++; });
   const score = (correctCount / examState.questions.length * 20);
   $('examProgressText').innerHTML = `<b style="color:var(--green);font-size:16px">Note : ${score.toFixed(1)}/20</b>`;
-  
   await saveHistory({ title: examState.title, date: new Date().toISOString(), score: score });
   examState.currentIndex = 0;
   renderExamQuestion();
