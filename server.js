@@ -159,14 +159,21 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
 });
 
 // ==========================================
-// IA & EXTRACTION
+// IA
 // ==========================================
 function aiClient() {
   if (!process.env.AI_API_KEY) return null;
-  return new OpenAI({ apiKey: process.env.AI_API_KEY, baseURL: process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1', timeout: 120000 });
+  return new OpenAI({
+    apiKey: process.env.AI_API_KEY,
+    baseURL: process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1',
+    timeout: 120000
+  });
 }
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
+// ==========================================
+// ALGORITHME D'EXTRACTION STRICTE
+// ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
   let text = rawText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ').replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n').replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, ' ').replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/[ \t]+/g, ' ');
@@ -305,6 +312,9 @@ function fallbackParse(rawText) {
   return questions;
 }
 
+// ==========================================
+// ROUTES QUIZ
+// ==========================================
 app.post('/api/parse-existing-quiz', (req, res) => {
   try {
     const questions = parseQuizText(req.body?.text || '');
@@ -317,15 +327,28 @@ app.post('/api/generate-post-test', async (req, res) => {
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
   const { text, count = 50 } = req.body;
   try {
+    // ✅ CORRECTION ICI : Ajout du mot "JSON" dans le prompt pour Groq
     const response = await client.chat.completions.create({
-      model: modelName(), temperature: 0.4, max_tokens: 8000, response_format: { type: 'json_object' },
+      model: modelName(),
+      temperature: 0.4,
+      max_tokens: 8000,
+      response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: `Génère ${count} questions en FRANÇAIS (QCM, V/F). Format strict: {"questions":[{"type":"mcq","text":"...","options":["A","B"],"correct":0,"explanation":"..."}]}` },
-        { role: 'user', content: String(text || '').slice(0, 15000) }
+        { 
+          role: 'system', 
+          content: `Tu es un générateur de quiz. Génère ${count} questions en FRANÇAIS (QCM et Vrai/Faux) à partir du texte fourni. Tu DOIS répondre UNIQUEMENT en format JSON valide. Le format JSON attendu est : {"questions":[{"type":"mcq","text":"...","options":["A","B"],"correct":0,"explanation":"..."}]}` 
+        },
+        { 
+          role: 'user', 
+          content: String(text || '').slice(0, 15000) 
+        }
       ]
     });
     res.json(JSON.parse(response.choices[0].message.content));
-  } catch (e) { res.status(502).json({ error: e.message }); }
+  } catch (e) {
+    console.error('Erreur API IA :', e.message);
+    res.status(502).json({ error: e.message });
+  }
 });
 
 app.listen(port, '0.0.0.0', () => console.log(`Serveur sur port ${port}`));
