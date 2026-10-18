@@ -5,7 +5,7 @@
 <title>CompoTest — Générateur de Post-Test</title>
 <link rel="icon" type="image/png" href="/favicon.png" />
 <style>
-:root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c}
+:root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c;--red:#e11d48}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
 header{background:linear-gradient(120deg,#132344,#2457d6);color:white;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
 .brand{font-size:22px;font-weight:800}.brand span{color:#8fe4c0}
@@ -25,26 +25,28 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .notice.err{background:#fff0f0;color:#a51f2a;border-color:#ef4444}
 .notice.ok{background:#e9f8f1;color:#0e5e3f;border-color:#10b981}
 
-/* MODAL POST-TEST */
+/* ===========================
+   CSS DU TEST (CORRIGÉ)
+   =========================== */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:80px}
-.exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center}
+.exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
 .exam-header h2{margin:0;font-size:18px}
 .exam-body{max-width:800px;margin:25px auto;padding:0 20px}
-.exam-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.02)}
-.exam-card h3{font-size:16px;margin-top:0;margin-bottom:15px;line-height:1.4}
-.exam-q-num{display:inline-block;background:var(--blue);color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:99px;margin-bottom:10px}
+.exam-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:25px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.02)}
+.exam-card h3{font-size:17px;margin-top:0;margin-bottom:20px;line-height:1.5;color:#1e293b;text-align:left}
+.exam-q-num{display:inline-block;background:var(--blue);color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:99px;margin-bottom:12px}
 .exam-options{display:flex;flex-direction:column;gap:10px}
-.exam-opt{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;transition:.1s}
+.exam-opt{display:flex;align-items:flex-start;gap:12px;padding:14px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;transition:.1s;text-align:left}
 .exam-opt:hover{background:#f8faff;border-color:#a9bce7}
 .exam-opt.selected{border-color:var(--blue);background:#edf2ff}
-.exam-opt.correct{border-color:#16865c;background:#e9f8f1}
-.exam-opt.wrong{border-color:#e11d48;background:#fff1f2}
-.exam-opt input{margin-top:3px;cursor:pointer}
-.exam-input{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px}
+.exam-opt.correct{border-color:var(--green);background:#e9f8f1}
+.exam-opt.wrong{border-color:var(--red);background:#fff1f2}
+.exam-opt input{margin-top:4px;cursor:pointer;flex-shrink:0}
+.exam-input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:10px;text-align:left}
 .exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10}
-.exam-result-box{background:#e9f8f1;padding:15px;border-radius:10px;margin-top:15px;border-left:4px solid #10b981;font-size:14px}
-.exam-result-box.wrong{background:#fff1f2;border-color:#e11d48}
-.exam-explain{font-size:13px;color:#475569;margin-top:10px;padding:10px;background:#f8faff;border-radius:8px}
+.exam-result-box{background:#e9f8f1;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
+.exam-result-box.wrong{background:#fff1f2;border-color:var(--red)}
+.exam-explain{font-size:13px;color:#475569;margin-top:12px;padding:12px;background:#f8faff;border-radius:8px;border-left:2px solid var(--blue)}
 @media(max-width:600px){ .grid-2{grid-template-columns:1fr} .exam-body{padding:0 12px} }
 </style>
 </head><body>
@@ -90,7 +92,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
       
       <button id="extractTestBtn" class="secondary" style="flex:1;max-width:300px;text-align:left;padding:15px;">
         <div style="font-size:16px;font-weight:800;margin-bottom:4px">📋 EXTRAIRE UN QUESTIONNAIRE</div>
-        <div style="font-size:11px;font-weight:normal;opacity:0.9">Si le document contient déjà des questions (Q1, A, B...).</div>
+        <div style="font-size:11px;font-weight:normal;opacity:0.9">Si le document contient déjà des questions.</div>
       </button>
     </div>
 
@@ -114,7 +116,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
     <div style="display:flex;gap:10px">
       <button id="examPrevBtn" class="secondary">Précédent</button>
       <button id="examNextBtn">Suivant →</button>
-      <button id="examSubmitBtn" class="success hide">✓ Valider mes réponses</button>
+      <button id="examSubmitBtn" class="success hide">✓ Soumettre le test</button>
     </div>
   </div>
 </div>
@@ -138,7 +140,7 @@ if(window.supabase && cfg.SUPABASE_URL) {
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 // ==========================================
-// IMPORTATION ET EXTRACTION DU TEXTE
+// IMPORTATION DU FICHIER
 // ==========================================
 $('pdfFile').addEventListener('change', function() {
   if(this.files.length > 0) {
@@ -160,12 +162,9 @@ async function extractText(file){
       for(let p=1;p<=pdf.numPages;p++){
         const page=await pdf.getPage(p);
         const content=await page.getTextContent();
-        // On joint avec des espaces, et on force des sauts de ligne pour les questions
-        let pageText = content.items.map(i=>i.str).join(' ');
-        pageText = pageText.replace(/(\d+[\.\)])\s/g, '\n$1 '); // Sépare les questions
-        pages.push(pageText);
+        pages.push(content.items.map(i=>i.str).join(' '));
       }
-      text=pages.join('\n\n');
+      text=pages.join('\n');
     } else if(name.endsWith('.docx')){
       const zip=await JSZip.loadAsync(await file.arrayBuffer());
       const docXml=zip.file('word/document.xml');
@@ -193,7 +192,7 @@ async function extractText(file){
 async function fetchWithAuth(url, body) {
   if (!supabaseClient) throw new Error("Supabase non initialisé.");
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) throw new Error("Connectez-vous d'abord (bouton en haut).");
+  if (!session) throw new Error("Connectez-vous d'abord.");
   
   const res = await fetch(url, {
     method: 'POST',
@@ -210,7 +209,7 @@ async function fetchWithAuth(url, body) {
 }
 
 // ==========================================
-// BOUTON 1 : GÉNÉRER UN POST-TEST
+// BOUTON 1 : GÉNÉRER (IA)
 // ==========================================
 $('generatePostTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value.trim();
@@ -230,7 +229,7 @@ $('generatePostTestBtn').addEventListener('click', async () => {
       subject: $('quizSubject').value.trim() || 'Cours',
       title: $('quizTitle').value.trim() || 'Post-Test',
       sourceText: text,
-      count: 10
+      count: 20 // Génère 20 questions
     });
     
     if(data.questions && data.questions.length > 0) {
@@ -250,7 +249,7 @@ $('generatePostTestBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
-// BOUTON 2 : EXTRAIRE UN QUESTIONNAIRE
+// BOUTON 2 : EXTRAIRE
 // ==========================================
 $('extractTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value;
@@ -274,7 +273,7 @@ $('extractTestBtn').addEventListener('click', async () => {
       startExam({ title: 'Questionnaire importé', subject: 'Import', questions: data.questions });
     } else {
       status.className = 'notice err';
-      status.textContent = '❌ Aucune question trouvée. Vérifiez que le texte contient "1. ", "A. ", etc.';
+      status.textContent = '❌ Aucune question trouvée dans le texte.';
     }
   } catch (err) {
     status.className = 'notice err';
@@ -286,7 +285,7 @@ $('extractTestBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
-// MOTEUR POST-TEST
+// MOTEUR POST-TEST (L'INTERFACE)
 // ==========================================
 function startExam(quiz) {
   examState = { 
@@ -321,32 +320,33 @@ function renderExamQuestion() {
   $('examNextBtn').style.display = i < total - 1 ? 'block' : 'none';
   $('examSubmitBtn').style.display = i === total - 1 ? 'block' : 'none';
 
-  let html = `<div class="exam-card"><span class="exam-q-num">Q${i + 1}</span><h3>${esc(q.text)}</h3>`;
+  let html = `<div class="exam-card">
+    <span class="exam-q-num">Q${i + 1}</span>
+    <h3>${esc(q.text)}</h3>`;
     
-  if(q.type === 'mcq' || q.type === 'mcq_multi') {
+  if(q.type === 'mcq' || q.type === 'mcq_multi' || (q.options && q.options.length > 0)) {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
-      const isSelected = q.type === 'mcq_multi' ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
+      // Si c'est du QCM multi, on utilise des checkboxes, sinon radio
+      const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
+      const isSelected = isMulti ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
+      
       let cls = 'exam-opt' + (isSelected ? ' selected' : '');
+      
       if(examState.submitted) {
-        const isCorrect = q.type === 'mcq_multi' ? q.correct.includes(j) : q.correct === j;
-        if(isCorrect) cls += ' correct'; else if(isSelected && !isCorrect) cls += ' wrong';
+        const isCorrect = isMulti ? q.correct.includes(j) : q.correct === j;
+        if(isCorrect) cls += ' correct'; 
+        else if(isSelected && !isCorrect) cls += ' wrong';
       }
-      html += `<label class="${cls}"><input type="${q.type === 'mcq_multi' ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}><span>${esc(opt)}</span></label>`;
-    });
-    html += `</div>`;
-  } else if (q.type === 'tf') {
-    html += `<div class="exam-options">`;
-    [true, false].forEach(v => {
-      const isSelected = ua === v;
-      let cls = 'exam-opt' + (isSelected ? ' selected' : '');
-      if(examState.submitted) {
-        if(q.correct === v) cls += ' correct'; else if(isSelected && q.correct !== v) cls += ' wrong';
-      }
-      html += `<label class="${cls}"><input type="radio" name="q${i}" value="${v}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}><span>${v ? 'Vrai' : 'Faux'}</span></label>`;
+      
+      html += `<label class="${cls}">
+        <input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}>
+        <span>${esc(opt)}</span>
+      </label>`;
     });
     html += `</div>`;
   } else {
+    // Texte libre
     html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${examState.submitted ? 'disabled' : ''} placeholder="Votre réponse...">`;
   }
 
@@ -355,7 +355,12 @@ function renderExamQuestion() {
     let correctStr = "";
     if (q.type === 'mcq' && q.options) correctStr = q.options[q.correct];
     if (q.type === 'tf') correctStr = q.correct ? 'Vrai' : 'Faux';
-    html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}"><b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}</div>`;
+    
+    html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}">
+      <b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>
+      ${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}
+      ${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}
+    </div>`;
   }
 
   html += `</div>`;
@@ -364,12 +369,12 @@ function renderExamQuestion() {
   if(!examState.submitted) {
     document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
       inp.addEventListener('change', () => {
-        if(q.type === 'tf') examState.answers[i] = inp.value === 'true';
-        else if(q.type === 'mcq_multi') {
-           let vals = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
-           examState.answers[i] = vals;
+        const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
+        if(isMulti) {
+          examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
+        } else {
+          examState.answers[i] = parseInt(inp.value);
         }
-        else examState.answers[i] = parseInt(inp.value);
       });
     });
     const textInp = $('textInput');
@@ -393,14 +398,13 @@ function checkAnswer(q, ua) {
 $('examNextBtn').addEventListener('click', () => { if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); } });
 $('examPrevBtn').addEventListener('click', () => { if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); } });
 
-// LA CORRECTION DU BOUTON SOUMETTRE
+// BOUTON SOUMETTRE (Affiche le score final)
 $('examSubmitBtn').addEventListener('click', () => {
   if(examState.submitted) return;
   
-  // On affiche les corrections
-  examState.submitted = true;
+  if(!confirm('Voulez-vous soumettre le test et voir votre note ?')) return;
   
-  // On cache les boutons de navigation
+  examState.submitted = true;
   $('examSubmitBtn').classList.add('hide');
   $('examNextBtn').classList.add('hide');
   $('examPrevBtn').classList.add('hide');
@@ -412,9 +416,10 @@ $('examSubmitBtn').addEventListener('click', () => {
   });
   
   const score = (correctCount / examState.questions.length * 20).toFixed(1);
-  $('examProgressText').innerHTML = `<b style="color:var(--green)">Score : ${score}/20 (${correctCount}/${examState.questions.length})</b>`;
+  $('examProgressText').innerHTML = `<b style="color:var(--green);font-size:16px">Note : ${score}/20 (${correctCount}/${examState.questions.length} bonnes réponses)</b>`;
   
-  // On affiche la correction de la question en cours
+  // Affiche la correction de la première question
+  examState.currentIndex = 0;
   renderExamQuestion();
 });
 </script>
