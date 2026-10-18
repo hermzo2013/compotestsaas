@@ -8,6 +8,8 @@
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
 header{background:linear-gradient(120deg,#132344,#2457d6);color:white;padding:15px 20px;display:flex;justify-content:space-between;align-items:center}
 .brand{font-size:22px;font-weight:800}.brand span{color:#8fe4c0}
+.header-actions{display:flex;gap:10px;align-items:center;font-size:13px}
+.header-actions button{padding:6px 12px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;cursor:pointer}
 .wrap{max-width:900px;margin:30px auto;padding:0 20px}
 .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.03)}
 h1{font-size:24px;margin-top:0}
@@ -24,6 +26,15 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .notice.err{background:#fff0f0;color:#a51f2a;border-color:#ef4444}
 .notice.ok{background:#e9f8f1;color:#0e5e3f;border-color:#10b981}
 
+/* TABS */
+.tabs{display:flex;gap:5px;margin-bottom:20px;border-bottom:2px solid var(--line);padding-bottom:10px}
+.tab{padding:10px 15px;border-radius:8px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);border:0}
+.tab.active{background:#edf2ff;color:var(--blue)}
+
+/* HISTORIQUE */
+.history-item{background:#f8faff;border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.history-score{font-size:20px;font-weight:800;color:var(--green)}
+
 /* ===========================
    CSS DU TEST (CORRIGÉ AVEC !IMPORTANT)
    =========================== */
@@ -35,128 +46,111 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .exam-card h3{font-size:17px;margin-top:0;margin-bottom:20px;line-height:1.5;color:#1e293b;text-align:left}
 .exam-q-num{display:inline-block;background:var(--blue);color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:99px;margin-bottom:12px}
 
-/* LE FIX EST ICI : on force le flex et l'alignement */
 .exam-options { display: flex !important; flex-direction: column !important; gap: 12px !important; width: 100% !important; }
 .exam-opt { 
-  display: flex !important; 
-  flex-direction: row !important; 
-  align-items: flex-start !important; 
-  justify-content: flex-start !important;
-  gap: 15px !important; 
-  padding: 16px !important; 
-  border: 1.5px solid var(--line) !important; 
-  border-radius: 10px !important; 
-  cursor: pointer !important; 
-  background: #fff !important;
-  transition: .1s !important;
-  text-align: left !important;
+  display: flex !important; flex-direction: row !important; align-items: flex-start !important; justify-content: flex-start !important;
+  gap: 15px !important; padding: 16px !important; border: 1.5px solid var(--line) !important; border-radius: 10px !important; 
+  cursor: pointer !important; background: #fff !important; transition: .1s !important; text-align: left !important;
 }
 .exam-opt:hover { background: #f8faff !important; border-color: #a9bce7 !important; }
 .exam-opt.selected { border-color: var(--blue) !important; background: #edf2ff !important; }
 .exam-opt.correct { border-color: var(--green) !important; background: #e9f8f1 !important; }
 .exam-opt.wrong { border-color: var(--red) !important; background: #fff1f2 !important; }
 
-/* Le bouton radio reste petit à gauche */
-.exam-opt input[type="radio"], .exam-opt input[type="checkbox"] { 
-  margin: 2px 0 0 0 !important; 
-  padding: 0 !important;
-  width: 20px !important; 
-  height: 20px !important;
-  cursor: pointer !important; 
-  flex-shrink: 0 !important; 
-  display: inline-block !important;
-}
-/* Le texte prend toute la place à droite */
-.exam-opt span { 
-  flex: 1 !important; 
-  text-align: left !important; 
-  line-height: 1.4 !important;
-  word-wrap: break-word !important;
-  display: block !important;
-}
+.exam-opt input[type="radio"], .exam-opt input[type="checkbox"] { margin: 2px 0 0 0 !important; width: 20px !important; height: 20px !important; cursor: pointer !important; flex-shrink: 0 !important; display: inline-block !important; }
+.exam-opt span { flex: 1 !important; text-align: left !important; line-height: 1.4 !important; word-wrap: break-word !important; display: block !important; }
 
 .exam-input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:10px;text-align:left}
-
-/* BARRE D'ACTIONS EN BAS */
 .exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
 .exam-actions-left { font-size: 14px; color: var(--muted); font-weight: bold; }
 .exam-actions-right { display: flex; gap: 10px; }
-
 .exam-result-box{background:#e9f8f1;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
 .exam-result-box.wrong{background:#fff1f2;border-color:var(--red)}
 .exam-explain{font-size:13px;color:#475569;margin-top:12px;padding:12px;background:#f8faff;border-radius:8px;border-left:2px solid var(--blue)}
 
-@media(max-width:600px){ 
-  .grid-2{grid-template-columns:1fr} 
-  .exam-body{padding:0 12px} 
-  .exam-actions { flex-direction: column; gap: 10px; padding: 10px; }
-  .exam-actions-right { width: 100%; justify-content: space-between; }
-  .exam-actions-right button { flex: 1; }
-}
+@media(max-width:600px){ .grid-2{grid-template-columns:1fr} .exam-body{padding:0 12px} .exam-actions { flex-direction: column; gap: 10px; padding: 10px; } .exam-actions-right { width: 100%; justify-content: space-between; } .exam-actions-right button { flex: 1; } }
 </style>
 </head><body>
 
 <header>
   <div class="brand">Compo<span>Test</span></div>
+  <div class="header-actions">
+    <span id="userLabel">Non connecté</span>
+    <button id="authBtn" style="display:none">Se déconnecter</button>
+  </div>
 </header>
 
-<main class="wrap">
-  <div class="panel">
-    <h1 id="appTitle">📚 Importer un document</h1>
-    <p style="color:var(--muted);margin-top:-10px">Choisissez un fichier pour générer un nouveau quiz ou extraire des questions existantes.</p>
+<!-- AUTH SCREEN -->
+<section id="authGate" class="wrap" style="display:none">
+  <div class="panel" style="max-width:400px;margin:50px auto">
+    <h1 style="text-align:center">Connexion</h1>
+    <form id="loginForm">
+      <label for="loginEmail">Identifiant ou Email</label>
+      <input id="loginEmail" type="text" required>
+      <label for="loginPassword">Mot de passe</label>
+      <input id="loginPassword" type="password" required>
+      <button type="submit" style="width:100%;margin-top:15px">Se connecter</button>
+    </form>
+    <div id="authError" style="color:var(--red);font-size:13px;margin-top:10px;text-align:center"></div>
+  </div>
+</section>
 
-    <div class="grid-2">
-      <div>
-        <label for="quizTitle">Titre du test</label>
-        <input id="quizTitle" placeholder="Ex. Examen Blanc" value="">
+<main id="mainApp" class="wrap" style="display:none">
+  <div class="tabs">
+    <button class="tab active" data-tab="create">📚 Créer un test</button>
+    <button class="tab" data-tab="history">📊 Mon Historique</button>
+  </div>
+
+  <!-- TAB CREATE -->
+  <div id="tab-create" class="tab-content">
+    <div class="panel">
+      <h1 id="appTitle">Importer un document</h1>
+      <div class="grid-2">
+        <div><label for="quizTitle">Titre</label><input id="quizTitle" placeholder="Ex. Examen Blanc"></div>
+        <div><label for="quizSubject">Matière</label><input id="quizSubject" placeholder="Ex. Immunologie"></div>
       </div>
-      <div>
-        <label for="quizSubject">Matière</label>
-        <input id="quizSubject" placeholder="Ex. Immunologie">
+      <label>Fichier (PDF, DOCX, TXT)</label>
+      <div class="filebox">
+        <input id="pdfFile" type="file" accept=".pdf,.docx,.txt" style="display:none">
+        <button class="secondary" onclick="document.getElementById('pdfFile').click()">📄 Choisir un fichier</button>
+        <span id="fileName" style="margin-left:10px;font-weight:600;font-size:14px;color:var(--blue)">Aucun fichier</span>
+        <div id="pdfStatus" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
       </div>
+      <div id="textAreaWrap" class="hide" style="margin-top:20px">
+        <label for="pdfText">Texte extrait</label>
+        <textarea id="pdfText" style="min-height:150px"></textarea>
+      </div>
+      <div class="actions" id="actionButtons" style="margin-top:25px;display:none;justify-content:center;gap:20px">
+        <button id="generatePostTestBtn" class="success" style="flex:1;text-align:left;padding:15px;">
+          <div style="font-size:16px;font-weight:800">✨ GÉNÉRER 50 QUESTIONS (IA)</div>
+          <div style="font-size:11px;opacity:0.9">Créer un post-test à partir d'un cours.</div>
+        </button>
+        <button id="extractTestBtn" class="secondary" style="flex:1;text-align:left;padding:15px;">
+          <div style="font-size:16px;font-weight:800">📋 EXTRAIRE UN QUESTIONNAIRE</div>
+          <div style="font-size:11px;opacity:0.9">Si le document contient déjà des questions.</div>
+        </button>
+      </div>
+      <div id="analysisStatus" class="notice hide"></div>
     </div>
+  </div>
 
-    <label>Fichier source (PDF, Word, TXT)</label>
-    <div class="filebox">
-      <input id="pdfFile" type="file" accept=".pdf,.docx,.txt" style="display:none">
-      <button class="secondary" onclick="document.getElementById('pdfFile').click()">📄 Choisir un fichier</button>
-      <span id="fileName" style="margin-left:10px;font-weight:600;font-size:14px;color:var(--blue)">Aucun fichier sélectionné</span>
-      <div id="pdfStatus" style="font-size:12px;color:var(--muted);margin-top:10px">Formats : PDF, DOCX, TXT</div>
+  <!-- TAB HISTORY -->
+  <div id="tab-history" class="tab-content hide">
+    <div class="panel">
+      <h1>Mon Historique d'apprentissage</h1>
+      <div id="historyList"></div>
     </div>
-
-    <div id="textAreaWrap" class="hide" style="margin-top:20px">
-      <label for="pdfText">Texte extrait (vérifiez et modifiez si besoin)</label>
-      <textarea id="pdfText" style="min-height:150px" placeholder="Le texte apparaîtra ici."></textarea>
-    </div>
-
-    <div class="actions" id="actionButtons" style="margin-top:25px;display:none;justify-content:center;gap:20px">
-      <button id="generatePostTestBtn" class="success" style="flex:1;max-width:300px;text-align:left;padding:15px;">
-        <div style="font-size:16px;font-weight:800;margin-bottom:4px">✨ GÉNÉRER 50 QUESTIONS (IA)</div>
-        <div style="font-size:11px;font-weight:normal;opacity:0.9">Créer un post-test à partir d'un cours.</div>
-      </button>
-      
-      <button id="extractTestBtn" class="secondary" style="flex:1;max-width:300px;text-align:left;padding:15px;">
-        <div style="font-size:16px;font-weight:800;margin-bottom:4px">📋 EXTRAIRE UN QUESTIONNAIRE</div>
-        <div style="font-size:11px;font-weight:normal;opacity:0.9">Si le document contient déjà des questions.</div>
-      </button>
-    </div>
-
-    <div id="analysisStatus" class="notice hide"></div>
   </div>
 </main>
 
+<!-- EXAM VIEW -->
 <div id="examView">
   <div class="exam-header">
-    <div>
-      <h2 id="examTitle">Test</h2>
-      <div id="examMeta" style="font-size:12px;opacity:.8"></div>
-    </div>
+    <div><h2 id="examTitle">Test</h2><div id="examMeta" style="font-size:12px;opacity:.8"></div></div>
     <button class="ghost" id="examQuitBtn" style="background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.3)">← Quitter</button>
   </div>
-  
   <div class="exam-body" id="examBody"></div>
-
-  <div class="exam-actions" id="examActionsBar">
+  <div class="exam-actions">
     <div class="exam-actions-left" id="examProgressText">Question 1 / 50</div>
     <div class="exam-actions-right">
       <button id="examPrevBtn" class="secondary">Précédent</button>
@@ -177,6 +171,9 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
 
 let examState = null;
 let supabaseClient = null;
+let currentUser = null;
+let historyData = JSON.parse(localStorage.getItem('comptest_history') || '[]');
+
 const cfg = window.COMPOSTEST_CONFIG || {};
 if(window.supabase && cfg.SUPABASE_URL) {
   supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
@@ -184,6 +181,115 @@ if(window.supabase && cfg.SUPABASE_URL) {
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
+// ==========================================
+// AUTHENTIFICATION (Login réactivé)
+// ==========================================
+async function initAuth() {
+  if (!supabaseClient) return;
+
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    if (session) {
+      currentUser = session.user;
+      $('authGate').style.display = 'none';
+      $('mainApp').style.display = 'block';
+      $('userLabel').textContent = session.user.email;
+      $('authBtn').style.display = 'block';
+      loadCloudData();
+    } else {
+      currentUser = null;
+      $('authGate').style.display = 'block';
+      $('mainApp').style.display = 'none';
+      $('userLabel').textContent = 'Non connecté';
+      $('authBtn').style.display = 'none';
+    }
+  });
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(session) {
+    currentUser = session.user;
+    $('authGate').style.display = 'none';
+    $('mainApp').style.display = 'block';
+    $('userLabel').textContent = session.user.email;
+    $('authBtn').style.display = 'block';
+    loadCloudData();
+  } else {
+    $('authGate').style.display = 'block';
+  }
+}
+initAuth();
+
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('loginEmail').value.trim();
+  const pwd = $('loginPassword').value;
+  const emailToUse = email.includes('@') ? email : email.toLowerCase() + '@comptest.local';
+  
+  const { error } = await supabaseClient.auth.signInWithPassword({ email: emailToUse, password: pwd });
+  if (error) $('authError').textContent = 'Erreur : ' + error.message;
+  else $('authError').textContent = '';
+});
+
+$('authBtn').addEventListener('click', () => supabaseClient.auth.signOut());
+
+// ==========================================
+// HISTORIQUE ET SAUVEGARDE
+// ==========================================
+async function loadCloudData() {
+  if (!currentUser) return;
+  const { data, error } = await supabaseClient.from('comptest_data').select('history').eq('user_id', currentUser.id).maybeSingle();
+  if (data && data.history) {
+    historyData = data.history;
+    localStorage.setItem('comptest_history', JSON.stringify(historyData));
+  }
+  renderHistory();
+}
+
+async function saveHistory(entry) {
+  historyData.push(entry);
+  localStorage.setItem('comptest_history', JSON.stringify(historyData));
+  renderHistory();
+
+  if (currentUser) {
+    const { error } = await supabaseClient.from('comptest_data').upsert({
+      user_id: currentUser.id,
+      history: historyData,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+    if (error) console.error("Erreur sauvegarde cloud:", error);
+  }
+}
+
+function renderHistory() {
+  const list = $('historyList');
+  if (historyData.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted)">Aucun test terminé pour le moment.</p>';
+    return;
+  }
+  
+  list.innerHTML = [...historyData].reverse().map(h => `
+    <div class="history-item">
+      <div>
+        <div style="font-weight:700">${esc(h.title)}</div>
+        <div style="font-size:12px;color:var(--muted)">${new Date(h.date).toLocaleString('fr-FR')}</div>
+      </div>
+      <div class="history-score">${h.score.toFixed(1)}/20</div>
+    </div>
+  `).join('');
+}
+
+// TABS
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hide'));
+    tab.classList.add('active');
+    $('tab-' + tab.dataset.tab).classList.remove('hide');
+  });
+});
+
+// ==========================================
+// LOGIQUE D'IMPORT ET D'EXTRACTION
+// ==========================================
 $('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
     $('fileName').textContent = this.files[0].name;
@@ -241,7 +347,7 @@ $('generatePostTestBtn').addEventListener('click', async () => {
   if(!text) return;
   
   const btn = $('generatePostTestBtn');
-  btn.innerHTML = '⏳ Génération (50 Q)...';
+  btn.innerHTML = '⏳ Génération...';
   btn.disabled = true;
   $('analysisStatus').className = 'notice';
   $('analysisStatus').textContent = 'L\'IA analyse et génère 50 questions...';
@@ -290,6 +396,9 @@ $('extractTestBtn').addEventListener('click', async () => {
   }
 });
 
+// ==========================================
+// MOTEUR DU TEST
+// ==========================================
 function startExam(quiz) {
   examState = { title: quiz.title, questions: quiz.questions, answers: new Array(quiz.questions.length).fill(null), currentIndex: 0, submitted: false };
   $('examTitle').textContent = quiz.title;
@@ -313,8 +422,6 @@ function renderExamQuestion() {
   const total = examState.questions.length;
 
   $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
-  
-  // Gestion de l'affichage des boutons
   $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
   
   if (i === total - 1) {
@@ -339,10 +446,7 @@ function renderExamQuestion() {
         if(isCorrect) cls += ' correct'; else if(isSelected && !isCorrect) cls += ' wrong';
       }
       
-      html += `<label class="${cls}">
-        <input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}>
-        <span>${esc(opt)}</span>
-      </label>`;
+      html += `<label class="${cls}"><input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}><span>${esc(opt)}</span></label>`;
     });
     html += `</div>`;
   } else {
@@ -383,21 +487,11 @@ function checkAnswer(q, ua) {
   return false;
 }
 
-$('examNextBtn').addEventListener('click', () => { 
-  if(examState.currentIndex < examState.questions.length - 1) { 
-    examState.currentIndex++; 
-    renderExamQuestion(); 
-  } 
-});
+$('examNextBtn').addEventListener('click', () => { if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); } });
+$('examPrevBtn').addEventListener('click', () => { if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); } });
 
-$('examPrevBtn').addEventListener('click', () => { 
-  if(examState.currentIndex > 0) { 
-    examState.currentIndex--; 
-    renderExamQuestion(); 
-  } 
-});
-
-$('examSubmitBtn').addEventListener('click', () => {
+// SOUMISSION ET SAUVEGARDE DE LA NOTE
+$('examSubmitBtn').addEventListener('click', async () => {
   if(examState.submitted) return;
   if(!confirm('Soumettre le test et voir la correction ?')) return;
   
@@ -412,8 +506,15 @@ $('examSubmitBtn').addEventListener('click', () => {
     if(checkAnswer(q, examState.answers[i])) correctCount++;
   });
   
-  const score = (correctCount / examState.questions.length * 20).toFixed(1);
-  $('examProgressText').innerHTML = `<b style="color:var(--green);font-size:16px">Note : ${score}/20 (${correctCount}/${examState.questions.length})</b>`;
+  const score = (correctCount / examState.questions.length * 20);
+  $('examProgressText').innerHTML = `<b style="color:var(--green);font-size:16px">Note : ${score.toFixed(1)}/20 (${correctCount}/${examState.questions.length})</b>`;
+  
+  // SAUVEGARDE DANS L'HISTORIQUE
+  await saveHistory({
+    title: examState.title || 'Test sans nom',
+    date: new Date().toISOString(),
+    score: score
+  });
   
   examState.currentIndex = 0;
   renderExamQuestion();
