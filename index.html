@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CompoTest — Générateur de Post-Test</title>
-<link rel="icon" type="image/png" href="/favicon.png" />
 <style>
 :root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c;--red:#e11d48}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
@@ -26,7 +25,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .notice.ok{background:#e9f8f1;color:#0e5e3f;border-color:#10b981}
 
 /* ===========================
-   CSS DU TEST (CORRIGÉ)
+   CSS DU TEST (CORRIGÉ POUR LE TEXTE ET ALIGNEMENT)
    =========================== */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:80px}
 .exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
@@ -35,13 +34,17 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .exam-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:25px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.02)}
 .exam-card h3{font-size:17px;margin-top:0;margin-bottom:20px;line-height:1.5;color:#1e293b;text-align:left}
 .exam-q-num{display:inline-block;background:var(--blue);color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:99px;margin-bottom:12px}
-.exam-options{display:flex;flex-direction:column;gap:10px}
-.exam-opt{display:flex;align-items:flex-start;gap:12px;padding:14px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;transition:.1s;text-align:left}
+
+/* C'EST ICI QUE LE BUG ETAIT : on force text-align:left et on aligne le flex */
+.exam-options{display:flex;flex-direction:column;gap:10px; text-align:left;}
+.exam-opt{display:flex; align-items:flex-start; gap:12px; padding:14px; border:1.5px solid var(--line); border-radius:10px; cursor:pointer; transition:.1s; text-align:left; background:#fff;}
 .exam-opt:hover{background:#f8faff;border-color:#a9bce7}
 .exam-opt.selected{border-color:var(--blue);background:#edf2ff}
 .exam-opt.correct{border-color:var(--green);background:#e9f8f1}
 .exam-opt.wrong{border-color:var(--red);background:#fff1f2}
 .exam-opt input{margin-top:4px;cursor:pointer;flex-shrink:0}
+.exam-opt span{flex:1; text-align:left;}
+
 .exam-input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:10px;text-align:left}
 .exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10}
 .exam-result-box{background:#e9f8f1;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
@@ -81,13 +84,13 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 
     <div id="textAreaWrap" class="hide" style="margin-top:20px">
       <label for="pdfText">Texte extrait (vérifiez et modifiez si besoin)</label>
-      <textarea id="pdfText" style="min-height:150px" placeholder="Le texte apparaîtra ici après extraction."></textarea>
+      <textarea id="pdfText" style="min-height:150px" placeholder="Le texte apparaîtra ici."></textarea>
     </div>
 
     <div class="actions" id="actionButtons" style="margin-top:25px;display:none;justify-content:center;gap:20px">
       <button id="generatePostTestBtn" class="success" style="flex:1;max-width:300px;text-align:left;padding:15px;">
-        <div style="font-size:16px;font-weight:800;margin-bottom:4px">✨ GÉNÉRER UN POST-TEST</div>
-        <div style="font-size:11px;font-weight:normal;opacity:0.9">Si le document est un cours (texte sans questions).</div>
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">✨ GÉNÉRER 50 QUESTIONS (IA)</div>
+        <div style="font-size:11px;font-weight:normal;opacity:0.9">Créer un post-test à partir d'un cours.</div>
       </button>
       
       <button id="extractTestBtn" class="secondary" style="flex:1;max-width:300px;text-align:left;padding:15px;">
@@ -112,11 +115,12 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
   <div class="exam-body" id="examBody"></div>
 
   <div class="exam-actions" id="examActionsBar">
-    <div style="font-size:14px;color:var(--muted)" id="examProgressText">Question 1 / 10</div>
+    <div style="font-size:14px;color:var(--muted)" id="examProgressText">Question 1 / 50</div>
     <div style="display:flex;gap:10px">
       <button id="examPrevBtn" class="secondary">Précédent</button>
       <button id="examNextBtn">Suivant →</button>
-      <button id="examSubmitBtn" class="success hide">✓ Soumettre le test</button>
+      <!-- LE BOUTON SOUMETTRE EST TOUJOURS LA -->
+      <button id="examSubmitBtn" class="success">✓ SOUMETTRE LA COMPO</button>
     </div>
   </div>
 </div>
@@ -139,56 +143,42 @@ if(window.supabase && cfg.SUPABASE_URL) {
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
-// ==========================================
-// IMPORTATION DU FICHIER
-// ==========================================
-$('pdfFile').addEventListener('change', function() {
+$('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
     $('fileName').textContent = this.files[0].name;
-    extractText(this.files[0]);
+    const status=$('pdfStatus');
+    status.textContent='Extraction...';
+    try {
+      let text = '';
+      const file = this.files[0];
+      const name = file.name.toLowerCase();
+      if(name.endsWith('.pdf')){
+        const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+        let pages=[];
+        for(let p=1;p<=pdf.numPages;p++){
+          const page=await pdf.getPage(p);
+          const content=await page.getTextContent();
+          pages.push(content.items.map(i=>i.str).join(' '));
+        }
+        text=pages.join('\n');
+      } else if(name.endsWith('.docx')){
+        const zip=await JSZip.loadAsync(await file.arrayBuffer());
+        const docXml=zip.file('word/document.xml');
+        const xml=await docXml.async('string');
+        text = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+      } else {
+        text=await file.text();
+      }
+      $('pdfText').value = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
+      $('textAreaWrap').classList.remove('hide');
+      $('actionButtons').style.display = 'flex';
+      status.textContent = `✅ ${text.length} caractères.`;
+    } catch(e) {
+      status.textContent = 'Erreur : ' + e.message;
+    }
   }
 });
 
-async function extractText(file){
-  const status=$('pdfStatus');
-  status.textContent='Extraction en cours...';
-  const name=file.name.toLowerCase();
-  
-  try{
-    let text='';
-    if(name.endsWith('.pdf')){
-      const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-      let pages=[];
-      for(let p=1;p<=pdf.numPages;p++){
-        const page=await pdf.getPage(p);
-        const content=await page.getTextContent();
-        pages.push(content.items.map(i=>i.str).join(' '));
-      }
-      text=pages.join('\n');
-    } else if(name.endsWith('.docx')){
-      const zip=await JSZip.loadAsync(await file.arrayBuffer());
-      const docXml=zip.file('word/document.xml');
-      const xml=await docXml.async('string');
-      text = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-    } else if(name.endsWith('.txt')){
-      text=await file.text();
-    }
-    
-    text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
-    $('pdfText').value = text;
-    $('textAreaWrap').classList.remove('hide');
-    $('actionButtons').style.display = 'flex';
-    status.textContent = `✅ ${text.length} caractères extraits.`;
-    status.style.color = 'var(--green)';
-  } catch(e) {
-    status.textContent = 'Erreur : ' + e.message;
-    status.style.color = 'red';
-  }
-}
-
-// ==========================================
-// APPELS API
-// ==========================================
 async function fetchWithAuth(url, body) {
   if (!supabaseClient) throw new Error("Supabase non initialisé.");
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -196,10 +186,7 @@ async function fetchWithAuth(url, body) {
   
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}` 
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
     body: JSON.stringify(body)
   });
   
@@ -208,93 +195,62 @@ async function fetchWithAuth(url, body) {
   return data;
 }
 
-// ==========================================
-// BOUTON 1 : GÉNÉRER (IA)
-// ==========================================
 $('generatePostTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value.trim();
   if(!text) return;
   
   const btn = $('generatePostTestBtn');
-  const originalHTML = btn.innerHTML;
-  btn.innerHTML = '⏳ Génération en cours...';
+  btn.innerHTML = '⏳ Génération (50 Q)...';
   btn.disabled = true;
-  
-  const status = $('analysisStatus');
-  status.className = 'notice';
-  status.textContent = 'L\'IA analyse le cours...';
+  $('analysisStatus').className = 'notice';
+  $('analysisStatus').textContent = 'L\'IA analyse et génère 50 questions...';
   
   try {
     const data = await fetchWithAuth('/api/generate-post-test', {
       subject: $('quizSubject').value.trim() || 'Cours',
       title: $('quizTitle').value.trim() || 'Post-Test',
-      sourceText: text,
-      count: 20 // Génère 20 questions
+      sourceText: text
     });
     
     if(data.questions && data.questions.length > 0) {
-      status.className = 'notice ok';
-      status.textContent = `✅ ${data.questions.length} questions générées !`;
-      startExam({ title: 'Post-Test IA', subject: 'Généré', questions: data.questions });
-    } else {
-      throw new Error("Aucune question générée.");
+      $('analysisStatus').className = 'notice ok';
+      $('analysisStatus').textContent = `✅ ${data.questions.length} questions générées !`;
+      startExam({ title: 'Post-Test IA', questions: data.questions });
     }
   } catch (err) {
-    status.className = 'notice err';
-    status.textContent = '❌ ' + err.message;
+    $('analysisStatus').className = 'notice err';
+    $('analysisStatus').textContent = '❌ ' + err.message;
   } finally {
-    btn.innerHTML = originalHTML;
+    btn.innerHTML = '✨ GÉNÉRER 50 QUESTIONS (IA)';
     btn.disabled = false;
   }
 });
 
-// ==========================================
-// BOUTON 2 : EXTRAIRE
-// ==========================================
 $('extractTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value;
   if(!text) return;
   
-  const btn = $('extractTestBtn');
-  const originalHTML = btn.innerHTML;
-  btn.innerHTML = '⏳ Extraction...';
-  btn.disabled = true;
-
-  const status = $('analysisStatus');
-  status.className = 'notice';
-  status.textContent = 'Analyse du document...';
+  $('analysisStatus').className = 'notice';
+  $('analysisStatus').textContent = 'Extraction des questions...';
 
   try {
     const data = await fetchWithAuth('/api/parse-existing-quiz', { text });
-    
     if(data.questions && data.questions.length > 0) {
-      status.className = 'notice ok';
-      status.textContent = `✅ ${data.questions.length} questions extraites !`;
-      startExam({ title: 'Questionnaire importé', subject: 'Import', questions: data.questions });
+      $('analysisStatus').className = 'notice ok';
+      $('analysisStatus').textContent = `✅ ${data.questions.length} questions extraites !`;
+      startExam({ title: 'Questionnaire importé', questions: data.questions });
     } else {
-      status.className = 'notice err';
-      status.textContent = '❌ Aucune question trouvée dans le texte.';
+      $('analysisStatus').className = 'notice err';
+      $('analysisStatus').textContent = '❌ Aucune question trouvée.';
     }
   } catch (err) {
-    status.className = 'notice err';
-    status.textContent = '❌ ' + err.message;
-  } finally {
-    btn.innerHTML = originalHTML;
-    btn.disabled = false;
+    $('analysisStatus').className = 'notice err';
+    $('analysisStatus').textContent = '❌ ' + err.message;
   }
 });
 
-// ==========================================
-// MOTEUR POST-TEST (L'INTERFACE)
-// ==========================================
 function startExam(quiz) {
-  examState = { 
-    title: quiz.title, 
-    questions: quiz.questions, 
-    answers: new Array(quiz.questions.length).fill(null), 
-    currentIndex: 0, 
-    submitted: false 
-  };
+  examState = { title: quiz.title, questions: quiz.questions, answers: new Array(quiz.questions.length).fill(null), currentIndex: 0, submitted: false };
   $('examTitle').textContent = quiz.title;
   $('examMeta').textContent = `${quiz.questions.length} questions`;
   $('examView').style.display = 'block';
@@ -318,49 +274,35 @@ function renderExamQuestion() {
   $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
   $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
   $('examNextBtn').style.display = i < total - 1 ? 'block' : 'none';
-  $('examSubmitBtn').style.display = i === total - 1 ? 'block' : 'none';
+  
+  // On affiche TOUJOURS le bouton Soumettre
+  $('examSubmitBtn').style.display = 'block';
 
-  let html = `<div class="exam-card">
-    <span class="exam-q-num">Q${i + 1}</span>
-    <h3>${esc(q.text)}</h3>`;
+  let html = `<div class="exam-card"><span class="exam-q-num">Q${i + 1}</span><h3>${esc(q.text)}</h3>`;
     
-  if(q.type === 'mcq' || q.type === 'mcq_multi' || (q.options && q.options.length > 0)) {
+  if(q.options && q.options.length > 0) {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
-      // Si c'est du QCM multi, on utilise des checkboxes, sinon radio
       const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
       const isSelected = isMulti ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
-      
       let cls = 'exam-opt' + (isSelected ? ' selected' : '');
       
       if(examState.submitted) {
         const isCorrect = isMulti ? q.correct.includes(j) : q.correct === j;
-        if(isCorrect) cls += ' correct'; 
-        else if(isSelected && !isCorrect) cls += ' wrong';
+        if(isCorrect) cls += ' correct'; else if(isSelected && !isCorrect) cls += ' wrong';
       }
       
-      html += `<label class="${cls}">
-        <input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}>
-        <span>${esc(opt)}</span>
-      </label>`;
+      html += `<label class="${cls}"><input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}><span>${esc(opt)}</span></label>`;
     });
     html += `</div>`;
   } else {
-    // Texte libre
     html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${examState.submitted ? 'disabled' : ''} placeholder="Votre réponse...">`;
   }
 
   if(examState.submitted) {
     const isOk = checkAnswer(q, ua);
-    let correctStr = "";
-    if (q.type === 'mcq' && q.options) correctStr = q.options[q.correct];
-    if (q.type === 'tf') correctStr = q.correct ? 'Vrai' : 'Faux';
-    
-    html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}">
-      <b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>
-      ${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}
-      ${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}
-    </div>`;
+    let correctStr = q.options && q.options[q.correct] ? q.options[q.correct] : '';
+    html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}"><b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}</div>`;
   }
 
   html += `</div>`;
@@ -370,11 +312,8 @@ function renderExamQuestion() {
     document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
       inp.addEventListener('change', () => {
         const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
-        if(isMulti) {
-          examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
-        } else {
-          examState.answers[i] = parseInt(inp.value);
-        }
+        if(isMulti) examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
+        else examState.answers[i] = parseInt(inp.value);
       });
     });
     const textInp = $('textInput');
@@ -384,13 +323,12 @@ function renderExamQuestion() {
 
 function checkAnswer(q, ua) {
   if (ua === null || ua === undefined) return false;
-  if (q.type === 'mcq') return ua === q.correct;
+  if (q.type === 'mcq' || q.type === 'tf') return ua === q.correct;
   if (q.type === 'mcq_multi') {
      if(!Array.isArray(ua)) return false;
      const a = [...ua].sort(); const b = [...q.correct].sort();
      return a.length === b.length && a.every((v,i) => v === b[i]);
   }
-  if (q.type === 'tf') return ua === q.correct;
   if (q.type === 'short') return String(ua).toLowerCase().trim() === String(q.correct).toLowerCase().trim();
   return false;
 }
@@ -398,27 +336,27 @@ function checkAnswer(q, ua) {
 $('examNextBtn').addEventListener('click', () => { if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); } });
 $('examPrevBtn').addEventListener('click', () => { if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); } });
 
-// BOUTON SOUMETTRE (Affiche le score final)
+// LOGIQUE DU BOUTON SOUMETTRE (Maintenant toujours visible)
 $('examSubmitBtn').addEventListener('click', () => {
   if(examState.submitted) return;
-  
-  if(!confirm('Voulez-vous soumettre le test et voir votre note ?')) return;
+  if(!confirm('Soumettre le test et voir la correction ?')) return;
   
   examState.submitted = true;
-  $('examSubmitBtn').classList.add('hide');
-  $('examNextBtn').classList.add('hide');
-  $('examPrevBtn').classList.add('hide');
   
-  // Calcul du score
+  // Désactive les boutons Suivant/Précédent
+  $('examNextBtn').style.display = 'none';
+  $('examPrevBtn').style.display = 'none';
+  $('examSubmitBtn').style.display = 'none';
+  
   let correctCount = 0;
   examState.questions.forEach((q, i) => {
     if(checkAnswer(q, examState.answers[i])) correctCount++;
   });
   
   const score = (correctCount / examState.questions.length * 20).toFixed(1);
-  $('examProgressText').innerHTML = `<b style="color:var(--green);font-size:16px">Note : ${score}/20 (${correctCount}/${examState.questions.length} bonnes réponses)</b>`;
+  $('examProgressText').innerHTML = `<b style="color:var(--green);font-size:16px">Note : ${score}/20 (${correctCount}/${examState.questions.length})</b>`;
   
-  // Affiche la correction de la première question
+  // Affiche la correction
   examState.currentIndex = 0;
   renderExamQuestion();
 });
