@@ -9,21 +9,64 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
 app.use(express.json({ limit: '2mb' }));
+
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
-app.get('/api/health', (_req, res) => res.json({ ok: true, aiConfigured: Boolean(process.env.AI_API_KEY) }));
+app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
+app.get('/site.jpg', (_req, res) => res.sendFile(path.join(__dirname, 'site.jpg')));
 
-// Middleware d'authentification (simplifié pour l'exemple, gardez votre logique Supabase)
+app.get('/api/health', (_req, res) => res.json({
+  ok: true,
+  aiConfigured: Boolean(process.env.AI_API_KEY),
+  authConfigured: Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY),
+  aiModel: process.env.AI_MODEL || 'openai/gpt-oss-20b'
+}));
+
+// ==========================================
+// MIDDLEWARE D'AUTHENTIFICATION (Corrigé)
+// ==========================================
 async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) return res.status(401).json({ error: 'Connecte-toi.' });
-  // Ici, mettez votre logique de vérification Supabase
-  req.user = { id: 'user-test' }; 
-  next();
+  if (!token) {
+    return res.status(401).json({ error: 'Connecte-toi à CompoTest pour utiliser cette fonction.' });
+  }
+
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    return res.status(503).json({ error: 'Supabase non configuré côté serveur.' });
+  }
+
+  try {
+    const response = await fetch(`${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/user`, {
+      headers: { 
+        apikey: process.env.SUPABASE_ANON_KEY, 
+        Authorization: `Bearer ${token}` 
+      }
+    });
+
+    if (!response.ok) {
+      return res.status(401).json({ error: 'Session expirée ou invalide. Reconnecte-toi.' });
+    }
+
+    const user = await response.json();
+    if (!user?.id || !user?.email) {
+      return res.status(401).json({ error: 'Session utilisateur invalide.' });
+    }
+
+    req.user = { id: user.id, email: user.email };
+    next();
+  } catch (error) {
+    console.error('Erreur Auth:', error);
+    return res.status(503).json({ error: 'Vérification de session indisponible.' });
+  }
 }
+
+// Applique l'authentification à toutes les routes /api sauf /health
 app.use('/api', (req, res, next) => req.path === '/health' ? next() : authenticate(req, res, next));
 
+// ==========================================
+// IA (Groq)
+// ==========================================
 function aiClient() {
   if (!process.env.AI_API_KEY) return null;
   return new OpenAI({
@@ -35,27 +78,21 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// 1. EXTRACTION LOCALE (Pour vos questionnaires PDF)
+// EXTRACTION LOCALE (Questionnaires existants)
 // ==========================================
 function extractQuestionsLocally(text) {
   const lines = text.split('\n');
   let questions = [];
   let currentQ = null;
   
-  // Regex pour détecter les questions (ex: "1. ", "Q1. ", "1) ")
   const qRegex = /^(?:Q\s*)?(\d{1,3})[.)]\s+(.+)$/i;
-  // Regex pour détecter les options (ex: "A) ", "A. ")
   const optRegex = /^([A-D])[.)]\s+(.+)$/i;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
-    // Détection d'un bloc de corrigé à la fin (ex: "1B 2B 3B" ou "1. B 2. B")
-    if (/^1\s*[A-D]/.test(line) || /^1\s*[-:]\s*[A-D]/.test(line)) {
-       // On arrête l'extraction des questions ici, le reste est le corrigé
-       break; 
-    }
+    if (/^1\s*[A-D]/.test(line) || /^1\s*[-:]\s*[A-D]/.test(line)) break;
 
     const qMatch = line.match(qRegex);
     if (qMatch) {
@@ -73,22 +110,15 @@ function extractQuestionsLocally(text) {
     if (currentQ) {
       const optMatch = line.match(optRegex);
       if (optMatch) {
-        const optLetter = optMatch[1];
         let optText = optMatch[2].trim();
         let isCorrect = false;
-
-        // Détection des réponses marquées (comme dans le PDF de Pharma)
         if (optText.includes('✓') || optText.includes('Réponse correcte') || line.includes('✓')) {
           isCorrect = true;
           optText = optText.replace(/✓|Réponse correcte.*/gi, '').trim();
         }
-
         currentQ.options.push(optText);
-        if (isCorrect) {
-          currentQ.correct = currentQ.options.length - 1;
-        }
+        if (isCorrect) currentQ.correct = currentQ.options.length - 1;
       } else if (!line.match(/^Page\s+\d+/i)) {
-        // Si ce n'est pas une option, c'est la suite de la question (ou une réponse V/F)
         if (line.match(/Réponse correcte\s*:\s*(VRAI|FAUX)/i)) {
           currentQ.type = 'tf';
           currentQ.correct = line.toUpperCase().includes('VRAI');
@@ -100,11 +130,8 @@ function extractQuestionsLocally(text) {
   }
   if (currentQ) questions.push(currentQ);
 
-  // Post-traitement pour le fichier INFAS (corrigé sous forme de tableau "1B 2B 3A...")
-  // On cherche le bloc de corrigé à la fin du texte
   const corrigeBlockMatch = text.match(/1\s*B\s*11\s*B\s*21\s*A[\s\S]*/i); 
   if (corrigeBlockMatch) {
-    // Extraction grossière de la grille (ex: "1B", "2A", "3C"...)
     const grid = corrigeBlockMatch[0].match(/(\d{1,3})\s*([A-D])/g);
     if (grid) {
       const answers = {};
@@ -112,41 +139,29 @@ function extractQuestionsLocally(text) {
         const match = item.match(/(\d{1,3})\s*([A-D])/);
         if (match) answers[parseInt(match[1])] = match[2];
       });
-      
-      // Application des réponses aux questions
       questions.forEach(q => {
         if (answers[q.number] && q.options.length > 0) {
-          const correctLetter = answers[q.number];
-          const optIndex = correctLetter.charCodeAt(0) - 65; // A=0, B=1...
-          if (optIndex >= 0 && optIndex < q.options.length) {
-            q.correct = optIndex;
-          }
+          const optIndex = answers[q.number].charCodeAt(0) - 65;
+          if (optIndex >= 0 && optIndex < q.options.length) q.correct = optIndex;
         }
       });
     }
   }
-
-  // Filtrage : on ne garde que les questions avec au moins 2 options
   return questions.filter(q => q.options.length >= 2);
 }
 
 // ==========================================
-// 2. ROUTE : EXTRAIRE UN QUESTIONNAIRE EXISTANT
+// ROUTES
 // ==========================================
-app.post('/api/parse-existing-quiz', async (req, res) => {
+app.post('/api/parse-existing-quiz', (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'Texte manquant' });
-
   console.log(`[parse-existing] Analyse de ${text.length} caractères...`);
   const questions = extractQuestionsLocally(text);
-  
-  console.log(`[parse-existing] ${questions.length} questions extraites avec succès.`);
+  console.log(`[parse-existing] ${questions.length} questions extraites.`);
   res.json({ questions });
 });
 
-// ==========================================
-// 3. ROUTE : GÉNÉRER UN POST-TEST (IA)
-// ==========================================
 app.post('/api/generate-post-test', async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
@@ -158,45 +173,25 @@ app.post('/api/generate-post-test', async (req, res) => {
   console.log(`[post-test] Début génération de ${n} questions...`);
 
   try {
-    // Étape 1 : Extraction des concepts pour éviter le recopiage
-    const extractionPrompt = `Extrait les 15 à 20 concepts clés de ce cours.
-    Format JSON : {"concepts": [{"terme": "Nom", "definition": "Définition"}]}`;
-    
+    const extractionPrompt = `Extrait les 15 à 20 concepts clés de ce cours. Format JSON : {"concepts": [{"terme": "Nom", "definition": "Définition"}]}`;
     const extractRes = await client.chat.completions.create({
       model: modelName(), temperature: 0.1, response_format: { type: 'json_object' },
       messages: [{ role: 'system', content: extractionPrompt }, { role: 'user', content: text.slice(0, 20000) }]
     });
-    
-    const parsedExtract = JSON.parse(extractRes.choices[0].message.content);
-    const concepts = parsedExtract.concepts || [];
+    const concepts = JSON.parse(extractRes.choices[0].message.content).concepts || [];
 
-    // Étape 2 : Génération des questions basées sur les concepts
-    const generatePrompt = `Tu es un professeur. Crée un post-test de ${n} questions basé UNIQUEMENT sur ces concepts.
-    RÈGLES : 
-    1. Ne recopie JAMAIS le cours. Formule de vraies questions (Quel est..., Vrai ou Faux : ...).
-    2. 40% "mcq" (4 options), 30% "mcq_multi", 30% "tf".
-    3. Les mauvaises réponses doivent être des concepts VOISINS.
-    Format JSON : {"questions": [{"type": "mcq", "text": "...", "options": ["A", "B", "C", "D"], "correct": 0, "explanation": "..."}]}`;
-
+    const generatePrompt = `Tu es un professeur. Crée un post-test de ${n} questions basé sur ces concepts. RÈGLES : 1. Ne recopie pas. Formule de vraies questions. 2. 40% "mcq", 30% "mcq_multi", 30% "tf". Format JSON : {"questions": [{"type": "mcq", "text": "...", "options": ["A", "B", "C", "D"], "correct": 0, "explanation": "..."}]}`;
     const generateRes = await client.chat.completions.create({
       model: modelName(), temperature: 0.4, response_format: { type: 'json_object' },
       messages: [{ role: 'system', content: generatePrompt }, { role: 'user', content: JSON.stringify(concepts) }]
     });
 
-    const parsedGen = JSON.parse(generateRes.choices[0].message.content);
-    const questions = (parsedGen.questions || []).map((q, i) => ({
-      id: `gen-${i}`,
-      number: i + 1,
-      type: q.type,
-      text: q.text,
-      options: q.options || [],
-      correct: q.correct,
-      explanation: q.explanation || '',
+    const questions = (JSON.parse(generateRes.choices[0].message.content).questions || []).map((q, i) => ({
+      id: `gen-${i}`, number: i + 1, type: q.type, text: q.text, options: q.options || [], correct: q.correct, explanation: q.explanation || ''
     }));
 
-    console.log(`[post-test] ${questions.length} questions générées par l'IA.`);
+    console.log(`[post-test] ${questions.length} questions générées.`);
     res.json({ questions });
-
   } catch (error) {
     console.error('[post-test] Erreur:', error.message);
     res.status(502).json({ error: 'Erreur de génération : ' + error.message });
