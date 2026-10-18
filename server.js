@@ -17,14 +17,13 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, aiConfigured: Boolean
 
 async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) return res.status(401).json({ error: 'Connecte-toi à CompoTest pour utiliser cette fonction.' });
+  if (!token) return res.status(401).json({ error: 'Connecte-toi.' });
   try {
     const response = await fetch(`${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/user`, {
       headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }
     });
     if (!response.ok) return res.status(401).json({ error: 'Session expirée.' });
     const user = await response.json();
-    if (!user?.id) return res.status(401).json({ error: 'Session invalide.' });
     req.user = { id: user.id, email: user.email };
     next();
   } catch { return res.status(503).json({ error: 'Vérification indisponible.' }); }
@@ -42,82 +41,81 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// 1. EXTRACTION LOCALE (Corrigée)
+// ALGORITHME D'EXTRACTION (Version Bloc)
 // ==========================================
-function extractQuestionsLocally(text) {
-  // Normalisation : on s'assure qu'il y a un espace après le point des numéros (ex: "1.Quelle" -> "1. Quelle")
-  let cleanText = text.replace(/(\d+[\.\)])([A-ZÀ-Ýa-z])/g, '$1 $2');
+function parseQuizText(text) {
+  // Nettoyage de base
+  let clean = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
+  clean = clean.replace(/Page\s+\d+/gi, ' ');
   
-  // Regex plus souple pour les questions (1., Q1., 1), etc.)
-  const qRegex = /^(?:Q\s*)?(\d{1,3})[\.\)]\s+(.+)$/i;
-  // Regex pour les options (A., A), a. , etc.)
-  const optRegex = /^([A-D])[\.\)]\s+(.+)$/i;
-
-  const lines = cleanText.split('\n');
+  // Séparation des blocs de questions (ex: "1. ", "Q1. ", "1) ")
+  // On cherche un chiffre suivi d'un point ou d'une parenthèse
+  let blocks = clean.split(/(?=(?:Q\s*)?\d{1,3}[\.\)]\s)/i);
+  
   let questions = [];
-  let currentQ = null;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
+  for (let block of blocks) {
+    block = block.trim();
+    if (!block) continue;
+    
+    // On vérifie si le bloc commence bien par un numéro
+    const matchNum = block.match(/^(?:Q\s*)?(\d{1,3})[\.\)]\s(.*)/i);
+    if (!matchNum) continue;
+    
+    let num = parseInt(matchNum[1]);
+    let content = matchNum[2];
 
-    // Détection du corrigé en bas de page (on arrête l'extraction)
-    if (/^1\s*[A-D]/.test(line) && line.length < 50) break;
-
-    const qMatch = line.match(qRegex);
-    if (qMatch) {
-      if (currentQ && currentQ.options.length > 0) questions.push(currentQ);
-      currentQ = {
-        number: parseInt(qMatch[1]),
-        text: qMatch[2].trim(),
-        options: [],
-        correct: null,
-        type: 'mcq'
-      };
-      continue;
+    // Maintenant, on sépare le texte de la question des options (A, B, C, D)
+    // L'option commence par "A)" ou "A." (avec un espace avant si possible)
+    let parts = content.split(/(?=\s[A-D][\.\)]\s)/i);
+    
+    let qText = parts[0].trim();
+    let options = [];
+    
+    // Si on a trouvé des options
+    if (parts.length > 1) {
+      for (let i = 1; i < parts.length; i++) {
+        let optText = parts[i].replace(/^\s*[A-D][\.\)]\s/i, '').trim();
+        if (optText) options.push(optText);
+      }
     }
 
-    if (currentQ) {
-      const optMatch = line.match(optRegex);
-      if (optMatch) {
-        let optText = optMatch[2].trim();
-        let isCorrect = false;
-        
-        // Détection des réponses marquées (ex: PDF avec ✓)
-        if (optText.includes('✓') || optText.includes('Réponse correcte') || line.includes('✓')) {
-          isCorrect = true;
-          optText = optText.replace(/✓|Réponse correcte.*/gi, '').trim();
-        }
-        
-        currentQ.options.push(optText);
-        if (isCorrect) currentQ.correct = currentQ.options.length - 1;
-      } else if (!line.match(/^Page\s+\d+/i)) {
-        // Détection Vrai/Faux
-        if (line.match(/Réponse correcte\s*:\s*(VRAI|FAUX)/i)) {
-          currentQ.type = 'tf';
-          currentQ.correct = line.toUpperCase().includes('VRAI');
-        } else if (currentQ.options.length === 0) {
-          // C'est la suite du texte de la question
-          currentQ.text += ' ' + line;
-        }
+    // Détection Vrai/Faux (si pas d'options A-B-C-D trouvées)
+    let type = 'mcq';
+    if (options.length === 0) {
+      type = 'tf'; // Par défaut si aucune option n'est trouvée, c'est sûrement un V/F ou question ouverte
+      if (qText.toLowerCase().includes('vrai') && qText.toLowerCase().includes('faux')) {
+        options = ['Vrai', 'Faux'];
+      } else {
+        options = ['Vrai', 'Faux']; // Fallback
       }
+    }
+
+    // On nettoie le texte de la question (au cas où il reste des résidus)
+    qText = qText.replace(/\s+/g, ' ');
+
+    if (qText.length > 5) {
+      questions.push({
+        number: num,
+        text: qText,
+        options: options,
+        correct: 0, // Par défaut la première option, sera corrigé si le corrigé est trouvé
+        type: options.length === 2 && options[0] === 'Vrai' ? 'tf' : 'mcq'
+      });
     }
   }
-  if (currentQ && currentQ.options.length > 0) questions.push(currentQ);
 
-  // Gestion du tableau de corrigé (Fichier INFAS : "1B 11B 21A...")
-  const gridMatch = text.match(/(\d{1,3}\s*[A-D][\s\n]*){5,}/g);
+  // Gestion du corrigé (Fichier INFAS : "1B 2B 3A...")
+  const gridMatch = text.match(/(?:1\s*[A-D][\s\n]*){3,}/i);
   if (gridMatch) {
     const answers = {};
-    gridMatch.forEach(block => {
-      const pairs = block.match(/(\d{1,3})\s*([A-D])/g);
-      if(pairs) {
-        pairs.forEach(p => {
-          const m = p.match(/(\d{1,3})\s*([A-D])/);
-          if(m) answers[m[1]] = m[2];
-        });
-      }
-    });
+    const pairs = gridMatch[0].match(/(\d{1,3})\s*([A-D])/gi);
+    if(pairs) {
+      pairs.forEach(p => {
+        const m = p.match(/(\d{1,3})\s*([A-D])/i);
+        if(m) answers[parseInt(m[1])] = m[2].toUpperCase();
+      });
+    }
 
     questions.forEach(q => {
       if (answers[q.number]) {
@@ -129,19 +127,23 @@ function extractQuestionsLocally(text) {
     });
   }
 
-  // Fallback : si pas de corrigé, on met la réponse A par défaut pour que le test soit soumissible
-  questions.forEach(q => { if (q.correct === null) q.correct = 0; });
-
   return questions;
 }
 
 // ==========================================
-// 2. ROUTES
+// ROUTES
 // ==========================================
 app.post('/api/parse-existing-quiz', (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'Texte manquant' });
-  const questions = extractQuestionsLocally(text);
+  
+  const questions = parseQuizText(text);
+  console.log(`[extract] ${questions.length} questions trouvées.`);
+  
+  if (questions.length === 0) {
+    return res.status(400).json({ error: 'Aucun format de question reconnu. Essayez de copier le texte dans la zone.' });
+  }
+  
   res.json({ questions });
 });
 
@@ -149,23 +151,24 @@ app.post('/api/generate-post-test', async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
   
-  const { subject, title, sourceText, count = 10 } = req.body;
-  const text = sourceText.slice(0, 15000); // On limite pour éviter le Timeout
-  const n = Math.min(count, 20);
+  const { subject, title, sourceText, count = 20 } = req.body;
+  const text = sourceText.slice(0, 18000);
+  const n = Math.min(count, 50); // Max 50 questions
 
   try {
-    // On force le français et un format JSON très strict
     const prompt = `Tu es un professeur francophone. Crée un post-test de ${n} questions en FRANÇAIS basé sur le texte suivant.
     
     RÈGLES ABSOLUES :
     - Langue : Français uniquement.
-    - Types : QCM (4 options), Vrai/Faux, ou texte à trous.
-    - Ne recopie pas le cours. Formule des questions claires.
+    - Mix de types : 25% QCD (Vrai/Faux), 25% QCM (choix multiples), 25% QCU (choix unique), 25% Texte à trous.
+    - Ne recopie pas le cours. Formule des questions claires et pédagogiques.
+    - Les options de réponse doivent être réalistes.
     
     Format JSON strict :
     {
       "questions": [
-        {"type": "mcq", "text": "Question ?", "options": ["A", "B", "C", "D"], "correct": 0, "explanation": "Explication"}
+        {"type": "mcq", "text": "Question ?", "options": ["Option 1", "Option 2", "Option 3", "Option 4"], "correct": 0, "explanation": "Explication"},
+        {"type": "tf", "text": "Affirmation ?", "options": ["Vrai", "Faux"], "correct": 1, "explanation": "Explication"}
       ]
     }`;
 
