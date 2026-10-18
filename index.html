@@ -27,7 +27,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .notice.err{background:#fff0f0;color:#a51f2a;border-color:#ef4444}
 .notice.ok{background:#e9f8f1;color:#0e5e3f;border-color:#10b981}
 
-/* MODAL POST-TEST PLEIN ÉCRAN */
+/* MODAL POST-TEST */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:80px}
 .exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center}
 .exam-header h2{margin:0;font-size:18px}
@@ -87,7 +87,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
       <textarea id="pdfText" style="min-height:150px" placeholder="Le texte apparaîtra ici après extraction."></textarea>
     </div>
 
-    <!-- LES 2 BOUTONS -->
     <div class="actions" id="actionButtons" style="margin-top:25px;display:none;justify-content:center;gap:20px">
       <button id="generatePostTestBtn" class="success" style="flex:1;max-width:300px;text-align:left;padding:15px;">
         <div style="font-size:16px;font-weight:800;margin-bottom:4px">✨ GÉNÉRER UN POST-TEST</div>
@@ -104,9 +103,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
   </div>
 </main>
 
-<!-- ============================================== -->
-<!-- VUE POST-TEST PLEIN ÉCRAN -->
-<!-- ============================================== -->
 <div id="examView">
   <div class="exam-header">
     <div>
@@ -128,6 +124,8 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
@@ -136,12 +134,18 @@ const $=id=>document.getElementById(id);
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let examState = null;
+let supabaseClient = null;
 
-// Utilitaires d'échappement
+// Init Supabase
+const cfg = window.COMPOSTEST_CONFIG || {};
+if(window.supabase && cfg.SUPABASE_URL) {
+  supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+}
+
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 // ==========================================
-// LOGIQUE D'IMPORTATION
+// IMPORTATION DU FICHIER
 // ==========================================
 $('pdfFile').addEventListener('change', function() {
   if(this.files.length > 0) {
@@ -163,9 +167,7 @@ async function extractText(file){
       for(let p=1;p<=pdf.numPages;p++){
         const page=await pdf.getPage(p);
         const content=await page.getTextContent();
-        // On joint les éléments avec des espaces, mais on garde les sauts de ligne quand y change
-        let pageText = content.items.map(i=>i.str).join(' ');
-        pages.push(pageText);
+        pages.push(content.items.map(i=>i.str).join(' '));
       }
       text=pages.join('\n\n');
     } else if(name.endsWith('.docx')){
@@ -177,19 +179,36 @@ async function extractText(file){
       text=await file.text();
     }
     
-    // Nettoyage basique
     text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
-    
     $('pdfText').value = text;
     $('textAreaWrap').classList.remove('hide');
     $('actionButtons').style.display = 'flex';
     status.textContent = `✅ ${text.length} caractères extraits.`;
     status.style.color = 'var(--green)';
-    
   } catch(e) {
     status.textContent = 'Erreur : ' + e.message;
     status.style.color = 'red';
   }
+}
+
+// Fonction d'envoi avec Token
+async function fetchWithAuth(url, body) {
+  if (!supabaseClient) throw new Error("Supabase non initialisé.");
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) throw new Error("Vous devez être connecté pour utiliser cette fonction.");
+  
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}` 
+    },
+    body: JSON.stringify(body)
+  });
+  
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+  return data;
 }
 
 // ==========================================
@@ -209,26 +228,18 @@ $('generatePostTestBtn').addEventListener('click', async () => {
   status.textContent = 'L\'IA analyse le cours...';
   
   try {
-    const res = await fetch('/api/generate-post-test', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' }, // Ajoutez Auth Token si nécessaire
-      body: JSON.stringify({
-        subject: $('quizSubject').value.trim() || 'Cours',
-        title: $('quizTitle').value.trim() || 'Post-Test',
-        sourceText: text,
-        count: 15
-      })
+    const data = await fetchWithAuth('/api/generate-post-test', {
+      subject: $('quizSubject').value.trim() || 'Cours',
+      title: $('quizTitle').value.trim() || 'Post-Test',
+      sourceText: text,
+      count: 15
     });
-    
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error);
     
     if(data.questions.length > 0) {
       status.className = 'notice ok';
       status.textContent = `✅ ${data.questions.length} questions générées !`;
       startExam({ title: 'Post-Test IA', subject: 'Généré', questions: data.questions });
     }
-    
   } catch (err) {
     status.className = 'notice err';
     status.textContent = '❌ ' + err.message;
@@ -255,14 +266,7 @@ $('extractTestBtn').addEventListener('click', async () => {
   status.textContent = 'Analyse du document pour trouver des questions...';
 
   try {
-    const res = await fetch('/api/parse-existing-quiz', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
-    });
-    
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error);
+    const data = await fetchWithAuth('/api/parse-existing-quiz', { text });
     
     if(data.questions.length > 0) {
       status.className = 'notice ok';
@@ -282,22 +286,14 @@ $('extractTestBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
-// MOTEUR POST-TEST (EXAM VIEW)
+// MOTEUR POST-TEST
 // ==========================================
 function startExam(quiz) {
-  examState = {
-    title: quiz.title,
-    questions: quiz.questions,
-    answers: new Array(quiz.questions.length).fill(null),
-    currentIndex: 0,
-    submitted: false
-  };
-  
+  examState = { title: quiz.title, questions: quiz.questions, answers: new Array(quiz.questions.length).fill(null), currentIndex: 0, submitted: false };
   $('examTitle').textContent = quiz.title;
   $('examMeta').textContent = `${quiz.questions.length} questions`;
   $('examView').style.display = 'block';
   document.body.style.overflow = 'hidden';
-  
   renderExamQuestion();
 }
 
@@ -319,26 +315,18 @@ function renderExamQuestion() {
   $('examNextBtn').style.display = i < total - 1 ? 'block' : 'none';
   $('examSubmitBtn').style.display = i === total - 1 ? 'block' : 'none';
 
-  let html = `<div class="exam-card">
-    <span class="exam-q-num">Q${i + 1}</span>
-    <h3>${esc(q.text)}</h3>`;
+  let html = `<div class="exam-card"><span class="exam-q-num">Q${i + 1}</span><h3>${esc(q.text)}</h3>`;
     
   if(q.type === 'mcq' || q.type === 'mcq_multi') {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
       const isSelected = q.type === 'mcq_multi' ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
       let cls = 'exam-opt' + (isSelected ? ' selected' : '');
-      
       if(examState.submitted) {
         const isCorrect = q.type === 'mcq_multi' ? q.correct.includes(j) : q.correct === j;
-        if(isCorrect) cls += ' correct';
-        else if(isSelected && !isCorrect) cls += ' wrong';
+        if(isCorrect) cls += ' correct'; else if(isSelected && !isCorrect) cls += ' wrong';
       }
-      
-      html += `<label class="${cls}">
-        <input type="${q.type === 'mcq_multi' ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}>
-        <span>${esc(opt)}</span>
-      </label>`;
+      html += `<label class="${cls}"><input type="${q.type === 'mcq_multi' ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}><span>${esc(opt)}</span></label>`;
     });
     html += `</div>`;
   } else if (q.type === 'tf') {
@@ -347,13 +335,9 @@ function renderExamQuestion() {
       const isSelected = ua === v;
       let cls = 'exam-opt' + (isSelected ? ' selected' : '');
       if(examState.submitted) {
-        if(q.correct === v) cls += ' correct';
-        else if(isSelected && q.correct !== v) cls += ' wrong';
+        if(q.correct === v) cls += ' correct'; else if(isSelected && q.correct !== v) cls += ' wrong';
       }
-      html += `<label class="${cls}">
-        <input type="radio" name="q${i}" value="${v}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}>
-        <span>${v ? 'Vrai' : 'Faux'}</span>
-      </label>`;
+      html += `<label class="${cls}"><input type="radio" name="q${i}" value="${v}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}><span>${v ? 'Vrai' : 'Faux'}</span></label>`;
     });
     html += `</div>`;
   } else {
@@ -365,18 +349,12 @@ function renderExamQuestion() {
     let correctStr = "";
     if (q.type === 'mcq' && q.options) correctStr = q.options[q.correct];
     if (q.type === 'tf') correctStr = q.correct ? 'Vrai' : 'Faux';
-
-    html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}">
-      <b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>
-      ${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}
-      ${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}
-    </div>`;
+    html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}"><b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}</div>`;
   }
 
   html += `</div>`;
   $('examBody').innerHTML = html;
 
-  // Listeners
   if(!examState.submitted) {
     document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
       inp.addEventListener('change', () => {
@@ -397,18 +375,8 @@ function checkAnswer(q, ua) {
   return false;
 }
 
-$('examNextBtn').addEventListener('click', () => {
-  if(examState.currentIndex < examState.questions.length - 1) {
-    examState.currentIndex++;
-    renderExamQuestion();
-  }
-});
-$('examPrevBtn').addEventListener('click', () => {
-  if(examState.currentIndex > 0) {
-    examState.currentIndex--;
-    renderExamQuestion();
-  }
-});
+$('examNextBtn').addEventListener('click', () => { if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); } });
+$('examPrevBtn').addEventListener('click', () => { if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); } });
 $('examSubmitBtn').addEventListener('click', () => {
   if(examState.submitted) return;
   if(!confirm('Valider vos réponses et voir les corrections ?')) return;
@@ -419,6 +387,5 @@ $('examSubmitBtn').addEventListener('click', () => {
   $('examProgressText').innerHTML = '<b style="color:var(--green)">Test terminé !</b>';
   renderExamQuestion();
 });
-
 </script>
 </body></html>
