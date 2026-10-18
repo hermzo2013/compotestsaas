@@ -21,13 +21,15 @@ async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return res.status(401).json({ error: 'Connecte-toi.' });
   try {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      throw new Error("Variables Supabase manquantes sur le serveur.");
+    }
     const response = await fetch(`${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/user`, {
       headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }
     });
     if (!response.ok) return res.status(401).json({ error: 'Session expirée.' });
     const user = await response.json();
 
-    // ✅ Double vérification : app_metadata OU email admin
     const adminEmail = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
     const isAdmin =
       user.app_metadata?.is_admin === true ||
@@ -38,7 +40,7 @@ async function authenticate(req, res, next) {
     next();
   } catch (e) {
     console.error('Auth error:', e);
-    return res.status(503).json({ error: 'Vérification indisponible.' });
+    return res.status(503).json({ error: 'Vérification indisponible. Vérifiez les variables Render.' });
   }
 }
 app.use('/api', authenticate);
@@ -52,6 +54,9 @@ function requireAdmin(req, res, next) {
 // SUPABASE ADMIN
 // ==========================================
 async function supabaseAdmin(pathname, options = {}) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY manquante sur Render.");
+  }
   const base = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
   const response = await fetch(`${base}/auth/v1/admin/${pathname}`, {
     ...options,
@@ -77,13 +82,15 @@ app.get('/api/admin/users', requireAdmin, async (_req, res) => {
       id: u.id,
       email: u.email,
       created_at: u.created_at,
-      last_sign_in: u.last_sign_in_at,
       banned: u.banned_until && new Date(u.banned_until) > new Date(),
       name: u.user_metadata?.full_name || u.email.split('@')[0],
       isAdmin: u.app_metadata?.is_admin === true || u.app_metadata?.role === 'admin'
     }));
     res.json({ users });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { 
+    console.error('Erreur Admin Users:', e);
+    res.status(500).json({ error: e.message }); 
+  }
 });
 
 app.post('/api/admin/users', requireAdmin, async (req, res) => {
@@ -127,6 +134,22 @@ app.patch('/api/admin/users/:id/status', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ✅ NOUVELLE ROUTE : Attribution de rôle
+app.patch('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
+  try {
+    const isAdmin = req.body.is_admin === true;
+    // On met à jour les app_metadata pour définir le rôle admin
+    const current = await supabaseAdmin(`users/${req.params.id}`);
+    const app_metadata = { ...(current.app_metadata || {}), is_admin: isAdmin };
+    
+    await supabaseAdmin(`users/${req.params.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ app_metadata })
+    });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
   try {
     await supabaseAdmin(`users/${req.params.id}`, { method: 'DELETE' });
@@ -135,40 +158,20 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
 });
 
 // ==========================================
-// IA
+// IA & EXTRACTION (V10 inchangé)
 // ==========================================
 function aiClient() {
   if (!process.env.AI_API_KEY) return null;
-  return new OpenAI({
-    apiKey: process.env.AI_API_KEY,
-    baseURL: process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1',
-    timeout: 120000
-  });
+  return new OpenAI({ apiKey: process.env.AI_API_KEY, baseURL: process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1', timeout: 120000 });
 }
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
-// ==========================================
-// ALGORITHME V10 : EXTRACTION STRICTE
-// ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
-
-  // ---------- 1. NORMALISATION ----------
-  let text = rawText
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
-    .replace(/\u00A0/g, ' ')
-    .replace(/\r\n?/g, '\n')
-    .replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, ' ')
-    .replace(/[’‘`´]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[ \t]+/g, ' ');
-
-  // Ajouter espace après Q1. / 14. / A-
+  let text = rawText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ').replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n').replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, ' ').replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/[ \t]+/g, ' ');
   text = text.replace(/(^|[\s\.\(;:])((?:Q\s*)?\d{1,3})\s*([\.\):])\s*(?=[A-ZÀ-Ýa-z])/gi, '$1$2$3 ');
-  text = text.replace(/(^|[\s])[\(\[]?([A-Ea-e])\s*([\.\)\-])\s*(?=[A-ZÀ-Ýa-z0-9])/g,
-    (m, pre, letter, punct) => `${pre}${letter.toUpperCase()}${punct} `);
+  text = text.replace(/(^|[\s])[\(\[]?([A-Ea-e])\s*([\.\)\-])\s*(?=[A-ZÀ-Ýa-z0-9])/g, (m, pre, letter, punct) => `${pre}${letter.toUpperCase()}${punct} `);
 
-  // ---------- 2. CANDIDATS QUESTIONS ----------
   const candidateRegex = /(?:^|[\s\.;:\)\]])(Q\s*(\d{1,3})|\d{1,3})\s*[\.\):]\s+/gi;
   const candidates = [];
   let mCand;
@@ -178,79 +181,55 @@ function parseQuizText(rawText) {
     const hasQ = /^Q/i.test(mCand[1]);
     const startIdx = mCand.index + mCand[0].indexOf(mCand[1]);
     const textStart = mCand.index + mCand[0].length;
-    if (num >= 1 && num <= 200) {
-      candidates.push({ num, hasQ, startIdx, textStart });
-    }
+    if (num >= 1 && num <= 200) candidates.push({ num, hasQ, startIdx, textStart });
   }
 
-  // ---------- 3. FILTRAGE : PRIVILÉGIER LES Q1., Q2. ----------
   const withQ = candidates.filter(c => c.hasQ);
   let pool = withQ.length >= 3 ? withQ : candidates;
 
-  // ---------- 4. TROUVER LA VRAIE SÉQUENCE ----------
   const sequences = [];
   let currentSeq = [];
   for (const c of pool) {
     if (currentSeq.length === 0) { currentSeq.push(c); continue; }
     const prev = currentSeq[currentSeq.length - 1];
-    if (c.num === prev.num) continue; // doublon
-    if (c.num === prev.num + 1) {
+    if (c.num === prev.num) continue;
+    if (c.num === prev.num + 1 || (c.num > prev.num + 1 && c.num <= prev.num + 5)) {
       currentSeq.push(c);
-    } else if (c.num > prev.num + 1 && c.num <= prev.num + 5) {
-      currentSeq.push(c);
-    } else if (c.num < prev.num) {
-      if (currentSeq.length >= 3) sequences.push(currentSeq);
-      currentSeq = [c];
     } else {
       if (currentSeq.length >= 3) sequences.push(currentSeq);
       currentSeq = [c];
     }
   }
   if (currentSeq.length >= 3) sequences.push(currentSeq);
-
   sequences.sort((a, b) => b.length - a.length);
   const bestSeq = sequences[0] || pool;
-
   if (!bestSeq.length) return fallbackParse(rawText);
 
-  // ---------- 5. NETTOYER L'EN-TÊTE ----------
   const firstQStart = bestSeq[0].startIdx;
   const beforeFirstQ = text.slice(0, firstQStart);
+  const trueFalseHint = /cochez\s+(a|la\s+case\s+a)\s+pour\s+(les\s+)?(affirmations?\s+)?vra/i.test(beforeFirstQ + ' ' + text.slice(firstQStart, firstQStart + 500)) || /vrai\s*\/\s*faux/i.test(beforeFirstQ) || /répondez\s+par\s+vrai\s+ou\s+faux/i.test(beforeFirstQ);
 
-  const trueFalseHint =
-    /cochez\s+(a|la\s+case\s+a)\s+pour\s+(les\s+)?(affirmations?\s+)?vra/i.test(beforeFirstQ + ' ' + text.slice(firstQStart, firstQStart + 500)) ||
-    /vrai\s*\/\s*faux/i.test(beforeFirstQ) ||
-    /répondez\s+par\s+vrai\s+ou\s+faux/i.test(beforeFirstQ);
-
-  // ---------- 6. CONSTRUIRE LES QUESTIONS ----------
   const questions = [];
-
   for (let i = 0; i < bestSeq.length; i++) {
     const start = bestSeq[i];
     const end = i + 1 < bestSeq.length ? bestSeq[i + 1].startIdx : text.length;
     let block = text.slice(start.textStart, end).trim();
     if (!block) continue;
 
-    // Détecter options A/B/C/D
     const optionSplitRegex = /(?<=^|[\s\.;:])([\(\[]?[A-E][\.\)\-\]])\s+/g;
     const optMatches = [];
     let mo;
     while ((mo = optionSplitRegex.exec(block)) !== null) {
-      optMatches.push({
-        index: mo.index,
-        end: mo.index + mo[0].length,
-        letter: mo[1].replace(/[^A-Ea-e]/g, '').toUpperCase()
-      });
+      optMatches.push({ index: mo.index, end: mo.index + mo[0].length, letter: mo[1].replace(/[^A-Ea-e]/g, '').toUpperCase() });
     }
 
     let validOptions = [];
     if (optMatches.length >= 2) {
       const letters = optMatches.map(o => o.letter);
-      const firstLetters = letters.slice(0, 4);
       const expected = ['A', 'B', 'C', 'D'];
       let ok = true;
-      for (let k = 0; k < Math.min(firstLetters.length, expected.length); k++) {
-        if (firstLetters[k] !== expected[k]) { ok = false; break; }
+      for (let k = 0; k < Math.min(letters.slice(0, 4).length, expected.length); k++) {
+        if (letters[k] !== expected[k]) { ok = false; break; }
       }
       if (ok) validOptions = optMatches;
     }
@@ -270,35 +249,21 @@ function parseQuizText(rawText) {
       options = ['Vrai', 'Faux'];
     }
 
-    qText = qText
-      .replace(/\s+/g, ' ')
-      .replace(/^[\-–—\.\s]+/, '')
-      .replace(/[\s;]+$/, '')
-      .trim();
-
-    if (qText.length < 8) continue;
-    if (/^\d+\s*[-:]?\s*[A-E](\s+\d+\s*[-:]?\s*[A-E]){2,}/i.test(qText)) continue;
+    qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').replace(/[\s;]+$/, '').trim();
+    if (qText.length < 8 || /^\d+\s*[-:]?\s*[A-E](\s+\d+\s*[-:]?\s*[A-E]){2,}/i.test(qText)) continue;
 
     let type = (options.length === 2 && options[0] === 'Vrai') ? 'tf' : 'mcq';
     if (trueFalseHint && validOptions.length === 0) type = 'tf';
 
-    questions.push({
-      number: start.num,
-      text: qText,
-      options,
-      correct: 0,
-      type
-    });
+    questions.push({ number: start.num, text: qText, options, correct: 0, type });
   }
 
-  // ---------- 7. CORRIGÉ GLOBAL ----------
   const answerKey = {};
   const gridRegex = /(\d{1,3})\s*[-:\.\)]?\s*([A-Ea-e])\b/g;
   const allMatches = [];
   let mg;
-  while ((mg = gridRegex.exec(text)) !== null) {
-    allMatches.push({ num: parseInt(mg[1]), letter: mg[2].toUpperCase(), index: mg.index, len: mg[0].length });
-  }
+  while ((mg = gridRegex.exec(text)) !== null) allMatches.push({ num: parseInt(mg[1]), letter: mg[2].toUpperCase(), index: mg.index, len: mg[0].length });
+  
   let group = [];
   const gridZones = [];
   for (let i = 0; i < allMatches.length; i++) {
@@ -313,12 +278,8 @@ function parseQuizText(rawText) {
   questions.forEach(q => {
     const letter = answerKey[q.number];
     if (!letter) return;
-    if (q.type === 'tf') {
-      q.correct = letter === 'A' ? 0 : 1;
-    } else {
-      const idx = letter.charCodeAt(0) - 65;
-      if (idx >= 0 && idx < q.options.length) q.correct = idx;
-    }
+    if (q.type === 'tf') q.correct = letter === 'A' ? 0 : 1;
+    else { const idx = letter.charCodeAt(0) - 65; if (idx >= 0 && idx < q.options.length) q.correct = idx; }
   });
 
   return questions;
@@ -343,20 +304,11 @@ function fallbackParse(rawText) {
   return questions;
 }
 
-// ==========================================
-// ROUTES QUIZ
-// ==========================================
 app.post('/api/parse-existing-quiz', (req, res) => {
   try {
     const questions = parseQuizText(req.body?.text || '');
-    if (!questions.length) {
-      return res.json({ questions: [], message: 'Aucune question reconnue dans le texte.' });
-    }
-    res.json({ questions });
-  } catch (e) {
-    console.error('parse error:', e);
-    res.status(500).json({ error: e.message });
-  }
+    res.json({ questions: questions.length ? questions : [], message: questions.length ? undefined : 'Aucune question reconnue.' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/generate-post-test', async (req, res) => {
@@ -365,23 +317,14 @@ app.post('/api/generate-post-test', async (req, res) => {
   const { text, count = 50 } = req.body;
   try {
     const response = await client.chat.completions.create({
-      model: modelName(),
-      temperature: 0.4,
-      max_tokens: 8000,
-      response_format: { type: 'json_object' },
+      model: modelName(), temperature: 0.4, max_tokens: 8000, response_format: { type: 'json_object' },
       messages: [
-        {
-          role: 'system',
-          content: `Génère ${count} questions en FRANÇAIS (QCM, V/F). Format strict: {"questions":[{"type":"mcq","text":"...","options":["A","B"],"correct":0,"explanation":"..."}]}`
-        },
+        { role: 'system', content: `Génère ${count} questions en FRANÇAIS (QCM, V/F). Format strict: {"questions":[{"type":"mcq","text":"...","options":["A","B"],"correct":0,"explanation":"..."}]}` },
         { role: 'user', content: String(text || '').slice(0, 15000) }
       ]
     });
     res.json(JSON.parse(response.choices[0].message.content));
-  } catch (e) {
-    console.error('AI error:', e);
-    res.status(502).json({ error: e.message });
-  }
+  } catch (e) { res.status(502).json({ error: e.message }); }
 });
 
 app.listen(port, '0.0.0.0', () => console.log(`Serveur sur port ${port}`));
