@@ -26,9 +26,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .notice{padding:12px;border-radius:10px;background:#fff7df;color:#74500b;font-size:13px;margin-top:15px;border-left:4px solid #f59e0b}
 .notice.err{background:#fff0f0;color:#a51f2a;border-color:#ef4444}
 .notice.ok{background:#e9f8f1;color:#0e5e3f;border-color:#10b981}
-.hidden-file{display:none}
-.badge{display:inline-block;padding:4px 8px;border-radius:99px;font-size:11px;font-weight:800;background:#edf2ff;color:#244fc2}
-.badge.green{background:#e9f8f1;color:#13734e}
 
 /* MODAL POST-TEST PLEIN ÉCRAN */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:80px}
@@ -50,50 +47,29 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .exam-result-box{background:#e9f8f1;padding:15px;border-radius:10px;margin-top:15px;border-left:4px solid #10b981;font-size:14px}
 .exam-result-box.wrong{background:#fff1f2;border-color:#e11d48}
 .exam-explain{font-size:13px;color:#475569;margin-top:10px;padding:10px;background:#f8faff;border-radius:8px}
-
 @media(max-width:600px){ .grid-2{grid-template-columns:1fr} .exam-body{padding:0 12px} }
 </style>
 </head><body>
 
-<!-- HEADER -->
 <header>
   <div class="brand">Compo<span>Test</span></div>
   <div class="header-actions">
     <span id="authUserLabel">Espace privé</span>
-    <button id="passwordPanelBtn" type="button" hidden>🔑 Mdp</button>
-    <button id="logoutBtn" type="button" hidden>Déconnexion</button>
   </div>
 </header>
 
-<!-- AUTH GATE -->
-<section id="authGate" class="wrap">
-  <div class="panel" style="max-width:400px;margin:50px auto">
-    <h1 style="text-align:center">Connexion</h1>
-    <form id="loginForm">
-      <label for="loginEmail">Identifiant ou E-mail</label>
-      <input id="loginEmail" type="text" required placeholder="maroane ou maroane@exemple.com">
-      <label for="loginPassword">Mot de passe</label>
-      <input id="loginPassword" type="password" required>
-      <button id="loginBtn" type="submit" style="width:100%;margin-top:15px">Se connecter</button>
-    </form>
-    <div id="authError" style="color:#e11d48;font-size:12px;margin-top:10px;text-align:center"></div>
-    <div style="text-align:center;margin-top:15px;font-size:12px"><a href="#" id="forgotPasswordBtn" style="color:#2457d6;text-decoration:none">Mot de passe oublié ?</a></div>
-  </div>
-</section>
-
-<!-- APP MAIN -->
-<main id="appMain" class="wrap" style="display:none">
+<main class="wrap">
   <div class="panel">
-    <h1 id="appTitle">📚 Créer un test</h1>
-    <p style="color:var(--muted);margin-top:-10px">Importez un document pour générer un nouveau quiz ou extraire les questions existantes.</p>
+    <h1 id="appTitle">📚 Importer un document</h1>
+    <p style="color:var(--muted);margin-top:-10px">Choisissez un fichier pour générer un nouveau quiz ou extraire des questions existantes.</p>
 
     <div class="grid-2">
       <div>
-        <label for="quizTitle">Titre du test</label>
-        <input id="quizTitle" placeholder="Ex. Post-Test Immunologie" value="">
+        <label for="quizTitle">Titre du test (optionnel)</label>
+        <input id="quizTitle" placeholder="Ex. Examen Blanc" value="">
       </div>
       <div>
-        <label for="quizSubject">Matière</label>
+        <label for="quizSubject">Matière (optionnel)</label>
         <input id="quizSubject" placeholder="Ex. Immunologie">
       </div>
     </div>
@@ -108,19 +84,19 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 
     <div id="textAreaWrap" class="hide" style="margin-top:20px">
       <label for="pdfText">Texte extrait (vérifiez et modifiez si besoin)</label>
-      <textarea id="pdfText" style="min-height:200px" placeholder="Le texte apparaîtra ici après extraction."></textarea>
+      <textarea id="pdfText" style="min-height:150px" placeholder="Le texte apparaîtra ici après extraction."></textarea>
     </div>
 
-    <!-- LES 2 BOUTONS MAGIQUES -->
+    <!-- LES 2 BOUTONS -->
     <div class="actions" id="actionButtons" style="margin-top:25px;display:none;justify-content:center;gap:20px">
-      <button id="generatePostTestBtn" class="success" style="flex:1;max-width:300px">
-        ✨ GÉNÉRER UN POST-TEST<br>
-        <span style="font-size:11px;font-weight:normal;opacity:0.9">(Créer des questions à partir du cours)</span>
+      <button id="generatePostTestBtn" class="success" style="flex:1;max-width:300px;text-align:left;padding:15px;">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">✨ GÉNÉRER UN POST-TEST</div>
+        <div style="font-size:11px;font-weight:normal;opacity:0.9">Si le document est un cours (texte sans questions).</div>
       </button>
       
-      <button id="extractTestBtn" class="secondary" style="flex:1;max-width:300px">
-        📋 EXTRAIRE UN QUESTIONNAIRE<br>
-        <span style="font-size:11px;font-weight:normal;opacity:0.9">(Le document contient déjà des questions)</span>
+      <button id="extractTestBtn" class="secondary" style="flex:1;max-width:300px;text-align:left;padding:15px;">
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">📋 EXTRAIRE UN QUESTIONNAIRE</div>
+        <div style="font-size:11px;font-weight:normal;opacity:0.9">Si le document contient déjà des questions (Q1, A, B...).</div>
       </button>
     </div>
 
@@ -129,20 +105,18 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 </main>
 
 <!-- ============================================== -->
-<!-- VUE POST-TEST PLEIN ÉCRAN (Comme Gemini) -->
+<!-- VUE POST-TEST PLEIN ÉCRAN -->
 <!-- ============================================== -->
 <div id="examView">
   <div class="exam-header">
     <div>
-      <h2 id="examTitle">Post-Test</h2>
+      <h2 id="examTitle">Test</h2>
       <div id="examMeta" style="font-size:12px;opacity:.8"></div>
     </div>
     <button class="ghost" id="examQuitBtn" style="background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.3)">← Quitter</button>
   </div>
   
-  <div class="exam-body" id="examBody">
-    <!-- Les questions s'injectent ici par JS -->
-  </div>
+  <div class="exam-body" id="examBody"></div>
 
   <div class="exam-actions" id="examActionsBar">
     <div style="font-size:14px;color:var(--muted)" id="examProgressText">Question 1 / 10</div>
@@ -154,65 +128,20 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
-const INTERNAL_DOMAIN='comptest.local';
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-let activeUserId=null;
-let examState=null; // Contiendra les questions et l'état du test en cours
+let examState = null;
 
-// Utilitaires
+// Utilitaires d'échappement
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function identifierToEmail(input){const v=String(input||'').trim().toLowerCase();if(!v)return '';if(v.includes('@'))return v;return v.replace(/[^a-z0-9._-]/g,'')+'@'+INTERNAL_DOMAIN}
 
 // ==========================================
-// AUTHENTIFICATION
-// ==========================================
-async function initSaaS(){
-  const cfg=window.COMPOSTEST_CONFIG||{};
-  if(!window.supabase||!cfg.SUPABASE_URL){alert('Config Supabase manquante');return}
-  const client=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
-  window.compTestAuth=client;
-  
-  client.auth.onAuthStateChange((_e,session)=>{
-    if(session){
-      activeUserId=session.user.id;
-      $('authGate').style.display='none';
-      $('appMain').style.display='block';
-      $('logoutBtn').hidden=false;
-      $('passwordPanelBtn').hidden=false;
-      $('authUserLabel').textContent=session.user.email.split('@')[0];
-    } else {
-      activeUserId=null;
-      $('authGate').style.display='block';
-      $('appMain').style.display='none';
-      $('logoutBtn').hidden=true;
-      $('passwordPanelBtn').hidden=true;
-    }
-  });
-
-  $('loginForm').addEventListener('submit',async e=>{
-    e.preventDefault();
-    const btn=$('loginBtn'); btn.disabled=true; btn.textContent='...';
-    const email=identifierToEmail($('loginEmail').value);
-    const {error}=await client.auth.signInWithPassword({email,password:$('loginPassword').value});
-    if(error) $('authError').textContent = 'Erreur : ' + error.message;
-    else $('authError').textContent = '';
-    btn.disabled=false; btn.textContent='Se connecter';
-  });
-
-  $('logoutBtn').addEventListener('click',()=>client.auth.signOut());
-}
-initSaaS();
-
-// ==========================================
-// LOGIQUE D'IMPORTATION (PDF, WORD, TXT)
+// LOGIQUE D'IMPORTATION
 // ==========================================
 $('pdfFile').addEventListener('change', function() {
   if(this.files.length > 0) {
@@ -220,14 +149,6 @@ $('pdfFile').addEventListener('change', function() {
     extractText(this.files[0]);
   }
 });
-
-function cleanExtractedText(text){
-  if(!text)return '';
-  let cleaned=text;
-  // Nettoyage basique
-  cleaned=cleaned.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
-  return cleaned.trim();
-}
 
 async function extractText(file){
   const status=$('pdfStatus');
@@ -242,28 +163,27 @@ async function extractText(file){
       for(let p=1;p<=pdf.numPages;p++){
         const page=await pdf.getPage(p);
         const content=await page.getTextContent();
-        const items=content.items.map(i=>i.str);
-        pages.push(items.join(' '));
+        // On joint les éléments avec des espaces, mais on garde les sauts de ligne quand y change
+        let pageText = content.items.map(i=>i.str).join(' ');
+        pages.push(pageText);
       }
       text=pages.join('\n\n');
     } else if(name.endsWith('.docx')){
       const zip=await JSZip.loadAsync(await file.arrayBuffer());
       const docXml=zip.file('word/document.xml');
-      if(!docXml) throw new Error('Fichier Word invalide.');
       const xml=await docXml.async('string');
-      // Extraction simple du texte entre les balises <w:t>
       text = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
     } else if(name.endsWith('.txt')){
       text=await file.text();
     }
     
-    text = cleanExtractedText(text);
-    if(text.length < 50) throw new Error('Le document semble vide ou illisible.');
+    // Nettoyage basique
+    text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
     
     $('pdfText').value = text;
     $('textAreaWrap').classList.remove('hide');
     $('actionButtons').style.display = 'flex';
-    status.textContent = `✅ ${text.length} caractères extraits. Prêt à générer.`;
+    status.textContent = `✅ ${text.length} caractères extraits.`;
     status.style.color = 'var(--green)';
     
   } catch(e) {
@@ -280,51 +200,40 @@ $('generatePostTestBtn').addEventListener('click', async () => {
   if(!text) return;
   
   const btn = $('generatePostTestBtn');
-  const originalText = btn.innerHTML;
-  btn.innerHTML = '⏳ Génération en cours...';
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = '⏳ Génération en cours (30s)...';
   btn.disabled = true;
   
   const status = $('analysisStatus');
-  status.classList.remove('hide', 'err', 'ok');
-  status.textContent = 'L\'IA analyse le cours et prépare les questions...';
+  status.className = 'notice';
+  status.textContent = 'L\'IA analyse le cours...';
   
   try {
-    const session = await window.compTestAuth.auth.getSession();
-    const token = session.data.session.access_token;
-    
-    const res = await fetch('/api/analyze-course', {
+    const res = await fetch('/api/generate-post-test', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      headers: { 'Content-Type': 'application/json' }, // Ajoutez Auth Token si nécessaire
       body: JSON.stringify({
         subject: $('quizSubject').value.trim() || 'Cours',
         title: $('quizTitle').value.trim() || 'Post-Test',
         sourceText: text,
-        count: 15 // On génère 15 questions par défaut
+        count: 15
       })
     });
     
     const data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'Erreur lors de la génération');
+    if(!res.ok) throw new Error(data.error);
     
-    if(data.questions && data.questions.length > 0) {
+    if(data.questions.length > 0) {
       status.className = 'notice ok';
-      status.textContent = `✅ ${data.questions.length} questions générées avec succès !`;
-      
-      // On lance la vue "Post-Test"
-      startExam({
-        title: $('quizTitle').value.trim() || 'Post-Test',
-        subject: $('quizSubject').value.trim() || 'Généré par IA',
-        questions: data.questions
-      });
-    } else {
-      throw new Error('L\'IA n\'a pas renvoyé de questions.');
+      status.textContent = `✅ ${data.questions.length} questions générées !`;
+      startExam({ title: 'Post-Test IA', subject: 'Généré', questions: data.questions });
     }
     
   } catch (err) {
     status.className = 'notice err';
     status.textContent = '❌ ' + err.message;
   } finally {
-    btn.innerHTML = originalText;
+    btn.innerHTML = originalHTML;
     btn.disabled = false;
   }
 });
@@ -332,71 +241,52 @@ $('generatePostTestBtn').addEventListener('click', async () => {
 // ==========================================
 // BOUTON 2 : EXTRAIRE UN QUESTIONNAIRE EXISTANT
 // ==========================================
-$('extractTestBtn').addEventListener('click', () => {
+$('extractTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value;
   if(!text) return;
   
+  const btn = $('extractTestBtn');
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = '⏳ Extraction...';
+  btn.disabled = true;
+
   const status = $('analysisStatus');
-  status.classList.remove('hide', 'err', 'ok');
+  status.className = 'notice';
   status.textContent = 'Analyse du document pour trouver des questions...';
-  
-  // Logique simple d'extraction (regex) pour le frontend
-  const lines = text.split('\n');
-  let questions = [];
-  let currentQ = null;
-  
-  const qRegex = /^(?:Q\s*)?(\d{1,3})[.)]\s+(.+)$/i;
-  
-  lines.forEach(line => {
-    const m = line.match(qRegex);
-    if(m) {
-      if(currentQ) questions.push(currentQ);
-      currentQ = { num: m[1], text: m[2], options: [], correct: null, type: 'mcq' };
-    } else if (currentQ) {
-      // Détection des options A, B, C...
-      const optMatch = line.match(/^([A-D])[.)]\s+(.+)$/i);
-      if(optMatch) {
-        currentQ.options.push(optMatch[2].trim());
-      } else if (line.trim()) {
-        currentQ.text += ' ' + line.trim();
-      }
-    }
-  });
-  if(currentQ) questions.push(currentQ);
-  
-  if(questions.length > 0) {
-    // Nettoyage et formatage
-    const formatted = questions.map((q, i) => ({
-      id: `ext-${i}`,
-      number: i + 1,
-      type: q.options.length > 0 ? 'mcq' : 'short',
-      text: q.text,
-      options: q.options,
-      correct: 0, // Par défaut, à corriger par l'utilisateur si besoin
-      explanation: 'Question extraite du document.'
-    }));
-    
-    status.className = 'notice ok';
-    status.textContent = `✅ ${formatted.length} questions détectées dans le texte.`;
-    
-    startExam({
-      title: 'Extraction : ' + ($('quizTitle').value || 'Document'),
-      subject: 'Questions importées',
-      questions: formatted
+
+  try {
+    const res = await fetch('/api/parse-existing-quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
     });
-  } else {
+    
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error);
+    
+    if(data.questions.length > 0) {
+      status.className = 'notice ok';
+      status.textContent = `✅ ${data.questions.length} questions extraites du fichier !`;
+      startExam({ title: 'Questionnaire importé', subject: 'Import', questions: data.questions });
+    } else {
+      status.className = 'notice err';
+      status.textContent = '❌ Aucune question standard (1., A., B.) trouvée.';
+    }
+  } catch (err) {
     status.className = 'notice err';
-    status.textContent = '❌ Aucune question numérotée (1., 2., Q1...) trouvée dans le texte.';
+    status.textContent = '❌ ' + err.message;
+  } finally {
+    btn.innerHTML = originalHTML;
+    btn.disabled = false;
   }
 });
 
 // ==========================================
-// MOTEUR DE LA PAGE "POST-TEST" (FULLSCREEN)
+// MOTEUR POST-TEST (EXAM VIEW)
 // ==========================================
 function startExam(quiz) {
   examState = {
     title: quiz.title,
-    subject: quiz.subject,
     questions: quiz.questions,
     answers: new Array(quiz.questions.length).fill(null),
     currentIndex: 0,
@@ -404,52 +294,41 @@ function startExam(quiz) {
   };
   
   $('examTitle').textContent = quiz.title;
-  $('examMeta').textContent = `${quiz.questions.length} questions · ${quiz.subject}`;
+  $('examMeta').textContent = `${quiz.questions.length} questions`;
   $('examView').style.display = 'block';
-  document.body.style.overflow = 'hidden'; // Empêche le scroll derrière
+  document.body.style.overflow = 'hidden';
   
   renderExamQuestion();
 }
 
 $('examQuitBtn').addEventListener('click', () => {
-  if(!examState.submitted) {
-    if(!confirm('Quitter le test ? Vos réponses seront perdues.')) return;
-  }
+  if(!examState.submitted && !confirm('Quitter ? Les réponses seront perdues.')) return;
   $('examView').style.display = 'none';
   document.body.style.overflow = 'auto';
   examState = null;
 });
 
 function renderExamQuestion() {
-  if(!examState) return;
   const i = examState.currentIndex;
   const q = examState.questions[i];
   const ua = examState.answers[i];
   const total = examState.questions.length;
 
-  // Barre de progression
   $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
-  
-  // Navigation
   $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
   $('examNextBtn').style.display = i < total - 1 ? 'block' : 'none';
   $('examSubmitBtn').style.display = i === total - 1 ? 'block' : 'none';
 
-  // Contenu de la question
   let html = `<div class="exam-card">
-    <span class="exam-q-num">Question ${i + 1}</span>
+    <span class="exam-q-num">Q${i + 1}</span>
     <h3>${esc(q.text)}</h3>`;
     
   if(q.type === 'mcq' || q.type === 'mcq_multi') {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
-      const isSelected = q.type === 'mcq_multi' 
-        ? (Array.isArray(ua) && ua.includes(j))
-        : (ua === j);
-        
+      const isSelected = q.type === 'mcq_multi' ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
       let cls = 'exam-opt' + (isSelected ? ' selected' : '');
       
-      // Si déjà soumis, on montre les couleurs
       if(examState.submitted) {
         const isCorrect = q.type === 'mcq_multi' ? q.correct.includes(j) : q.correct === j;
         if(isCorrect) cls += ' correct';
@@ -457,10 +336,7 @@ function renderExamQuestion() {
       }
       
       html += `<label class="${cls}">
-        <input type="${q.type === 'mcq_multi' ? 'checkbox' : 'radio'}" 
-               name="exam_q${i}" value="${j}" 
-               ${isSelected ? 'checked' : ''} 
-               ${examState.submitted ? 'disabled' : ''}>
+        <input type="${q.type === 'mcq_multi' ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}>
         <span>${esc(opt)}</span>
       </label>`;
     });
@@ -475,29 +351,24 @@ function renderExamQuestion() {
         else if(isSelected && q.correct !== v) cls += ' wrong';
       }
       html += `<label class="${cls}">
-        <input type="radio" name="exam_q${i}" value="${v}" 
-               ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}>
+        <input type="radio" name="q${i}" value="${v}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}>
         <span>${v ? 'Vrai' : 'Faux'}</span>
       </label>`;
     });
     html += `</div>`;
   } else {
-    // Réponse courte
-    let cls = 'exam-input';
-    if(examState.submitted) {
-      const ok = String(ua).trim().toLowerCase() === String(q.correct).trim().toLowerCase();
-      cls += ok ? ' correct' : ' wrong';
-    }
-    html += `<input type="text" class="${cls}" id="examTextInput" placeholder="Votre réponse..." 
-             value="${esc(ua || '')}" ${examState.submitted ? 'disabled' : ''}>`;
+    html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${examState.submitted ? 'disabled' : ''} placeholder="Réponse...">`;
   }
 
-  // Affichage de la correction
   if(examState.submitted) {
-    const isOk = isAnswerCorrect(q, ua);
+    const isOk = checkAnswer(q, ua);
+    let correctStr = "";
+    if (q.type === 'mcq' && q.options) correctStr = q.options[q.correct];
+    if (q.type === 'tf') correctStr = q.correct ? 'Vrai' : 'Faux';
+
     html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}">
       <b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>
-      ${q.correct !== undefined && q.correct !== null ? `<br><b>Bonne réponse :</b> ${esc(getCorrectLabel(q))}` : ''}
+      ${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}
       ${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}
     </div>`;
   }
@@ -505,50 +376,24 @@ function renderExamQuestion() {
   html += `</div>`;
   $('examBody').innerHTML = html;
 
-  // Écouteurs d'événements pour sauvegarder la réponse
+  // Listeners
   if(!examState.submitted) {
-    if(q.type === 'mcq' || q.type === 'tf') {
-      document.querySelectorAll(`input[name="exam_q${i}"]`).forEach(inp => {
-        inp.addEventListener('change', () => {
-          if(q.type === 'tf') examState.answers[i] = inp.value === 'true';
-          else examState.answers[i] = parseInt(inp.value);
-        });
+    document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
+      inp.addEventListener('change', () => {
+        if(q.type === 'tf') examState.answers[i] = inp.value === 'true';
+        else examState.answers[i] = parseInt(inp.value);
       });
-    } else if(q.type === 'mcq_multi') {
-      document.querySelectorAll(`input[name="exam_q${i}"]`).forEach(inp => {
-        inp.addEventListener('change', () => {
-          let vals = [...document.querySelectorAll(`input[name="exam_q${i}"]:checked`)].map(x => parseInt(x.value));
-          examState.answers[i] = vals;
-        });
-      });
-    } else {
-      const inp = $('examTextInput');
-      if(inp) {
-        inp.addEventListener('input', (e) => {
-          examState.answers[i] = e.target.value;
-        });
-      }
-    }
+    });
+    const textInp = $('textInput');
+    if(textInp) textInp.addEventListener('input', (e) => examState.answers[i] = e.target.value);
   }
 }
 
-function getCorrectLabel(q) {
-  if(q.type === 'tf') return q.correct ? 'Vrai' : 'Faux';
-  if(q.type === 'mcq_multi') return q.correct.map(c => q.options[c]).join(', ');
-  if(q.type === 'mcq') return q.options[q.correct];
-  return q.correct;
-}
-
-function isAnswerCorrect(q, ua) {
-  if(ua === null || ua === undefined) return false;
-  if(q.type === 'mcq') return ua === q.correct;
-  if(q.type === 'mcq_multi') {
-    const a = Array.isArray(ua) ? [...ua].sort() : [];
-    const b = (Array.isArray(q.correct) ? q.correct : [q.correct]).sort();
-    return a.length === b.length && a.every((v,i) => v === b[i]);
-  }
-  if(q.type === 'tf') return ua === q.correct;
-  if(q.type === 'short') return String(ua).trim().toLowerCase() === String(q.correct || '').trim().toLowerCase();
+function checkAnswer(q, ua) {
+  if (ua === null || ua === undefined) return false;
+  if (q.type === 'mcq') return ua === q.correct;
+  if (q.type === 'tf') return ua === q.correct;
+  if (q.type === 'short') return String(ua).toLowerCase() === String(q.correct).toLowerCase();
   return false;
 }
 
@@ -558,29 +403,21 @@ $('examNextBtn').addEventListener('click', () => {
     renderExamQuestion();
   }
 });
-
 $('examPrevBtn').addEventListener('click', () => {
   if(examState.currentIndex > 0) {
     examState.currentIndex--;
     renderExamQuestion();
   }
 });
-
 $('examSubmitBtn').addEventListener('click', () => {
   if(examState.submitted) return;
-  
-  const unanswered = examState.answers.filter(a => a === null || a === undefined || a === '').length;
-  if(unanswered > 0) {
-    if(!confirm(`Il reste ${unanswered} question(s) sans réponse. Valider quand même ?`)) return;
-  }
-  
+  if(!confirm('Valider vos réponses et voir les corrections ?')) return;
   examState.submitted = true;
-  $('examSubmitBtn').style.display = 'none';
-  $('examNextBtn').style.display = 'none';
-  $('examPrevBtn').style.display = 'none';
+  $('examSubmitBtn').classList.add('hide');
+  $('examNextBtn').classList.add('hide');
+  $('examPrevBtn').classList.add('hide');
   $('examProgressText').innerHTML = '<b style="color:var(--green)">Test terminé !</b>';
-  
-  renderExamQuestion(); // Re-render avec les corrections
+  renderExamQuestion();
 });
 
 </script>
