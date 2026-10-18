@@ -25,9 +25,9 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .notice.ok{background:#e9f8f1;color:#0e5e3f;border-color:#10b981}
 
 /* ===========================
-   CSS DU TEST (CORRIGÉ POUR LE TEXTE ET ALIGNEMENT)
+   CSS DU TEST (CORRIGÉ ET PROPRE)
    =========================== */
-#examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:80px}
+#examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:100px}
 .exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
 .exam-header h2{margin:0;font-size:18px}
 .exam-body{max-width:800px;margin:25px auto;padding:0 20px}
@@ -35,22 +35,55 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 .exam-card h3{font-size:17px;margin-top:0;margin-bottom:20px;line-height:1.5;color:#1e293b;text-align:left}
 .exam-q-num{display:inline-block;background:var(--blue);color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:99px;margin-bottom:12px}
 
-/* C'EST ICI QUE LE BUG ETAIT : on force text-align:left et on aligne le flex */
-.exam-options{display:flex;flex-direction:column;gap:10px; text-align:left;}
-.exam-opt{display:flex; align-items:flex-start; gap:12px; padding:14px; border:1.5px solid var(--line); border-radius:10px; cursor:pointer; transition:.1s; text-align:left; background:#fff;}
-.exam-opt:hover{background:#f8faff;border-color:#a9bce7}
-.exam-opt.selected{border-color:var(--blue);background:#edf2ff}
-.exam-opt.correct{border-color:var(--green);background:#e9f8f1}
-.exam-opt.wrong{border-color:var(--red);background:#fff1f2}
-.exam-opt input{margin-top:4px;cursor:pointer;flex-shrink:0}
-.exam-opt span{flex:1; text-align:left;}
+/* LE FIX EST ICI */
+.exam-options { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.exam-opt { 
+  display: flex; 
+  align-items: flex-start; /* Aligne le bouton radio en haut */
+  gap: 12px; 
+  padding: 14px; 
+  border: 1.5px solid var(--line); 
+  border-radius: 10px; 
+  cursor: pointer; 
+  background: #fff;
+  transition: .1s;
+}
+.exam-opt:hover { background: #f8faff; border-color: #a9bce7; }
+.exam-opt.selected { border-color: var(--blue); background: #edf2ff; }
+.exam-opt.correct { border-color: var(--green); background: #e9f8f1; }
+.exam-opt.wrong { border-color: var(--red); background: #fff1f2; }
+
+/* Le radio ne rétrécit pas, le texte prend l'espace restant */
+.exam-opt input[type="radio"], .exam-opt input[type="checkbox"] { 
+  margin-top: 3px; 
+  cursor: pointer; 
+  flex-shrink: 0; 
+}
+.exam-opt span { 
+  flex: 1; 
+  text-align: left; 
+  line-height: 1.4;
+  word-wrap: break-word;
+}
 
 .exam-input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:10px;text-align:left}
-.exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10}
+
+/* BARRE D'ACTIONS EN BAS */
+.exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
+.exam-actions-left { font-size: 14px; color: var(--muted); }
+.exam-actions-right { display: flex; gap: 10px; }
+
 .exam-result-box{background:#e9f8f1;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
 .exam-result-box.wrong{background:#fff1f2;border-color:var(--red)}
 .exam-explain{font-size:13px;color:#475569;margin-top:12px;padding:12px;background:#f8faff;border-radius:8px;border-left:2px solid var(--blue)}
-@media(max-width:600px){ .grid-2{grid-template-columns:1fr} .exam-body{padding:0 12px} }
+
+@media(max-width:600px){ 
+  .grid-2{grid-template-columns:1fr} 
+  .exam-body{padding:0 12px} 
+  .exam-actions { flex-direction: column; gap: 10px; padding: 10px; }
+  .exam-actions-right { width: 100%; justify-content: space-between; }
+  .exam-actions-right button { flex: 1; }
+}
 </style>
 </head><body>
 
@@ -115,12 +148,11 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
   <div class="exam-body" id="examBody"></div>
 
   <div class="exam-actions" id="examActionsBar">
-    <div style="font-size:14px;color:var(--muted)" id="examProgressText">Question 1 / 50</div>
-    <div style="display:flex;gap:10px">
+    <div class="exam-actions-left" id="examProgressText">Question 1 / 50</div>
+    <div class="exam-actions-right">
       <button id="examPrevBtn" class="secondary">Précédent</button>
       <button id="examNextBtn">Suivant →</button>
-      <!-- LE BOUTON SOUMETTRE EST TOUJOURS LA -->
-      <button id="examSubmitBtn" class="success">✓ SOUMETTRE LA COMPO</button>
+      <button id="examSubmitBtn" class="success" style="display:none">✓ SOUMETTRE LA COMPO</button>
     </div>
   </div>
 </div>
@@ -272,11 +304,19 @@ function renderExamQuestion() {
   const total = examState.questions.length;
 
   $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
-  $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
-  $('examNextBtn').style.display = i < total - 1 ? 'block' : 'none';
   
-  // On affiche TOUJOURS le bouton Soumettre
-  $('examSubmitBtn').style.display = 'block';
+  // Gestion de l'affichage des boutons
+  $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
+  
+  if (i === total - 1) {
+    // Si c'est la dernière question, on cache "Suivant" et on montre "Soumettre"
+    $('examNextBtn').style.display = 'none';
+    $('examSubmitBtn').style.display = 'block';
+  } else {
+    // Sinon, on montre "Suivant" et on cache "Soumettre"
+    $('examNextBtn').style.display = 'block';
+    $('examSubmitBtn').style.display = 'none';
+  }
 
   let html = `<div class="exam-card"><span class="exam-q-num">Q${i + 1}</span><h3>${esc(q.text)}</h3>`;
     
@@ -292,7 +332,10 @@ function renderExamQuestion() {
         if(isCorrect) cls += ' correct'; else if(isSelected && !isCorrect) cls += ' wrong';
       }
       
-      html += `<label class="${cls}"><input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}><span>${esc(opt)}</span></label>`;
+      html += `<label class="${cls}">
+        <input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}>
+        <span>${esc(opt)}</span>
+      </label>`;
     });
     html += `</div>`;
   } else {
@@ -333,17 +376,27 @@ function checkAnswer(q, ua) {
   return false;
 }
 
-$('examNextBtn').addEventListener('click', () => { if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); } });
-$('examPrevBtn').addEventListener('click', () => { if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); } });
+$('examNextBtn').addEventListener('click', () => { 
+  if(examState.currentIndex < examState.questions.length - 1) { 
+    examState.currentIndex++; 
+    renderExamQuestion(); 
+  } 
+});
 
-// LOGIQUE DU BOUTON SOUMETTRE (Maintenant toujours visible)
+$('examPrevBtn').addEventListener('click', () => { 
+  if(examState.currentIndex > 0) { 
+    examState.currentIndex--; 
+    renderExamQuestion(); 
+  } 
+});
+
+// LOGIQUE DU BOUTON SOUMETTRE
 $('examSubmitBtn').addEventListener('click', () => {
   if(examState.submitted) return;
   if(!confirm('Soumettre le test et voir la correction ?')) return;
   
   examState.submitted = true;
   
-  // Désactive les boutons Suivant/Précédent
   $('examNextBtn').style.display = 'none';
   $('examPrevBtn').style.display = 'none';
   $('examSubmitBtn').style.display = 'none';
@@ -356,7 +409,7 @@ $('examSubmitBtn').addEventListener('click', () => {
   const score = (correctCount / examState.questions.length * 20).toFixed(1);
   $('examProgressText').innerHTML = `<b style="color:var(--green);font-size:16px">Note : ${score}/20 (${correctCount}/${examState.questions.length})</b>`;
   
-  // Affiche la correction
+  // Affiche la correction de la première question
   examState.currentIndex = 0;
   renderExamQuestion();
 });
