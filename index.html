@@ -36,11 +36,13 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .tabs{display:flex;gap:5px;margin-bottom:20px;border-bottom:2px solid var(--line);padding-bottom:10px;overflow-x:auto}
 .tab{padding:10px 15px;border-radius:8px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);border:0;white-space:nowrap}
 .tab.active{background:#edf2ff;color:var(--blue)}
-.history-item{background:#f8faff;border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.history-item{background:#f8faff;border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .admin-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:15px}
 .admin-table th,.admin-table td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
 .admin-table th{color:var(--muted)}
 .badge-admin{display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;margin-left:6px}
+.btn-icon{background:transparent;border:0;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.2s}
+.btn-icon:hover{background:#fee2e2}
 
 #adminModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;align-items:center;justify-content:center;padding:20px}
 #adminModal.show{display:flex}
@@ -165,14 +167,17 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   <div id="tab-library" class="tab-content hide">
     <div class="panel">
       <h1>🌍 Bibliothèque Publique</h1>
-      <p style="color:var(--muted);font-size:14px">Retrouvez ici tous les exercices extraits et partagés par la communauté. Cliquez sur un exercice pour le commencer.</p>
+      <p style="color:var(--muted);font-size:14px">Retrouvez ici tous les exercices extraits et partagés par la communauté.</p>
       <div id="libraryList"><p style="color:var(--muted)">Chargement...</p></div>
     </div>
   </div>
 
   <div id="tab-history" class="tab-content hide">
     <div class="panel">
-      <h1>Mon Historique</h1>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+        <h1 style="margin:0">Mon Historique</h1>
+        <button id="clearHistoryBtn" class="danger hide" onclick="clearAllHistory()">🗑️ Vider l'historique</button>
+      </div>
       <div id="historyList"></div>
     </div>
   </div>
@@ -264,6 +269,7 @@ let supabaseClient = null;
 let currentUser = null;
 let historyData = JSON.parse(localStorage.getItem('comptest_history') || '[]');
 let isAdmin = false;
+let libraryCache = []; // ✅ Stocke les quiz pour éviter les problèmes de JSON dans le HTML
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
 
 const cfg = window.COMPOSTEST_CONFIG || {};
@@ -321,6 +327,8 @@ function handleSession(session) {
 
     $('pwdBtn').style.display = isAdmin ? 'block' : 'none';
     $('adminBtn').style.display = isAdmin ? 'block' : 'none';
+    $('clearHistoryBtn').style.display = isAdmin ? 'block' : 'none'; // ✅ Bouton vider historique admin
+    
     if(isAdmin) loadAdminUsers();
     loadCloudData();
   } else {
@@ -331,6 +339,7 @@ function handleSession(session) {
     $('logoutBtn').style.display = 'none';
     $('userLabel').textContent = 'Non connecté';
     $('adminBtn').style.display = 'none';
+    $('clearHistoryBtn').style.display = 'none';
   }
 }
 initAuth();
@@ -493,15 +502,44 @@ async function saveHistory(entry) {
 function renderHistory() {
   const list = $('historyList');
   if (historyData.length === 0) { list.innerHTML = '<p style="color:var(--muted)">Aucun test terminé.</p>'; return; }
-  list.innerHTML = [...historyData].reverse().map(h =>
-    `<div class="history-item">
+  
+  list.innerHTML = [...historyData].reverse().map((h, revIdx) => {
+    const realIdx = historyData.length - 1 - revIdx;
+    return `<div class="history-item">
       <div>
         <div style="font-weight:700">${esc(h.title)}</div>
         <div style="font-size:12px;color:var(--muted)">${new Date(h.date).toLocaleString('fr-FR')}</div>
       </div>
-      <div style="font-size:20px;font-weight:800;color:var(--green)">${h.score.toFixed(1)}/20</div>
-    </div>`
-  ).join('');
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:20px;font-weight:800;color:var(--green)">${h.score.toFixed(1)}/20</div>
+        ${isAdmin ? `<button class="btn-icon" onclick="deleteHistoryItem(${realIdx})" title="Supprimer">🗑️</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ✅ SUPPRESSION HISTORIQUE (Admin)
+async function deleteHistoryItem(index) {
+  if (!confirm("Supprimer cette entrée de l'historique ?")) return;
+  historyData.splice(index, 1);
+  localStorage.setItem('comptest_history', JSON.stringify(historyData));
+  renderHistory();
+  if (currentUser) await supabaseClient.from('comptest_data').upsert(
+    { user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' }
+  );
+}
+
+async function clearAllHistory() {
+  if (!isAdmin) return;
+  if (!confirm("⚠️ Vider TOUT l'historique ? Cette action est irréversible.")) return;
+  historyData = [];
+  localStorage.setItem('comptest_history', JSON.stringify(historyData));
+  renderHistory();
+  if (currentUser) await supabaseClient.from('comptest_data').upsert(
+    { user_id: currentUser.id, history: [], updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' }
+  );
 }
 
 document.querySelectorAll('.tab').forEach(tab => {
@@ -562,7 +600,7 @@ $('pdfFile').addEventListener('change', async function() {
   }
 });
 
-async function fetchWithAuth(url, body) {
+async function fetchWithAuth(url, body, method = 'POST') {
   if (!supabaseClient) throw new Error("Supabase non configuré. Vérifie config.js.");
   let { data: { session } } = await supabaseClient.auth.getSession();
   if (!session || !session.access_token) {
@@ -570,11 +608,15 @@ async function fetchWithAuth(url, body) {
     if (refreshErr || !refreshed?.session) throw new Error("Session expirée. Reconnecte-toi pour continuer.");
     session = refreshed.session;
   }
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-    body: JSON.stringify(body)
-  });
+  const options = {
+    method,
+    headers: { 'Authorization': `Bearer ${session.access_token}` }
+  };
+  if (body) {
+    options.headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(body);
+  }
+  const res = await fetch(url, options);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || data.message || `Erreur serveur (${res.status})`);
   return data;
@@ -623,12 +665,10 @@ $('extractTestBtn').addEventListener('click', async () => {
       const subject = $('quizSubject').value.trim() || 'Général';
       
       try {
-        console.log('📤 Envoi vers la bibliothèque:', { title, subject, count: data.questions.length });
-        const saveRes = await fetchWithAuth('/api/quizzes', { title, subject, questions: data.questions });
-        console.log('✅ Réponse serveur sauvegarde:', saveRes);
+        await fetchWithAuth('/api/quizzes', { title, subject, questions: data.questions });
         $('analysisStatus').textContent += ' ✅ Publié !';
       } catch (e) {
-        console.error('❌ Erreur publication:', e);
+        console.error('Erreur publication:', e);
         $('analysisStatus').textContent += ' ⚠️ Erreur de publication : ' + e.message;
       }
 
@@ -658,27 +698,27 @@ async function loadLibrary() {
   const list = $('libraryList');
   list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
   try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    const res = await fetch('/api/quizzes', {
-      headers: { 'Authorization': `Bearer ${session.access_token}` }
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+    const data = await fetchWithAuth('/api/quizzes', null, 'GET');
     
     if (!data.quizzes || data.quizzes.length === 0) {
       list.innerHTML = '<p style="color:var(--muted)">Aucun exercice dans la bibliothèque pour le moment.</p>';
       return;
     }
 
-    list.innerHTML = data.quizzes.map(q => `
-      <div class="history-item" style="cursor:pointer" onclick='startLibraryQuiz(${JSON.stringify(JSON.stringify(q))})'>
-        <div>
+    libraryCache = data.quizzes; // ✅ On stocke en mémoire
+
+    list.innerHTML = data.quizzes.map((q, idx) => `
+      <div class="history-item">
+        <div style="flex:1;cursor:pointer" onclick="startLibraryQuizByIndex(${idx})">
           <div style="font-weight:700">${esc(q.title)}</div>
           <div style="font-size:12px;color:var(--muted)">
             ${esc(q.subject || 'Général')} • ${q.questions.length} question(s) • ${new Date(q.created_at).toLocaleDateString('fr-FR')}
           </div>
         </div>
-        <div style="font-size:20px;font-weight:800;color:var(--blue)">▶️</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-icon" onclick="startLibraryQuizByIndex(${idx})" title="Commencer">▶️</button>
+          ${isAdmin ? `<button class="btn-icon" onclick="deleteLibraryQuiz('${q.id}')" title="Supprimer">🗑️</button>` : ''}
+        </div>
       </div>
     `).join('');
   } catch (e) {
@@ -686,9 +726,21 @@ async function loadLibrary() {
   }
 }
 
-window.startLibraryQuiz = (jsonStr) => {
-  const q = JSON.parse(jsonStr);
+window.startLibraryQuizByIndex = (idx) => {
+  const q = libraryCache[idx];
+  if (!q) return alert("Exercice introuvable.");
   startExam({ title: q.title, questions: q.questions });
+};
+
+// ✅ SUPPRESSION EXERCICE (Admin)
+window.deleteLibraryQuiz = async (id) => {
+  if (!confirm("Supprimer cet exercice de la bibliothèque ?")) return;
+  try {
+    await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE');
+    loadLibrary();
+  } catch (e) {
+    alert("Erreur : " + e.message);
+  }
 };
 
 function startExam(quiz) {
