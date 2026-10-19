@@ -8,9 +8,8 @@ const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
-app.use(express.json({ limit: '10mb' })); // Augmenté pour les gros textes OCR
+app.use(express.json({ limit: '10mb' }));
 
-// Servir les fichiers statiques (favicon.png, images, etc.)
 app.use(express.static(__dirname, { maxAge: '1d' }));
 
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
@@ -18,9 +17,6 @@ app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.h
 app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
 
-// ==========================================
-// AUTHENTIFICATION
-// ==========================================
 async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return res.status(401).json({ error: 'Connecte-toi.' });
@@ -54,9 +50,6 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// ==========================================
-// SUPABASE ADMIN
-// ==========================================
 async function supabaseAdmin(pathname, options = {}) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY manquante sur Render.");
@@ -76,9 +69,6 @@ async function supabaseAdmin(pathname, options = {}) {
   return body;
 }
 
-// ==========================================
-// ROUTES ADMIN
-// ==========================================
 app.get('/api/admin/users', requireAdmin, async (_req, res) => {
   try {
     const data = await supabaseAdmin('users?page=1&per_page=100');
@@ -158,9 +148,6 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ==========================================
-// IA
-// ==========================================
 function aiClient() {
   if (!process.env.AI_API_KEY) return null;
   return new OpenAI({
@@ -171,16 +158,10 @@ function aiClient() {
 }
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
-// ==========================================
-// ALGORITHME D'EXTRACTION STRICTE (Mise à jour pour minuscules a) b) c))
-// ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
   let text = rawText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ').replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n').replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, ' ').replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/[ \t]+/g, ' ');
-  
-  // Normalisation des numéros de question et des options
   text = text.replace(/(^|[\s\.\(;:])((?:Q\s*)?\d{1,3})\s*([\.\):])\s*(?=[A-ZÀ-Ýa-z])/gi, '$1$2$3 ');
-  // Accepte A, B, C, D, E en majuscule ET minuscule
   text = text.replace(/(^|[\s])[\(\[]?([A-Ea-e])\s*([\.\)\-])\s*(?=[A-ZÀ-Ýa-z0-9])/g, (m, pre, letter, punct) => `${pre}${letter.toUpperCase()}${punct} `);
 
   const candidateRegex = /(?:^|[\s\.;:\)\]])(Q\s*(\d{1,3})|\d{1,3})\s*[\.\):]\s+/gi;
@@ -227,7 +208,6 @@ function parseQuizText(rawText) {
     let block = text.slice(start.textStart, end).trim();
     if (!block) continue;
 
-    // Accepte a) b) c) d) en minuscules (pour les images OCR)
     const optionSplitRegex = /(?<=^|[\s\.;:])([\(\[]?[A-Ea-e][\.\)\-\]])\s+/g;
     const optMatches = [];
     let mo;
@@ -316,9 +296,6 @@ function fallbackParse(rawText) {
   return questions;
 }
 
-// ==========================================
-// ROUTES QUIZ & BIBLIOTHÈQUE
-// ==========================================
 app.post('/api/parse-existing-quiz', (req, res) => {
   try {
     const questions = parseQuizText(req.body?.text || '');
