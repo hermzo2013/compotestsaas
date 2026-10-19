@@ -313,7 +313,7 @@ function fallbackParse(rawText) {
 }
 
 // ==========================================
-// ROUTES QUIZ
+// ROUTES QUIZ & BIBLIOTHÈQUE
 // ==========================================
 app.post('/api/parse-existing-quiz', (req, res) => {
   try {
@@ -327,7 +327,6 @@ app.post('/api/generate-post-test', async (req, res) => {
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
   const { text, count = 50 } = req.body;
   try {
-    // ✅ CORRECTION ICI : Ajout du mot "JSON" dans le prompt pour Groq
     const response = await client.chat.completions.create({
       model: modelName(),
       temperature: 0.4,
@@ -338,16 +337,60 @@ app.post('/api/generate-post-test', async (req, res) => {
           role: 'system', 
           content: `Tu es un générateur de quiz. Génère ${count} questions en FRANÇAIS (QCM et Vrai/Faux) à partir du texte fourni. Tu DOIS répondre UNIQUEMENT en format JSON valide. Le format JSON attendu est : {"questions":[{"type":"mcq","text":"...","options":["A","B"],"correct":0,"explanation":"..."}]}` 
         },
-        { 
-          role: 'user', 
-          content: String(text || '').slice(0, 15000) 
-        }
+        { role: 'user', content: String(text || '').slice(0, 15000) }
       ]
     });
     res.json(JSON.parse(response.choices[0].message.content));
   } catch (e) {
     console.error('Erreur API IA :', e.message);
     res.status(502).json({ error: e.message });
+  }
+});
+
+app.get('/api/quizzes', async (req, res) => {
+  try {
+    const base = process.env.SUPABASE_URL.replace(/\/$/, '');
+    const response = await fetch(`${base}/rest/v1/quizzes?select=id,title,subject,questions,created_at&order=created_at.desc`, {
+      headers: {
+        apikey: process.env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`
+      }
+    });
+    if (!response.ok) throw new Error('Erreur Supabase');
+    const data = await response.json();
+    res.json({ quizzes: data });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/quizzes', async (req, res) => {
+  const { title, subject, questions } = req.body;
+  if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ error: 'Titre et questions requis.' });
+  }
+  try {
+    const base = process.env.SUPABASE_URL.replace(/\/$/, '');
+    const response = await fetch(`${base}/rest/v1/quizzes`, {
+      method: 'POST',
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        title: String(title).slice(0, 200),
+        subject: String(subject || '').slice(0, 200),
+        questions: questions,
+        created_by: req.user.id
+      })
+    });
+    if (!response.ok) throw new Error('Erreur Supabase');
+    const data = await response.json();
+    res.json({ quiz: data[0] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
