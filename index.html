@@ -78,6 +78,10 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .app-footer{text-align:center;padding:20px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);background:#fff;margin-top:20px}
 .app-footer b{color:var(--blue)}
 
+.checkbox-group{display:flex;align-items:center;gap:10px;margin-top:15px;background:#f8faff;padding:12px;border-radius:10px;border:1px solid var(--line)}
+.checkbox-group input{width:20px;height:20px;cursor:pointer;margin:0}
+.checkbox-group label{margin:0;cursor:pointer;font-size:14px;color:var(--ink)}
+
 @media(max-width:600px){ 
   .grid-2{grid-template-columns:1fr} 
   .exam-body{padding:0 12px} 
@@ -148,6 +152,13 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
         <span id="fileName" style="margin-left:10px;font-weight:600;font-size:14px;color:var(--blue)">Aucun fichier</span>
         <div id="pdfStatus" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
       </div>
+      
+      <!-- ✅ NOUVELLE CASE A COCHER POUR LA SCISSION -->
+      <div class="checkbox-group">
+        <input type="checkbox" id="splitQuizCheckbox">
+        <label for="splitQuizCheckbox">Scinder automatiquement en quiz de 50 questions maximum (si le fichier contient plus de 50 questions)</label>
+      </div>
+
       <div id="textAreaWrap" class="hide" style="margin-top:20px">
         <label for="pdfText">Texte extrait</label>
         <textarea id="pdfText" style="min-height:150px"></textarea>
@@ -692,7 +703,55 @@ async function fetchWithAuth(url, body, method = 'POST') {
 }
 
 // ==========================================
-// ✅ BOUTON GÉNÉRATION IA (MODIFIÉ POUR SAUVEGARDER)
+// FONCTION UTILITAIRE POUR LA SCISSION
+// ==========================================
+async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
+  let quizzesToStart = [];
+  
+  if (shouldSplit && questions.length > 50) {
+    // Découpage en paquets de 50
+    const chunks = [];
+    for (let i = 0; i < questions.length; i += 50) {
+      chunks.push(questions.slice(i, i + 50));
+    }
+    
+    $('analysisStatus').textContent = `✂️ Découpage en ${chunks.length} parties de 50 questions maximum...`;
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkTitle = `${baseTitle} - Partie ${i + 1}`;
+      try {
+        await fetchWithAuth('/api/quizzes', { title: chunkTitle, subject, questions: chunks[i] });
+        quizzesToStart.push({ title: chunkTitle, questions: chunks[i] });
+      } catch (e) {
+        console.error(`Erreur sauvegarde ${chunkTitle}:`, e);
+      }
+    }
+    $('analysisStatus').textContent += ` ✅ ${chunks.length} quiz publiés !`;
+  } else {
+    // Pas de découpage
+    try {
+      await fetchWithAuth('/api/quizzes', { title: baseTitle, subject, questions });
+      quizzesToStart.push({ title: baseTitle, questions });
+      $('analysisStatus').textContent += ' ✅ Publié !';
+    } catch (e) {
+      console.error('Erreur publication:', e);
+      $('analysisStatus').textContent += ' ⚠️ Erreur de publication : ' + e.message;
+    }
+  }
+
+  // On lance le premier quiz (ou le seul s'il n'y a pas eu de découpage)
+  if (quizzesToStart.length > 0) {
+    startExam(quizzesToStart[0]);
+    if (quizzesToStart.length > 1) {
+      alert(`Le fichier a été scindé en ${quizzesToStart.length} quiz. Le premier va commencer. Les autres sont disponibles dans la Bibliothèque !`);
+    }
+  } else {
+    throw new Error("Aucun quiz n'a pu être sauvegardé.");
+  }
+}
+
+// ==========================================
+// BOUTON GÉNÉRATION IA
 // ==========================================
 $('generatePostTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value.trim(); if(!text) return;
@@ -708,18 +767,9 @@ $('generatePostTestBtn').addEventListener('click', async () => {
       
       const title = $('quizTitle').value.trim() || 'Quiz IA ' + new Date().toLocaleDateString('fr-FR');
       const subject = $('quizSubject').value.trim() || 'Généré par IA';
+      const shouldSplit = $('splitQuizCheckbox').checked;
       
-      // ✅ NOUVEAU : On sauvegarde dans la bibliothèque
-      try {
-        await fetchWithAuth('/api/quizzes', { title, subject, questions: data.questions });
-        $('analysisStatus').textContent += ' ✅ Publié !';
-      } catch (e) {
-        console.error('Erreur publication:', e);
-        $('analysisStatus').textContent += ' ⚠️ Erreur de publication : ' + e.message;
-      }
-
-      // On lance le test
-      startExam({ title, questions: data.questions });
+      await saveAndStartQuiz(title, subject, data.questions, shouldSplit);
     } else {
       $('analysisStatus').className = 'notice err';
       $('analysisStatus').textContent = '❌ Aucune question générée.';
@@ -738,6 +788,9 @@ $('generatePostTestBtn').addEventListener('click', async () => {
   }
 });
 
+// ==========================================
+// BOUTON EXTRACTION
+// ==========================================
 $('extractTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value; if(!text) return;
   const btn = $('extractTestBtn');
@@ -752,16 +805,9 @@ $('extractTestBtn').addEventListener('click', async () => {
       
       const title = $('quizTitle').value.trim() || 'Exercice importé ' + new Date().toLocaleDateString('fr-FR');
       const subject = $('quizSubject').value.trim() || 'Général';
+      const shouldSplit = $('splitQuizCheckbox').checked;
       
-      try {
-        await fetchWithAuth('/api/quizzes', { title, subject, questions: data.questions });
-        $('analysisStatus').textContent += ' ✅ Publié !';
-      } catch (e) {
-        console.error('Erreur publication:', e);
-        $('analysisStatus').textContent += ' ⚠️ Erreur de publication : ' + e.message;
-      }
-
-      startExam({ title, questions: data.questions });
+      await saveAndStartQuiz(title, subject, data.questions, shouldSplit);
     } else {
       $('analysisStatus').className = 'notice err';
       $('analysisStatus').textContent = '❌ ' + (data.message || 'Aucune question reconnue.');
