@@ -316,7 +316,7 @@ app.post('/api/generate-post-test', async (req, res) => {
       messages: [
         { 
           role: 'system', 
-          content: `Tu es un générateur de quiz. Génère ${count} questions en FRANÇAIS (QCM et Vrai/Faux) à partir du texte fourni. Tu DOIS répondre UNIQUEMENT en format JSON valide. Le format JSON attendu est : {"questions":[{"type":"mcq","text":"...","options":["A","B"],"correct":0,"explanation":"..."}]}` 
+          content: `Tu es un générateur de quiz. Génère ${count} questions en FRANÇAIS (QCM et Vrai/Faux) à partir du texte fourni. Tu DOIS répondre UNIQUEMENT en format JSON valide. Le format JSON attendu est : {"questions":[{"type":"mcq","text":"...","options":["A","B"],"correct":0,"explanation":"Un indice court pour aider l'utilisateur à trouver la réponse"}]}` 
         },
         { role: 'user', content: String(text || '').slice(0, 15000) }
       ]
