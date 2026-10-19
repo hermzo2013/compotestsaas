@@ -347,7 +347,6 @@ app.post('/api/generate-post-test', async (req, res) => {
   }
 });
 
-// ✅ CORRECTION ICI : Utilisation de SERVICE_ROLE_KEY et Prefer return=representation
 app.get('/api/quizzes', async (req, res) => {
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
@@ -379,7 +378,7 @@ app.post('/api/quizzes', async (req, res) => {
         apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
         Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         'Content-Type': 'application/json',
-        'Prefer': 'return=representation' // ✅ Force Supabase à renvoyer l'objet créé
+        'Prefer': 'return=representation'
       },
       body: JSON.stringify({
         title: String(title).slice(0, 200),
@@ -395,12 +394,27 @@ app.post('/api/quizzes', async (req, res) => {
     }
     
     const data = await response.json();
-    console.log('✅ Quiz sauvegardé dans Supabase :', data[0]?.id);
     res.json({ quiz: data[0] });
   } catch (e) {
     console.error('Erreur POST quizzes:', e.message);
     res.status(500).json({ error: e.message });
   }
+});
+
+// ✅ NOUVELLE ROUTE : Supprimer un quiz (Admin uniquement)
+app.delete('/api/quizzes/:id', requireAdmin, async (req, res) => {
+  try {
+    const base = process.env.SUPABASE_URL.replace(/\/$/, '');
+    const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, {
+      method: 'DELETE',
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+      }
+    });
+    if (!response.ok) throw new Error('Erreur Supabase DELETE');
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.listen(port, '0.0.0.0', () => console.log(`Serveur sur port ${port}`));
