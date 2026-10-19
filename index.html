@@ -75,6 +75,12 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .exam-result-box.wrong{background:#fff1f2;border-color:var(--red)}
 .exam-explain{font-size:13px;color:#475569;margin-top:12px;padding:12px;background:#f8faff;border-radius:8px;border-left:2px solid var(--blue)}
 
+/* STYLE POUR L'INDICE */
+.hint-btn { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 8px 15px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin-top: 15px; transition: 0.2s; }
+.hint-btn:hover { background: #fde68a; }
+.hint-box { display: none; margin-top: 12px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 8px; font-size: 14px; color: #78350f; }
+.hint-box.show { display: block; }
+
 .app-footer{text-align:center;padding:20px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);background:#fff;margin-top:20px}
 .app-footer b{color:var(--blue)}
 
@@ -153,7 +159,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
         <div id="pdfStatus" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
       </div>
       
-      <!-- ✅ NOUVELLE CASE A COCHER POUR LA SCISSION -->
       <div class="checkbox-group">
         <input type="checkbox" id="splitQuizCheckbox">
         <label for="splitQuizCheckbox">Scinder automatiquement en quiz de 50 questions maximum (si le fichier contient plus de 50 questions)</label>
@@ -604,7 +609,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // ==========================================
-// GESTION DES FICHIERS (avec pré-traitement d'image)
+// GESTION DES FICHIERS
 // ==========================================
 $('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
@@ -709,7 +714,6 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
   let quizzesToStart = [];
   
   if (shouldSplit && questions.length > 50) {
-    // Découpage en paquets de 50
     const chunks = [];
     for (let i = 0; i < questions.length; i += 50) {
       chunks.push(questions.slice(i, i + 50));
@@ -728,7 +732,6 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
     }
     $('analysisStatus').textContent += ` ✅ ${chunks.length} quiz publiés !`;
   } else {
-    // Pas de découpage
     try {
       await fetchWithAuth('/api/quizzes', { title: baseTitle, subject, questions });
       quizzesToStart.push({ title: baseTitle, questions });
@@ -739,7 +742,6 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
     }
   }
 
-  // On lance le premier quiz (ou le seul s'il n'y a pas eu de découpage)
   if (quizzesToStart.length > 0) {
     startExam(quizzesToStart[0]);
     if (quizzesToStart.length > 1) {
@@ -929,6 +931,12 @@ function renderExamQuestion() {
     html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${examState.submitted ? 'disabled' : ''} placeholder="Votre réponse...">`;
   }
 
+  // ✅ AJOUT DU BOUTON INDICE (uniquement si pas encore soumis)
+  if (!examState.submitted && q.explanation) {
+    html += `<button class="hint-btn" onclick="document.getElementById('hintBox').classList.toggle('show')">💡 Voir un indice</button>`;
+    html += `<div class="hint-box" id="hintBox"><b>Indice :</b> ${esc(q.explanation)}</div>`;
+  }
+
   if(examState.submitted) {
     const isOk = checkAnswer(q, ua);
     let correctStr = q.options && q.options[q.correct] ? q.options[q.correct] : '';
@@ -966,20 +974,48 @@ function checkAnswer(q, ua) {
 $('examNextBtn').addEventListener('click', () => { if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); } });
 $('examPrevBtn').addEventListener('click', () => { if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); } });
 
+// ✅ LOGIQUE DE SOUMISSION MODIFIÉE
 $('examSubmitBtn').addEventListener('click', async () => {
   if(examState.submitted) return;
   if(!confirm('Soumettre le test et voir la correction ?')) return;
+  
   examState.submitted = true;
   $('examNextBtn').style.display = 'none';
   $('examPrevBtn').style.display = 'none';
   $('examSubmitBtn').style.display = 'none';
+  
   let correctCount = 0;
   examState.questions.forEach((q, i) => { if(checkAnswer(q, examState.answers[i])) correctCount++; });
-  const score = (correctCount / examState.questions.length * 20);
-  $('examProgressText').innerHTML = `<b style="color:var(--green);font-size:16px">Note : ${score.toFixed(1)}/20</b>`;
-  await saveHistory({ title: examState.title, date: new Date().toISOString(), score: score });
+  const total = examState.questions.length;
+  const scoreSur20 = (correctCount / total * 20);
+  
+  // 1. Affichage immédiat du score brut (ex: 45/50)
+  alert(`✅ Test soumis !\n\nTon score global est de : ${correctCount} / ${total}\n\nTu vas maintenant voir les corrections. La note sur 20 sera enregistrée et affichée à la fin.`);
+
+  // 2. Sauvegarde dans l'historique
+  await saveHistory({ title: examState.title, date: new Date().toISOString(), score: scoreSur20 });
+  
+  // 3. Affichage des corrections
   examState.currentIndex = 0;
   renderExamQuestion();
+  
+  // 4. Modification du bouton "Quitter" pour afficher la note finale
+  const quitBtn = $('examQuitBtn');
+  quitBtn.textContent = 'Terminer et voir la note /20';
+  quitBtn.style.background = 'var(--green)';
+  quitBtn.style.borderColor = 'var(--green)';
+  
+  // Remplacement de l'événement click temporairement
+  quitBtn.onclick = () => {
+    alert(`🎉 Félicitations !\n\nTa note finale est de : ${scoreSur20.toFixed(1)} / 20\n\nLes résultats ont été enregistrés dans ton historique.`);
+    $('examView').style.display = 'none';
+    document.body.style.overflow = 'auto';
+    examState = null;
+    quitBtn.onclick = null; // Reset
+    quitBtn.textContent = '← Quitter'; // Reset text
+    quitBtn.style.background = 'rgba(255,255,255,.1)';
+    quitBtn.style.borderColor = 'rgba(255,255,255,.3)';
+  };
 });
 </script>
 </body></html>
