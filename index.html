@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>CompoTest</title>
-<!-- ✅ Favicon -->
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <style>
@@ -43,7 +42,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .admin-table th{color:var(--muted)}
 .badge-admin{display:inline-block;background:#fef3c7;color:#92400e;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;margin-left:6px}
 
-/* MODALE ADMIN */
 #adminModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;align-items:center;justify-content:center;padding:20px}
 #adminModal.show{display:flex}
 .admin-modal-content{background:#fff;border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow-y:auto;padding:30px;box-shadow:0 10px 40px rgba(0,0,0,.2)}
@@ -75,19 +73,15 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .exam-result-box.wrong{background:#fff1f2;border-color:var(--red)}
 .exam-explain{font-size:13px;color:#475569;margin-top:12px;padding:12px;background:#f8faff;border-radius:8px;border-left:2px solid var(--blue)}
 
-/* SIGNATURE FOOTER */
 .app-footer{text-align:center;padding:20px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);background:#fff;margin-top:20px}
 .app-footer b{color:var(--blue)}
 
-/* RESPONSIVE MOBILE */
 @media(max-width:600px){ 
   .grid-2{grid-template-columns:1fr} 
   .exam-body{padding:0 12px} 
   .exam-actions { flex-direction: column; gap: 10px; padding: 10px; } 
   .exam-actions-right { width: 100%; justify-content: space-between; } 
   .exam-actions-right button { flex: 1; } 
-  
-  /* Header mobile : passage en colonne */
   header{flex-direction:column;align-items:stretch;padding:10px}
   .header-actions{justify-content:space-between;gap:6px}
   .header-actions span#userLabel{max-width:100%;font-weight:700}
@@ -99,6 +93,10 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 </style>
 </head><body>
 
+<div id="sessionWarning" class="notice err hide" style="position:fixed;top:0;left:0;right:0;z-index:5000;border-radius:0;text-align:center;margin:0">
+  ⚠️ Ta session a expiré. <a href="#" onclick="supabaseClient.auth.signOut();return false;" style="color:#a51f2a;font-weight:800">Reconnecte-toi</a>.
+</div>
+
 <header>
   <div class="brand">
     <img src="/favicon.png" alt="Logo CompoTest">
@@ -107,7 +105,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   <div class="header-actions">
     <span id="userLabel">Non connecté</span>
     <button id="adminBtn" class="btn-admin" style="display:none">⚙️ Admin</button>
-    <button id="pwdBtn" style="display:none"> Mot de passe</button>
+    <button id="pwdBtn" style="display:none">🔑 Mot de passe</button>
     <button id="logoutBtn" style="display:none">Déconnexion</button>
   </div>
 </header>
@@ -130,6 +128,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 <main id="mainApp" class="wrap" style="display:none">
   <div class="tabs">
     <button class="tab active" data-tab="create">📚 Créer un test</button>
+    <button class="tab" data-tab="library">🌍 Bibliothèque</button>
     <button class="tab" data-tab="history">📊 Mon Historique</button>
   </div>
 
@@ -153,13 +152,21 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
       </div>
       <div class="actions" id="actionButtons" style="margin-top:25px;display:none;justify-content:center;gap:20px">
         <button id="generatePostTestBtn" class="success" style="flex:1;text-align:left;padding:15px;">
-          <div style="font-size:16px;font-weight:800"> GÉNÉRER 50 QUESTIONS (IA)</div>
+          <div style="font-size:16px;font-weight:800">✨ GÉNÉRER 50 QUESTIONS (IA)</div>
         </button>
         <button id="extractTestBtn" class="secondary" style="flex:1;text-align:left;padding:15px;">
-          <div style="font-size:16px;font-weight:800">EXTRAIRE QUESTIONNAIRE</div>
+          <div style="font-size:16px;font-weight:800">📋 EXTRAIRE QUESTIONNAIRE</div>
         </button>
       </div>
       <div id="analysisStatus" class="notice hide"></div>
+    </div>
+  </div>
+
+  <div id="tab-library" class="tab-content hide">
+    <div class="panel">
+      <h1>🌍 Bibliothèque Publique</h1>
+      <p style="color:var(--muted);font-size:14px">Retrouvez ici tous les exercices extraits et partagés par la communauté. Cliquez sur un exercice pour le commencer.</p>
+      <div id="libraryList"><p style="color:var(--muted)">Chargement...</p></div>
     </div>
   </div>
 
@@ -171,12 +178,10 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   </div>
 </main>
 
-<!-- ✅ SIGNATURE FOOTER -->
 <footer class="app-footer">
   dev. par <b>NSC-GROUP</b> ( THC )
 </footer>
 
-<!-- MODALE ADMIN -->
 <div id="adminModal">
   <div class="admin-modal-content">
     <div class="admin-header">
@@ -262,30 +267,50 @@ let isAdmin = false;
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
 
 const cfg = window.COMPOSTEST_CONFIG || {};
-if(window.supabase && cfg.SUPABASE_URL) supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+if(window.supabase && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) {
+  supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
+} else {
+  console.error('❌ Supabase NON initialisé. Config manquante :', cfg);
+}
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 // ==========================================
-// AUTHENTIFICATION
+// AUTHENTIFICATION ROBUSTE
 // ==========================================
 async function initAuth() {
-  if (!supabaseClient) { console.error('Supabase non configuré.'); return; }
-  supabaseClient.auth.onAuthStateChange((_event, session) => { handleSession(session); });
+  if (!supabaseClient) {
+    console.error('❌ Supabase non configuré. Vérifie config.js.');
+    $('authGate').style.display = 'block';
+    return;
+  }
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    handleSession(session);
+  });
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
-    const { data } = await supabaseClient.auth.getUser();
-    if (data?.user) { handleSession({ user: data.user }); return; }
+    const { data: refreshed } = await supabaseClient.auth.refreshSession();
+    const finalSession = refreshed?.session || session;
+    const { data: userData } = await supabaseClient.auth.getUser();
+    if (userData?.user) {
+      handleSession({ user: userData.user });
+      return;
+    }
+    handleSession(finalSession);
+    return;
   }
-  handleSession(session);
+  handleSession(null);
 }
 
 function handleSession(session) {
-  if (session) {
+  if (session && session.user) {
     currentUser = session.user;
     $('authGate').style.display = 'none';
     $('mainApp').style.display = 'block';
     $('logoutBtn').style.display = 'block';
+    $('sessionWarning').classList.add('hide');
+
     let displayName = currentUser.user_metadata?.full_name || (currentUser.email || '').split('@')[0];
     $('userLabel').textContent = "👤 " + displayName;
 
@@ -294,9 +319,7 @@ function handleSession(session) {
       currentUser.app_metadata?.role === 'admin' ||
       Boolean(ADMIN_EMAIL && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase());
 
-    // ✅ Bouton Mot de passe masqué pour les non-admins
     $('pwdBtn').style.display = isAdmin ? 'block' : 'none';
-    // Bouton Admin
     $('adminBtn').style.display = isAdmin ? 'block' : 'none';
     if(isAdmin) loadAdminUsers();
     loadCloudData();
@@ -488,6 +511,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     const target = $('tab-' + tab.dataset.tab);
     if (target) target.classList.remove('hide');
+    if (tab.dataset.tab === 'library') loadLibrary();
   });
 });
 
@@ -539,14 +563,20 @@ $('pdfFile').addEventListener('change', async function() {
 });
 
 async function fetchWithAuth(url, body) {
-  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!supabaseClient) throw new Error("Supabase non configuré. Vérifie config.js.");
+  let { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session || !session.access_token) {
+    const { data: refreshed, error: refreshErr } = await supabaseClient.auth.refreshSession();
+    if (refreshErr || !refreshed?.session) throw new Error("Session expirée. Reconnecte-toi pour continuer.");
+    session = refreshed.session;
+  }
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
     body: JSON.stringify(body)
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || data.message || 'Erreur serveur');
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || data.message || `Erreur serveur (${res.status})`);
   return data;
 }
 
@@ -564,8 +594,13 @@ $('generatePostTestBtn').addEventListener('click', async () => {
       $('analysisStatus').textContent = '❌ Aucune question générée.';
     }
   } catch (err) {
-    $('analysisStatus').className = 'notice err';
-    $('analysisStatus').textContent = '❌ ' + err.message;
+    if (/Session expirée/i.test(err.message)) {
+      $('sessionWarning').classList.remove('hide');
+      setTimeout(() => supabaseClient.auth.signOut(), 1500);
+    } else {
+      $('analysisStatus').className = 'notice err';
+      $('analysisStatus').textContent = '❌ ' + err.message;
+    }
   } finally {
     btn.innerHTML = '✨ GÉNÉRER 50 QUESTIONS (IA)';
     btn.disabled = false;
@@ -574,21 +609,84 @@ $('generatePostTestBtn').addEventListener('click', async () => {
 
 $('extractTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value; if(!text) return;
+  const btn = $('extractTestBtn');
+  const original = btn.innerHTML;
+  btn.innerHTML = '⏳ Extraction...'; btn.disabled = true;
+
   try {
     const data = await fetchWithAuth('/api/parse-existing-quiz', { text });
     if(data.questions && data.questions.length > 0) {
       $('analysisStatus').className = 'notice ok';
-      $('analysisStatus').textContent = `✅ ${data.questions.length} questions extraites !`;
-      startExam({ title: 'Questionnaire importé', questions: data.questions });
+      $('analysisStatus').textContent = `✅ ${data.questions.length} questions extraites ! Sauvegarde dans la bibliothèque...`;
+      
+      const title = $('quizTitle').value.trim() || 'Exercice importé ' + new Date().toLocaleDateString('fr-FR');
+      const subject = $('quizSubject').value.trim() || 'Général';
+      
+      try {
+        await fetchWithAuth('/api/quizzes', { title, subject, questions: data.questions });
+        $('analysisStatus').textContent += ' ✅ Publié !';
+      } catch (e) {
+        console.error('Erreur publication:', e);
+      }
+
+      startExam({ title, questions: data.questions });
     } else {
       $('analysisStatus').className = 'notice err';
       $('analysisStatus').textContent = '❌ ' + (data.message || 'Aucune question reconnue.');
     }
   } catch (err) {
-    $('analysisStatus').className = 'notice err';
-    $('analysisStatus').textContent = '❌ ' + err.message;
+    if (/Session expirée/i.test(err.message)) {
+      $('sessionWarning').classList.remove('hide');
+      setTimeout(() => supabaseClient.auth.signOut(), 1500);
+    } else {
+      $('analysisStatus').className = 'notice err';
+      $('analysisStatus').textContent = '❌ ' + err.message;
+    }
+  } finally {
+    btn.innerHTML = original;
+    btn.disabled = false;
   }
 });
+
+// ==========================================
+// BIBLIOTHÈQUE PUBLIQUE
+// ==========================================
+async function loadLibrary() {
+  const list = $('libraryList');
+  list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    const res = await fetch('/api/quizzes', {
+      headers: { 'Authorization': `Bearer ${session.access_token}` }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    
+    if (!data.quizzes || data.quizzes.length === 0) {
+      list.innerHTML = '<p style="color:var(--muted)">Aucun exercice dans la bibliothèque pour le moment.</p>';
+      return;
+    }
+
+    list.innerHTML = data.quizzes.map(q => `
+      <div class="history-item" style="cursor:pointer" onclick='startLibraryQuiz(${JSON.stringify(JSON.stringify(q))})'>
+        <div>
+          <div style="font-weight:700">${esc(q.title)}</div>
+          <div style="font-size:12px;color:var(--muted)">
+            ${esc(q.subject || 'Général')} • ${q.questions.length} question(s) • ${new Date(q.created_at).toLocaleDateString('fr-FR')}
+          </div>
+        </div>
+        <div style="font-size:20px;font-weight:800;color:var(--blue)">▶️</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    list.innerHTML = `<p style="color:var(--red)">Erreur : ${esc(e.message)}</p>`;
+  }
+}
+
+window.startLibraryQuiz = (jsonStr) => {
+  const q = JSON.parse(jsonStr);
+  startExam({ title: q.title, questions: q.questions });
+};
 
 function startExam(quiz) {
   examState = { title: quiz.title, questions: quiz.questions, answers: new Array(quiz.questions.length).fill(null), currentIndex: 0, submitted: false };
