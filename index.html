@@ -136,15 +136,16 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 
   <div id="tab-create" class="tab-content">
     <div class="panel">
-      <h1>Importer un document</h1>
+      <h1>Importer un document ou une photo</h1>
       <div class="grid-2">
         <div><label for="quizTitle">Titre</label><input id="quizTitle" placeholder="Ex. Examen Blanc"></div>
         <div><label for="quizSubject">Matière</label><input id="quizSubject" placeholder="Ex. Immunologie"></div>
       </div>
-      <label>Fichier (PDF, DOCX, TXT)</label>
+      <label>Fichier (PDF, DOCX, TXT, IMAGE)</label>
       <div class="filebox">
-        <input id="pdfFile" type="file" accept=".pdf,.docx,.txt" style="display:none">
-        <button class="secondary" onclick="document.getElementById('pdfFile').click()">📄 Choisir un fichier</button>
+        <!-- ✅ Ajout de image/* et capture="environment" pour l'appareil photo -->
+        <input id="pdfFile" type="file" accept=".pdf,.docx,.txt,image/*" capture="environment" style="display:none">
+        <button class="secondary" onclick="document.getElementById('pdfFile').click()">📄 Choisir un fichier ou 📷 Prendre une photo</button>
         <span id="fileName" style="margin-left:10px;font-weight:600;font-size:14px;color:var(--blue)">Aucun fichier</span>
         <div id="pdfStatus" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
       </div>
@@ -259,6 +260,8 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 <script src="./config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- ✅ Ajout de Tesseract.js pour l'OCR -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -269,7 +272,7 @@ let supabaseClient = null;
 let currentUser = null;
 let historyData = JSON.parse(localStorage.getItem('comptest_history') || '[]');
 let isAdmin = false;
-let libraryCache = []; // ✅ Stocke les quiz pour éviter les problèmes de JSON dans le HTML
+let libraryCache = []; 
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
 
 const cfg = window.COMPOSTEST_CONFIG || {};
@@ -327,7 +330,7 @@ function handleSession(session) {
 
     $('pwdBtn').style.display = isAdmin ? 'block' : 'none';
     $('adminBtn').style.display = isAdmin ? 'block' : 'none';
-    $('clearHistoryBtn').style.display = isAdmin ? 'block' : 'none'; // ✅ Bouton vider historique admin
+    $('clearHistoryBtn').style.display = isAdmin ? 'block' : 'none';
     
     if(isAdmin) loadAdminUsers();
     loadCloudData();
@@ -518,7 +521,6 @@ function renderHistory() {
   }).join('');
 }
 
-// ✅ SUPPRESSION HISTORIQUE (Admin)
 async function deleteHistoryItem(index) {
   if (!confirm("Supprimer cette entrée de l'historique ?")) return;
   historyData.splice(index, 1);
@@ -553,18 +555,45 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
+// ==========================================
+// ✅ GESTION DES FICHIERS (PDF, DOCX, TXT, IMAGE avec OCR)
+// ==========================================
 $('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
-    $('fileName').textContent = this.files[0].name;
-    const status=$('pdfStatus'); status.textContent='Extraction...';
+    const file = this.files[0];
+    $('fileName').textContent = file.name || 'Photo capturée';
+    const status = $('pdfStatus');
+    status.textContent = 'Analyse du fichier...';
+    
     try {
-      let text = ''; const file = this.files[0]; const name = file.name.toLowerCase();
-      if(name.endsWith('.pdf')){
-        const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
-        let pages=[];
-        for(let p=1;p<=pdf.numPages;p++){
-          const page=await pdf.getPage(p);
-          const content=await page.getTextContent();
+      let text = ''; 
+      const name = file.name.toLowerCase();
+
+      // ✅ OCR pour les images
+      if (file.type.startsWith('image/') || name.match(/\.(jpg|jpeg|png|webp|bmp)$/)) {
+        status.textContent = '📷 Lecture de l\'image en cours (cela peut prendre 10-20 sec)...';
+        
+        const result = await Tesseract.recognize(
+          file,
+          'fra',
+          {
+            logger: m => {
+              if (m.status === 'recognizing text') {
+                status.textContent = `📷 Lecture : ${Math.round(m.progress * 100)}%`;
+              }
+            }
+          }
+        );
+        text = result.data.text;
+      
+      // ✅ PDF
+      } else if (name.endsWith('.pdf')) {
+        status.textContent = 'Extraction du PDF...';
+        const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+        let pages = [];
+        for (let p = 1; p <= pdf.numPages; p++) {
+          const page = await pdf.getPage(p);
+          const content = await page.getTextContent();
           const items = content.items.map(i => ({ str: i.str, y: i.transform[5] }));
           const lines = [];
           let currentY = null, currentLine = [];
@@ -582,20 +611,29 @@ $('pdfFile').addEventListener('change', async function() {
           pages.push(lines.join('\n'));
         }
         text = pages.join('\n');
-      } else if(name.endsWith('.docx')){
-        const zip=await JSZip.loadAsync(await file.arrayBuffer());
-        const docXml=zip.file('word/document.xml');
-        const xml=await docXml.async('string');
+
+      // ✅ DOCX
+      } else if (name.endsWith('.docx')) {
+        status.textContent = 'Extraction du DOCX...';
+        const zip = await JSZip.loadAsync(await file.arrayBuffer());
+        const docXml = zip.file('word/document.xml');
+        const xml = await docXml.async('string');
         text = xml.replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, ' ').replace(/[ \t]+/g, ' ');
+
+      // ✅ TXT
       } else {
-        text=await file.text();
+        status.textContent = 'Lecture du texte...';
+        text = await file.text();
       }
+      
       $('pdfText').value = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
       $('textAreaWrap').classList.remove('hide');
       $('actionButtons').style.display = 'flex';
-      status.textContent = `✅ ${text.length} caractères.`;
+      status.textContent = `✅ Fichier analysé (${text.length} caractères extraits).`;
+      
     } catch(e) {
-      status.textContent = 'Erreur : ' + e.message;
+      status.textContent = '❌ Erreur : ' + e.message;
+      console.error(e);
     }
   }
 });
@@ -705,7 +743,7 @@ async function loadLibrary() {
       return;
     }
 
-    libraryCache = data.quizzes; // ✅ On stocke en mémoire
+    libraryCache = data.quizzes; 
 
     list.innerHTML = data.quizzes.map((q, idx) => `
       <div class="history-item">
@@ -732,7 +770,6 @@ window.startLibraryQuizByIndex = (idx) => {
   startExam({ title: q.title, questions: q.questions });
 };
 
-// ✅ SUPPRESSION EXERCICE (Admin)
 window.deleteLibraryQuiz = async (id) => {
   if (!confirm("Supprimer cet exercice de la bibliothèque ?")) return;
   try {
