@@ -8,7 +8,7 @@ const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
-app.use(express.json({ limit: '4mb' }));
+app.use(express.json({ limit: '10mb' })); // Augmenté pour les gros textes OCR
 
 // Servir les fichiers statiques (favicon.png, images, etc.)
 app.use(express.static(__dirname, { maxAge: '1d' }));
@@ -172,12 +172,15 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// ALGORITHME D'EXTRACTION STRICTE
+// ALGORITHME D'EXTRACTION STRICTE (Mise à jour pour minuscules a) b) c))
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
   let text = rawText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ').replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n').replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, ' ').replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/[ \t]+/g, ' ');
+  
+  // Normalisation des numéros de question et des options
   text = text.replace(/(^|[\s\.\(;:])((?:Q\s*)?\d{1,3})\s*([\.\):])\s*(?=[A-ZÀ-Ýa-z])/gi, '$1$2$3 ');
+  // Accepte A, B, C, D, E en majuscule ET minuscule
   text = text.replace(/(^|[\s])[\(\[]?([A-Ea-e])\s*([\.\)\-])\s*(?=[A-ZÀ-Ýa-z0-9])/g, (m, pre, letter, punct) => `${pre}${letter.toUpperCase()}${punct} `);
 
   const candidateRegex = /(?:^|[\s\.;:\)\]])(Q\s*(\d{1,3})|\d{1,3})\s*[\.\):]\s+/gi;
@@ -224,7 +227,8 @@ function parseQuizText(rawText) {
     let block = text.slice(start.textStart, end).trim();
     if (!block) continue;
 
-    const optionSplitRegex = /(?<=^|[\s\.;:])([\(\[]?[A-E][\.\)\-\]])\s+/g;
+    // Accepte a) b) c) d) en minuscules (pour les images OCR)
+    const optionSplitRegex = /(?<=^|[\s\.;:])([\(\[]?[A-Ea-e][\.\)\-\]])\s+/g;
     const optMatches = [];
     let mo;
     while ((mo = optionSplitRegex.exec(block)) !== null) {
@@ -302,9 +306,9 @@ function fallbackParse(rawText) {
     if (!m) return;
     const content = m[2].trim();
     if (content.length < 5) return;
-    const optParts = content.split(/(?=[A-D][\.\)\-]\s)/i);
+    const optParts = content.split(/(?=[A-Da-d][\.\)\-]\s)/i);
     let qText = optParts[0].trim();
-    let options = optParts.slice(1).map(o => o.replace(/^[A-D][\.\)\-]\s*/i, '').trim()).filter(Boolean);
+    let options = optParts.slice(1).map(o => o.replace(/^[A-Da-d][\.\)\-]\s*/i, '').trim()).filter(Boolean);
     const type = options.length >= 2 ? 'mcq' : 'tf';
     if (type === 'tf') options = ['Vrai', 'Faux'];
     questions.push({ number: parseInt(m[1]), text: qText, options, correct: 0, type });
@@ -401,7 +405,6 @@ app.post('/api/quizzes', async (req, res) => {
   }
 });
 
-// ✅ NOUVELLE ROUTE : Supprimer un quiz (Admin uniquement)
 app.delete('/api/quizzes/:id', requireAdmin, async (req, res) => {
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
