@@ -87,7 +87,6 @@ app.get('/api/admin/users', requireAdmin, async (_req, res) => {
   }
 });
 
-// ✅ Création avec Nom + Prénom → full_name = "Prénom Nom"
 app.post('/api/admin/users', requireAdmin, async (req, res) => {
   const firstName = String(req.body?.firstName || '').trim();
   const lastName = String(req.body?.lastName || '').trim();
@@ -98,7 +97,6 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
     return res.status(400).json({ error: 'Nom et prénom requis.' });
   }
 
-  // Email interne auto si non fourni
   if (!email) {
     const slug = `${firstName}.${lastName}`
       .toLowerCase()
@@ -179,9 +177,24 @@ function aiClient() {
 }
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
+// ==========================================
+// EXTRACTION REGEX — 4 types supportés
+// ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
-  let text = rawText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ').replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n').replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, ' ').replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/[ \t]+/g, ' ');
+  let text = rawText
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
+    .replace(/\u00A0/g, ' ')
+    .replace(/\r\n?/g, '\n')
+    .replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, ' ')
+    .replace(/[’‘`´]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[ \t]+/g, ' ');
+
+  // Détection globale "plusieurs réponses" pour typer les questions
+  const multiHint = /(cochez\s+(la|les)\s+(ou\s+les\s+)?(bonnes?\s+)?(réponses?|cases?)|plusieurs\s+réponses?|choix\s+multiples?|\(?\bQCM\s+multi\b\)?)/i.test(text);
+  const shortHint = /(réponse\s+courte|texte\s+à\s+trous|complétez|répondez\s+par\s+un\s+mot)/i.test(text);
+
   text = text.replace(/(^|[\s\.\(;:])((?:Q\s*)?\d{1,3})\s*([\.\):])\s*(?=[A-ZÀ-Ýa-z])/gi, '$1$2$3 ');
   text = text.replace(/(^|[\s])[\(\[]?([A-Ea-e])\s*([\.\)\-])\s*(?=[A-ZÀ-Ýa-z0-9])/g, (m, pre, letter, punct) => `${pre}${letter.toUpperCase()}${punct} `);
 
@@ -220,7 +233,9 @@ function parseQuizText(rawText) {
 
   const firstQStart = bestSeq[0].startIdx;
   const beforeFirstQ = text.slice(0, firstQStart);
-  const trueFalseHint = /cochez\s+(a|la\s+case\s+a)\s+pour\s+(les\s+)?(affirmations?\s+)?vra/i.test(beforeFirstQ + ' ' + text.slice(firstQStart, firstQStart + 500)) || /vrai\s*\/\s*faux/i.test(beforeFirstQ) || /répondez\s+par\s+vrai\s+ou\s+faux/i.test(beforeFirstQ);
+  const trueFalseHint = /cochez\s+(a|la\s+case\s+a)\s+pour\s+(les\s+)?(affirmations?\s+)?vra/i.test(beforeFirstQ + ' ' + text.slice(firstQStart, firstQStart + 500)) 
+    || /vrai\s*\/\s*faux/i.test(beforeFirstQ) 
+    || /répondez\s+par\s+vrai\s+ou\s+faux/i.test(beforeFirstQ);
 
   const questions = [];
   for (let i = 0; i < bestSeq.length; i++) {
@@ -265,18 +280,39 @@ function parseQuizText(rawText) {
     qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').replace(/[\s;]+$/, '').trim();
     if (qText.length < 8 || /^\d+\s*[-:]?\s*[A-E](\s+\d+\s*[-:]?\s*[A-E]){2,}/i.test(qText)) continue;
 
-    let type = (options.length === 2 && options[0] === 'Vrai') ? 'tf' : 'mcq';
-    if (trueFalseHint && validOptions.length === 0) type = 'tf';
+    // Détermination du type
+    let type;
+    if (options.length === 2 && options[0] === 'Vrai' && options[1] === 'Faux' && trueFalseHint) {
+      type = 'tf';
+    } else if (shortHint && validOptions.length === 0) {
+      type = 'short';
+    } else if (multiHint && validOptions.length >= 2) {
+      type = 'mcq_multi';
+    } else if (options.length === 2 && options[0] === 'Vrai') {
+      type = 'tf';
+    } else {
+      type = 'mcq';
+    }
 
-    questions.push({ number: start.num, text: qText, options, correct: 0, type });
+    // Pour les questions 'short', pas d'options
+    if (type === 'short') options = [];
+
+    questions.push({ number: start.num, text: qText, options, correct: type === 'mcq_multi' ? [] : 0, type });
   }
 
-  const answerKey = {};
-  const gridRegex = /(\d{1,3})\s*[-:\.\)]?\s*([A-Ea-e])\b/g;
+  // ==========================================
+  // GRILLE DE RÉPONSES (1-A, 2-B, 5-AC...)
+  // ==========================================
+  // On capture soit "1-A" soit "1-AC" (multi-lettres)
+  const gridRegex = /(\d{1,3})\s*[-:\.\)]?\s*([A-Ea-e](?:\s*,?\s*[A-Ea-e])*)\b/g;
   const allMatches = [];
   let mg;
-  while ((mg = gridRegex.exec(text)) !== null) allMatches.push({ num: parseInt(mg[1]), letter: mg[2].toUpperCase(), index: mg.index, len: mg[0].length });
-  
+  while ((mg = gridRegex.exec(text)) !== null) {
+    const num = parseInt(mg[1]);
+    const rawLetters = mg[2].toUpperCase().replace(/[^A-E]/g, '');
+    if (rawLetters) allMatches.push({ num, letters: rawLetters.split(''), index: mg.index, len: mg[0].length });
+  }
+
   let group = [];
   const gridZones = [];
   for (let i = 0; i < allMatches.length; i++) {
@@ -286,13 +322,28 @@ function parseQuizText(rawText) {
     else { if (group.length >= 4) gridZones.push(group); group = [allMatches[i]]; }
   }
   if (group.length >= 4) gridZones.push(group);
-  gridZones.forEach(zone => zone.forEach(p => { answerKey[p.num] = p.letter; }));
 
+  // Construit answerKey : num → tableau de lettres
+  const answerKey = {};
+  gridZones.forEach(zone => zone.forEach(p => { answerKey[p.num] = p.letters; }));
+
+  // Applique la correction selon le type
   questions.forEach(q => {
-    const letter = answerKey[q.number];
-    if (!letter) return;
-    if (q.type === 'tf') q.correct = letter === 'A' ? 0 : 1;
-    else { const idx = letter.charCodeAt(0) - 65; if (idx >= 0 && idx < q.options.length) q.correct = idx; }
+    const letters = answerKey[q.number];
+    if (!letters || letters.length === 0) return;
+
+    if (q.type === 'tf') {
+      q.correct = letters[0] === 'A' ? 0 : 1;
+    } else if (q.type === 'mcq_multi') {
+      q.correct = letters
+        .map(l => l.charCodeAt(0) - 65)
+        .filter(idx => idx >= 0 && idx < q.options.length)
+        .sort((a, b) => a - b);
+    } else {
+      // mcq (mono) : on prend la première lettre
+      const idx = letters[0].charCodeAt(0) - 65;
+      if (idx >= 0 && idx < q.options.length) q.correct = idx;
+    }
   });
 
   return questions;
@@ -324,6 +375,9 @@ app.post('/api/parse-existing-quiz', (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ==========================================
+// GÉNÉRATION IA — 4 types explicites
+// ==========================================
 app.post('/api/generate-post-test', async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
@@ -335,14 +389,47 @@ app.post('/api/generate-post-test', async (req, res) => {
       max_tokens: 8000,
       response_format: { type: 'json_object' },
       messages: [
-        { 
-          role: 'system', 
-          content: `Tu es un générateur de quiz. Génère ${count} questions en FRANÇAIS (QCM et Vrai/Faux) à partir du texte fourni. Tu DOIS répondre UNIQUEMENT en format JSON valide. Le format JSON attendu est : {"questions":[{"type":"mcq","text":"...","options":["A","B"],"correct":0,"explanation":"Un indice court pour aider l'utilisateur à trouver la réponse"}]}` 
+        {
+          role: 'system',
+          content: `Tu es un générateur de quiz pédagogiques en FRANÇAIS. À partir du texte fourni, génère ${count} questions.
+
+Tu DOIS répartir les questions entre CES 4 TYPES (varie-les pour un bon entraînement) :
+1. "mcq" : question à choix unique (une seule bonne réponse). "correct" est un ENTIER (index 0-based de la bonne option).
+2. "mcq_multi" : QCM avec PLUSIEURS bonnes réponses (2 minimum). "correct" est un TABLEAU d'entiers triés (ex. [0, 2]).
+3. "tf" : Vrai/Faux. "options" = ["Vrai", "Faux"]. "correct" = 0 (Vrai) ou 1 (Faux).
+4. "short" : réponse courte en texte libre (1 à 3 mots). Pas d'"options". "correct" est une CHAÎNE (la réponse attendue, en minuscules).
+
+Répartition indicative : ~50% mcq, ~20% mcq_multi, ~20% tf, ~10% short.
+
+Règles :
+- Chaque question doit être claire, non ambiguë, en français.
+- Fournis TOUJOURS une "explanation" courte (1-2 phrases) qui aide à comprendre la réponse (sert d'indice ET de correction).
+- Pour "mcq" et "mcq_multi", fournis 4 options pertinentes (A, B, C, D) et évite "toutes les réponses ci-dessus".
+- Pour "short", la réponse attendue doit être EXACTEMENT ce que l'utilisateur taperait (1-3 mots, sans article superflu).
+
+Tu DOIS répondre UNIQUEMENT en JSON valide, avec ce format exact :
+{"questions":[
+  {"type":"mcq","text":"...","options":["A","B","C","D"],"correct":0,"explanation":"..."},
+  {"type":"mcq_multi","text":"...","options":["A","B","C","D"],"correct":[0,2],"explanation":"..."},
+  {"type":"tf","text":"...","options":["Vrai","Faux"],"correct":0,"explanation":"..."},
+  {"type":"short","text":"...","correct":"mot","explanation":"..."}
+]}`
         },
         { role: 'user', content: String(text || '').slice(0, 15000) }
       ]
     });
-    res.json(JSON.parse(response.choices[0].message.content));
+    const parsed = JSON.parse(response.choices[0].message.content);
+    // Validation légère
+    if (parsed.questions && Array.isArray(parsed.questions)) {
+      parsed.questions = parsed.questions.map(q => {
+        if (!q.type) q.type = 'mcq';
+        if (q.type === 'tf' && (!q.options || q.options.length !== 2)) q.options = ['Vrai', 'Faux'];
+        if (q.type === 'mcq_multi' && !Array.isArray(q.correct)) q.correct = [q.correct].filter(x => x !== undefined);
+        if (q.type === 'short' && !q.explanation) q.explanation = '';
+        return q;
+      });
+    }
+    res.json(parsed);
   } catch (e) {
     console.error('Erreur API IA :', e.message);
     res.status(502).json({ error: e.message });
