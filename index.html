@@ -60,7 +60,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .exam-header h2{margin:0;font-size:18px}
 .exam-body{max-width:800px;margin:25px auto;padding:0 20px}
 
-/* Carte avec filigrane renforcé */
 .exam-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:25px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.02);position:relative;overflow:hidden}
 .exam-card::before{
   content:'';
@@ -77,6 +76,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 
 .exam-card h3{font-size:17px;margin-top:0;margin-bottom:20px;line-height:1.5;color:#1e293b;text-align:left}
 .exam-q-num{display:inline-block;background:var(--blue);color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:99px;margin-bottom:12px}
+.exam-type-tag{display:inline-block;background:#e0e7ff;color:#3730a3;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:6px;text-transform:uppercase}
 .exam-options { display: flex !important; flex-direction: column !important; gap: 12px !important; width: 100% !important; }
 .exam-opt { display: flex !important; flex-direction: row !important; align-items: flex-start !important; gap: 15px !important; padding: 16px !important; border: 1.5px solid var(--line) !important; border-radius: 10px !important; cursor: pointer !important; background: #fff !important; transition: .1s !important; text-align: left !important; }
 .exam-opt:hover { background: #f8faff !important; border-color: #a9bce7 !important; }
@@ -104,8 +104,10 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .hint-box { display: none; margin-top: 12px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 8px; font-size: 14px; color: #78350f; }
 .hint-box.show { display: block; }
 
-/* Badge "verrouillé" */
 .instant-badge{display:inline-block;background:#e0f2fe;color:#075985;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:8px;vertical-align:middle}
+
+.validate-btn{background:#dbeafe!important;color:#1e40af!important;font-weight:800!important;padding:12px 20px!important;border-radius:10px!important;font-size:14px!important;margin-top:14px!important;cursor:pointer!important;transition:.15s!important}
+.validate-btn:hover{background:#bfdbfe!important}
 
 /* ==========================================
    ÉCRAN DE SCORE
@@ -367,7 +369,7 @@ if(window.supabase && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) {
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 // ==========================================
-// FILIGRANE ANTI-VOL — renforcé (0.15 + double texte)
+// FILIGRANE ANTI-VOL
 // ==========================================
 function buildWatermark() {
   const name = (currentUser?.user_metadata?.full_name
@@ -541,7 +543,6 @@ async function loadAdminUsers() {
   }
 }
 
-// ✅ Création de compte : Nom + Prénom
 $('adminCreateForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const lastName = $('newLastName').value.trim();
@@ -896,8 +897,8 @@ function startExam(quiz) {
   examState = {
     title: quiz.title,
     questions: quiz.questions,
-    answers: new Array(quiz.questions.length).fill(null), // figées dès le clic
-    locked: new Array(quiz.questions.length).fill(false), // verrou par question
+    answers: new Array(quiz.questions.length).fill(null),
+    locked: new Array(quiz.questions.length).fill(false),
     currentIndex: 0,
     submitted: false
   };
@@ -922,12 +923,26 @@ function closeExamView() {
   examState = null;
 }
 
+// Libellé humain du type
+function typeLabel(t) {
+  switch(t){
+    case 'mcq': return 'CHOIX UNIQUE';
+    case 'mcq_multi': return 'QCM MULTI';
+    case 'tf': return 'VRAI / FAUX';
+    case 'short': return 'RÉPONSE COURTE';
+    default: return 'CHOIX UNIQUE';
+  }
+}
+
 function renderExamQuestion() {
   const i = examState.currentIndex;
   const q = examState.questions[i];
   const ua = examState.answers[i];
   const total = examState.questions.length;
   const isLocked = examState.locked[i] || examState.submitted;
+
+  const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
+  const isShort = q.type === 'short' || (!q.options || q.options.length === 0);
 
   $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
   $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
@@ -938,19 +953,22 @@ function renderExamQuestion() {
     $('examNextBtn').style.display = 'block';
     $('examSubmitBtn').style.display = 'none';
   }
-  // Dès qu'une question est verrouillée, le bouton "Suivant" doit être actif
-  // (l'utilisateur a déjà cliqué, donc on ne le bloque pas)
 
-  let html = `<div class="exam-card"><span class="exam-q-num">Q${i + 1}</span><h3>${esc(q.text)}</h3>`;
+  let html = `<div class="exam-card">
+    <span class="exam-q-num">Q${i + 1}</span>
+    <span class="exam-type-tag">${typeLabel(q.type)}</span>
+    ${isLocked ? '<span class="instant-badge">🔒 Verrouillée</span>' : ''}
+    <h3>${esc(q.text)}</h3>`;
 
-  if (isLocked) {
-    html = html.replace('</h3>', `</h3><span class="instant-badge">🔒 Verrouillée</span>`);
-  }
-
-  if(q.options && q.options.length > 0) {
+  if (isShort) {
+    // Question à réponse courte
+    html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${isLocked ? 'disabled' : ''} placeholder="Votre réponse...">`;
+    if (!isLocked) {
+      html += `<button class="validate-btn" id="lockTextBtn">🔒 Valider ma réponse</button>`;
+    }
+  } else if (q.options && q.options.length > 0) {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
-      const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
       const isSelected = isMulti ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
       const isCorrectOption = isMulti ? (Array.isArray(q.correct) && q.correct.includes(j)) : (q.correct === j);
 
@@ -970,24 +988,26 @@ function renderExamQuestion() {
       </label>`;
     });
     html += `</div>`;
-  } else {
-    html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${isLocked ? 'disabled' : ''} placeholder="Votre réponse...">`;
-    if (!isLocked) {
-      html += `<button class="secondary" id="lockTextBtn" style="margin-top:10px">🔒 Valider ma réponse</button>`;
+
+    // Bouton Valider pour multi-choix (le clic direct ne verrouille pas)
+    if (isMulti && !isLocked) {
+      html += `<button class="validate-btn" id="lockMultiBtn">🔒 Valider ma sélection</button>`;
     }
   }
 
-  // Indice (avant verrouillage uniquement)
+  // Indice avant verrouillage
   if (!isLocked && q.explanation) {
     html += `<button class="hint-btn" onclick="document.getElementById('hintBox').classList.toggle('show')">💡 Voir un indice</button>`;
     html += `<div class="hint-box" id="hintBox"><b>Indice :</b> ${esc(q.explanation)}</div>`;
   }
 
-  // Correction instantanée (dès verrouillage)
+  // Correction instantanée
   if (isLocked) {
     const isOk = checkAnswer(q, ua);
     let correctStr = '';
-    if (Array.isArray(q.correct)) {
+    if (isShort) {
+      correctStr = String(q.correct ?? '');
+    } else if (Array.isArray(q.correct)) {
       correctStr = q.correct.map(k => q.options?.[k]).filter(Boolean).join(', ');
     } else if (q.options && q.options[q.correct] !== undefined) {
       correctStr = q.options[q.correct];
@@ -1002,32 +1022,39 @@ function renderExamQuestion() {
   html += `</div>`;
   $('examBody').innerHTML = html;
 
-  // Écouteurs pour verrouiller instantanément
+  // Écouteurs
   if (!isLocked) {
-    document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
-      inp.addEventListener('change', () => {
-        const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
-        if (isMulti) {
-          examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
-          // Multi : on verrouille après une petite pause pour laisser le temps de cocher
-          // OU on peut exiger un bouton "Valider". Ici on verrouille dès qu'on coche.
-          // → Pour simplifier, on verrouille immédiatement.
-        } else {
-          examState.answers[i] = parseInt(inp.value);
-        }
-        examState.locked[i] = true;
-        renderExamQuestion(); // re-render → verrouille et affiche la correction
-      });
-    });
-    const textInp = $('textInput');
-    if (textInp) {
+    if (isShort) {
+      const textInp = $('textInput');
       textInp.addEventListener('input', (e) => { examState.answers[i] = e.target.value; });
-      const lockBtn = $('lockTextBtn');
-      if (lockBtn) lockBtn.addEventListener('click', () => {
-        if (!textInp.value.trim()) return alert("Saisis une réponse avant de valider.");
-        examState.answers[i] = textInp.value.trim();
+      $('lockTextBtn').addEventListener('click', () => {
+        const v = textInp.value.trim();
+        if (!v) return alert("Saisis une réponse avant de valider.");
+        examState.answers[i] = v;
         examState.locked[i] = true;
         renderExamQuestion();
+      });
+    } else if (isMulti) {
+      document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
+        inp.addEventListener('change', () => {
+          examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
+          // Pas de re-render pour garder les checkboxes cochées visibles
+        });
+      });
+      $('lockMultiBtn').addEventListener('click', () => {
+        const sel = examState.answers[i];
+        if (!Array.isArray(sel) || sel.length === 0) return alert("Coche au moins une réponse avant de valider.");
+        examState.locked[i] = true;
+        renderExamQuestion();
+      });
+    } else {
+      // mcq / tf : verrouillage instantané
+      document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
+        inp.addEventListener('change', () => {
+          examState.answers[i] = parseInt(inp.value);
+          examState.locked[i] = true;
+          renderExamQuestion();
+        });
       });
     }
   }
@@ -1035,13 +1062,16 @@ function renderExamQuestion() {
 
 function checkAnswer(q, ua) {
   if (ua === null || ua === undefined) return false;
+  if (q.type === 'short') {
+    return String(ua).toLowerCase().trim() === String(q.correct).toLowerCase().trim();
+  }
   if (q.type === 'mcq' || q.type === 'tf') return ua === q.correct;
   if (q.type === 'mcq_multi') {
     if(!Array.isArray(ua) || ua.length === 0) return false;
-    const a = [...ua].sort(); const b = [...q.correct].sort();
-    return a.length === b.length && a.every((v,i) => v === b[i]);
+    if(!Array.isArray(q.correct)) return false;
+    const a = [...ua].sort((x,y)=>x-y); const b = [...q.correct].sort((x,y)=>x-y);
+    return a.length === b.length && a.every((v,k) => v === b[k]);
   }
-  if (q.type === 'short') return String(ua).toLowerCase().trim() === String(q.correct).toLowerCase().trim();
   return false;
 }
 
@@ -1058,16 +1088,12 @@ $('examPrevBtn').addEventListener('click', () => {
   }
 });
 
-// ==========================================
-// SOUMISSION → ÉCRAN DE SCORE
-// ==========================================
 $('examSubmitBtn').addEventListener('click', async () => {
   if(examState.submitted) return;
   if(!confirm('Soumettre la compo et voir le score ?')) return;
 
   examState.submitted = true;
 
-  // Calcul du score basé sur les réponses FIGÉES
   let correctCount = 0;
   examState.questions.forEach((q, i) => {
     if (checkAnswer(q, examState.answers[i])) correctCount++;
