@@ -87,14 +87,38 @@ app.get('/api/admin/users', requireAdmin, async (_req, res) => {
   }
 });
 
+// ✅ NOUVELLE VERSION : création avec Nom + Prénom
 app.post('/api/admin/users', requireAdmin, async (req, res) => {
-  const email = String(req.body?.email || '').trim().toLowerCase();
+  const firstName = String(req.body?.firstName || '').trim();
+  const lastName = String(req.body?.lastName || '').trim();
+  let email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+
+  // Vérifie nom/prénom
+  if (!firstName || !lastName) {
+    return res.status(400).json({ error: 'Nom et prénom requis.' });
+  }
+
+  // Génère l'email interne si non fourni : prenom.nom@comptest.local
+  if (!email) {
+    const slug = `${firstName}.${lastName}`
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // retire les accents
+      .replace(/[^a-z0-9.]/g, '');                      // garde lettres/chiffres/points
+    email = `${slug}@comptest.local`;
+  }
+
+  // Valide l'email final
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Email invalide.' });
-  if (password.length < 6)
+  }
+  if (password.length < 6) {
     return res.status(400).json({ error: 'Mot de passe trop court (6 min).' });
+  }
+
   try {
+    // Concatène "Prénom Nom" pour full_name (utilisé dans le header et le filigrane)
+    const fullName = `${firstName} ${lastName}`;
     const user = await supabaseAdmin('users', {
       method: 'POST',
       body: JSON.stringify({
@@ -102,7 +126,7 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
         password,
         email_confirm: true,
         app_metadata: { compotest_access: true },
-        user_metadata: { full_name: req.body.name || email.split('@')[0] }
+        user_metadata: { full_name: fullName }
       })
     });
     res.json({ user });
