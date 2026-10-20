@@ -87,28 +87,26 @@ app.get('/api/admin/users', requireAdmin, async (_req, res) => {
   }
 });
 
-// ✅ NOUVELLE VERSION : création avec Nom + Prénom
+// ✅ Création avec Nom + Prénom → full_name = "Prénom Nom"
 app.post('/api/admin/users', requireAdmin, async (req, res) => {
   const firstName = String(req.body?.firstName || '').trim();
   const lastName = String(req.body?.lastName || '').trim();
   let email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
 
-  // Vérifie nom/prénom
   if (!firstName || !lastName) {
     return res.status(400).json({ error: 'Nom et prénom requis.' });
   }
 
-  // Génère l'email interne si non fourni : prenom.nom@comptest.local
+  // Email interne auto si non fourni
   if (!email) {
     const slug = `${firstName}.${lastName}`
       .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // retire les accents
-      .replace(/[^a-z0-9.]/g, '');                      // garde lettres/chiffres/points
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9.]/g, '');
     email = `${slug}@comptest.local`;
   }
 
-  // Valide l'email final
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Email invalide.' });
   }
@@ -117,7 +115,6 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   }
 
   try {
-    // Concatène "Prénom Nom" pour full_name (utilisé dans le header et le filigrane)
     const fullName = `${firstName} ${lastName}`;
     const user = await supabaseAdmin('users', {
       method: 'POST',
