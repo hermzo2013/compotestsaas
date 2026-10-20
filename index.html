@@ -53,14 +53,14 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .admin-tab-btn.active{background:var(--blue);color:#fff}
 
 /* ==========================================
-   ÉCRAN D'EXAMEN (style classique + filigrane)
+   ÉCRAN D'EXAMEN
    ========================================== */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:100px}
 .exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
 .exam-header h2{margin:0;font-size:18px}
 .exam-body{max-width:800px;margin:25px auto;padding:0 20px}
 
-/* ✅ Carte avec filigrane en ::before */
+/* Carte avec filigrane renforcé */
 .exam-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:25px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.02);position:relative;overflow:hidden}
 .exam-card::before{
   content:'';
@@ -70,7 +70,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   user-select:none;
   background-image:var(--watermark-svg, none);
   background-repeat:repeat;
-  background-size:220px 220px;
+  background-size:240px 240px;
   opacity:1;
 }
 .exam-card > *{position:relative;z-index:1}
@@ -83,7 +83,13 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .exam-opt.selected { border-color: var(--blue) !important; background: #edf2ff !important; }
 .exam-opt.correct { border-color: var(--green) !important; background: #e9f8f1 !important; }
 .exam-opt.wrong { border-color: var(--red) !important; background: #fff1f2 !important; }
+.exam-opt.locked { cursor: default !important; }
+.exam-opt.locked:hover { background: #fff !important; border-color: var(--line) !important; }
+.exam-opt.locked.correct:hover { background: #e9f8f1 !important; border-color: var(--green) !important; }
+.exam-opt.locked.wrong:hover { background: #fff1f2 !important; border-color: var(--red) !important; }
+.exam-opt.locked.selected:hover { background: #edf2ff !important; border-color: var(--blue) !important; }
 .exam-opt input[type="radio"], .exam-opt input[type="checkbox"] { margin: 2px 0 0 0 !important; width: 20px !important; height: 20px !important; cursor: pointer !important; flex-shrink: 0 !important; display: inline-block !important; }
+.exam-opt.locked input { cursor: default !important; }
 .exam-opt span { flex: 1 !important; text-align: left !important; line-height: 1.4 !important; word-wrap: break-word !important; display: block !important; }
 .exam-input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:10px;text-align:left}
 .exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
@@ -93,14 +99,16 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .exam-result-box.wrong{background:#fff1f2;border-color:var(--red)}
 .exam-explain{font-size:13px;color:#475569;margin-top:12px;padding:12px;background:#f8faff;border-radius:8px;border-left:2px solid var(--blue)}
 
-/* Indice */
 .hint-btn { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 8px 15px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin-top: 15px; transition: 0.2s; }
 .hint-btn:hover { background: #fde68a; }
 .hint-box { display: none; margin-top: 12px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 8px; font-size: 14px; color: #78350f; }
 .hint-box.show { display: block; }
 
+/* Badge "verrouillé" */
+.instant-badge{display:inline-block;background:#e0f2fe;color:#075985;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:8px;vertical-align:middle}
+
 /* ==========================================
-   ÉCRAN DE SCORE (overlay)
+   ÉCRAN DE SCORE
    ========================================== */
 #scoreView{display:none;position:fixed;inset:0;background:rgba(19,35,68,.75);z-index:2500;align-items:center;justify-content:center;padding:20px}
 #scoreView.show{display:flex}
@@ -109,7 +117,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   content:'';
   position:absolute;inset:0;z-index:0;pointer-events:none;user-select:none;
   background-image:var(--watermark-svg, none);
-  background-repeat:repeat;background-size:220px 220px;
+  background-repeat:repeat;background-size:240px 240px;
 }
 .score-card > *{position:relative;z-index:1}
 .score-emoji{font-size:56px;margin-bottom:10px;line-height:1}
@@ -316,9 +324,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   </div>
 </div>
 
-<!-- ============================================
-     ÉCRAN DE SCORE (overlay intermédiaire)
-     ============================================ -->
 <div id="scoreView">
   <div class="score-card">
     <div class="score-emoji" id="scoreEmoji">🎉</div>
@@ -362,17 +367,20 @@ if(window.supabase && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) {
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 // ==========================================
-// FILIGRANE ANTI-VOL
+// FILIGRANE ANTI-VOL — renforcé (0.15 + double texte)
 // ==========================================
 function buildWatermark() {
   const name = (currentUser?.user_metadata?.full_name
     || currentUser?.email
     || 'CompoTest').toString();
   const safe = name.replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220">
-    <text x="110" y="120" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600"
-      fill="rgba(0,0,0,0.08)" text-anchor="middle"
-      transform="rotate(-30 110 110)">${safe}</text>
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+    <text x="120" y="110" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700"
+      fill="rgba(0,0,0,0.15)" text-anchor="middle"
+      transform="rotate(-30 120 120)">${safe}</text>
+    <text x="120" y="180" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700"
+      fill="rgba(0,0,0,0.15)" text-anchor="middle"
+      transform="rotate(-30 120 120)">${safe}</text>
   </svg>`;
   const encoded = encodeURIComponent(svg).replace(/'/g, '%27').replace(/"/g, '%22');
   document.documentElement.style.setProperty('--watermark-svg', `url("data:image/svg+xml;charset=utf-8,${encoded}")`);
@@ -547,7 +555,6 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
     return;
   }
 
-  // Génère l'email interne si non fourni : prenom.nom@comptest.local
   let email = emailInput;
   if (!email) {
     const slug = (firstName + '.' + lastName)
@@ -763,9 +770,6 @@ async function fetchWithAuth(url, body, method = 'POST') {
   return data;
 }
 
-// ==========================================
-// SCISSION EN QUIZ DE 50
-// ==========================================
 async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
   let quizzesToStart = [];
   if (shouldSplit && questions.length > 50) {
@@ -842,9 +846,6 @@ $('extractTestBtn').addEventListener('click', async () => {
   } finally { btn.innerHTML = original; btn.disabled = false; }
 });
 
-// ==========================================
-// BIBLIOTHÈQUE
-// ==========================================
 async function loadLibrary() {
   const list = $('libraryList');
   list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
@@ -889,10 +890,17 @@ window.deleteLibraryQuiz = async (id) => {
 };
 
 // ==========================================
-// EXAMEN
+// EXAMEN — CORRECTION INSTANTANÉE VERROUILLÉE
 // ==========================================
 function startExam(quiz) {
-  examState = { title: quiz.title, questions: quiz.questions, answers: new Array(quiz.questions.length).fill(null), currentIndex: 0, submitted: false };
+  examState = {
+    title: quiz.title,
+    questions: quiz.questions,
+    answers: new Array(quiz.questions.length).fill(null), // figées dès le clic
+    locked: new Array(quiz.questions.length).fill(false), // verrou par question
+    currentIndex: 0,
+    submitted: false
+  };
   $('examTitle').textContent = quiz.title;
   $('examMeta').textContent = `${quiz.questions.length} questions`;
   $('examView').style.display = 'block';
@@ -919,6 +927,7 @@ function renderExamQuestion() {
   const q = examState.questions[i];
   const ua = examState.answers[i];
   const total = examState.questions.length;
+  const isLocked = examState.locked[i] || examState.submitted;
 
   $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
   $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
@@ -929,53 +938,98 @@ function renderExamQuestion() {
     $('examNextBtn').style.display = 'block';
     $('examSubmitBtn').style.display = 'none';
   }
+  // Dès qu'une question est verrouillée, le bouton "Suivant" doit être actif
+  // (l'utilisateur a déjà cliqué, donc on ne le bloque pas)
 
   let html = `<div class="exam-card"><span class="exam-q-num">Q${i + 1}</span><h3>${esc(q.text)}</h3>`;
+
+  if (isLocked) {
+    html = html.replace('</h3>', `</h3><span class="instant-badge">🔒 Verrouillée</span>`);
+  }
 
   if(q.options && q.options.length > 0) {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
       const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
       const isSelected = isMulti ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
-      let cls = 'exam-opt' + (isSelected ? ' selected' : '');
-      if(examState.submitted) {
-        const isCorrect = isMulti ? q.correct.includes(j) : q.correct === j;
-        if(isCorrect) cls += ' correct';
-        else if(isSelected && !isCorrect) cls += ' wrong';
+      const isCorrectOption = isMulti ? (Array.isArray(q.correct) && q.correct.includes(j)) : (q.correct === j);
+
+      let cls = 'exam-opt';
+      if (isLocked) {
+        cls += ' locked';
+        if (isCorrectOption) cls += ' correct';
+        else if (isSelected && !isCorrectOption) cls += ' wrong';
+      } else if (isSelected) {
+        cls += ' selected';
       }
-      html += `<label class="${cls}"><input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${examState.submitted ? 'disabled' : ''}><span>${esc(opt)}</span></label>`;
+
+      const disabledAttr = isLocked ? 'disabled' : '';
+      html += `<label class="${cls}">
+        <input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${disabledAttr}>
+        <span>${esc(opt)}</span>
+      </label>`;
     });
     html += `</div>`;
   } else {
-    html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${examState.submitted ? 'disabled' : ''} placeholder="Votre réponse...">`;
+    html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${isLocked ? 'disabled' : ''} placeholder="Votre réponse...">`;
+    if (!isLocked) {
+      html += `<button class="secondary" id="lockTextBtn" style="margin-top:10px">🔒 Valider ma réponse</button>`;
+    }
   }
 
-  // Indice (avant soumission)
-  if (!examState.submitted && q.explanation) {
+  // Indice (avant verrouillage uniquement)
+  if (!isLocked && q.explanation) {
     html += `<button class="hint-btn" onclick="document.getElementById('hintBox').classList.toggle('show')">💡 Voir un indice</button>`;
     html += `<div class="hint-box" id="hintBox"><b>Indice :</b> ${esc(q.explanation)}</div>`;
   }
 
-  // Correction (après soumission)
-  if(examState.submitted) {
+  // Correction instantanée (dès verrouillage)
+  if (isLocked) {
     const isOk = checkAnswer(q, ua);
-    let correctStr = q.options && q.options[q.correct] ? q.options[q.correct] : '';
-    html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}"><b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}</div>`;
+    let correctStr = '';
+    if (Array.isArray(q.correct)) {
+      correctStr = q.correct.map(k => q.options?.[k]).filter(Boolean).join(', ');
+    } else if (q.options && q.options[q.correct] !== undefined) {
+      correctStr = q.options[q.correct];
+    }
+    html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}">
+      <b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>
+      ${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}
+      ${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}
+    </div>`;
   }
 
   html += `</div>`;
   $('examBody').innerHTML = html;
 
-  if(!examState.submitted) {
+  // Écouteurs pour verrouiller instantanément
+  if (!isLocked) {
     document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
       inp.addEventListener('change', () => {
         const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
-        if(isMulti) examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
-        else examState.answers[i] = parseInt(inp.value);
+        if (isMulti) {
+          examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
+          // Multi : on verrouille après une petite pause pour laisser le temps de cocher
+          // OU on peut exiger un bouton "Valider". Ici on verrouille dès qu'on coche.
+          // → Pour simplifier, on verrouille immédiatement.
+        } else {
+          examState.answers[i] = parseInt(inp.value);
+        }
+        examState.locked[i] = true;
+        renderExamQuestion(); // re-render → verrouille et affiche la correction
       });
     });
     const textInp = $('textInput');
-    if(textInp) textInp.addEventListener('input', (e) => examState.answers[i] = e.target.value);
+    if (textInp) {
+      textInp.addEventListener('input', (e) => { examState.answers[i] = e.target.value; });
+      const lockBtn = $('lockTextBtn');
+      if (lockBtn) lockBtn.addEventListener('click', () => {
+        if (!textInp.value.trim()) return alert("Saisis une réponse avant de valider.");
+        examState.answers[i] = textInp.value.trim();
+        examState.locked[i] = true;
+        renderExamQuestion();
+      });
+    }
   }
 }
 
@@ -983,7 +1037,7 @@ function checkAnswer(q, ua) {
   if (ua === null || ua === undefined) return false;
   if (q.type === 'mcq' || q.type === 'tf') return ua === q.correct;
   if (q.type === 'mcq_multi') {
-    if(!Array.isArray(ua)) return false;
+    if(!Array.isArray(ua) || ua.length === 0) return false;
     const a = [...ua].sort(); const b = [...q.correct].sort();
     return a.length === b.length && a.every((v,i) => v === b[i]);
   }
@@ -991,31 +1045,39 @@ function checkAnswer(q, ua) {
   return false;
 }
 
-$('examNextBtn').addEventListener('click', () => { if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); } });
-$('examPrevBtn').addEventListener('click', () => { if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); } });
+$('examNextBtn').addEventListener('click', () => {
+  if(examState.currentIndex < examState.questions.length - 1) {
+    examState.currentIndex++;
+    renderExamQuestion();
+  }
+});
+$('examPrevBtn').addEventListener('click', () => {
+  if(examState.currentIndex > 0) {
+    examState.currentIndex--;
+    renderExamQuestion();
+  }
+});
 
 // ==========================================
 // SOUMISSION → ÉCRAN DE SCORE
 // ==========================================
 $('examSubmitBtn').addEventListener('click', async () => {
   if(examState.submitted) return;
-  if(!confirm('Soumettre le test et voir ton score ?')) return;
+  if(!confirm('Soumettre la compo et voir le score ?')) return;
 
   examState.submitted = true;
-  $('examNextBtn').style.display = 'none';
-  $('examPrevBtn').style.display = 'none';
-  $('examSubmitBtn').style.display = 'none';
 
+  // Calcul du score basé sur les réponses FIGÉES
   let correctCount = 0;
-  examState.questions.forEach((q, i) => { if(checkAnswer(q, examState.answers[i])) correctCount++; });
+  examState.questions.forEach((q, i) => {
+    if (checkAnswer(q, examState.answers[i])) correctCount++;
+  });
   const total = examState.questions.length;
   const scoreSur20 = (correctCount / total * 20);
   const ratio = correctCount / total;
 
-  // Sauvegarde
   await saveHistory({ title: examState.title, date: new Date().toISOString(), score: scoreSur20 });
 
-  // Remplit l'écran de score
   $('scoreCorrect').textContent = correctCount;
   $('scoreTotal').textContent = total;
   $('scoreSur20').textContent = `Note : ${scoreSur20.toFixed(1)} / 20`;
@@ -1029,7 +1091,6 @@ $('examSubmitBtn').addEventListener('click', async () => {
   $('scoreTitle').textContent = title;
   $('scoreMessage').textContent = msg;
 
-  // Affiche l'overlay
   $('scoreView').classList.add('show');
 });
 
