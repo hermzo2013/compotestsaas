@@ -6,36 +6,7 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
 <style>
-/* VARIABLES GLOBALES (CLAIR PAR DÉFAUT) */
-:root {
-  --blue: #2457d6; --navy: #132344; --bg: #f4f7fc; --ink: #1d2940; --muted: #6c7890; --line: #e1e7f0; --green: #16865c; --red: #e11d48;
-  
-  /* Variables pour l'écran de test (Mode Clair) */
-  --exam-bg: #ffffff; --exam-card-bg: #f8faff; --exam-text: #1d2940; --exam-muted: #6c7890; --exam-border: #d5ddeb;
-  --exam-opt-bg: #ffffff; --exam-opt-hover: #f0f4ff; --exam-opt-selected: #e3ecff;
-  --score-fill: #16865c; --score-track: #e1e7f0;
-}
-
-/* MODE SOMBRE AUTOMATIQUE (Si le téléphone est en sombre) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #131314; --ink: #e3e3e3; --muted: #a0a0a0; --line: #333333;
-    
-    --exam-bg: #131314; --exam-card-bg: #1e1f20; --exam-text: #e3e3e3; --exam-muted: #a0a0a0; --exam-border: #444444;
-    --exam-opt-bg: #2a2b2f; --exam-opt-hover: #333333; --exam-opt-selected: #2a3b5c;
-    --score-fill: #81c995; --score-track: #3c3c3c;
-  }
-  body { background: var(--bg); color: var(--ink); }
-  header { background: linear-gradient(120deg, #0a1224, #132344); }
-  .panel { background: #1e1f20; border-color: #333; }
-  input, select, textarea { background: #2a2b2f; border-color: #444; color: #e3e3e3; }
-  .tab.active { background: #2a3b5c; color: #8ab4f8; }
-  .filebox { background: #1e1f20; border-color: #555; }
-  .history-item, .admin-table td, .admin-table th { border-color: #333; }
-  .history-item { background: #1e1f20; }
-  .checkbox-group { background: #1e1f20; border-color: #333; }
-}
-
+:root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c;--red:#e11d48}
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
 header{background:linear-gradient(120deg,#132344,#2457d6);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -73,10 +44,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .btn-icon{background:transparent;border:0;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.2s}
 .btn-icon:hover{background:#fee2e2}
 
-.checkbox-group{display:flex;align-items:center;gap:10px;margin-top:15px;background:#f8faff;padding:12px;border-radius:10px;border:1px solid var(--line)}
-.checkbox-group input{width:20px;height:20px;cursor:pointer;margin:0}
-.checkbox-group label{margin:0;cursor:pointer;font-size:14px;color:var(--ink)}
-
 #adminModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;align-items:center;justify-content:center;padding:20px}
 #adminModal.show{display:flex}
 .admin-modal-content{background:#fff;border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow-y:auto;padding:30px;box-shadow:0 10px 40px rgba(0,0,0,.2)}
@@ -85,85 +52,41 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .admin-tab-btn{padding:10px 20px;border-radius:8px;background:#f0f3f8;color:var(--muted);font-weight:700;cursor:pointer;border:0}
 .admin-tab-btn.active{background:var(--blue);color:#fff}
 
-/* ==========================================
-   ✅ DESIGN DU TEST (S'ADAPTE AU THEME CLAIR/SOMBRE)
-   ========================================== */
-#examView{display:none;position:fixed;inset:0;background:var(--exam-bg);z-index:2000;overflow-y:auto;padding-bottom:100px;color:var(--exam-text);font-family:Google Sans,system-ui,sans-serif}
-.exam-header{background:var(--exam-bg);color:var(--exam-text);padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--exam-border)}
-.exam-header h2{margin:0;font-size:18px;color:var(--exam-text)}
+#examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:100px}
+.exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.exam-header h2{margin:0;font-size:18px}
 .exam-body{max-width:800px;margin:25px auto;padding:0 20px}
-
-/* Barre de progression */
-.exam-progress-bar{display:flex;align-items:center;gap:15px;margin-bottom:30px;font-size:14px;font-weight:600;color:var(--exam-muted)}
-.progress-track{flex:1;height:4px;background:var(--score-track);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--blue);width:0%;transition:width 0.3s}
-.score-badges{display:flex;gap:8px}
-.badge-wrong{background:var(--red);color:#fff;padding:4px 10px;border-radius:12px;font-size:12px}
-.badge-correct{background:var(--green);color:#fff;padding:4px 10px;border-radius:12px;font-size:12px}
-
-/* Carte de question */
-.exam-card{background:var(--exam-card-bg);border:1px solid var(--exam-border);border-radius:16px;padding:25px;margin-bottom:20px}
-.exam-card h3{font-size:18px;margin-top:0;margin-bottom:25px;line-height:1.5;color:var(--exam-text);text-align:left;font-weight:500}
-
-/* Options de réponse */
+.exam-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:25px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.02)}
+.exam-card h3{font-size:17px;margin-top:0;margin-bottom:20px;line-height:1.5;color:#1e293b;text-align:left}
+.exam-q-num{display:inline-block;background:var(--blue);color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:99px;margin-bottom:12px}
 .exam-options { display: flex !important; flex-direction: column !important; gap: 12px !important; width: 100% !important; }
-.exam-opt { display: flex !important; flex-direction: row !important; align-items: flex-start !important; gap: 15px !important; padding: 16px !important; border: 1px solid var(--exam-border) !important; border-radius: 12px !important; cursor: pointer !important; background: var(--exam-opt-bg) !important; transition: .15s !important; text-align: left !important; color:var(--exam-text)}
-.exam-opt:hover { background: var(--exam-opt-hover) !important; }
-.exam-opt.selected { border-color: var(--blue) !important; background: var(--exam-opt-selected) !important; }
-.exam-opt.correct { border-color: var(--green) !important; background: #e9f8f1 !important; color: #0e5e3f !important;}
-.exam-opt.wrong { border-color: var(--red) !important; background: #fff1f2 !important; color: #a51f2a !important;}
-@media (prefers-color-scheme: dark) {
-  .exam-opt.correct { background: #1e3a2b !important; color: #81c995 !important; }
-  .exam-opt.wrong { background: #4a2222 !important; color: #f28b82 !important; }
-}
-.exam-opt input[type="radio"], .exam-opt input[type="checkbox"] { display: none !important; } /* On cache les boutons radio pour un look plus propre */
-.exam-opt span { flex: 1 !important; text-align: left !important; line-height: 1.4 !important; word-wrap: break-word !important; display: block !important; font-size:15px}
+.exam-opt { display: flex !important; flex-direction: row !important; align-items: flex-start !important; gap: 15px !important; padding: 16px !important; border: 1.5px solid var(--line) !important; border-radius: 10px !important; cursor: pointer !important; background: #fff !important; transition: .1s !important; text-align: left !important; }
+.exam-opt:hover { background: #f8faff !important; border-color: #a9bce7 !important; }
+.exam-opt.selected { border-color: var(--blue) !important; background: #edf2ff !important; }
+.exam-opt.correct { border-color: var(--green) !important; background: #e9f8f1 !important; }
+.exam-opt.wrong { border-color: var(--red) !important; background: #fff1f2 !important; }
+.exam-opt input[type="radio"], .exam-opt input[type="checkbox"] { margin: 2px 0 0 0 !important; width: 20px !important; height: 20px !important; cursor: pointer !important; flex-shrink: 0 !important; display: inline-block !important; }
+.exam-opt span { flex: 1 !important; text-align: left !important; line-height: 1.4 !important; word-wrap: break-word !important; display: block !important; }
+.exam-input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:10px;text-align:left}
+.exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
+.exam-actions-left { font-size: 14px; color: var(--muted); font-weight: bold; }
+.exam-actions-right { display: flex; gap: 10px; }
+.exam-result-box{background:#e9f8f1;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
+.exam-result-box.wrong{background:#fff1f2;border-color:var(--red)}
+.exam-explain{font-size:13px;color:#475569;margin-top:12px;padding:12px;background:#f8faff;border-radius:8px;border-left:2px solid var(--blue)}
 
-/* Bouton Indice */
-.hint-btn { background: transparent; border: 0; color: var(--exam-muted); font-size: 14px; font-weight: 600; cursor: pointer; padding: 10px 0; display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-.hint-btn:hover { color: var(--exam-text); }
-.hint-box { display: none; margin-top: 10px; padding: 15px; background: var(--exam-opt-hover); border-radius: 8px; font-size: 14px; color: var(--exam-text); border-left: 3px solid var(--blue); }
+/* STYLE POUR L'INDICE */
+.hint-btn { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 8px 15px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin-top: 15px; transition: 0.2s; }
+.hint-btn:hover { background: #fde68a; }
+.hint-box { display: none; margin-top: 12px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 8px; font-size: 14px; color: #78350f; }
 .hint-box.show { display: block; }
-
-/* Explications post-soumission */
-.exam-result-box{background:#e9f8f1;padding:18px;border-radius:12px;margin-top:20px;border:1px solid var(--green);font-size:14px;text-align:left;color:#0e5e3f}
-.exam-result-box.wrong{background:#fff1f2;border-color:var(--red);color:#a51f2a}
-.exam-explain{font-size:14px;color:var(--exam-muted);margin-top:12px;padding:12px;background:var(--exam-opt-hover);border-radius:8px;border-left:2px solid var(--blue);line-height:1.5}
-@media (prefers-color-scheme: dark) {
-  .exam-result-box { background: #1e3a2b; border-color: #81c995; color: #e3e3e3; }
-  .exam-result-box.wrong { background: #4a2222; border-color: #f28b82; }
-}
-
-/* Barre d'actions en bas */
-.exam-actions{position:fixed;bottom:0;left:0;right:0;background:var(--exam-bg);padding:15px 25px;border-top:1px solid var(--exam-border);display:flex;justify-content:space-between;align-items:center;z-index:10}
-.exam-actions-left { font-size: 14px; color: var(--exam-muted); font-weight: bold; }
-.exam-actions-right { display: flex; gap: 12px; }
-.exam-actions-right button { background:var(--exam-opt-bg); color:var(--exam-text); border-radius:99px; padding:10px 24px; font-size:14px; font-weight:600; border:1px solid var(--exam-border); transition:0.2s}
-.exam-actions-right button:hover { background:var(--exam-opt-hover); }
-.exam-actions-right button.primary { background:var(--blue); color:#fff; border:0}
-.exam-actions-right button.primary:hover { filter:brightness(1.1); }
-.exam-actions-right button.success { background:var(--green); color:#fff; font-weight:700; border:0}
-
-/* ÉCRAN DE SCORE */
-#scoreView{display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 20px;min-height:100vh;color:var(--exam-text);background:var(--exam-bg);z-index:2001;position:fixed;inset:0;overflow-y:auto}
-#scoreView h1{font-size:20px;font-weight:500;color:var(--exam-muted);margin-bottom:30px}
-.score-circle{position:relative;width:200px;height:100px;overflow:hidden;margin-bottom:20px}
-.score-circle-bg{width:200px;height:200px;border-radius:50%;border:8px solid var(--score-track);position:absolute;top:0;left:0}
-.score-circle-fill{width:200px;height:200px;border-radius:50%;border:8px solid var(--score-fill);position:absolute;top:0;left:0;clip-path:polygon(0 0, 100% 0, 100% 100%, 0 100%);transform-origin:center;transition:transform 1s ease-out}
-.score-text{position:absolute;bottom:0;width:100%;text-align:center;z-index:2;margin-bottom:10px}
-.score-text h2{font-size:32px;margin:0;font-weight:700;color:var(--exam-text)}
-.score-text p{font-size:13px;color:var(--exam-muted);margin:5px 0 0 0}
-.score-subtitle{font-size:14px;color:var(--exam-muted);margin-bottom:40px}
-.score-message{font-size:24px;font-weight:500;line-height:1.4;margin-bottom:40px;max-width:400px;color:var(--exam-text)}
-.score-feedback{text-align:left;width:100%;max-width:500px;background:var(--exam-card-bg);padding:20px;border-radius:12px;border:1px solid var(--exam-border)}
-.score-feedback h3{font-size:16px;color:var(--exam-text);margin-top:0;margin-bottom:15px}
-.score-feedback p{font-size:14px;color:var(--exam-muted);line-height:1.6;margin:0}
-.btn-back-home{margin-top:30px;background:var(--exam-opt-bg);color:var(--exam-text);padding:12px 30px;border-radius:99px;font-weight:600;border:1px solid var(--exam-border);cursor:pointer}
-.btn-back-home:hover{background:var(--exam-opt-hover);}
 
 .app-footer{text-align:center;padding:20px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);background:#fff;margin-top:20px}
 .app-footer b{color:var(--blue)}
-@media (prefers-color-scheme: dark) { .app-footer { background: #1e1f20; } }
+
+.checkbox-group{display:flex;align-items:center;gap:10px;margin-top:15px;background:#f8faff;padding:12px;border-radius:10px;border:1px solid var(--line)}
+.checkbox-group input{width:20px;height:20px;cursor:pointer;margin:0}
+.checkbox-group label{margin:0;cursor:pointer;font-size:14px;color:var(--ink)}
 
 @media(max-width:600px){ 
   .grid-2{grid-template-columns:1fr} 
@@ -332,44 +255,20 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   </div>
 </div>
 
-<!-- VUE DU TEST -->
 <div id="examView">
   <div class="exam-header">
-    <div><h2 id="examTitle">Test</h2></div>
-    <button class="ghost" id="examQuitBtn" style="background:transparent;color:var(--exam-text);border:1px solid var(--exam-border)">← Quitter</button>
+    <div><h2 id="examTitle">Test</h2><div id="examMeta" style="font-size:12px;opacity:.8"></div></div>
+    <button class="ghost" id="examQuitBtn" style="background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.3)">← Quitter</button>
   </div>
   <div class="exam-body" id="examBody"></div>
   <div class="exam-actions">
     <div class="exam-actions-left" id="examProgressText">Question 1 / 50</div>
     <div class="exam-actions-right">
-      <button id="examPrevBtn" class="secondary">Retour</button>
-      <button id="examNextBtn" class="primary">Suivant</button>
+      <button id="examPrevBtn" class="secondary">Précédent</button>
+      <button id="examNextBtn">Suivant →</button>
       <button id="examSubmitBtn" class="success" style="display:none">✓ SOUMETTRE LA COMPO</button>
     </div>
   </div>
-</div>
-
-<!-- VUE DU SCORE (Style Gemini) -->
-<div id="scoreView">
-  <h1>Score</h1>
-  <div class="score-circle">
-    <div class="score-circle-bg"></div>
-    <div class="score-circle-fill" id="scoreCircleFill"></div>
-    <div class="score-text">
-      <h2 id="scoreBigText">0/50</h2>
-      <p>Correctes</p>
-    </div>
-  </div>
-  <div class="score-subtitle" id="scoreSubText">0 questions ignorées • 0 réponses incorrectes</div>
-  
-  <div class="score-message" id="scoreMessage">N'abandonnez pas ! Révisez les supports et réessayez.</div>
-  
-  <div class="score-feedback">
-    <h3>Points à améliorer</h3>
-    <p id="scoreFeedbackText">Prenez le temps de revoir l'ensemble des notions abordées dans le test.</p>
-  </div>
-  
-  <button class="btn-back-home" onclick="closeScoreView()">Terminer et voir les corrections</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -709,6 +608,9 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
+// ==========================================
+// GESTION DES FICHIERS
+// ==========================================
 $('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
     const file = this.files[0];
@@ -805,6 +707,9 @@ async function fetchWithAuth(url, body, method = 'POST') {
   return data;
 }
 
+// ==========================================
+// FONCTION UTILITAIRE POUR LA SCISSION
+// ==========================================
 async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
   let quizzesToStart = [];
   
@@ -847,6 +752,9 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
   }
 }
 
+// ==========================================
+// BOUTON GÉNÉRATION IA
+// ==========================================
 $('generatePostTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value.trim(); if(!text) return;
   const btn = $('generatePostTestBtn'); 
@@ -882,6 +790,9 @@ $('generatePostTestBtn').addEventListener('click', async () => {
   }
 });
 
+// ==========================================
+// BOUTON EXTRACTION
+// ==========================================
 $('extractTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value; if(!text) return;
   const btn = $('extractTestBtn');
@@ -971,6 +882,7 @@ window.deleteLibraryQuiz = async (id) => {
 function startExam(quiz) {
   examState = { title: quiz.title, questions: quiz.questions, answers: new Array(quiz.questions.length).fill(null), currentIndex: 0, submitted: false };
   $('examTitle').textContent = quiz.title;
+  $('examMeta').textContent = `${quiz.questions.length} questions`;
   $('examView').style.display = 'block';
   document.body.style.overflow = 'hidden';
   renderExamQuestion();
@@ -979,7 +891,6 @@ function startExam(quiz) {
 $('examQuitBtn').addEventListener('click', () => {
   if(!examState.submitted && !confirm('Quitter ? Les réponses seront perdues.')) return;
   $('examView').style.display = 'none';
-  $('scoreView').style.display = 'none';
   document.body.style.overflow = 'auto';
   examState = null;
 });
@@ -989,40 +900,10 @@ function renderExamQuestion() {
   const q = examState.questions[i];
   const ua = examState.answers[i];
   const total = examState.questions.length;
-  
-  // Calcul du score en cours pour l'affichage (uniquement si soumis)
-  let correctCount = 0;
-  let wrongCount = 0;
-  if (examState.submitted) {
-    examState.questions.forEach((question, idx) => {
-      if (examState.answers[idx] !== null) {
-        if (checkAnswer(question, examState.answers[idx])) correctCount++;
-        else wrongCount++;
-      }
-    });
-  }
-
-  // En-tête avec barre de progression et badges
-  let headerHtml = `
-    <div class="exam-progress-bar">
-      <div class="progress-track"><div class="progress-fill" style="width: ${((i+1)/total)*100}%"></div></div>
-      <span>${i + 1}/${total}</span>
-      ${examState.submitted ? `
-        <div class="score-badges">
-          <span class="badge-wrong">✕ ${wrongCount}</span>
-          <span class="badge-correct">✓ ${correctCount}</span>
-        </div>
-      ` : ''}
-    </div>
-  `;
 
   $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
-  $('examPrevBtn').style.display = (i > 0 && !examState.submitted) ? 'block' : 'none';
-  
-  if (examState.submitted) {
-    $('examNextBtn').style.display = 'none';
-    $('examSubmitBtn').style.display = 'none';
-  } else if (i === total - 1) {
+  $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
+  if (i === total - 1) {
     $('examNextBtn').style.display = 'none';
     $('examSubmitBtn').style.display = 'block';
   } else {
@@ -1030,7 +911,7 @@ function renderExamQuestion() {
     $('examSubmitBtn').style.display = 'none';
   }
 
-  let html = `<div class="exam-card">${headerHtml}<h3>${esc(q.text)}</h3>`;
+  let html = `<div class="exam-card"><span class="exam-q-num">Q${i + 1}</span><h3>${esc(q.text)}</h3>`;
 
   if(q.options && q.options.length > 0) {
     html += `<div class="exam-options">`;
@@ -1050,13 +931,12 @@ function renderExamQuestion() {
     html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${examState.submitted ? 'disabled' : ''} placeholder="Votre réponse...">`;
   }
 
-  // Indice (uniquement si pas encore soumis)
+  // ✅ AJOUT DU BOUTON INDICE (uniquement si pas encore soumis)
   if (!examState.submitted && q.explanation) {
-    html += `<button class="hint-btn" onclick="document.getElementById('hintBox').classList.toggle('show')">💡 Indice <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>`;
+    html += `<button class="hint-btn" onclick="document.getElementById('hintBox').classList.toggle('show')">💡 Voir un indice</button>`;
     html += `<div class="hint-box" id="hintBox"><b>Indice :</b> ${esc(q.explanation)}</div>`;
   }
 
-  // Résultat (uniquement si soumis)
   if(examState.submitted) {
     const isOk = checkAnswer(q, ua);
     let correctStr = q.options && q.options[q.correct] ? q.options[q.correct] : '';
@@ -1094,81 +974,48 @@ function checkAnswer(q, ua) {
 $('examNextBtn').addEventListener('click', () => { if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); } });
 $('examPrevBtn').addEventListener('click', () => { if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); } });
 
-// ✅ LOGIQUE DE SOUMISSION ET ÉCRAN DE SCORE
+// ✅ LOGIQUE DE SOUMISSION MODIFIÉE
 $('examSubmitBtn').addEventListener('click', async () => {
   if(examState.submitted) return;
   if(!confirm('Soumettre le test et voir la correction ?')) return;
   
   examState.submitted = true;
+  $('examNextBtn').style.display = 'none';
+  $('examPrevBtn').style.display = 'none';
+  $('examSubmitBtn').style.display = 'none';
   
   let correctCount = 0;
-  let wrongCount = 0;
-  let ignoredCount = 0;
-  
-  examState.questions.forEach((q, i) => {
-    const ua = examState.answers[i];
-    if (ua === null || ua === undefined || ua === '') {
-      ignoredCount++;
-    } else if (checkAnswer(q, ua)) {
-      correctCount++;
-    } else {
-      wrongCount++;
-    }
-  });
-  
+  examState.questions.forEach((q, i) => { if(checkAnswer(q, examState.answers[i])) correctCount++; });
   const total = examState.questions.length;
   const scoreSur20 = (correctCount / total * 20);
-  const percent = (correctCount / total) * 100;
-
-  // 1. Mise à jour de l'écran de Score
-  $('scoreBigText').textContent = `${correctCount}/${total}`;
-  $('scoreSubText').textContent = `${ignoredCount} questions ignorées • ${wrongCount} réponses incorrectes`;
   
-  // Animation du cercle (on limite à 180deg max pour faire un demi-cercle)
-  const angle = (percent / 100) * 180;
-  $('scoreCircleFill').style.transform = `rotate(${angle}deg)`;
+  // 1. Affichage immédiat du score brut (ex: 45/50)
+  alert(`✅ Test soumis !\n\nTon score global est de : ${correctCount} / ${total}\n\nTu vas maintenant voir les corrections. La note sur 20 sera enregistrée et affichée à la fin.`);
 
-  // Message de feedback
-  if (percent >= 80) {
-    $('scoreMessage').textContent = "Excellent travail ! Vous maîtrisez le sujet.";
-    $('scoreFeedbackText').textContent = "Continuez comme ça, vos connaissances sont solides.";
-  } else if (percent >= 50) {
-    $('scoreMessage').textContent = "C'est un bon début ! Encore un petit effort.";
-    $('scoreFeedbackText').textContent = "Revoyez les questions incorrectes pour parfaire votre compréhension.";
-  } else {
-    $('scoreMessage').textContent = "N'abandonnez pas ! Révisez les supports et réessayez.";
-    $('scoreFeedbackText').textContent = "Prenez le temps de revoir l'ensemble des notions abordées dans le test.";
-  }
-
-  // 2. Affichage de l'écran de score (au-dessus du test)
-  $('scoreView').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-
-  // 3. Sauvegarde dans l'historique en arrière-plan
+  // 2. Sauvegarde dans l'historique
   await saveHistory({ title: examState.title, date: new Date().toISOString(), score: scoreSur20 });
-});
-
-// Fonction pour fermer l'écran de score et voir les corrections
-window.closeScoreView = () => {
-  $('scoreView').style.display = 'none';
+  
+  // 3. Affichage des corrections
   examState.currentIndex = 0;
   renderExamQuestion();
   
-  // On change le bouton "Quitter" en "Terminer"
+  // 4. Modification du bouton "Quitter" pour afficher la note finale
   const quitBtn = $('examQuitBtn');
-  quitBtn.textContent = 'Terminer le test';
-  quitBtn.style.background = 'var(--blue)';
-  quitBtn.style.color = 'white';
+  quitBtn.textContent = 'Terminer et voir la note /20';
+  quitBtn.style.background = 'var(--green)';
+  quitBtn.style.borderColor = 'var(--green)';
+  
+  // Remplacement de l'événement click temporairement
   quitBtn.onclick = () => {
+    alert(`🎉 Félicitations !\n\nTa note finale est de : ${scoreSur20.toFixed(1)} / 20\n\nLes résultats ont été enregistrés dans ton historique.`);
     $('examView').style.display = 'none';
     document.body.style.overflow = 'auto';
     examState = null;
-    // Reset du bouton pour la prochaine fois
-    quitBtn.textContent = '← Quitter';
-    quitBtn.style.background = 'transparent';
-    quitBtn.style.color = 'var(--exam-text)';
-    quitBtn.onclick = null;
+    quitBtn.onclick = null; // Reset
+    quitBtn.textContent = '← Quitter'; // Reset text
+    quitBtn.style.background = 'rgba(255,255,255,.1)';
+    quitBtn.style.borderColor = 'rgba(255,255,255,.3)';
   };
-};
+});
 </script>
 </body></html>
