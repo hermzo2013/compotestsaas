@@ -178,17 +178,17 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION REGEX — Version robuste (PDF Exo Santé Publique)
+// EXTRACTION REGEX — Version robuste avec détection de consigne
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
 
-  // 1. NETTOYAGE INITIAL (Ignore les en-têtes et le bruit)
+  // 1. NETTOYAGE INITIAL
   let text = rawText
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
     .replace(/\u00A0/g, ' ')
     .replace(/\r\n?/g, '\n')
-    // Supprime les en-têtes spécifiques de ton PDF
+    // Supprime les en-têtes
     .replace(/EVALUATION DE SANTE PUBLIQUE/gi, '')
     .replace(/Cible\s*:\s*Licence.*/gi, '')
     .replace(/Temps\s*:\s*1Heure/gi, '')
@@ -198,16 +198,16 @@ function parseQuizText(rawText) {
     // Supprime les numéros de page
     .replace(/=====\s*Page\s*\d+\s*=====/gi, '')
     .replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, '')
-    // Nettoie les caractères spéciaux et espaces multiples
+    // Nettoie les caractères spéciaux
     .replace(/[’‘`´]/g, "'")
     .replace(/[“”]/g, '"')
     .replace(/[ \t]+/g, ' ');
 
-  // 2. PRÉ-TRAITEMENT DES OPTIONS COLLÉES (ex: "A : vrai B : faux" -> "A : vrai | B : faux")
-  // On insère un séparateur " | " avant les options B, C, D, E pour faciliter le split
+  // 2. PRÉ-TRAITEMENT DES OPTIONS (ajout de séparateurs visuels)
+  // On transforme "A : texte" en "|A : texte" pour faciliter le découpage
   text = text.replace(/([A-Ea-e])\s*:\s*/g, (m, letter) => `|${letter.toUpperCase()} : `);
-  
-  // 3. DÉTECTION DES QUESTIONS (Regex accepte "1-", "1.", "1)", etc.)
+
+  // 3. DÉTECTION DES QUESTIONS
   const candidateRegex = /(?:^|[\s\.;:\)\]])(Q\s*(\d{1,3})|\d{1,3})\s*[\-\.\):]\s+/gi;
   const candidates = [];
   let mCand;
@@ -220,7 +220,7 @@ function parseQuizText(rawText) {
     if (num >= 1 && num <= 200) candidates.push({ num, hasQ, startIdx, textStart });
   }
 
-  // 4. FILTRAGE DES SÉQUENCES (Garde les numéros qui se suivent)
+  // 4. FILTRAGE DES SÉQUENCES
   const withQ = candidates.filter(c => c.hasQ);
   let pool = withQ.length >= 3 ? withQ : candidates;
 
@@ -244,7 +244,7 @@ function parseQuizText(rawText) {
 
   // 5. EXTRACTION ET DÉDOUBLONNAGE
   const questions = [];
-  const seenQuestions = new Set(); // Anti-doublons (ex: Q31, Q32)
+  const seenQuestions = new Set();
 
   for (let i = 0; i < bestSeq.length; i++) {
     const start = bestSeq[i];
@@ -252,21 +252,39 @@ function parseQuizText(rawText) {
     let block = text.slice(start.textStart, end).trim();
     if (!block) continue;
 
-    // Détection des options avec le séparateur " | "
-    // On cherche les patterns "A : ...", "B : ..."
+    // ==========================================
+    // DÉTECTION DE CONSIGNE QCM
+    // ==========================================
+    const qcmKeywords = /(cocher|cochez|choisir|choisissez|identifier|indiquez|parmi les|lequel|lesquels|quelle|quelles|sélectionner|sélectionnez)/i;
+    const isQcmConsigne = qcmKeywords.test(block);
+
+    // ==========================================
+    // EXTRACTION DES OPTIONS (Agressive)
+    // ==========================================
     const optMatches = [];
+    
+    // On cherche "|A :", "|B :", etc. dans le bloc
     const optRegex = /\|([A-E])\s*:\s*([^|]+)/g;
     let mo;
     while ((mo = optRegex.exec(block)) !== null) {
-      optMatches.push({ letter: mo[1], text: mo[2].trim() });
+      const letter = mo[1];
+      const optText = mo[2].trim();
+      // On ignore les options vides ou trop courtes
+      if (optText.length > 2) {
+        optMatches.push({ letter, text: optText });
+      }
     }
 
-    // Si on n'a pas trouvé d'options via " | ", on essaie l'ancienne méthode (A., B., etc.)
-    if (optMatches.length < 2) {
-      const fallbackOptRegex = /(?<=^|[\s\.;:])([\(\[]?[A-Ea-e][\.\)\-]\s*)/g;
-      let fMo;
-      while ((fMo = fallbackOptRegex.exec(block)) !== null) {
-        optMatches.push({ letter: fMo[1].replace(/[^A-Ea-e]/g, '').toUpperCase(), text: '' });
+    // Si on n'a pas trouvé via "|", on tente une regex plus permissive
+    if (optMatches.length < 2 && isQcmConsigne) {
+      // Regex qui cherche A :, B :, etc. même sans séparateur
+      const aggressiveRegex = /([A-E])\s*:\s*([^A-E]+?)(?=\s*[A-E]\s*:|$)/g;
+      while ((mo = aggressiveRegex.exec(block)) !== null) {
+        const letter = mo[1];
+        const optText = mo[2].trim();
+        if (optText.length > 2) {
+          optMatches.push({ letter, text: optText });
+        }
       }
     }
 
@@ -274,10 +292,10 @@ function parseQuizText(rawText) {
 
     if (optMatches.length >= 2) {
       // On a des options (QCM ou Vrai/Faux)
-      const firstOptIndex = block.indexOf('|'); // Le bloc commence par la question
+      const firstOptIndex = block.indexOf(`|${optMatches[0].letter} : `);
       qText = block.slice(0, firstOptIndex !== -1 ? firstOptIndex : block.length).trim();
       
-      // Si le premier optMatch est "A : vrai" et le second "B : faux" -> Type TF
+      // Détection TF : "A : vrai" et "B : faux"
       const isTF = optMatches.length === 2 
         && optMatches[0].text.toLowerCase().includes('vrai') 
         && optMatches[1].text.toLowerCase().includes('faux');
@@ -291,26 +309,28 @@ function parseQuizText(rawText) {
       }
     } else {
       // Pas d'options trouvées
-      if (/vrai\s*\/\s*faux/i.test(block) || /A\s*:\s*vrai/i.test(block)) {
+      if (isQcmConsigne) {
+        // C'était censé être un QCM mais on n'a pas trouvé les options
+        // On ignore la question
+        continue;
+      } else if (/vrai\s*\/\s*faux/i.test(block) || /A\s*:\s*vrai/i.test(block)) {
         qText = block.trim();
         type = 'tf';
         options = ['Vrai', 'Faux'];
       } else {
-        continue; // On ignore si on ne comprend rien
+        continue;
       }
     }
 
-    // Nettoyage final du texte de la question
+    // Nettoyage final du texte
     qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').replace(/[\s;]+$/, '').trim();
 
     // FILTRE ANTI-BRUIT
-    // On ignore si le texte est trop court ou s'il contient une longue suite de chiffres (page 6)
     const alphaCount = (qText.match(/[a-zA-Z]/g) || []).length;
     const digitCount = (qText.match(/\d/g) || []).length;
-    
     if (qText.length < 10 || alphaCount < 5 || digitCount > 50) continue;
 
-    // ANTI-DOUBLON (ex: Q31, Q32)
+    // ANTI-DOUBLON
     const normalizedText = qText.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 100);
     if (seenQuestions.has(normalizedText)) continue;
     seenQuestions.add(normalizedText);
