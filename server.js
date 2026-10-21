@@ -178,10 +178,11 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION REGEX — 4 types supportés
+// EXTRACTION REGEX — Amélioration pour "A : vrai"
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
+  
   let text = rawText
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
     .replace(/\u00A0/g, ' ')
@@ -191,14 +192,14 @@ function parseQuizText(rawText) {
     .replace(/[“”]/g, '"')
     .replace(/[ \t]+/g, ' ');
 
-  // Détection globale "plusieurs réponses" pour typer les questions
   const multiHint = /(cochez\s+(la|les)\s+(ou\s+les\s+)?(bonnes?\s+)?(réponses?|cases?)|plusieurs\s+réponses?|choix\s+multiples?|\(?\bQCM\s+multi\b\)?)/i.test(text);
   const shortHint = /(réponse\s+courte|texte\s+à\s+trous|complétez|répondez\s+par\s+un\s+mot)/i.test(text);
+  const trueFalseHint = /(vrai\s*\/\s*faux|répondez\s+par\s+vrai\s+ou\s+faux|A\s*:\s*vrai\s+B\s*:\s*faux)/i.test(text);
 
-  text = text.replace(/(^|[\s\.\(;:])((?:Q\s*)?\d{1,3})\s*([\.\):])\s*(?=[A-ZÀ-Ýa-z])/gi, '$1$2$3 ');
-  text = text.replace(/(^|[\s])[\(\[]?([A-Ea-e])\s*([\.\)\-])\s*(?=[A-ZÀ-Ýa-z0-9])/g, (m, pre, letter, punct) => `${pre}${letter.toUpperCase()}${punct} `);
+  // Normalisation : A :, A., A), A-
+  text = text.replace(/(^|[\s])[\(\[]?([A-Ea-e])\s*([\.\)\-:])\s*(?=[A-ZÀ-Ýa-z0-9])/g, (m, pre, letter, punct) => `${pre}${letter.toUpperCase()}${punct} `);
 
-  const candidateRegex = /(?:^|[\s\.;:\)\]])(Q\s*(\d{1,3})|\d{1,3})\s*[\.\):]\s+/gi;
+  const candidateRegex = /(?:^|[\s\.;:\)\]])(Q\s*(\d{1,3})|\d{1,3})\s*[\-\.\):]\s+/gi;
   const candidates = [];
   let mCand;
   while ((mCand = candidateRegex.exec(text)) !== null) {
@@ -231,12 +232,6 @@ function parseQuizText(rawText) {
   const bestSeq = sequences[0] || pool;
   if (!bestSeq.length) return fallbackParse(rawText);
 
-  const firstQStart = bestSeq[0].startIdx;
-  const beforeFirstQ = text.slice(0, firstQStart);
-  const trueFalseHint = /cochez\s+(a|la\s+case\s+a)\s+pour\s+(les\s+)?(affirmations?\s+)?vra/i.test(beforeFirstQ + ' ' + text.slice(firstQStart, firstQStart + 500)) 
-    || /vrai\s*\/\s*faux/i.test(beforeFirstQ) 
-    || /répondez\s+par\s+vrai\s+ou\s+faux/i.test(beforeFirstQ);
-
   const questions = [];
   for (let i = 0; i < bestSeq.length; i++) {
     const start = bestSeq[i];
@@ -244,7 +239,8 @@ function parseQuizText(rawText) {
     let block = text.slice(start.textStart, end).trim();
     if (!block) continue;
 
-    const optionSplitRegex = /(?<=^|[\s\.;:])([\(\[]?[A-Ea-e][\.\)\-\]])\s+/g;
+    // Regex pour trouver les options : A :, B :, etc.
+    const optionSplitRegex = /(?<=^|[\s\.;:])([\(\[]?[A-Ea-e][\.\)\-\:]\s*)/g;
     const optMatches = [];
     let mo;
     while ((mo = optionSplitRegex.exec(block)) !== null) {
@@ -254,9 +250,9 @@ function parseQuizText(rawText) {
     let validOptions = [];
     if (optMatches.length >= 2) {
       const letters = optMatches.map(o => o.letter);
-      const expected = ['A', 'B', 'C', 'D'];
+      const expected = ['A', 'B', 'C', 'D', 'E'];
       let ok = true;
-      for (let k = 0; k < Math.min(letters.slice(0, 4).length, expected.length); k++) {
+      for (let k = 0; k < Math.min(letters.length, expected.length); k++) {
         if (letters[k] !== expected[k]) { ok = false; break; }
       }
       if (ok) validOptions = optMatches;
@@ -273,78 +269,31 @@ function parseQuizText(rawText) {
         if (optText) options.push(optText);
       }
     } else {
-      qText = block.trim();
-      options = ['Vrai', 'Faux'];
+      if (/vrai\s*\/\s*faux/i.test(block) || trueFalseHint) {
+        qText = block.trim();
+        options = ['Vrai', 'Faux'];
+      } else {
+        continue;
+      }
     }
 
     qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').replace(/[\s;]+$/, '').trim();
-    if (qText.length < 8 || /^\d+\s*[-:]?\s*[A-E](\s+\d+\s*[-:]?\s*[A-E]){2,}/i.test(qText)) continue;
+    if (qText.length < 8) continue;
 
-    // Détermination du type
-    let type;
-    if (options.length === 2 && options[0] === 'Vrai' && options[1] === 'Faux' && trueFalseHint) {
+    let type = 'mcq';
+    if (options.length === 2 && options[0] === 'Vrai' && options[1] === 'Faux') {
       type = 'tf';
     } else if (shortHint && validOptions.length === 0) {
       type = 'short';
     } else if (multiHint && validOptions.length >= 2) {
       type = 'mcq_multi';
-    } else if (options.length === 2 && options[0] === 'Vrai') {
-      type = 'tf';
-    } else {
-      type = 'mcq';
     }
 
-    // Pour les questions 'short', pas d'options
     if (type === 'short') options = [];
 
-    questions.push({ number: start.num, text: qText, options, correct: type === 'mcq_multi' ? [] : 0, type });
+    // Pas de grille de correction → on met 0 par défaut
+    questions.push({ number: start.num, text: qText, options, correct: type === 'mcq_multi' ? [0] : 0, type });
   }
-
-  // ==========================================
-  // GRILLE DE RÉPONSES (1-A, 2-B, 5-AC...)
-  // ==========================================
-  // On capture soit "1-A" soit "1-AC" (multi-lettres)
-  const gridRegex = /(\d{1,3})\s*[-:\.\)]?\s*([A-Ea-e](?:\s*,?\s*[A-Ea-e])*)\b/g;
-  const allMatches = [];
-  let mg;
-  while ((mg = gridRegex.exec(text)) !== null) {
-    const num = parseInt(mg[1]);
-    const rawLetters = mg[2].toUpperCase().replace(/[^A-E]/g, '');
-    if (rawLetters) allMatches.push({ num, letters: rawLetters.split(''), index: mg.index, len: mg[0].length });
-  }
-
-  let group = [];
-  const gridZones = [];
-  for (let i = 0; i < allMatches.length; i++) {
-    if (group.length === 0) { group.push(allMatches[i]); continue; }
-    const prev = group[group.length - 1];
-    if (allMatches[i].index - (prev.index + prev.len) < 30) group.push(allMatches[i]);
-    else { if (group.length >= 4) gridZones.push(group); group = [allMatches[i]]; }
-  }
-  if (group.length >= 4) gridZones.push(group);
-
-  // Construit answerKey : num → tableau de lettres
-  const answerKey = {};
-  gridZones.forEach(zone => zone.forEach(p => { answerKey[p.num] = p.letters; }));
-
-  // Applique la correction selon le type
-  questions.forEach(q => {
-    const letters = answerKey[q.number];
-    if (!letters || letters.length === 0) return;
-
-    if (q.type === 'tf') {
-      q.correct = letters[0] === 'A' ? 0 : 1;
-    } else if (q.type === 'mcq_multi') {
-      q.correct = letters
-        .map(l => l.charCodeAt(0) - 65)
-        .filter(idx => idx >= 0 && idx < q.options.length)
-        .sort((a, b) => a - b);
-    } else {
-      // mcq (mono) : on prend la première lettre
-      const idx = letters[0].charCodeAt(0) - 65;
-      if (idx >= 0 && idx < q.options.length) q.correct = idx;
-    }
-  });
 
   return questions;
 }
@@ -375,9 +324,6 @@ app.post('/api/parse-existing-quiz', (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ==========================================
-// GÉNÉRATION IA — 4 types explicites
-// ==========================================
 app.post('/api/generate-post-test', async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
@@ -404,8 +350,8 @@ Répartition indicative : ~50% mcq, ~20% mcq_multi, ~20% tf, ~10% short.
 Règles :
 - Chaque question doit être claire, non ambiguë, en français.
 - Fournis TOUJOURS une "explanation" courte (1-2 phrases) qui aide à comprendre la réponse (sert d'indice ET de correction).
-- Pour "mcq" et "mcq_multi", fournis 4 options pertinentes (A, B, C, D) et évite "toutes les réponses ci-dessus".
-- Pour "short", la réponse attendue doit être EXACTEMENT ce que l'utilisateur taperait (1-3 mots, sans article superflu).
+- Pour "mcq" et "mcq_multi", fournis 4 options pertinentes (A, B, C, D).
+- Pour "short", la réponse attendue doit être EXACTEMENT ce que l'utilisateur taperait (1-3 mots).
 
 Tu DOIS répondre UNIQUEMENT en JSON valide, avec ce format exact :
 {"questions":[
@@ -419,7 +365,6 @@ Tu DOIS répondre UNIQUEMENT en JSON valide, avec ce format exact :
       ]
     });
     const parsed = JSON.parse(response.choices[0].message.content);
-    // Validation légère
     if (parsed.questions && Array.isArray(parsed.questions)) {
       parsed.questions = parsed.questions.map(q => {
         if (!q.type) q.type = 'mcq';
