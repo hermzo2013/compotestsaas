@@ -178,168 +178,136 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION REGEX — Version robuste avec détection de consigne
+// EXTRACTION REGEX — Version robuste (ta version)
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
 
-  // 1. NETTOYAGE INITIAL
+  // 1. Nettoyage de base
   let text = rawText
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
     .replace(/\u00A0/g, ' ')
     .replace(/\r\n?/g, '\n')
-    // Supprime les en-têtes
-    .replace(/EVALUATION DE SANTE PUBLIQUE/gi, '')
-    .replace(/Cible\s*:\s*Licence.*/gi, '')
-    .replace(/Temps\s*:\s*1Heure/gi, '')
-    .replace(/Instruction\s*:.*point/gi, '')
-    .replace(/A-\s*Vrai ou faux/gi, '')
-    .replace(/Cocher la bonne réponse/gi, '')
-    // Supprime les numéros de page
-    .replace(/=====\s*Page\s*\d+\s*=====/gi, '')
-    .replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, '')
-    // Nettoie les caractères spéciaux
     .replace(/[’‘`´]/g, "'")
     .replace(/[“”]/g, '"')
     .replace(/[ \t]+/g, ' ');
 
-  // 2. PRÉ-TRAITEMENT DES OPTIONS (ajout de séparateurs visuels)
-  // On transforme "A : texte" en "|A : texte" pour faciliter le découpage
-  text = text.replace(/([A-Ea-e])\s*:\s*/g, (m, letter) => `|${letter.toUpperCase()} : `);
+  // 2. Normalisation des numéros de questions 
+  // Transforme "1- " ou "1. " en "Q1. " en début de ligne
+  text = text.replace(/(?:^|\n)\s*(\d{1,3})\s*[-\.\)]\s+/g, '\nQ$1. ');
 
-  // 3. DÉTECTION DES QUESTIONS
-  const candidateRegex = /(?:^|[\s\.;:\)\]])(Q\s*(\d{1,3})|\d{1,3})\s*[\-\.\):]\s+/gi;
-  const candidates = [];
-  let mCand;
-  while ((mCand = candidateRegex.exec(text)) !== null) {
-    const fullNum = mCand[1].replace(/\D/g, '');
-    const num = parseInt(fullNum, 10);
-    const hasQ = /^Q/i.test(mCand[1]);
-    const startIdx = mCand.index + mCand[0].indexOf(mCand[1]);
-    const textStart = mCand.index + mCand[0].length;
-    if (num >= 1 && num <= 200) candidates.push({ num, hasQ, startIdx, textStart });
-  }
-
-  // 4. FILTRAGE DES SÉQUENCES
-  const withQ = candidates.filter(c => c.hasQ);
-  let pool = withQ.length >= 3 ? withQ : candidates;
-
-  const sequences = [];
-  let currentSeq = [];
-  for (const c of pool) {
-    if (currentSeq.length === 0) { currentSeq.push(c); continue; }
-    const prev = currentSeq[currentSeq.length - 1];
-    if (c.num === prev.num) continue;
-    if (c.num === prev.num + 1 || (c.num > prev.num + 1 && c.num <= prev.num + 5)) {
-      currentSeq.push(c);
-    } else {
-      if (currentSeq.length >= 3) sequences.push(currentSeq);
-      currentSeq = [c];
-    }
-  }
-  if (currentSeq.length >= 3) sequences.push(currentSeq);
-  sequences.sort((a, b) => b.length - a.length);
-  const bestSeq = sequences[0] || pool;
-  if (!bestSeq.length) return fallbackParse(rawText);
-
-  // 5. EXTRACTION ET DÉDOUBLONNAGE
+  // 3. Découpage en blocs par question
+  const parts = text.split(/(?=Q\d{1,3}\.)/);
+  
   const questions = [];
-  const seenQuestions = new Set();
+  let currentSection = '';
 
-  for (let i = 0; i < bestSeq.length; i++) {
-    const start = bestSeq[i];
-    const end = i + 1 < bestSeq.length ? bestSeq[i + 1].startIdx : text.length;
-    let block = text.slice(start.textStart, end).trim();
+  for (let block of parts) {
+    block = block.trim();
     if (!block) continue;
 
-    // ==========================================
-    // DÉTECTION DE CONSIGNE QCM
-    // ==========================================
-    const qcmKeywords = /(cocher|cochez|choisir|choisissez|identifier|indiquez|parmi les|lequel|lesquels|quelle|quelles|sélectionner|sélectionnez)/i;
-    const isQcmConsigne = qcmKeywords.test(block);
+    // Détection de la consigne globale
+    const lowerBlock = block.toLowerCase();
+    const isQcmHint = /(cocher|cochez|choisir|choisissez|identifier|indiquez|parmi|lequel|lesquels|quelle|quelles)/i.test(block);
+    const isTfHint = /(vrai ou faux|cocher la bonne réponse|vrai|faux)/i.test(block);
 
-    // ==========================================
-    // EXTRACTION DES OPTIONS (Agressive)
-    // ==========================================
-    const optMatches = [];
+    // Extraction du numéro et de l'énoncé
+    const match = block.match(/^Q(\d{1,3})\.\s*([\s\S]*)/);
+    if (!match) continue;
     
-    // On cherche "|A :", "|B :", etc. dans le bloc
-    const optRegex = /\|([A-E])\s*:\s*([^|]+)/g;
-    let mo;
-    while ((mo = optRegex.exec(block)) !== null) {
-      const letter = mo[1];
-      const optText = mo[2].trim();
-      // On ignore les options vides ou trop courtes
-      if (optText.length > 2) {
-        optMatches.push({ letter, text: optText });
-      }
-    }
+    const num = parseInt(match[1]);
+    let content = match[2].trim();
 
-    // Si on n'a pas trouvé via "|", on tente une regex plus permissive
-    if (optMatches.length < 2 && isQcmConsigne) {
-      // Regex qui cherche A :, B :, etc. même sans séparateur
-      const aggressiveRegex = /([A-E])\s*:\s*([^A-E]+?)(?=\s*[A-E]\s*:|$)/g;
-      while ((mo = aggressiveRegex.exec(block)) !== null) {
-        const letter = mo[1];
-        const optText = mo[2].trim();
-        if (optText.length > 2) {
-          optMatches.push({ letter, text: optText });
-        }
-      }
-    }
+    // 4. Nettoyage du bruit (ex: la page 6 avec 1000 chiffres)
+    if (/^\d+[\s\.\d]+$/.test(content) || content.replace(/[^a-zA-Z]/g, '').length < 10) continue;
 
-    let qText, options, type = 'mcq';
+    // 5. Extraction des options (LA REGEX CRUCIALE)
+    const optionRegex = /(?:^|\s)([A-Ea-e])\s*[\:\-]\s+/g;
+    const matches = [...content.matchAll(optionRegex)];
+    
+    let qText = content;
+    let options = [];
+    let type = 'mcq'; // Par défaut
 
-    if (optMatches.length >= 2) {
-      // On a des options (QCM ou Vrai/Faux)
-      const firstOptIndex = block.indexOf(`|${optMatches[0].letter} : `);
-      qText = block.slice(0, firstOptIndex !== -1 ? firstOptIndex : block.length).trim();
+    if (matches.length >= 2) {
+      // On a trouvé au moins 2 options (ex: A et B)
+      const firstOptionIndex = matches[0].index;
+      qText = content.substring(0, firstOptionIndex).trim();
       
-      // Détection TF : "A : vrai" et "B : faux"
-      const isTF = optMatches.length === 2 
-        && optMatches[0].text.toLowerCase().includes('vrai') 
-        && optMatches[1].text.toLowerCase().includes('faux');
-
-      if (isTF) {
-        type = 'tf';
-        options = ['Vrai', 'Faux'];
-      } else {
-        type = 'mcq';
-        options = optMatches.map(o => o.text);
+      for (let i = 0; i < matches.length; i++) {
+        const start = matches[i].index + matches[i][0].length;
+        const end = (i + 1 < matches.length) ? matches[i + 1].index : content.length;
+        let optText = content.substring(start, end).trim();
+        optText = optText.replace(/[;\.]+$/, '').trim();
+        if (optText) options.push(optText);
       }
+    } else if (isTfHint) {
+      type = 'tf';
+      qText = content;
+      options = ['Vrai', 'Faux'];
     } else {
-      // Pas d'options trouvées
-      if (isQcmConsigne) {
-        // C'était censé être un QCM mais on n'a pas trouvé les options
-        // On ignore la question
-        continue;
-      } else if (/vrai\s*\/\s*faux/i.test(block) || /A\s*:\s*vrai/i.test(block)) {
-        qText = block.trim();
-        type = 'tf';
-        options = ['Vrai', 'Faux'];
-      } else {
-        continue;
-      }
+      type = 'tf';
+      qText = content;
+      options = ['Vrai', 'Faux'];
     }
 
-    // Nettoyage final du texte
-    qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').replace(/[\s;]+$/, '').trim();
+    // 6. Nettoyage final de l'énoncé
+    qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').trim();
 
-    // FILTRE ANTI-BRUIT
-    const alphaCount = (qText.match(/[a-zA-Z]/g) || []).length;
-    const digitCount = (qText.match(/\d/g) || []).length;
-    if (qText.length < 10 || alphaCount < 5 || digitCount > 50) continue;
-
-    // ANTI-DOUBLON
-    const normalizedText = qText.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 100);
-    if (seenQuestions.has(normalizedText)) continue;
-    seenQuestions.add(normalizedText);
-
-    // Valeur par défaut (0) car pas de corrigé
-    questions.push({ number: start.num, text: qText, options, correct: type === 'mcq_multi' ? [0] : 0, type });
+    if (qText.length > 5) {
+      questions.push({
+        number: num,
+        text: qText,
+        options: options,
+        correct: 0,
+        type: type
+      });
+    }
   }
 
-  return questions;
+  // 7. Suppression des doublons
+  const uniqueQuestions = [];
+  const seenNumbers = new Set();
+  
+  for (const q of questions) {
+    if (!seenNumbers.has(q.number)) {
+      seenNumbers.add(q.number);
+      uniqueQuestions.push(q);
+    }
+  }
+
+  // 8. Gestion du corrigé (si une grille existe à la fin)
+  const answerKey = {};
+  const gridRegex = /(\d{1,3})\s*[-:\.\)]?\s*([A-Ea-e])\b/g;
+  const allMatches = [];
+  let mg;
+  while ((mg = gridRegex.exec(rawText)) !== null) {
+    allMatches.push({ num: parseInt(mg[1]), letter: mg[2].toUpperCase(), index: mg.index, len: mg[0].length });
+  }
+  
+  let group = [];
+  const gridZones = [];
+  for (let i = 0; i < allMatches.length; i++) {
+    if (group.length === 0) { group.push(allMatches[i]); continue; }
+    const prev = group[group.length - 1];
+    if (allMatches[i].index - (prev.index + prev.len) < 30) group.push(allMatches[i]);
+    else { if (group.length >= 4) gridZones.push(group); group = [allMatches[i]]; }
+  }
+  if (group.length >= 4) gridZones.push(group);
+  gridZones.forEach(zone => zone.forEach(p => { answerKey[p.num] = p.letter; }));
+
+  uniqueQuestions.forEach(q => {
+    const letter = answerKey[q.number];
+    if (!letter) return;
+    if (q.type === 'tf') {
+      q.correct = letter === 'A' ? 0 : 1;
+    } else {
+      const idx = letter.charCodeAt(0) - 65;
+      if (idx >= 0 && idx < q.options.length) q.correct = idx;
+    }
+  });
+
+  return uniqueQuestions;
 }
 
 function fallbackParse(rawText) {
