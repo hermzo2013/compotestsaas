@@ -53,6 +53,23 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .admin-tab-btn.active{background:var(--blue);color:#fff}
 
 /* ==========================================
+   MODALE ÉDITION QUIZ
+   ========================================== */
+#editQuizModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3500;align-items:center;justify-content:center;padding:20px}
+#editQuizModal.show{display:flex}
+.edit-modal-content{background:#fff;border-radius:16px;width:100%;max-width:900px;max-height:92vh;overflow-y:auto;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.edit-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.edit-q-block{background:#f8faff;border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+.edit-q-text{font-weight:700;margin-bottom:10px;color:#1e293b}
+.edit-q-type{display:inline-block;background:#e0e7ff;color:#3730a3;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:6px;text-transform:uppercase}
+.edit-opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:#fff;border:1px solid var(--line);margin-bottom:6px;cursor:pointer}
+.edit-opt:hover{background:#f0f6ff;border-color:#a9bce7}
+.edit-opt input{margin:0;width:18px;height:18px;flex-shrink:0}
+.edit-opt label{margin:0;font-size:14px;font-weight:400;cursor:pointer;flex:1;color:#1e293b}
+.edit-opt.is-correct{background:#e9f8f1;border-color:var(--green)}
+.edit-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+
+/* ==========================================
    ÉCRAN D'EXAMEN
    ========================================== */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:100px}
@@ -105,7 +122,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .hint-box.show { display: block; }
 
 .instant-badge{display:inline-block;background:#e0f2fe;color:#075985;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:8px;vertical-align:middle}
-
 .validate-btn{background:#dbeafe!important;color:#1e40af!important;font-weight:800!important;padding:12px 20px!important;border-radius:10px!important;font-size:14px!important;margin-top:14px!important;cursor:pointer!important;transition:.15s!important}
 .validate-btn:hover{background:#bfdbfe!important}
 
@@ -215,7 +231,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
       
       <div class="checkbox-group">
         <input type="checkbox" id="splitQuizCheckbox">
-        <label for="splitQuizCheckbox">Scinder automatiquement en quiz de 50 questions maximum (si le fichier contient plus de 50 questions)</label>
+        <label for="splitQuizCheckbox">Scinder automatiquement en quiz de 50 questions maximum</label>
       </div>
 
       <div id="textAreaWrap" class="hide" style="margin-top:20px">
@@ -310,6 +326,22 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   </div>
 </div>
 
+<!-- MODALE ÉDITION QUIZ (admin) -->
+<div id="editQuizModal">
+  <div class="edit-modal-content">
+    <div class="edit-modal-header">
+      <h2 style="margin:0" id="editQuizTitle">✏️ Éditer le quiz</h2>
+      <button class="ghost" onclick="document.getElementById('editQuizModal').classList.remove('show')">✖ Fermer</button>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-top:0">Cochez la ou les bonnes réponses pour chaque question. Pour les QCM multi, plusieurs réponses sont possibles.</p>
+    <div id="editQuizBody"></div>
+    <div class="edit-footer">
+      <button class="ghost" onclick="document.getElementById('editQuizModal').classList.remove('show')">Annuler</button>
+      <button class="success" id="editSaveBtn">💾 Sauvegarder les corrections</button>
+    </div>
+  </div>
+</div>
+
 <div id="examView">
   <div class="exam-header">
     <div><h2 id="examTitle">Test</h2><div id="examMeta" style="font-size:12px;opacity:.8"></div></div>
@@ -356,6 +388,7 @@ let currentUser = null;
 let historyData = JSON.parse(localStorage.getItem('comptest_history') || '[]');
 let isAdmin = false;
 let libraryCache = []; 
+let editingQuizId = null;
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
 
 const cfg = window.COMPOSTEST_CONFIG || {};
@@ -368,13 +401,8 @@ if(window.supabase && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) {
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
-// ==========================================
-// FILIGRANE ANTI-VOL
-// ==========================================
 function buildWatermark() {
-  const name = (currentUser?.user_metadata?.full_name
-    || currentUser?.email
-    || 'CompoTest').toString();
+  const name = (currentUser?.user_metadata?.full_name || currentUser?.email || 'CompoTest').toString();
   const safe = name.replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
     <text x="120" y="110" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700"
@@ -388,9 +416,6 @@ function buildWatermark() {
   document.documentElement.style.setProperty('--watermark-svg', `url("data:image/svg+xml;charset=utf-8,${encoded}")`);
 }
 
-// ==========================================
-// PRÉ-TRAITEMENT IMAGE OCR
-// ==========================================
 async function preprocessImageForOCR(file) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -398,8 +423,7 @@ async function preprocessImageForOCR(file) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const MAX_WIDTH = 2500;
-      let width = img.width;
-      let height = img.height;
+      let width = img.width, height = img.height;
       if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
       canvas.width = width; canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
@@ -408,8 +432,7 @@ async function preprocessImageForOCR(file) {
       const threshold = 140;
       for (let i = 0; i < data.length; i += 4) {
         const gray = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-        const contrast = 1.8;
-        const adjusted = ((gray - 128) * contrast) + 128;
+        const adjusted = ((gray - 128) * 1.8) + 128;
         const bin = adjusted > threshold ? 255 : 0;
         data[i] = bin; data[i+1] = bin; data[i+2] = bin;
       }
@@ -420,9 +443,6 @@ async function preprocessImageForOCR(file) {
   });
 }
 
-// ==========================================
-// AUTHENTIFICATION
-// ==========================================
 async function initAuth() {
   if (!supabaseClient) { $('authGate').style.display = 'block'; return; }
   supabaseClient.auth.onAuthStateChange((_event, session) => handleSession(session));
@@ -458,7 +478,6 @@ function handleSession(session) {
     $('clearHistoryBtn').style.display = isAdmin ? 'block' : 'none';
 
     buildWatermark();
-
     if(isAdmin) loadAdminUsers();
     loadCloudData();
   } else {
@@ -494,9 +513,6 @@ $('pwdBtn').addEventListener('click', async () => {
   else alert("✅ Mot de passe modifié avec succès !");
 });
 
-// ==========================================
-// MODALE ADMIN
-// ==========================================
 $('adminBtn').addEventListener('click', () => {
   $('adminModal').classList.add('show');
   loadAdminUsers();
@@ -549,22 +565,16 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
   const firstName = $('newFirstName').value.trim();
   const emailInput = $('newEmail').value.trim();
   const pwd = $('newPassword').value;
-
   if (!lastName || !firstName) {
     $('adminStatus').textContent = "❌ Nom et prénom requis.";
     $('adminStatus').style.color = "var(--red)";
     return;
   }
-
   let email = emailInput;
   if (!email) {
-    const slug = (firstName + '.' + lastName)
-      .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9.]/g, '');
+    const slug = (firstName + '.' + lastName).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]/g, '');
     email = `${slug}@comptest.local`;
   }
-
   const { data: { session } } = await supabaseClient.auth.getSession();
   const res = await fetch('/api/admin/users', {
     method: 'POST',
@@ -619,9 +629,6 @@ async function adminSetRole(isAdmin) {
   }
 }
 
-// ==========================================
-// CLOUD DATA / HISTORIQUE
-// ==========================================
 async function loadCloudData() {
   if (!currentUser) return;
   const { data } = await supabaseClient.from('comptest_data').select('history').eq('user_id', currentUser.id).maybeSingle();
@@ -694,9 +701,6 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-// ==========================================
-// GESTION DES FICHIERS
-// ==========================================
 $('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
     const file = this.files[0];
@@ -706,7 +710,6 @@ $('pdfFile').addEventListener('change', async function() {
     try {
       let text = ''; 
       const name = file.name.toLowerCase();
-
       if (file.type.startsWith('image/') || name.match(/\.(jpg|jpeg|png|webp|bmp)$/)) {
         status.textContent = '🖼️ Préparation de l\'image...';
         const processedImage = await preprocessImageForOCR(file);
@@ -743,7 +746,6 @@ $('pdfFile').addEventListener('change', async function() {
         status.textContent = 'Lecture du texte...';
         text = await file.text();
       }
-
       $('pdfText').value = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'');
       $('textAreaWrap').classList.remove('hide');
       $('actionButtons').style.display = 'flex';
@@ -867,6 +869,7 @@ async function loadLibrary() {
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="btn-icon" onclick="startLibraryQuizByIndex(${idx})" title="Commencer">▶️</button>
+          ${isAdmin ? `<button class="btn-icon" onclick="openEditQuiz(${idx})" title="Modifier les corrections">✏️</button>` : ''}
           ${isAdmin ? `<button class="btn-icon" onclick="deleteLibraryQuiz('${q.id}')" title="Supprimer">🗑️</button>` : ''}
         </div>
       </div>
@@ -891,7 +894,95 @@ window.deleteLibraryQuiz = async (id) => {
 };
 
 // ==========================================
-// EXAMEN — CORRECTION INSTANTANÉE VERROUILLÉE
+// ÉDITION QUIZ (ADMIN)
+// ==========================================
+window.openEditQuiz = (idx) => {
+  const quiz = libraryCache[idx];
+  if (!quiz) return alert("Quiz introuvable.");
+  editingQuizId = quiz.id;
+  $('editQuizTitle').textContent = "✏️ Éditer : " + quiz.title;
+  const body = $('editQuizBody');
+  body.innerHTML = quiz.questions.map((q, qi) => {
+    const isMulti = q.type === 'mcq_multi';
+    let correctArr = [];
+    if (isMulti) correctArr = Array.isArray(q.correct) ? q.correct : [];
+    else if (q.type === 'mcq' || q.type === 'tf') correctArr = [q.correct];
+    else if (q.type === 'short') correctArr = [];
+
+    const typeLabel = { mcq: 'Choix unique', mcq_multi: 'QCM multi', tf: 'Vrai/Faux', short: 'Réponse courte' }[q.type] || 'Choix unique';
+
+    let optsHtml = '';
+    if (q.type === 'short') {
+      optsHtml = `<input type="text" class="edit-short-input" data-q="${qi}" value="${esc(q.correct || '')}" placeholder="Réponse attendue" style="width:100%;padding:10px;border:1px solid #d5ddeb;border-radius:8px">`;
+    } else {
+      optsHtml = (q.options || []).map((opt, oi) => {
+        const checked = correctArr.includes(oi) ? 'checked' : '';
+        const inputType = isMulti ? 'checkbox' : 'radio';
+        const nameAttr = isMulti ? '' : `name="q_${qi}"`;
+        return `<div class="edit-opt ${checked ? 'is-correct' : ''}">
+          <input type="${inputType}" ${nameAttr} data-q="${qi}" data-opt="${oi}" ${checked}>
+          <label>${esc(opt)}</label>
+        </div>`;
+      }).join('');
+    }
+
+    return `<div class="edit-q-block">
+      <div class="edit-q-text">Q${qi + 1}. ${esc(q.text)} <span class="edit-q-type">${typeLabel}</span></div>
+      ${optsHtml}
+    </div>`;
+  }).join('');
+
+  // Cocher/décocher visuellement
+  body.querySelectorAll('.edit-opt input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const block = inp.closest('.edit-opt');
+      if (inp.type === 'checkbox') {
+        block.classList.toggle('is-correct', inp.checked);
+      } else {
+        // radio : décocher les autres du même groupe
+        const name = inp.name;
+        body.querySelectorAll(`input[name="${name}"]`).forEach(other => {
+          other.closest('.edit-opt').classList.remove('is-correct');
+        });
+        block.classList.toggle('is-correct', inp.checked);
+      }
+    });
+  });
+
+  $('editQuizModal').classList.add('show');
+};
+
+$('editSaveBtn').addEventListener('click', async () => {
+  const quiz = libraryCache.find(q => q.id === editingQuizId);
+  if (!quiz) return alert("Quiz introuvable.");
+  const newQuestions = quiz.questions.map((q, qi) => {
+    let newCorrect;
+    if (q.type === 'short') {
+      const inp = document.querySelector(`.edit-short-input[data-q="${qi}"]`);
+      newCorrect = inp ? inp.value.trim() : (q.correct || '');
+    } else if (q.type === 'mcq_multi') {
+      newCorrect = [...document.querySelectorAll(`input[data-q="${qi}"]:checked`)].map(x => parseInt(x.dataset.opt));
+    } else {
+      const checked = document.querySelector(`input[data-q="${qi}"]:checked`);
+      newCorrect = checked ? parseInt(checked.dataset.opt) : 0;
+    }
+    return { ...q, correct: newCorrect };
+  });
+
+  try {
+    await fetchWithAuth(`/api/quizzes/${editingQuizId}`, { questions: newQuestions }, 'PUT');
+    // MAJ cache local
+    const localQuiz = libraryCache.find(q => q.id === editingQuizId);
+    if (localQuiz) localQuiz.questions = newQuestions;
+    alert("✅ Corrections sauvegardées !");
+    $('editQuizModal').classList.remove('show');
+  } catch (e) {
+    alert("❌ Erreur : " + e.message);
+  }
+});
+
+// ==========================================
+// EXAMEN
 // ==========================================
 function startExam(quiz) {
   examState = {
@@ -923,15 +1014,8 @@ function closeExamView() {
   examState = null;
 }
 
-// Libellé humain du type
 function typeLabel(t) {
-  switch(t){
-    case 'mcq': return 'CHOIX UNIQUE';
-    case 'mcq_multi': return 'QCM MULTI';
-    case 'tf': return 'VRAI / FAUX';
-    case 'short': return 'RÉPONSE COURTE';
-    default: return 'CHOIX UNIQUE';
-  }
+  return { mcq: 'CHOIX UNIQUE', mcq_multi: 'QCM MULTI', tf: 'VRAI / FAUX', short: 'RÉPONSE COURTE' }[t] || 'CHOIX UNIQUE';
 }
 
 function renderExamQuestion() {
@@ -961,11 +1045,8 @@ function renderExamQuestion() {
     <h3>${esc(q.text)}</h3>`;
 
   if (isShort) {
-    // Question à réponse courte
     html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${isLocked ? 'disabled' : ''} placeholder="Votre réponse...">`;
-    if (!isLocked) {
-      html += `<button class="validate-btn" id="lockTextBtn">🔒 Valider ma réponse</button>`;
-    }
+    if (!isLocked) html += `<button class="validate-btn" id="lockTextBtn">🔒 Valider ma réponse</button>`;
   } else if (q.options && q.options.length > 0) {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
@@ -988,30 +1069,20 @@ function renderExamQuestion() {
       </label>`;
     });
     html += `</div>`;
-
-    // Bouton Valider pour multi-choix (le clic direct ne verrouille pas)
-    if (isMulti && !isLocked) {
-      html += `<button class="validate-btn" id="lockMultiBtn">🔒 Valider ma sélection</button>`;
-    }
+    if (isMulti && !isLocked) html += `<button class="validate-btn" id="lockMultiBtn">🔒 Valider ma sélection</button>`;
   }
 
-  // Indice avant verrouillage
   if (!isLocked && q.explanation) {
     html += `<button class="hint-btn" onclick="document.getElementById('hintBox').classList.toggle('show')">💡 Voir un indice</button>`;
     html += `<div class="hint-box" id="hintBox"><b>Indice :</b> ${esc(q.explanation)}</div>`;
   }
 
-  // Correction instantanée
   if (isLocked) {
     const isOk = checkAnswer(q, ua);
     let correctStr = '';
-    if (isShort) {
-      correctStr = String(q.correct ?? '');
-    } else if (Array.isArray(q.correct)) {
-      correctStr = q.correct.map(k => q.options?.[k]).filter(Boolean).join(', ');
-    } else if (q.options && q.options[q.correct] !== undefined) {
-      correctStr = q.options[q.correct];
-    }
+    if (isShort) correctStr = String(q.correct ?? '');
+    else if (Array.isArray(q.correct)) correctStr = q.correct.map(k => q.options?.[k]).filter(Boolean).join(', ');
+    else if (q.options && q.options[q.correct] !== undefined) correctStr = q.options[q.correct];
     html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}">
       <b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>
       ${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}
@@ -1022,7 +1093,6 @@ function renderExamQuestion() {
   html += `</div>`;
   $('examBody').innerHTML = html;
 
-  // Écouteurs
   if (!isLocked) {
     if (isShort) {
       const textInp = $('textInput');
@@ -1038,7 +1108,6 @@ function renderExamQuestion() {
       document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
         inp.addEventListener('change', () => {
           examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
-          // Pas de re-render pour garder les checkboxes cochées visibles
         });
       });
       $('lockMultiBtn').addEventListener('click', () => {
@@ -1048,7 +1117,6 @@ function renderExamQuestion() {
         renderExamQuestion();
       });
     } else {
-      // mcq / tf : verrouillage instantané
       document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
         inp.addEventListener('change', () => {
           examState.answers[i] = parseInt(inp.value);
@@ -1062,9 +1130,7 @@ function renderExamQuestion() {
 
 function checkAnswer(q, ua) {
   if (ua === null || ua === undefined) return false;
-  if (q.type === 'short') {
-    return String(ua).toLowerCase().trim() === String(q.correct).toLowerCase().trim();
-  }
+  if (q.type === 'short') return String(ua).toLowerCase().trim() === String(q.correct).toLowerCase().trim();
   if (q.type === 'mcq' || q.type === 'tf') return ua === q.correct;
   if (q.type === 'mcq_multi') {
     if(!Array.isArray(ua) || ua.length === 0) return false;
@@ -1076,16 +1142,10 @@ function checkAnswer(q, ua) {
 }
 
 $('examNextBtn').addEventListener('click', () => {
-  if(examState.currentIndex < examState.questions.length - 1) {
-    examState.currentIndex++;
-    renderExamQuestion();
-  }
+  if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); }
 });
 $('examPrevBtn').addEventListener('click', () => {
-  if(examState.currentIndex > 0) {
-    examState.currentIndex--;
-    renderExamQuestion();
-  }
+  if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); }
 });
 
 $('examSubmitBtn').addEventListener('click', async () => {
@@ -1093,11 +1153,8 @@ $('examSubmitBtn').addEventListener('click', async () => {
   if(!confirm('Soumettre la compo et voir le score ?')) return;
 
   examState.submitted = true;
-
   let correctCount = 0;
-  examState.questions.forEach((q, i) => {
-    if (checkAnswer(q, examState.answers[i])) correctCount++;
-  });
+  examState.questions.forEach((q, i) => { if (checkAnswer(q, examState.answers[i])) correctCount++; });
   const total = examState.questions.length;
   const scoreSur20 = (correctCount / total * 20);
   const ratio = correctCount / total;
@@ -1126,8 +1183,6 @@ $('scoreCorrectionsBtn').addEventListener('click', () => {
   renderExamQuestion();
 });
 
-$('scoreHomeBtn').addEventListener('click', () => {
-  closeExamView();
-});
+$('scoreHomeBtn').addEventListener('click', () => closeExamView());
 </script>
 </body></html>
