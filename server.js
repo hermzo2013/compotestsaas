@@ -163,7 +163,7 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION REGEX — avec détection QCM multi
+// EXTRACTION REGEX — avec détection intelligente par mots-clés
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
@@ -176,19 +176,20 @@ function parseQuizText(rawText) {
     .replace(/[“”]/g, '"')
     .replace(/[ \t]+/g, ' ');
 
-  // Normalise "1- " et "1. " en "Q1. " en début de ligne
+  // Normalise "1- " et "1. " en "Q1. "
   text = text.replace(/(?:^|\n)\s*(\d{1,3})\s*[-\.\)]\s+/g, '\nQ$1. ');
 
   const parts = text.split(/(?=Q\d{1,3}\.)/);
   const questions = [];
 
+  // ===== MOTS-CLÉS DE DÉTECTION =====
+  const multiKeywords = /\b(cocher\s+le|coché\s+le|cochez\s+le|cochez\s+les|cocher\s+les|cocher\s+le\(s\)|cocher\s+les?|lesquels|lesquelles|identifier|indiquez|parmi\s+les|plusieurs\s+réponses?|sélectionnez?\s+les|quels?\s+sont|quelles?\s+sont)/i;
+  const singleKeywords = /\b(cocher\s+la\s+bonne\s+réponse|quel\s+est|quelle\s+est|laquelle|lequel\s+n[’']?est\s+pas|choisir\s+la\s+bonne|choisissez\s+la\s+bonne|sélectionnez\s+la\s+bonne)/i;
+  const tfKeywords = /\b(vrai\s+ou\s+faux|répondez\s+par\s+vrai|cochez\s+(a|la\s+case\s+a)\s+pour\s+(les\s+)?(affirmations?\s+)?vra)/i;
+
   for (let block of parts) {
     block = block.trim();
     if (!block) continue;
-
-    const isTfHint = /(vrai ou faux|cocher la bonne réponse)/i.test(block);
-    // Mots-clés qui indiquent une question à choix multiples
-    const isMultiHint = /(cocher\s+le\(?s?\)?|cochez\s+(la|les)\s+(ou\s+les\s+)?(bonnes?|plusieurs)|lesquels?|lesquelles?|plusieurs\s+réponses?|choix\s+multiples?|sélectionner\s+les)/i.test(block);
 
     const match = block.match(/^Q(\d{1,3})\.\s*([\s\S]*)/);
     if (!match) continue;
@@ -196,7 +197,7 @@ function parseQuizText(rawText) {
     const num = parseInt(match[1]);
     let content = match[2].trim();
 
-    // Bruit (page 6)
+    // Filtre anti-bruit
     if (/^\d+[\s\.\d]+$/.test(content) || content.replace(/[^a-zA-Z]/g, '').length < 10) continue;
 
     // Extraction des options
@@ -210,7 +211,6 @@ function parseQuizText(rawText) {
     if (matches.length >= 2) {
       const firstOptionIndex = matches[0].index;
       qText = content.substring(0, firstOptionIndex).trim();
-
       for (let i = 0; i < matches.length; i++) {
         const start = matches[i].index + matches[i][0].length;
         const end = (i + 1 < matches.length) ? matches[i + 1].index : content.length;
@@ -218,7 +218,6 @@ function parseQuizText(rawText) {
         if (optText) options.push(optText);
       }
 
-      // Détection Vrai/Faux : 2 options, la 1ère contient "vrai"
       const isTF = options.length === 2
         && options[0].toLowerCase().includes('vrai')
         && options[1].toLowerCase().includes('faux');
@@ -226,17 +225,19 @@ function parseQuizText(rawText) {
       if (isTF) {
         type = 'tf';
         options = ['Vrai', 'Faux'];
-      } else if (options.length > 2 || isMultiHint) {
-        // Plus de 2 options OU mot-clé "cocher le(s)" → multi
-        type = 'mcq_multi';
       } else {
-        type = 'mcq';
+        // ===== DÉTECTION INTELLIGENTE =====
+        const hasMulti = multiKeywords.test(qText);
+        const hasSingle = singleKeywords.test(qText);
+        if (hasMulti && !hasSingle) type = 'mcq_multi';
+        else if (hasSingle && !hasMulti) type = 'mcq';
+        else if (options.length > 2) type = 'mcq_multi'; // fallback : >2 options = multi
+        else type = 'mcq';
       }
-    } else if (isTfHint) {
+    } else if (tfKeywords.test(block)) {
       type = 'tf';
       options = ['Vrai', 'Faux'];
     } else {
-      // Pas d'options → on bascule en Vrai/Faux par défaut
       type = 'tf';
       options = ['Vrai', 'Faux'];
     }
@@ -244,7 +245,6 @@ function parseQuizText(rawText) {
     qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').trim();
     if (qText.length < 5) continue;
 
-    // Correct par défaut selon type
     let defaultCorrect = 0;
     if (type === 'mcq_multi') defaultCorrect = [0];
 
@@ -425,10 +425,7 @@ app.post('/api/quizzes', async (req, res) => {
   }
 });
 
-// ==========================================
-// NOUVEAU : PUT /api/quizzes/:id (admin only)
-// Met à jour le tableau `questions` d'un quiz existant
-// ==========================================
+// PUT /api/quizzes/:id — admin only
 app.put('/api/quizzes/:id', requireAdmin, async (req, res) => {
   const { questions } = req.body;
   if (!Array.isArray(questions) || questions.length === 0) {
