@@ -163,7 +163,64 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION REGEX — avec détection intelligente par mots-clés
+// EXTRACTION GRILLE DE CORRIGÉ (isolée, robuste)
+// ==========================================
+function extractAnswerGrid(rawText) {
+  if (!rawText || typeof rawText !== 'string') return {};
+  
+  // Regex permissive : accepte 1A, 1 A, 1-A, 1:A, 1.A, 1)A, 1) A, etc.
+  // On capture aussi les groupes type "1AB" (mcq_multi)
+  const gridRegex = /(?<![\d])(\d{1,3})\s*[-:\.\)]?\s*([A-Ea-e])(?:\s*[,\s]\s*([A-Ea-e]))?\b/g;
+  
+  const matches = [];
+  let m;
+  while ((m = gridRegex.exec(rawText)) !== null) {
+    const num = parseInt(m[1]);
+    const letters = [m[2].toUpperCase()];
+    if (m[3]) letters.push(m[3].toUpperCase());
+    if (num >= 1 && num <= 200) {
+      matches.push({ num, letters, index: m.index, len: m[0].length });
+    }
+  }
+
+  // On ne garde que les "zones" où les numéros se suivent (grille réelle)
+  // Une grille réelle = au moins 4 paires consécutives
+  const gridZones = [];
+  let currentZone = [];
+  for (let i = 0; i < matches.length; i++) {
+    const cur = matches[i];
+    if (currentZone.length === 0) {
+      currentZone.push(cur);
+      continue;
+    }
+    const prev = currentZone[currentZone.length - 1];
+    if (cur.num === prev.num + 1) {
+      currentZone.push(cur);
+    } else if (cur.num > prev.num + 1 && cur.num <= prev.num + 5) {
+      currentZone.push(cur); // tolérance
+    } else {
+      if (currentZone.length >= 4) gridZones.push(currentZone);
+      currentZone = [cur];
+    }
+  }
+  if (currentZone.length >= 4) gridZones.push(currentZone);
+
+  // Fusionne toutes les zones : num → tableau de lettres
+  const answerKey = {};
+  gridZones.forEach(zone => {
+    zone.forEach(item => {
+      if (!answerKey[item.num]) answerKey[item.num] = [];
+      item.letters.forEach(l => {
+        if (!answerKey[item.num].includes(l)) answerKey[item.num].push(l);
+      });
+    });
+  });
+
+  return answerKey;
+}
+
+// ==========================================
+// EXTRACTION DES QUESTIONS
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
@@ -176,13 +233,22 @@ function parseQuizText(rawText) {
     .replace(/[“”]/g, '"')
     .replace(/[ \t]+/g, ' ');
 
-  // Normalise "1- " et "1. " en "Q1. "
+  // 1. EXTRAIRE LA GRILLE AVANT DE NETTOYER LE TEXTE
+  const answerKey = extractAnswerGrid(text);
+
+  // 2. NETTOYER LE TEXTE : retirer la grille pour ne pas qu'elle soit vue comme des questions
+  // On retire toute séquence de type "1A 2B 3C 4D..." (au moins 4 paires consécutives sur un même "bloc")
+  // Plus simple : on retire les séquences de la forme (num + lettre) séparées par espaces, si au moins 4 d'affilée
+  text = text.replace(/((?:\b\d{1,3}\s*[-:\.\)]?\s*[A-Ea-e]\b[\s,;]*){4,})/g, ' ');
+
+  // 3. NORMALISER les numéros de question : "1- " / "1. " / "1) " → "Q1. "
   text = text.replace(/(?:^|\n)\s*(\d{1,3})\s*[-\.\)]\s+/g, '\nQ$1. ');
 
+  // 4. DÉCOUPAGE EN BLOCS
   const parts = text.split(/(?=Q\d{1,3}\.)/);
   const questions = [];
 
-  // ===== MOTS-CLÉS DE DÉTECTION =====
+  // Mots-clés
   const multiKeywords = /\b(cocher\s+le|coché\s+le|cochez\s+le|cochez\s+les|cocher\s+les|cocher\s+le\(s\)|cocher\s+les?|lesquels|lesquelles|identifier|indiquez|parmi\s+les|plusieurs\s+réponses?|sélectionnez?\s+les|quels?\s+sont|quelles?\s+sont)/i;
   const singleKeywords = /\b(cocher\s+la\s+bonne\s+réponse|quel\s+est|quelle\s+est|laquelle|lequel\s+n[’']?est\s+pas|choisir\s+la\s+bonne|choisissez\s+la\s+bonne|sélectionnez\s+la\s+bonne)/i;
   const tfKeywords = /\b(vrai\s+ou\s+faux|répondez\s+par\s+vrai|cochez\s+(a|la\s+case\s+a)\s+pour\s+(les\s+)?(affirmations?\s+)?vra)/i;
@@ -197,7 +263,7 @@ function parseQuizText(rawText) {
     const num = parseInt(match[1]);
     let content = match[2].trim();
 
-    // Filtre anti-bruit
+    // Filtre bruit
     if (/^\d+[\s\.\d]+$/.test(content) || content.replace(/[^a-zA-Z]/g, '').length < 10) continue;
 
     // Extraction des options
@@ -226,12 +292,11 @@ function parseQuizText(rawText) {
         type = 'tf';
         options = ['Vrai', 'Faux'];
       } else {
-        // ===== DÉTECTION INTELLIGENTE =====
         const hasMulti = multiKeywords.test(qText);
         const hasSingle = singleKeywords.test(qText);
         if (hasMulti && !hasSingle) type = 'mcq_multi';
         else if (hasSingle && !hasMulti) type = 'mcq';
-        else if (options.length > 2) type = 'mcq_multi'; // fallback : >2 options = multi
+        else if (options.length > 2) type = 'mcq_multi';
         else type = 'mcq';
       }
     } else if (tfKeywords.test(block)) {
@@ -257,7 +322,7 @@ function parseQuizText(rawText) {
     });
   }
 
-  // Doublons
+  // Dédoublonnage par numéro
   const uniqueQuestions = [];
   const seenNumbers = new Set();
   for (const q of questions) {
@@ -267,34 +332,21 @@ function parseQuizText(rawText) {
     }
   }
 
-  // Grille corrigé (si présente)
-  const answerKey = {};
-  const gridRegex = /(\d{1,3})\s*[-:\.\)]?\s*([A-Ea-e])\b/g;
-  const allMatches = [];
-  let mg;
-  while ((mg = gridRegex.exec(rawText)) !== null) {
-    allMatches.push({ num: parseInt(mg[1]), letter: mg[2].toUpperCase(), index: mg.index, len: mg[0].length });
-  }
-  let group = [];
-  const gridZones = [];
-  for (let i = 0; i < allMatches.length; i++) {
-    if (group.length === 0) { group.push(allMatches[i]); continue; }
-    const prev = group[group.length - 1];
-    if (allMatches[i].index - (prev.index + prev.len) < 30) group.push(allMatches[i]);
-    else { if (group.length >= 4) gridZones.push(group); group = [allMatches[i]]; }
-  }
-  if (group.length >= 4) gridZones.push(group);
-  gridZones.forEach(zone => zone.forEach(p => { answerKey[p.num] = p.letter; }));
-
+  // 5. APPLIQUER LA GRILLE
   uniqueQuestions.forEach(q => {
-    const letter = answerKey[q.number];
-    if (!letter) return;
-    if (q.type === 'tf') q.correct = letter === 'A' ? 0 : 1;
-    else {
-      const idx = letter.charCodeAt(0) - 65;
-      if (idx >= 0 && idx < q.options.length) {
-        q.correct = q.type === 'mcq_multi' ? [idx] : idx;
-      }
+    const letters = answerKey[q.number];
+    if (!letters || letters.length === 0) return;
+
+    if (q.type === 'tf') {
+      q.correct = letters[0] === 'A' ? 0 : 1;
+    } else if (q.type === 'mcq_multi') {
+      q.correct = letters
+        .map(l => l.charCodeAt(0) - 65)
+        .filter(idx => idx >= 0 && idx < q.options.length)
+        .sort((a, b) => a - b);
+    } else {
+      const idx = letters[0].charCodeAt(0) - 65;
+      if (idx >= 0 && idx < q.options.length) q.correct = idx;
     }
   });
 
@@ -425,7 +477,6 @@ app.post('/api/quizzes', async (req, res) => {
   }
 });
 
-// PUT /api/quizzes/:id — admin only
 app.put('/api/quizzes/:id', requireAdmin, async (req, res) => {
   const { questions } = req.body;
   if (!Array.isArray(questions) || questions.length === 0) {
