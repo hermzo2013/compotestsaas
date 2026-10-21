@@ -93,33 +93,21 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   let email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
 
-  if (!firstName || !lastName) {
-    return res.status(400).json({ error: 'Nom et prénom requis.' });
-  }
-
+  if (!firstName || !lastName) return res.status(400).json({ error: 'Nom et prénom requis.' });
   if (!email) {
-    const slug = `${firstName}.${lastName}`
-      .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9.]/g, '');
+    const slug = `${firstName}.${lastName}`.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]/g, '');
     email = `${slug}@comptest.local`;
   }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({ error: 'Email invalide.' });
-  }
-  if (password.length < 6) {
-    return res.status(400).json({ error: 'Mot de passe trop court (6 min).' });
-  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Email invalide.' });
+  if (password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (6 min).' });
 
   try {
     const fullName = `${firstName} ${lastName}`;
     const user = await supabaseAdmin('users', {
       method: 'POST',
       body: JSON.stringify({
-        email,
-        password,
-        email_confirm: true,
+        email, password, email_confirm: true,
         app_metadata: { compotest_access: true },
         user_metadata: { full_name: fullName }
       })
@@ -152,10 +140,7 @@ app.patch('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
     const isAdmin = req.body.is_admin === true;
     const current = await supabaseAdmin(`users/${req.params.id}`);
     const app_metadata = { ...(current.app_metadata || {}), is_admin: isAdmin };
-    await supabaseAdmin(`users/${req.params.id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ app_metadata })
-    });
+    await supabaseAdmin(`users/${req.params.id}`, { method: 'PUT', body: JSON.stringify({ app_metadata }) });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -178,12 +163,11 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION REGEX — Version robuste (ta version)
+// EXTRACTION REGEX — avec détection QCM multi
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
 
-  // 1. Nettoyage de base
   let text = rawText
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
     .replace(/\u00A0/g, ' ')
@@ -192,83 +176,90 @@ function parseQuizText(rawText) {
     .replace(/[“”]/g, '"')
     .replace(/[ \t]+/g, ' ');
 
-  // 2. Normalisation des numéros de questions 
-  // Transforme "1- " ou "1. " en "Q1. " en début de ligne
+  // Normalise "1- " et "1. " en "Q1. " en début de ligne
   text = text.replace(/(?:^|\n)\s*(\d{1,3})\s*[-\.\)]\s+/g, '\nQ$1. ');
 
-  // 3. Découpage en blocs par question
   const parts = text.split(/(?=Q\d{1,3}\.)/);
-  
   const questions = [];
-  let currentSection = '';
 
   for (let block of parts) {
     block = block.trim();
     if (!block) continue;
 
-    // Détection de la consigne globale
-    const lowerBlock = block.toLowerCase();
-    const isQcmHint = /(cocher|cochez|choisir|choisissez|identifier|indiquez|parmi|lequel|lesquels|quelle|quelles)/i.test(block);
-    const isTfHint = /(vrai ou faux|cocher la bonne réponse|vrai|faux)/i.test(block);
+    const isTfHint = /(vrai ou faux|cocher la bonne réponse)/i.test(block);
+    // Mots-clés qui indiquent une question à choix multiples
+    const isMultiHint = /(cocher\s+le\(?s?\)?|cochez\s+(la|les)\s+(ou\s+les\s+)?(bonnes?|plusieurs)|lesquels?|lesquelles?|plusieurs\s+réponses?|choix\s+multiples?|sélectionner\s+les)/i.test(block);
 
-    // Extraction du numéro et de l'énoncé
     const match = block.match(/^Q(\d{1,3})\.\s*([\s\S]*)/);
     if (!match) continue;
-    
+
     const num = parseInt(match[1]);
     let content = match[2].trim();
 
-    // 4. Nettoyage du bruit (ex: la page 6 avec 1000 chiffres)
+    // Bruit (page 6)
     if (/^\d+[\s\.\d]+$/.test(content) || content.replace(/[^a-zA-Z]/g, '').length < 10) continue;
 
-    // 5. Extraction des options (LA REGEX CRUCIALE)
+    // Extraction des options
     const optionRegex = /(?:^|\s)([A-Ea-e])\s*[\:\-]\s+/g;
     const matches = [...content.matchAll(optionRegex)];
-    
+
     let qText = content;
     let options = [];
-    let type = 'mcq'; // Par défaut
+    let type = 'mcq';
 
     if (matches.length >= 2) {
-      // On a trouvé au moins 2 options (ex: A et B)
       const firstOptionIndex = matches[0].index;
       qText = content.substring(0, firstOptionIndex).trim();
-      
+
       for (let i = 0; i < matches.length; i++) {
         const start = matches[i].index + matches[i][0].length;
         const end = (i + 1 < matches.length) ? matches[i + 1].index : content.length;
-        let optText = content.substring(start, end).trim();
-        optText = optText.replace(/[;\.]+$/, '').trim();
+        let optText = content.substring(start, end).trim().replace(/[;\.]+$/, '').trim();
         if (optText) options.push(optText);
+      }
+
+      // Détection Vrai/Faux : 2 options, la 1ère contient "vrai"
+      const isTF = options.length === 2
+        && options[0].toLowerCase().includes('vrai')
+        && options[1].toLowerCase().includes('faux');
+
+      if (isTF) {
+        type = 'tf';
+        options = ['Vrai', 'Faux'];
+      } else if (options.length > 2 || isMultiHint) {
+        // Plus de 2 options OU mot-clé "cocher le(s)" → multi
+        type = 'mcq_multi';
+      } else {
+        type = 'mcq';
       }
     } else if (isTfHint) {
       type = 'tf';
-      qText = content;
       options = ['Vrai', 'Faux'];
     } else {
+      // Pas d'options → on bascule en Vrai/Faux par défaut
       type = 'tf';
-      qText = content;
       options = ['Vrai', 'Faux'];
     }
 
-    // 6. Nettoyage final de l'énoncé
     qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').trim();
+    if (qText.length < 5) continue;
 
-    if (qText.length > 5) {
-      questions.push({
-        number: num,
-        text: qText,
-        options: options,
-        correct: 0,
-        type: type
-      });
-    }
+    // Correct par défaut selon type
+    let defaultCorrect = 0;
+    if (type === 'mcq_multi') defaultCorrect = [0];
+
+    questions.push({
+      number: num,
+      text: qText,
+      options,
+      correct: defaultCorrect,
+      type
+    });
   }
 
-  // 7. Suppression des doublons
+  // Doublons
   const uniqueQuestions = [];
   const seenNumbers = new Set();
-  
   for (const q of questions) {
     if (!seenNumbers.has(q.number)) {
       seenNumbers.add(q.number);
@@ -276,7 +267,7 @@ function parseQuizText(rawText) {
     }
   }
 
-  // 8. Gestion du corrigé (si une grille existe à la fin)
+  // Grille corrigé (si présente)
   const answerKey = {};
   const gridRegex = /(\d{1,3})\s*[-:\.\)]?\s*([A-Ea-e])\b/g;
   const allMatches = [];
@@ -284,7 +275,6 @@ function parseQuizText(rawText) {
   while ((mg = gridRegex.exec(rawText)) !== null) {
     allMatches.push({ num: parseInt(mg[1]), letter: mg[2].toUpperCase(), index: mg.index, len: mg[0].length });
   }
-  
   let group = [];
   const gridZones = [];
   for (let i = 0; i < allMatches.length; i++) {
@@ -299,11 +289,12 @@ function parseQuizText(rawText) {
   uniqueQuestions.forEach(q => {
     const letter = answerKey[q.number];
     if (!letter) return;
-    if (q.type === 'tf') {
-      q.correct = letter === 'A' ? 0 : 1;
-    } else {
+    if (q.type === 'tf') q.correct = letter === 'A' ? 0 : 1;
+    else {
       const idx = letter.charCodeAt(0) - 65;
-      if (idx >= 0 && idx < q.options.length) q.correct = idx;
+      if (idx >= 0 && idx < q.options.length) {
+        q.correct = q.type === 'mcq_multi' ? [idx] : idx;
+      }
     }
   });
 
@@ -422,16 +413,47 @@ app.post('/api/quizzes', async (req, res) => {
         created_by: req.user.id
       })
     });
-    
     if (!response.ok) {
       const err = await response.text();
       throw new Error(`Erreur Supabase POST: ${err}`);
     }
-    
     const data = await response.json();
     res.json({ quiz: data[0] });
   } catch (e) {
     console.error('Erreur POST quizzes:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ==========================================
+// NOUVEAU : PUT /api/quizzes/:id (admin only)
+// Met à jour le tableau `questions` d'un quiz existant
+// ==========================================
+app.put('/api/quizzes/:id', requireAdmin, async (req, res) => {
+  const { questions } = req.body;
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ error: 'Tableau de questions requis.' });
+  }
+  try {
+    const base = process.env.SUPABASE_URL.replace(/\/$/, '');
+    const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({ questions })
+    });
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`Erreur Supabase PATCH: ${err}`);
+    }
+    const data = await response.json();
+    res.json({ quiz: data[0] });
+  } catch (e) {
+    console.error('Erreur PUT quizzes:', e.message);
     res.status(500).json({ error: e.message });
   }
 });
