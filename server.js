@@ -178,27 +178,36 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION REGEX — Amélioration pour "A : vrai"
+// EXTRACTION REGEX — Version robuste (PDF Exo Santé Publique)
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
-  
+
+  // 1. NETTOYAGE INITIAL (Ignore les en-têtes et le bruit)
   let text = rawText
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
     .replace(/\u00A0/g, ' ')
     .replace(/\r\n?/g, '\n')
-    .replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, ' ')
+    // Supprime les en-têtes spécifiques de ton PDF
+    .replace(/EVALUATION DE SANTE PUBLIQUE/gi, '')
+    .replace(/Cible\s*:\s*Licence.*/gi, '')
+    .replace(/Temps\s*:\s*1Heure/gi, '')
+    .replace(/Instruction\s*:.*point/gi, '')
+    .replace(/A-\s*Vrai ou faux/gi, '')
+    .replace(/Cocher la bonne réponse/gi, '')
+    // Supprime les numéros de page
+    .replace(/=====\s*Page\s*\d+\s*=====/gi, '')
+    .replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, '')
+    // Nettoie les caractères spéciaux et espaces multiples
     .replace(/[’‘`´]/g, "'")
     .replace(/[“”]/g, '"')
     .replace(/[ \t]+/g, ' ');
 
-  const multiHint = /(cochez\s+(la|les)\s+(ou\s+les\s+)?(bonnes?\s+)?(réponses?|cases?)|plusieurs\s+réponses?|choix\s+multiples?|\(?\bQCM\s+multi\b\)?)/i.test(text);
-  const shortHint = /(réponse\s+courte|texte\s+à\s+trous|complétez|répondez\s+par\s+un\s+mot)/i.test(text);
-  const trueFalseHint = /(vrai\s*\/\s*faux|répondez\s+par\s+vrai\s+ou\s+faux|A\s*:\s*vrai\s+B\s*:\s*faux)/i.test(text);
-
-  // Normalisation : A :, A., A), A-
-  text = text.replace(/(^|[\s])[\(\[]?([A-Ea-e])\s*([\.\)\-:])\s*(?=[A-ZÀ-Ýa-z0-9])/g, (m, pre, letter, punct) => `${pre}${letter.toUpperCase()}${punct} `);
-
+  // 2. PRÉ-TRAITEMENT DES OPTIONS COLLÉES (ex: "A : vrai B : faux" -> "A : vrai | B : faux")
+  // On insère un séparateur " | " avant les options B, C, D, E pour faciliter le split
+  text = text.replace(/([A-Ea-e])\s*:\s*/g, (m, letter) => `|${letter.toUpperCase()} : `);
+  
+  // 3. DÉTECTION DES QUESTIONS (Regex accepte "1-", "1.", "1)", etc.)
   const candidateRegex = /(?:^|[\s\.;:\)\]])(Q\s*(\d{1,3})|\d{1,3})\s*[\-\.\):]\s+/gi;
   const candidates = [];
   let mCand;
@@ -211,6 +220,7 @@ function parseQuizText(rawText) {
     if (num >= 1 && num <= 200) candidates.push({ num, hasQ, startIdx, textStart });
   }
 
+  // 4. FILTRAGE DES SÉQUENCES (Garde les numéros qui se suivent)
   const withQ = candidates.filter(c => c.hasQ);
   let pool = withQ.length >= 3 ? withQ : candidates;
 
@@ -232,66 +242,80 @@ function parseQuizText(rawText) {
   const bestSeq = sequences[0] || pool;
   if (!bestSeq.length) return fallbackParse(rawText);
 
+  // 5. EXTRACTION ET DÉDOUBLONNAGE
   const questions = [];
+  const seenQuestions = new Set(); // Anti-doublons (ex: Q31, Q32)
+
   for (let i = 0; i < bestSeq.length; i++) {
     const start = bestSeq[i];
     const end = i + 1 < bestSeq.length ? bestSeq[i + 1].startIdx : text.length;
     let block = text.slice(start.textStart, end).trim();
     if (!block) continue;
 
-    // Regex pour trouver les options : A :, B :, etc.
-    const optionSplitRegex = /(?<=^|[\s\.;:])([\(\[]?[A-Ea-e][\.\)\-\:]\s*)/g;
+    // Détection des options avec le séparateur " | "
+    // On cherche les patterns "A : ...", "B : ..."
     const optMatches = [];
+    const optRegex = /\|([A-E])\s*:\s*([^|]+)/g;
     let mo;
-    while ((mo = optionSplitRegex.exec(block)) !== null) {
-      optMatches.push({ index: mo.index, end: mo.index + mo[0].length, letter: mo[1].replace(/[^A-Ea-e]/g, '').toUpperCase() });
+    while ((mo = optRegex.exec(block)) !== null) {
+      optMatches.push({ letter: mo[1], text: mo[2].trim() });
     }
 
-    let validOptions = [];
+    // Si on n'a pas trouvé d'options via " | ", on essaie l'ancienne méthode (A., B., etc.)
+    if (optMatches.length < 2) {
+      const fallbackOptRegex = /(?<=^|[\s\.;:])([\(\[]?[A-Ea-e][\.\)\-]\s*)/g;
+      let fMo;
+      while ((fMo = fallbackOptRegex.exec(block)) !== null) {
+        optMatches.push({ letter: fMo[1].replace(/[^A-Ea-e]/g, '').toUpperCase(), text: '' });
+      }
+    }
+
+    let qText, options, type = 'mcq';
+
     if (optMatches.length >= 2) {
-      const letters = optMatches.map(o => o.letter);
-      const expected = ['A', 'B', 'C', 'D', 'E'];
-      let ok = true;
-      for (let k = 0; k < Math.min(letters.length, expected.length); k++) {
-        if (letters[k] !== expected[k]) { ok = false; break; }
-      }
-      if (ok) validOptions = optMatches;
-    }
+      // On a des options (QCM ou Vrai/Faux)
+      const firstOptIndex = block.indexOf('|'); // Le bloc commence par la question
+      qText = block.slice(0, firstOptIndex !== -1 ? firstOptIndex : block.length).trim();
+      
+      // Si le premier optMatch est "A : vrai" et le second "B : faux" -> Type TF
+      const isTF = optMatches.length === 2 
+        && optMatches[0].text.toLowerCase().includes('vrai') 
+        && optMatches[1].text.toLowerCase().includes('faux');
 
-    let qText, options;
-    if (validOptions.length >= 2) {
-      qText = block.slice(0, validOptions[0].index).trim();
-      options = [];
-      for (let k = 0; k < validOptions.length; k++) {
-        const optStart = validOptions[k].end;
-        const optEnd = k + 1 < validOptions.length ? validOptions[k + 1].index : block.length;
-        let optText = block.slice(optStart, optEnd).trim().replace(/[;\.]+$/, '').trim();
-        if (optText) options.push(optText);
-      }
-    } else {
-      if (/vrai\s*\/\s*faux/i.test(block) || trueFalseHint) {
-        qText = block.trim();
+      if (isTF) {
+        type = 'tf';
         options = ['Vrai', 'Faux'];
       } else {
-        continue;
+        type = 'mcq';
+        options = optMatches.map(o => o.text);
+      }
+    } else {
+      // Pas d'options trouvées
+      if (/vrai\s*\/\s*faux/i.test(block) || /A\s*:\s*vrai/i.test(block)) {
+        qText = block.trim();
+        type = 'tf';
+        options = ['Vrai', 'Faux'];
+      } else {
+        continue; // On ignore si on ne comprend rien
       }
     }
 
+    // Nettoyage final du texte de la question
     qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').replace(/[\s;]+$/, '').trim();
-    if (qText.length < 8) continue;
 
-    let type = 'mcq';
-    if (options.length === 2 && options[0] === 'Vrai' && options[1] === 'Faux') {
-      type = 'tf';
-    } else if (shortHint && validOptions.length === 0) {
-      type = 'short';
-    } else if (multiHint && validOptions.length >= 2) {
-      type = 'mcq_multi';
-    }
+    // FILTRE ANTI-BRUIT
+    // On ignore si le texte est trop court ou s'il contient une longue suite de chiffres (page 6)
+    const alphaCount = (qText.match(/[a-zA-Z]/g) || []).length;
+    const digitCount = (qText.match(/\d/g) || []).length;
+    
+    if (qText.length < 10 || alphaCount < 5 || digitCount > 50) continue;
 
-    if (type === 'short') options = [];
+    // ANTI-DOUBLON (ex: Q31, Q32)
+    const normalizedText = qText.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 100);
+    if (seenQuestions.has(normalizedText)) continue;
+    seenQuestions.add(normalizedText);
 
-    // Pas de grille de correction → on met 0 par défaut
+    // Valeur par défaut (0) car pas de corrigé
     questions.push({ number: start.num, text: qText, options, correct: type === 'mcq_multi' ? [0] : 0, type });
   }
 
@@ -339,27 +363,16 @@ app.post('/api/generate-post-test', async (req, res) => {
           role: 'system',
           content: `Tu es un générateur de quiz pédagogiques en FRANÇAIS. À partir du texte fourni, génère ${count} questions.
 
-Tu DOIS répartir les questions entre CES 4 TYPES (varie-les pour un bon entraînement) :
-1. "mcq" : question à choix unique (une seule bonne réponse). "correct" est un ENTIER (index 0-based de la bonne option).
-2. "mcq_multi" : QCM avec PLUSIEURS bonnes réponses (2 minimum). "correct" est un TABLEAU d'entiers triés (ex. [0, 2]).
-3. "tf" : Vrai/Faux. "options" = ["Vrai", "Faux"]. "correct" = 0 (Vrai) ou 1 (Faux).
-4. "short" : réponse courte en texte libre (1 à 3 mots). Pas d'"options". "correct" est une CHAÎNE (la réponse attendue, en minuscules).
+Tu DOIS répartir les questions entre CES 4 TYPES :
+1. "mcq" : question à choix unique. "correct" est un ENTIER.
+2. "mcq_multi" : QCM avec PLUSIEURS bonnes réponses. "correct" est un TABLEAU d'entiers.
+3. "tf" : Vrai/Faux. "options" = ["Vrai", "Faux"]. "correct" = 0 ou 1.
+4. "short" : réponse courte (1 à 3 mots). Pas d'"options". "correct" est une CHAÎNE.
 
-Répartition indicative : ~50% mcq, ~20% mcq_multi, ~20% tf, ~10% short.
-
-Règles :
-- Chaque question doit être claire, non ambiguë, en français.
-- Fournis TOUJOURS une "explanation" courte (1-2 phrases) qui aide à comprendre la réponse (sert d'indice ET de correction).
-- Pour "mcq" et "mcq_multi", fournis 4 options pertinentes (A, B, C, D).
-- Pour "short", la réponse attendue doit être EXACTEMENT ce que l'utilisateur taperait (1-3 mots).
-
-Tu DOIS répondre UNIQUEMENT en JSON valide, avec ce format exact :
-{"questions":[
-  {"type":"mcq","text":"...","options":["A","B","C","D"],"correct":0,"explanation":"..."},
-  {"type":"mcq_multi","text":"...","options":["A","B","C","D"],"correct":[0,2],"explanation":"..."},
-  {"type":"tf","text":"...","options":["Vrai","Faux"],"correct":0,"explanation":"..."},
-  {"type":"short","text":"...","correct":"mot","explanation":"..."}
-]}`
+Répartition : ~50% mcq, ~20% mcq_multi, ~20% tf, ~10% short.
+Fournis TOUJOURS une "explanation" courte.
+Réponds UNIQUEMENT en JSON valide :
+{"questions":[{"type":"mcq","text":"...","options":["A","B","C","D"],"correct":0,"explanation":"..."}]}`
         },
         { role: 'user', content: String(text || '').slice(0, 15000) }
       ]
