@@ -163,68 +163,12 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION GRILLE DE CORRIGÉ (isolée, robuste)
-// ==========================================
-function extractAnswerGrid(rawText) {
-  if (!rawText || typeof rawText !== 'string') return {};
-  
-  // Regex permissive : accepte 1A, 1 A, 1-A, 1:A, 1.A, 1)A, 1) A, etc.
-  // On capture aussi les groupes type "1AB" (mcq_multi)
-  const gridRegex = /(?<![\d])(\d{1,3})\s*[-:\.\)]?\s*([A-Ea-e])(?:\s*[,\s]\s*([A-Ea-e]))?\b/g;
-  
-  const matches = [];
-  let m;
-  while ((m = gridRegex.exec(rawText)) !== null) {
-    const num = parseInt(m[1]);
-    const letters = [m[2].toUpperCase()];
-    if (m[3]) letters.push(m[3].toUpperCase());
-    if (num >= 1 && num <= 200) {
-      matches.push({ num, letters, index: m.index, len: m[0].length });
-    }
-  }
-
-  // On ne garde que les "zones" où les numéros se suivent (grille réelle)
-  // Une grille réelle = au moins 4 paires consécutives
-  const gridZones = [];
-  let currentZone = [];
-  for (let i = 0; i < matches.length; i++) {
-    const cur = matches[i];
-    if (currentZone.length === 0) {
-      currentZone.push(cur);
-      continue;
-    }
-    const prev = currentZone[currentZone.length - 1];
-    if (cur.num === prev.num + 1) {
-      currentZone.push(cur);
-    } else if (cur.num > prev.num + 1 && cur.num <= prev.num + 5) {
-      currentZone.push(cur); // tolérance
-    } else {
-      if (currentZone.length >= 4) gridZones.push(currentZone);
-      currentZone = [cur];
-    }
-  }
-  if (currentZone.length >= 4) gridZones.push(currentZone);
-
-  // Fusionne toutes les zones : num → tableau de lettres
-  const answerKey = {};
-  gridZones.forEach(zone => {
-    zone.forEach(item => {
-      if (!answerKey[item.num]) answerKey[item.num] = [];
-      item.letters.forEach(l => {
-        if (!answerKey[item.num].includes(l)) answerKey[item.num].push(l);
-      });
-    });
-  });
-
-  return answerKey;
-}
-
-// ==========================================
-// EXTRACTION DES QUESTIONS
+// EXTRACTION ROBUSTE — Format grille Q1 VRAI / Q16 b.c
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
 
+  // 1. Nettoyage de base
   let text = rawText
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
     .replace(/\u00A0/g, ' ')
@@ -233,124 +177,86 @@ function parseQuizText(rawText) {
     .replace(/[“”]/g, '"')
     .replace(/[ \t]+/g, ' ');
 
-  // 1. EXTRAIRE LA GRILLE AVANT DE NETTOYER LE TEXTE
-  const answerKey = extractAnswerGrid(text);
+  // 2. Extraction de la grille de réponses (Q1 VRAI, Q16 b.c...)
+  const answerKey = {};
+  const gridRegex = /Q(\d{1,3})\s+(VRAI|FAUX|[A-Ea-e](?:[\s\.\,][A-Ea-e])*)/gi;
+  let mGrid;
+  while ((mGrid = gridRegex.exec(rawText)) !== null) {
+    const qNum = parseInt(mGrid[1]);
+    const val = mGrid[2].toUpperCase();
+    
+    if (val === 'VRAI') answerKey[qNum] = { type: 'tf', correct: 0 };
+    else if (val === 'FAUX') answerKey[qNum] = { type: 'tf', correct: 1 };
+    else {
+      const letters = val.match(/[A-E]/g);
+      if (letters) {
+        const indices = letters.map(l => l.charCodeAt(0) - 65);
+        answerKey[qNum] = { 
+          type: indices.length > 1 ? 'mcq_multi' : 'mcq', 
+          correct: indices.length > 1 ? indices : indices[0] 
+        };
+      }
+    }
+  }
 
-  // 2. NETTOYER LE TEXTE : retirer la grille pour ne pas qu'elle soit vue comme des questions
-  // On retire toute séquence de type "1A 2B 3C 4D..." (au moins 4 paires consécutives sur un même "bloc")
-  // Plus simple : on retire les séquences de la forme (num + lettre) séparées par espaces, si au moins 4 d'affilée
-  text = text.replace(/((?:\b\d{1,3}\s*[-:\.\)]?\s*[A-Ea-e]\b[\s,;]*){4,})/g, ' ');
+  // 3. Nettoyage de la grille dans le texte pour ne pas polluer l'extraction
+  text = text.replace(/GR[I]LLE DE REPONSES[\s\S]*/i, ''); 
 
-  // 3. NORMALISER les numéros de question : "1- " / "1. " / "1) " → "Q1. "
-  text = text.replace(/(?:^|\n)\s*(\d{1,3})\s*[-\.\)]\s+/g, '\nQ$1. ');
-
-  // 4. DÉCOUPAGE EN BLOCS
-  const parts = text.split(/(?=Q\d{1,3}\.)/);
+  // 4. Découpage des questions
+  const parts = text.split(/(?:^|\n)\s*(\d{1,3})\s+/);
   const questions = [];
+  
+  for (let i = 1; i < parts.length; i += 2) {
+    const num = parseInt(parts[i]);
+    let content = parts[i + 1] ? parts[i + 1].trim() : '';
+    
+    if (!content || content.replace(/[^a-zA-Z]/g, '').length < 5) continue;
+    if (/^(Details|Q1|GR[I]LLE)/i.test(content)) continue;
 
-  // Mots-clés
-  const multiKeywords = /\b(cocher\s+le|coché\s+le|cochez\s+le|cochez\s+les|cocher\s+les|cocher\s+le\(s\)|cocher\s+les?|lesquels|lesquelles|identifier|indiquez|parmi\s+les|plusieurs\s+réponses?|sélectionnez?\s+les|quels?\s+sont|quelles?\s+sont)/i;
-  const singleKeywords = /\b(cocher\s+la\s+bonne\s+réponse|quel\s+est|quelle\s+est|laquelle|lequel\s+n[’']?est\s+pas|choisir\s+la\s+bonne|choisissez\s+la\s+bonne|sélectionnez\s+la\s+bonne)/i;
-  const tfKeywords = /\b(vrai\s+ou\s+faux|répondez\s+par\s+vrai|cochez\s+(a|la\s+case\s+a)\s+pour\s+(les\s+)?(affirmations?\s+)?vra)/i;
-
-  for (let block of parts) {
-    block = block.trim();
-    if (!block) continue;
-
-    const match = block.match(/^Q(\d{1,3})\.\s*([\s\S]*)/);
-    if (!match) continue;
-
-    const num = parseInt(match[1]);
-    let content = match[2].trim();
-
-    // Filtre bruit
-    if (/^\d+[\s\.\d]+$/.test(content) || content.replace(/[^a-zA-Z]/g, '').length < 10) continue;
-
-    // Extraction des options
-    const optionRegex = /(?:^|\s)([A-Ea-e])\s*[\:\-]\s+/g;
+    // 5. Extraction des options (a) b) c) d))
+    const optionRegex = /(?:^|\s)([a-eA-E])\s*[\)\:\-\.]\s+/g;
     const matches = [...content.matchAll(optionRegex)];
-
+    
     let qText = content;
     let options = [];
     let type = 'mcq';
 
     if (matches.length >= 2) {
-      const firstOptionIndex = matches[0].index;
-      qText = content.substring(0, firstOptionIndex).trim();
-      for (let i = 0; i < matches.length; i++) {
-        const start = matches[i].index + matches[i][0].length;
-        const end = (i + 1 < matches.length) ? matches[i + 1].index : content.length;
+      qText = content.substring(0, matches[0].index).trim();
+      for (let j = 0; j < matches.length; j++) {
+        const start = matches[j].index + matches[j][0].length;
+        const end = (j + 1 < matches.length) ? matches[j + 1].index : content.length;
         let optText = content.substring(start, end).trim().replace(/[;\.]+$/, '').trim();
         if (optText) options.push(optText);
       }
-
-      const isTF = options.length === 2
-        && options[0].toLowerCase().includes('vrai')
-        && options[1].toLowerCase().includes('faux');
-
-      if (isTF) {
-        type = 'tf';
-        options = ['Vrai', 'Faux'];
-      } else {
-        const hasMulti = multiKeywords.test(qText);
-        const hasSingle = singleKeywords.test(qText);
-        if (hasMulti && !hasSingle) type = 'mcq_multi';
-        else if (hasSingle && !hasMulti) type = 'mcq';
-        else if (options.length > 2) type = 'mcq_multi';
-        else type = 'mcq';
-      }
-    } else if (tfKeywords.test(block)) {
-      type = 'tf';
-      options = ['Vrai', 'Faux'];
-    } else {
+    } else if (/VRAI|FAUX|Cocher la bonne réponse/i.test(qText)) {
       type = 'tf';
       options = ['Vrai', 'Faux'];
     }
 
-    qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').trim();
-    if (qText.length < 5) continue;
-
-    let defaultCorrect = 0;
-    if (type === 'mcq_multi') defaultCorrect = [0];
-
-    questions.push({
-      number: num,
-      text: qText,
-      options,
-      correct: defaultCorrect,
-      type
-    });
-  }
-
-  // Dédoublonnage par numéro
-  const uniqueQuestions = [];
-  const seenNumbers = new Set();
-  for (const q of questions) {
-    if (!seenNumbers.has(q.number)) {
-      seenNumbers.add(q.number);
-      uniqueQuestions.push(q);
-    }
-  }
-
-  // 5. APPLIQUER LA GRILLE
-  uniqueQuestions.forEach(q => {
-    const letters = answerKey[q.number];
-    if (!letters || letters.length === 0) return;
-
-    if (q.type === 'tf') {
-      q.correct = letters[0] === 'A' ? 0 : 1;
-    } else if (q.type === 'mcq_multi') {
-      q.correct = letters
-        .map(l => l.charCodeAt(0) - 65)
-        .filter(idx => idx >= 0 && idx < q.options.length)
-        .sort((a, b) => a - b);
+    // 6. Application de la grille de réponses
+    let correct = 0;
+    if (answerKey[num]) {
+      type = answerKey[num].type;
+      correct = answerKey[num].correct;
     } else {
-      const idx = letters[0].charCodeAt(0) - 65;
-      if (idx >= 0 && idx < q.options.length) q.correct = idx;
+      if (options.length > 2) type = 'mcq_multi';
     }
-  });
 
-  return uniqueQuestions;
+    qText = qText.replace(/\s+/g, ' ').trim();
+
+    if (qText.length > 5) {
+      questions.push({ 
+        number: num, 
+        text: qText, 
+        options: options.length > 0 ? options : ['Vrai', 'Faux'], 
+        correct: correct, 
+        type: type 
+      });
+    }
+  }
+
+  return questions;
 }
 
 function fallbackParse(rawText) {
