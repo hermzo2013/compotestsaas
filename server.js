@@ -169,7 +169,7 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION — Format Q1V[ Q2V[ Q3F[ + GRILLE REPONSES
+// EXTRACTION — Formats historiques + Q1/ + grille Q1 V | Q2 F
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
@@ -182,30 +182,29 @@ function parseQuizText(rawText) {
     .replace(/[’‘`´]/g, "'")
     .replace(/[“”]/g, '"');
 
-  // 2. SÉPARATION DE LA GRILLE DE RÉPONSES (Crucial)
+  // 2. SÉPARATION DE LA GRILLE DE RÉPONSES (formats "GRILLE REPONSES")
   let textMain = text;
   let textGrid = "";
   
   const gridSplit = text.split(/GRILLE\s+REPONSES/i);
   if (gridSplit.length > 1) {
-    textMain = gridSplit[0]; // Les questions à gauche
-    textGrid = gridSplit[1]; // La grille à droite
+    textMain = gridSplit[0];
+    textGrid = gridSplit[1];
   }
 
-  // 3. LECTURE DE LA GRILLE SPÉCIFIQUE (ex: Q1V[Q2V[Q3F[)
+  // 3. LECTURE DE LA GRILLE
   const answerKey = {};
   
-  // Regex : Q + chiffre, puis V/F ou lettres (avec séparateurs . , ; espaces)
-  const gridRegex = /Q(\d{1,3})\s*([VvFf]|[A-Ea-e](?:[\s\.\,][A-Ea-e])*)\b/g;
+  // --- Format historique : Q1V[Q2V[Q3F[ ---
+  const gridRegexOld = /Q(\d{1,3})\s*([VvFf]|[A-Ea-e](?:[\s\.\,][A-Ea-e])*)\b/g;
   let mGrid;
-  while ((mGrid = gridRegex.exec(textGrid)) !== null) {
+  while ((mGrid = gridRegexOld.exec(textGrid || text)) !== null) {
     const qNum = parseInt(mGrid[1]);
     const val = mGrid[2].toUpperCase();
     
-    if (val === 'V') answerKey[qNum] = { type: 'tf', correct: 0 }; // Vrai = 0
-    else if (val === 'F') answerKey[qNum] = { type: 'tf', correct: 1 }; // Faux = 1
+    if (val === 'V') answerKey[qNum] = { type: 'tf', correct: 0 };
+    else if (val === 'F') answerKey[qNum] = { type: 'tf', correct: 1 };
     else {
-      // QCM : extraire les lettres (ex: "b.c" → [1, 2])
       const letters = val.match(/[A-E]/g);
       if (letters) {
         const indices = letters.map(l => l.charCodeAt(0) - 65);
@@ -217,8 +216,33 @@ function parseQuizText(rawText) {
     }
   }
 
-  // 4. DÉCOUPAGE DES QUESTIONS (uniquement dans textMain)
-  const parts = textMain.split(/(?:^|\n)\s*(?:Q\s*)?(\d{1,3})\s*[\:\-\.\)]\s+/i);
+  // --- NOUVEAU format : Q1 V | Q2 F | Q16 b,c ---
+  // On scanne le texte COMPLET (car parfois la grille n'est pas dans "textGrid")
+  const gridRegexNew = /Q(\d{1,3})\s*([VvFf]|[A-Ea-e](?:[\s\/\.\,][A-Ea-e])*)\b/g;
+  let mGridNew;
+  while ((mGridNew = gridRegexNew.exec(text)) !== null) {
+    const qNum = parseInt(mGridNew[1]);
+    const val = mGridNew[2].toUpperCase();
+    
+    // On n'écrase pas une entrée déjà lue par l'ancienne regex
+    if (answerKey[qNum]) continue;
+    
+    if (val === 'V') answerKey[qNum] = { type: 'tf', correct: 0 };
+    else if (val === 'F') answerKey[qNum] = { type: 'tf', correct: 1 };
+    else {
+      const letters = val.match(/[A-E]/g);
+      if (letters) {
+        const indices = letters.map(l => l.charCodeAt(0) - 65);
+        answerKey[qNum] = { 
+          type: indices.length > 1 ? 'mcq_multi' : 'mcq', 
+          correct: indices.length > 1 ? indices : indices[0] 
+        };
+      }
+    }
+  }
+
+  // 4. DÉCOUPAGE DES QUESTIONS (accepte / en plus de . ) - :)
+  const parts = textMain.split(/(?:^|\n)\s*(?:Q\s*)?(\d{1,3})\s*[\/\.\)\-]\s+/i);
   
   const questions = [];
   
@@ -246,22 +270,20 @@ function parseQuizText(rawText) {
         if (optText) options.push(optText);
       }
     } else {
-      // Pas d'options → Vrai/Faux
       type = 'tf';
       options = ['Vrai', 'Faux'];
     }
 
-    // 6. Application de la grille de réponses
+    // 6. Application de la grille
     let correct = 0;
     if (answerKey[num]) {
       type = answerKey[num].type;
       correct = answerKey[num].correct;
     } else {
-      // Pas dans la grille → deviner
       if (options.length > 2) type = 'mcq_multi';
     }
 
-    // 7. Nettoyage final (retire les restes de la grille)
+    // 7. Nettoyage final
     qText = qText.replace(/GRILLE[\s\S]*/i, '').replace(/\s+/g, ' ').trim();
 
     if (qText.length > 5) {
