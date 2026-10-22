@@ -216,7 +216,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
       </div>
       <label>Fichier (PDF, DOCX, TXT, IMAGE)</label>
       <div class="filebox">
-        <input id="pdfFile" type="file" accept=".pdf,.docx,.txt,image/*" capture="environment" style="display:none">
+        <input id="pdfFile" type="file" accept=".pdf,.docx,.txt,image/*" style="display:none">
         <button class="secondary" onclick="document.getElementById('pdfFile').click()">📄 Choisir un fichier ou 📷 Prendre une photo</button>
         <span id="fileName" style="margin-left:10px;font-weight:600;font-size:14px;color:var(--blue)">Aucun fichier</span>
         <div id="pdfStatus" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
@@ -885,9 +885,6 @@ window.deleteLibraryQuiz = async (id) => {
   } catch (e) { alert("Erreur : " + e.message); }
 };
 
-// ==========================================
-// ÉDITION QUIZ (ADMIN)
-// ==========================================
 window.openEditQuiz = (idx) => {
   const quiz = libraryCache[idx];
   if (!quiz) return alert("Quiz introuvable.");
@@ -970,9 +967,6 @@ $('editSaveBtn').addEventListener('click', async () => {
   }
 });
 
-// ==========================================
-// EXAMEN
-// ==========================================
 function startExam(quiz) {
   examState = {
     title: quiz.title,
