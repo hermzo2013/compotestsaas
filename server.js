@@ -169,248 +169,113 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// FONCTION UNIVERSELLE D'EXTRACTION DE QUIZ
-// ==========================================
-// Pipeline en 4 étapes :
-//   1. Nettoyage et normalisation
-//   2. Extraction du corrigé (grille de réponses)
-//   3. Découpage intelligent (tokenisation des questions + options)
-//   4. Assemblage et détection du type
+// EXTRACTION — Format Q1V[ Q2V[ Q3F[ + GRILLE REPONSES
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
 
-  // ==========================================
-  // ÉTAPE 1 : NETTOYAGE ET NORMALISATION
-  // ==========================================
+  // 1. Nettoyage de base
   let text = rawText
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
     .replace(/\u00A0/g, ' ')
     .replace(/\r\n?/g, '\n')
     .replace(/[’‘`´]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n');
+    .replace(/[“”]/g, '"');
 
-  text = text
-    .replace(/EVALUATION\s+DE\s+SANTE\s+PUBLIQUE/gi, '')
-    .replace(/Cible\s*:.*$/gim, '')
-    .replace(/Temps\s*:.*$/gim, '')
-    .replace(/Instruction\s*:.*$/gim, '')
-    .replace(/Barème\s*:.*$/gim, '')
-    .replace(/={2,}\s*Page\s*\d+\s*={2,}/gi, '')
-    .replace(/Page\s+\d+(\s*\/\s*\d+)?/gi, '');
+  // 2. SÉPARATION DE LA GRILLE DE RÉPONSES (Crucial)
+  let textMain = text;
+  let textGrid = "";
+  
+  const gridSplit = text.split(/GRILLE\s+REPONSES/i);
+  if (gridSplit.length > 1) {
+    textMain = gridSplit[0]; // Les questions à gauche
+    textGrid = gridSplit[1]; // La grille à droite
+  }
 
-  // ==========================================
-  // ÉTAPE 2 : EXTRACTION DU CORRIGÉ (GRILLE DE RÉPONSES)
-  // ==========================================
+  // 3. LECTURE DE LA GRILLE SPÉCIFIQUE (ex: Q1V[Q2V[Q3F[)
   const answerKey = {};
-
-  // --- Format "Q<num> <réponse>" (moderne) ---
-  const modernGridRegex = /Q\s*(\d{1,3})\s+(VRAI|FAUX|TRUE|FALSE|[A-Ea-e](?:\s*[\s\.\,;]\s*[A-Ea-e])*)/gi;
+  
+  // Regex : Q + chiffre, puis V/F ou lettres (avec séparateurs . , ; espaces)
+  const gridRegex = /Q(\d{1,3})\s*([VvFf]|[A-Ea-e](?:[\s\.\,][A-Ea-e])*)\b/g;
   let mGrid;
-  while ((mGrid = modernGridRegex.exec(rawText)) !== null) {
+  while ((mGrid = gridRegex.exec(textGrid)) !== null) {
     const qNum = parseInt(mGrid[1]);
-    const val = mGrid[2].trim().toUpperCase();
-    registerAnswer(answerKey, qNum, val);
-  }
-
-  // --- Format "1A 2B 3C" (classique) ou "1-A", "1:A", "(1)A" ---
-  const classicGridRegex = /(?:\(|\[)?\b(\d{1,3})\b(?:\)|\])?\s*[\-:\.]?\s*([A-Ea-e])\b/g;
-  const classicMatches = [];
-  let mClassic;
-  while ((mClassic = classicGridRegex.exec(rawText)) !== null) {
-    classicMatches.push({
-      num: parseInt(mClassic[1]),
-      letter: mClassic[2].toUpperCase(),
-      index: mClassic.index,
-      len: mClassic[0].length
-    });
-  }
-
-  // Filtre : garder uniquement les séquences adjacentes (au moins 4 paires)
-  const zones = [];
-  let zone = [];
-  for (let i = 0; i < classicMatches.length; i++) {
-    const cur = classicMatches[i];
-    if (zone.length === 0) { zone.push(cur); continue; }
-    const prev = zone[zone.length - 1];
-    if (cur.index - (prev.index + prev.len) < 40 && cur.num >= prev.num && cur.num <= prev.num + 3) {
-      zone.push(cur);
-    } else {
-      if (zone.length >= 4) zones.push(zone);
-      zone = [cur];
-    }
-  }
-  if (zone.length >= 4) zones.push(zone);
-
-  zones.forEach(z => {
-    z.forEach(item => {
-      if (!answerKey[item.num]) answerKey[item.num] = { type: null, correct: null };
-      const cur = answerKey[item.num];
-      const idx = item.letter.charCodeAt(0) - 65;
-      if (cur.correct === null) cur.correct = idx;
-      else if (Array.isArray(cur.correct)) { if (!cur.correct.includes(idx)) cur.correct.push(idx); }
-      else if (cur.correct !== idx) cur.correct = [cur.correct, idx].sort((a,b)=>a-b);
-    });
-  });
-
-  function registerAnswer(map, num, val) {
-    if (!map[num]) map[num] = { type: null, correct: null };
-    const entry = map[num];
-    if (val === 'VRAI' || val === 'TRUE') { entry.type = 'tf'; entry.correct = 0; return; }
-    if (val === 'FAUX' || val === 'FALSE') { entry.type = 'tf'; entry.correct = 1; return; }
-    const letters = val.match(/[A-E]/g);
-    if (letters) {
-      const indices = letters.map(l => l.charCodeAt(0) - 65);
-      entry.type = indices.length > 1 ? 'mcq_multi' : 'mcq';
-      entry.correct = indices.length > 1 ? indices.sort((a,b)=>a-b) : indices[0];
+    const val = mGrid[2].toUpperCase();
+    
+    if (val === 'V') answerKey[qNum] = { type: 'tf', correct: 0 }; // Vrai = 0
+    else if (val === 'F') answerKey[qNum] = { type: 'tf', correct: 1 }; // Faux = 1
+    else {
+      // QCM : extraire les lettres (ex: "b.c" → [1, 2])
+      const letters = val.match(/[A-E]/g);
+      if (letters) {
+        const indices = letters.map(l => l.charCodeAt(0) - 65);
+        answerKey[qNum] = { 
+          type: indices.length > 1 ? 'mcq_multi' : 'mcq', 
+          correct: indices.length > 1 ? indices : indices[0] 
+        };
+      }
     }
   }
 
-  // ==========================================
-  // ÉTAPE 3 : DÉCOUPAGE INTELLIGENT (TOKENISATION)
-  // ==========================================
-  const questionStartPatterns = [
-    /(?:^|\n)\s*(?:Q(?:uestion)?|Item|N[°o]\.?|#)\s*(\d{1,3})\s*[:\.\)\-]?\s+/gi,
-    /(?:^|\n)\s*[A-Z]+[\-\.]\d+(?:[\-\.][A-Z0-9]+)*\s*[:\.\)]?\s+/gi,
-    /(?:^|\n)\s*[\(\[]?(\d{1,4})[\)\]]?\s*[:\.\)\-]\s+/gi,
-    /(?:^|\n)\s*(\d{1,3})(?:er|°|[①-⑳]|[❶-❿])\s*[\.\):\-]?\s+/gi,
-    /(?:^|\n)\s*[\(\[]?([IVX]+)[\)\]]?\s*[\.\):\-]\s+/gi,
-    /(?:^|\n)\s*[\(\[]?((?:\d{1,2}|[IVX]{1,4}|[A-Z])(?:[\-\.][A-Z0-9]{1,3}){1,4})[\)\]]?\s*[\.\):\-]\s+/gi
-  ];
-
-  const starts = [];
-  questionStartPatterns.forEach(re => {
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      const rawNum = m[1];
-      let num;
-      if (/^\d+$/.test(rawNum)) num = parseInt(rawNum, 10);
-      else if (/^[IVX]+$/.test(rawNum)) num = romanToInt(rawNum);
-      else if (/^[A-Za-z]$/.test(rawNum)) num = rawNum.toUpperCase().charCodeAt(0) - 64;
-      else num = starts.length + 1;
-      starts.push({ index: m.index, contentStart: m.index + m[0].length, num });
-    }
-  });
-
-  starts.sort((a, b) => a.index - b.index || a.contentStart - b.contentStart);
-  const uniqueStarts = [];
-  let lastEnd = -1;
-  starts.forEach(s => {
-    if (s.contentStart <= lastEnd) return;
-    if (s.index < lastEnd) return;
-    uniqueStarts.push(s);
-    lastEnd = s.contentStart;
-  });
-
+  // 4. DÉCOUPAGE DES QUESTIONS (uniquement dans textMain)
+  const parts = textMain.split(/(?:^|\n)\s*(?:Q\s*)?(\d{1,3})\s*[\:\-\.\)]\s+/i);
+  
   const questions = [];
-  for (let i = 0; i < uniqueStarts.length; i++) {
-    const start = uniqueStarts[i];
-    const end = (i + 1 < uniqueStarts.length) ? uniqueStarts[i + 1].index : text.length;
-    let block = text.slice(start.contentStart, end).trim();
-    if (!block) continue;
+  
+  for (let i = 1; i < parts.length; i += 2) {
+    const num = parseInt(parts[i]);
+    let content = parts[i + 1] ? parts[i + 1].trim() : '';
+    
+    // Ignorer le bruit
+    if (!content || content.replace(/[^a-zA-Z]/g, '').length < 5) continue;
 
-    if (/^[\s\dA-E\|\.,;]+$/i.test(block)) continue;
-    if (block.replace(/[^a-zA-Z]/g, '').length < 5) continue;
-
-    // Séparation énoncé / options
-    const optionMarkers = [
-      /(?:^|\n|\s)[\(\[]?([A-Ea-e])[\)\]]?\s*[\.\):\-]\s+/g,
-      /(?:^|\n|\s)([ⓐ-ⓩⒶ-Ⓩ])\s+/g,
-      /(?:^|\n|\s)([①-⑳])\s+/g,
-      /(?:^|\n|\s)([☐□○◯])\s*/g
-    ];
-
-    const optionMatches = [];
-    optionMarkers.forEach(re => {
-      let m;
-      while ((m = re.exec(block)) !== null) {
-        optionMatches.push({ index: m.index, end: m.index + m[0].length, marker: m[1] });
-      }
-    });
-    optionMatches.sort((a, b) => a.index - b.index);
-
-    const validOptions = [];
-    let expectedCode = 65;
-    optionMatches.forEach(om => {
-      const code = (om.marker && om.marker.length === 1) ? om.marker.charCodeAt(0) : 0;
-      if (validOptions.length === 0 || code === 0 || code === expectedCode) {
-        validOptions.push(om);
-        if (code === expectedCode) expectedCode++;
-      }
-    });
-
-    let qText = block;
+    // 5. Extraction des options (a) b) c) ou A. B. C.)
+    const optionRegex = /(?:^|\s)([a-eA-E])\s*[\)\:\-\.]\s+/g;
+    const matches = [...content.matchAll(optionRegex)];
+    
+    let qText = content;
     let options = [];
+    let type = 'mcq';
 
-    if (validOptions.length >= 2) {
-      qText = block.slice(0, validOptions[0].index).trim();
-      for (let j = 0; j < validOptions.length; j++) {
-        const s = validOptions[j].end;
-        const e = (j + 1 < validOptions.length) ? validOptions[j + 1].index : block.length;
-        let optText = block.slice(s, e).trim().replace(/^[\-–—\s]+/, '').replace(/[;\.]+$/, '').trim();
+    if (matches.length >= 2) {
+      qText = content.substring(0, matches[0].index).trim();
+      for (let j = 0; j < matches.length; j++) {
+        const start = matches[j].index + matches[j][0].length;
+        const end = (j + 1 < matches.length) ? matches[j + 1].index : content.length;
+        let optText = content.substring(start, end).trim().replace(/[;\.]+$/, '').trim();
         if (optText) options.push(optText);
       }
-    }
-
-    if (options.length === 0 && /\b(vrai|faux|oui|non|exact|inexact)\b/i.test(qText)) {
+    } else {
+      // Pas d'options → Vrai/Faux
+      type = 'tf';
       options = ['Vrai', 'Faux'];
     }
 
-    qText = qText.replace(/\s+/g, ' ').replace(/^[\-–—\.\s]+/, '').trim();
-    if (qText.length < 5) continue;
-
-    // Détection du type
-    let type = options.length > 0 ? 'mcq' : 'tf';
-    if (options.length === 2) {
-      const o0 = options[0].toLowerCase();
-      const o1 = options[1].toLowerCase();
-      if ((o0.includes('vrai') && o1.includes('faux')) ||
-          (o0.includes('oui') && o1.includes('non')) ||
-          (o0.includes('exact') && o1.includes('inexact'))) {
-        type = 'tf';
-        options = ['Vrai', 'Faux'];
-      }
-    }
-
+    // 6. Application de la grille de réponses
     let correct = 0;
-    if (answerKey[start.num]) {
-      const entry = answerKey[start.num];
-      if (entry.type) type = entry.type;
-      if (entry.correct !== null) correct = entry.correct;
-    } else if (options.length > 2) {
-      type = 'mcq_multi';
-      correct = [0];
+    if (answerKey[num]) {
+      type = answerKey[num].type;
+      correct = answerKey[num].correct;
+    } else {
+      // Pas dans la grille → deviner
+      if (options.length > 2) type = 'mcq_multi';
     }
 
-    if (type === 'mcq_multi' && !Array.isArray(correct)) correct = [correct];
-    if (type !== 'mcq_multi' && Array.isArray(correct)) correct = correct[0] ?? 0;
+    // 7. Nettoyage final (retire les restes de la grille)
+    qText = qText.replace(/GRILLE[\s\S]*/i, '').replace(/\s+/g, ' ').trim();
 
-    questions.push({
-      number: start.num,
-      text: qText,
-      options: options.length > 0 ? options : ['Vrai', 'Faux'],
-      correct: correct,
-      type: type
-    });
+    if (qText.length > 5) {
+      questions.push({ 
+        number: num, 
+        text: qText, 
+        options: options, 
+        correct: correct, 
+        type: type 
+      });
+    }
   }
 
   return questions;
-}
-
-// Convertit un chiffre romain en entier
-function romanToInt(str) {
-  const map = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
-  let result = 0;
-  const s = str.toUpperCase();
-  for (let i = 0; i < s.length; i++) {
-    const cur = map[s[i]];
-    const next = map[s[i + 1]];
-    if (next && cur < next) result -= cur;
-    else result += cur;
-  }
-  return result || 0;
 }
 
 function fallbackParse(rawText) {
