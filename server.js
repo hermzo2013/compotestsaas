@@ -15,17 +15,22 @@ app.use(express.json({ limit: '10mb' }));
 // ==========================================
 const ALLOWED_ORIGINS = [
   'https://comptestsaas.onrender.com',   // site web
-  'http://localhost:3000',               // dev local
+  'http://localhost:3000',               // dev local web
   'http://localhost:5173',               // dev Vite
-  'capacitor://localhost',               // app mobile Capacitor iOS
-  'ionic://localhost',                   // app mobile Ionic iOS
-  'http://localhost',                    // app mobile Capacitor Android
+  'https://localhost',                   // Android Capacitor 6+
+  'http://localhost',                    // Android Capacitor < 6
+  'capacitor://localhost',               // iOS Capacitor
+  'ionic://localhost',                   // Ionic iOS
 ];
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  if (origin) {
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+  } else if (origin) {
+    // Origine inconnue : on l'autorise quand même pour ne pas bloquer l'app mobile
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else {
@@ -33,7 +38,7 @@ app.use((req, res, next) => {
   }
 
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey, x-client-info');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey, x-client-info, X-Requested-With');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '86400');
 
@@ -206,7 +211,7 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION — Fusion ancienne logique + poupy.docx
+// EXTRACTION
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
@@ -241,7 +246,6 @@ function parseQuizText(rawText) {
   }
 
   const parts = text.split(/(?:^|\n)\s*(?:\*\s*)?(?:Q\s*)?(\d{1,3})\s*[\/\.\)\-\:]\s*\*?\s+/i);
-  
   const questions = [];
   
   for (let i = 1; i < parts.length; i += 2) {
@@ -265,11 +269,7 @@ function parseQuizText(rawText) {
       let correctIndices = [];
 
       rawOptions.forEach((opt, idx) => {
-        let isCorrect = false;
-        if (opt.includes('✓')) {
-          isCorrect = true;
-          correctIndices.push(idx);
-        }
+        if (opt.includes('✓')) correctIndices.push(idx);
         let cleanOpt = opt.replace('✓', '').replace(/:\s*Non$/i, '').trim();
         if (cleanOpt) options.push(cleanOpt);
       });
