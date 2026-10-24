@@ -5,8 +5,9 @@
 <title>CompoTest</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/favicon.png">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 <style>
-:root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c;--red:#e11d48}
+:root{--blue:#2457d6;--navy:#132344;--bg:#f4f7fc;--ink:#1d2940;--muted:#6c7890;--line:#e1e7f0;--green:#16865c;--red:#e11d48;--lav-1:#7D90E0;--lav-2:#8AA1FF;--auth-bg:#E8EAF5;--input-bg:#F0F2F9}
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
 header{background:linear-gradient(120deg,#132344,#2457d6);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -67,6 +68,196 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .edit-opt.is-correct{background:#e9f8f1;border-color:var(--green)}
 .edit-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 
+/* ==========================================
+   NOUVELLE PAGE D'AUTHENTIFICATION ANIMÉE
+   ========================================== */
+#authGate{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:var(--auth-bg);
+  z-index:4000;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  overflow-y:auto;
+}
+#authGate.show{display:flex;}
+
+.auth-container{
+  position:relative;
+  width:850px;
+  height:500px;
+  background:#fff;
+  border-radius:24px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.1);
+  overflow:hidden;
+}
+
+.auth-form-container{
+  position:absolute;
+  top:0;
+  height:100%;
+  width:50%;
+  padding:30px 45px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  transition: all 0.6s ease-in-out;
+  background:#fff;
+  z-index:1;
+  overflow-y:auto;
+}
+.auth-form-login{left:0;opacity:1;z-index:2;}
+.auth-form-register{left:0;opacity:0;z-index:1;}
+
+.auth-container.active .auth-form-login{
+  transform:translateX(0);
+  opacity:0;
+  z-index:1;
+}
+.auth-container.active .auth-form-register{
+  transform:translateX(100%);
+  opacity:1;
+  z-index:5;
+  animation: authShow 0.6s;
+}
+@keyframes authShow{
+  0%, 49.99% {opacity:0; z-index:1;}
+  50%, 100% {opacity:1; z-index:5;}
+}
+
+.auth-form-container h2{
+  font-size:24px;
+  font-weight:800;
+  color:#000;
+  text-align:center;
+  margin:0 0 18px;
+}
+
+.auth-input-group{position:relative;margin-bottom:12px;}
+.auth-input-group i{
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  font-size:18px;color:var(--muted);pointer-events:none;
+}
+.auth-input-group input,
+.auth-input-group select{
+  width:100%;
+  padding:12px 14px 12px 42px;
+  background:var(--input-bg);
+  border:1px solid var(--line);
+  border-radius:10px;
+  font-size:14px;
+  font-family:inherit;
+  color:var(--ink);
+  outline:none;
+  transition:border-color 0.2s, background 0.2s;
+}
+.auth-input-group select{
+  appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%236c7890'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+}
+.auth-input-group input:focus,
+.auth-input-group select:focus{
+  border-color:var(--lav-1);
+  background-color:#fff;
+  outline:2px solid rgba(125,144,224,0.2);
+}
+.auth-input-group input::placeholder{color:#9aa3b8;}
+
+.auth-forgot-link{
+  display:block;text-align:right;font-size:12px;
+  color:var(--lav-1);text-decoration:none;margin:-4px 0 12px;font-weight:600;
+}
+.auth-forgot-link:hover{color:var(--lav-2);}
+
+.auth-btn{
+  width:100%;padding:12px;
+  background:linear-gradient(135deg,var(--lav-1),var(--lav-2));
+  color:#fff;border:none;border-radius:10px;
+  font-size:15px;font-weight:700;cursor:pointer;
+  transition:transform 0.15s, box-shadow 0.15s;
+}
+.auth-btn:hover{box-shadow:0 6px 20px rgba(125,144,224,0.4);transform:translateY(-1px);}
+.auth-btn:active{transform:translateY(0);}
+.auth-btn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+
+.auth-error{
+  color:var(--red);font-size:12px;text-align:center;
+  margin-top:8px;min-height:16px;font-weight:600;
+}
+
+.auth-separator{
+  display:flex;align-items:center;text-align:center;
+  font-size:11px;color:var(--muted);margin:14px 0;
+}
+.auth-separator::before,.auth-separator::after{
+  content:'';flex:1;height:1px;background:var(--line);
+}
+.auth-separator::before{margin-right:8px;}
+.auth-separator::after{margin-left:8px;}
+
+.auth-socials{display:flex;justify-content:center;gap:8px;margin-bottom:8px;}
+.auth-socials a{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:50%;
+  background:var(--input-bg);color:var(--ink);
+  font-size:16px;text-decoration:none;font-weight:800;
+  transition:background 0.2s, color 0.2s, transform 0.15s;
+}
+.auth-socials a:hover{background:var(--lav-1);color:#fff;transform:translateY(-2px);}
+
+.auth-switch-text{
+  text-align:center;font-size:12px;color:var(--muted);margin-top:6px;
+}
+.auth-switch-text a{
+  color:var(--lav-1);font-weight:700;text-decoration:none;cursor:pointer;
+}
+.auth-switch-text a:hover{text-decoration:underline;}
+
+.auth-overlay-container{
+  position:absolute;top:0;left:50%;
+  width:50%;height:100%;overflow:hidden;
+  transition:transform 0.6s cubic-bezier(0.25,0.8,0.25,1);
+  z-index:100;
+}
+.auth-overlay{
+  position:relative;left:-100%;
+  width:200%;height:100%;
+  background:linear-gradient(135deg,var(--lav-1),var(--lav-2));
+  color:#fff;transform:translateX(0);
+  transition:transform 0.6s cubic-bezier(0.25,0.8,0.25,1);
+}
+.auth-overlay-panel{
+  position:absolute;top:0;width:50%;height:100%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:0 40px;
+  transition:transform 0.6s cubic-bezier(0.25,0.8,0.25,1);
+}
+.auth-overlay-left{transform:translateX(-20%);}
+.auth-overlay-right{right:0;transform:translateX(0);}
+
+.auth-overlay-panel h2{
+  font-size:26px;font-weight:800;margin:0 0 10px;color:#fff;
+}
+.auth-overlay-panel p{
+  font-size:13px;line-height:1.6;margin:0 0 20px;opacity:0.92;
+}
+.auth-btn-ghost{
+  padding:11px 38px;background:transparent;
+  border:2px solid #fff;color:#fff;border-radius:30px;
+  font-size:13px;font-weight:700;cursor:pointer;
+  transition:background 0.2s, color 0.2s;
+}
+.auth-btn-ghost:hover{background:#fff;color:var(--lav-1);}
+
+.auth-container.active .auth-overlay-container{transform:translateX(-100%);}
+.auth-container.active .auth-overlay{transform:translateX(50%);}
+.auth-container.active .auth-overlay-left{transform:translateX(0);}
+.auth-container.active .auth-overlay-right{transform:translateX(20%);}
+
 /* ÉCRAN D'EXAMEN */
 #examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:100px}
 .exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
@@ -75,47 +266,39 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 
 .exam-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:25px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.02);position:relative;overflow:hidden}
 .exam-card::before{
-  content:'';
-  position:absolute;inset:0;
-  z-index:0;
-  pointer-events:none;
-  user-select:none;
-  background-image:var(--watermark-svg, none);
-  background-repeat:repeat;
-  background-size:240px 240px;
-  opacity:1;
+  content:'';position:absolute;inset:0;z-index:0;pointer-events:none;user-select:none;
+  background-image:var(--watermark-svg, none);background-repeat:repeat;background-size:240px 240px;
 }
 .exam-card > *{position:relative;z-index:1}
-
 .exam-card h3{font-size:17px;margin-top:0;margin-bottom:20px;line-height:1.5;color:#1e293b;text-align:left}
 .exam-q-num{display:inline-block;background:var(--blue);color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:99px;margin-bottom:12px}
 .exam-type-tag{display:inline-block;background:#e0e7ff;color:#3730a3;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:6px;text-transform:uppercase}
-.exam-options { display: flex !important; flex-direction: column !important; gap: 12px !important; width: 100% !important; }
-.exam-opt { display: flex !important; flex-direction: row !important; align-items: flex-start !important; gap: 15px !important; padding: 16px !important; border: 1.5px solid var(--line) !important; border-radius: 10px !important; cursor: pointer !important; background: #fff !important; transition: .1s !important; text-align: left !important; }
-.exam-opt:hover { background: #f8faff !important; border-color: #a9bce7 !important; }
-.exam-opt.selected { border-color: var(--blue) !important; background: #edf2ff !important; }
-.exam-opt.correct { border-color: var(--green) !important; background: #e9f8f1 !important; }
-.exam-opt.wrong { border-color: var(--red) !important; background: #fff1f2 !important; }
-.exam-opt.locked { cursor: default !important; }
-.exam-opt.locked:hover { background: #fff !important; border-color: var(--line) !important; }
-.exam-opt.locked.correct:hover { background: #e9f8f1 !important; border-color: var(--green) !important; }
-.exam-opt.locked.wrong:hover { background: #fff1f2 !important; border-color: var(--red) !important; }
-.exam-opt.locked.selected:hover { background: #edf2ff !important; border-color: var(--blue) !important; }
-.exam-opt input[type="radio"], .exam-opt input[type="checkbox"] { margin: 2px 0 0 0 !important; width: 20px !important; height: 20px !important; cursor: pointer !important; flex-shrink: 0 !important; display: inline-block !important; }
-.exam-opt.locked input { cursor: default !important; }
-.exam-opt span { flex: 1 !important; text-align: left !important; line-height: 1.4 !important; word-wrap: break-word !important; display: block !important; }
+.exam-options{display:flex!important;flex-direction:column!important;gap:12px!important;width:100%!important}
+.exam-opt{display:flex!important;flex-direction:row!important;align-items:flex-start!important;gap:15px!important;padding:16px!important;border:1.5px solid var(--line)!important;border-radius:10px!important;cursor:pointer!important;background:#fff!important;transition:.1s!important;text-align:left!important}
+.exam-opt:hover{background:#f8faff!important;border-color:#a9bce7!important}
+.exam-opt.selected{border-color:var(--blue)!important;background:#edf2ff!important}
+.exam-opt.correct{border-color:var(--green)!important;background:#e9f8f1!important}
+.exam-opt.wrong{border-color:var(--red)!important;background:#fff1f2!important}
+.exam-opt.locked{cursor:default!important}
+.exam-opt.locked:hover{background:#fff!important;border-color:var(--line)!important}
+.exam-opt.locked.correct:hover{background:#e9f8f1!important;border-color:var(--green)!important}
+.exam-opt.locked.wrong:hover{background:#fff1f2!important;border-color:var(--red)!important}
+.exam-opt.locked.selected:hover{background:#edf2ff!important;border-color:var(--blue)!important}
+.exam-opt input[type="radio"],.exam-opt input[type="checkbox"]{margin:2px 0 0 0!important;width:20px!important;height:20px!important;cursor:pointer!important;flex-shrink:0!important;display:inline-block!important}
+.exam-opt.locked input{cursor:default!important}
+.exam-opt span{flex:1!important;text-align:left!important;line-height:1.4!important;word-wrap:break-word!important;display:block!important}
 .exam-input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:10px;text-align:left}
 .exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
-.exam-actions-left { font-size: 14px; color: var(--muted); font-weight: bold; }
-.exam-actions-right { display: flex; gap: 10px; }
+.exam-actions-left{font-size:14px;color:var(--muted);font-weight:bold}
+.exam-actions-right{display:flex;gap:10px}
 .exam-result-box{background:#e9f8f1;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
 .exam-result-box.wrong{background:#fff1f2;border-color:var(--red)}
 .exam-explain{font-size:13px;color:#475569;margin-top:12px;padding:12px;background:#f8faff;border-radius:8px;border-left:2px solid var(--blue)}
 
-.hint-btn { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding: 8px 15px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; margin-top: 15px; transition: 0.2s; }
-.hint-btn:hover { background: #fde68a; }
-.hint-box { display: none; margin-top: 12px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 8px; font-size: 14px; color: #78350f; }
-.hint-box.show { display: block; }
+.hint-btn{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:8px 15px;border-radius:8px;font-weight:bold;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:15px;transition:0.2s}
+.hint-btn:hover{background:#fde68a}
+.hint-box{display:none;margin-top:12px;padding:15px;background:#fffbeb;border-left:4px solid #f59e0b;border-radius:8px;font-size:14px;color:#78350f}
+.hint-box.show{display:block}
 
 .instant-badge{display:inline-block;background:#e0f2fe;color:#075985;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:8px;vertical-align:middle}
 .validate-btn{background:#dbeafe!important;color:#1e40af!important;font-weight:800!important;padding:12px 20px!important;border-radius:10px!important;font-size:14px!important;margin-top:14px!important;cursor:pointer!important;transition:.15s!important}
@@ -124,12 +307,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 #scoreView{display:none;position:fixed;inset:0;background:rgba(19,35,68,.75);z-index:2500;align-items:center;justify-content:center;padding:20px}
 #scoreView.show{display:flex}
 .score-card{background:#fff;border-radius:20px;padding:40px 30px;max-width:460px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;overflow:hidden}
-.score-card::before{
-  content:'';
-  position:absolute;inset:0;z-index:0;pointer-events:none;user-select:none;
-  background-image:var(--watermark-svg, none);
-  background-repeat:repeat;background-size:240px 240px;
-}
+.score-card::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;user-select:none;background-image:var(--watermark-svg, none);background-repeat:repeat;background-size:240px 240px}
 .score-card > *{position:relative;z-index:1}
 .score-emoji{font-size:56px;margin-bottom:10px;line-height:1}
 .score-title{font-size:22px;font-weight:800;margin:0 0 8px;color:#132344}
@@ -149,12 +327,22 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .checkbox-group input{width:20px;height:20px;cursor:pointer;margin:0}
 .checkbox-group label{margin:0;cursor:pointer;font-size:14px;color:var(--ink)}
 
-@media(max-width:600px){ 
-  .grid-2{grid-template-columns:1fr} 
-  .exam-body{padding:0 12px} 
-  .exam-actions { flex-direction: column; gap: 10px; padding: 10px; } 
-  .exam-actions-right { width: 100%; justify-content: space-between; } 
-  .exam-actions-right button { flex: 1; } 
+@media(max-width:768px){
+  .auth-container{width:100%;max-width:420px;height:auto;min-height:auto;border-radius:20px}
+  .auth-form-container{position:relative;width:100%;height:auto;padding:28px 22px;transition:none;overflow:visible}
+  .auth-form-login,.auth-form-register{position:relative;left:auto;transform:none!important;opacity:1!important;z-index:1;animation:none!important}
+  .auth-form-register{display:none}
+  .auth-container.active .auth-form-login{display:none}
+  .auth-container.active .auth-form-register{display:block}
+  .auth-overlay-container{display:none}
+  .auth-form-container h2{font-size:22px;margin-bottom:18px}
+}
+@media(max-width:600px){
+  .grid-2{grid-template-columns:1fr}
+  .exam-body{padding:0 12px}
+  .exam-actions{flex-direction:column;gap:10px;padding:10px}
+  .exam-actions-right{width:100%;justify-content:space-between}
+  .exam-actions-right button{flex:1}
   header{flex-direction:column;align-items:stretch;padding:10px}
   .header-actions{justify-content:space-between;gap:6px}
   .header-actions span#userLabel{max-width:100%;font-weight:700}
@@ -185,18 +373,99 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   </div>
 </header>
 
-<section id="authGate" class="wrap" style="display:none">
-  <div class="panel" style="max-width:400px;margin:30px auto;text-align:center">
-    <img src="/favicon.png" alt="Logo" style="width:80px;height:80px;border-radius:16px;margin-bottom:15px;object-fit:contain">
-    <h1 style="text-align:center">Connexion</h1>
-    <form id="loginForm" style="text-align:left">
-      <label for="loginEmail">Identifiant ou Email</label>
-      <input id="loginEmail" type="text" required>
-      <label for="loginPassword">Mot de passe</label>
-      <input id="loginPassword" type="password" required>
-      <button type="submit" style="width:100%;margin-top:15px">Se connecter</button>
-    </form>
-    <div id="authError" style="color:var(--red);font-size:13px;margin-top:10px;text-align:center"></div>
+<!-- ==========================================
+     NOUVELLE PAGE D'AUTHENTIFICATION ANIMÉE
+     ========================================== -->
+<section id="authGate">
+  <div class="auth-container" id="authContainer">
+
+    <!-- Formulaire Login -->
+    <div class="auth-form-container auth-form-login">
+      <h2>Login</h2>
+      <form id="loginForm" novalidate>
+        <div class="auth-input-group">
+          <i class='bx bx-user'></i>
+          <input type="text" id="loginEmail" placeholder="Matricule ou Email" required autocomplete="username">
+        </div>
+        <div class="auth-input-group">
+          <i class='bx bx-lock-alt'></i>
+          <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password">
+        </div>
+        <a href="#" class="auth-forgot-link" onclick="alert('Contacte l\'administration pour réinitialiser ton mot de passe.');return false;">Forgot Password?</a>
+        <button type="submit" class="auth-btn" id="loginSubmitBtn">Login</button>
+        <div id="loginError" class="auth-error"></div>
+      </form>
+      <div class="auth-separator">or login with social platforms</div>
+      <div class="auth-socials">
+        <a href="#" title="Google">G</a>
+        <a href="#" title="Facebook">f</a>
+        <a href="#" title="GitHub"><i class='bx bxl-github'></i></a>
+        <a href="#" title="LinkedIn"><i class='bx bxl-linkedin'></i></a>
+      </div>
+      <p class="auth-switch-text">Don't have an account? <a href="#" onclick="toggleAuthForm(); return false;">Register</a></p>
+    </div>
+
+    <!-- Formulaire Inscription -->
+    <div class="auth-form-container auth-form-register">
+      <h2>Registration</h2>
+      <form id="registerForm" novalidate>
+        <div class="auth-input-group">
+          <i class='bx bx-user'></i>
+          <input type="text" id="regLastName" placeholder="Nom" required>
+        </div>
+        <div class="auth-input-group">
+          <i class='bx bx-user'></i>
+          <input type="text" id="regFirstName" placeholder="Prénom" required>
+        </div>
+        <div class="auth-input-group">
+          <i class='bx bx-id-card'></i>
+          <input type="text" id="regMatricule" placeholder="Matricule" required>
+        </div>
+        <div class="auth-input-group">
+          <i class='bx bx-book'></i>
+          <select id="regFiliere" required>
+            <option value="" disabled selected>Choisir une filière</option>
+            <option value="Génie Logiciel">Génie Logiciel</option>
+            <option value="Réseaux & Télécoms">Réseaux & Télécoms</option>
+            <option value="Systèmes d'Information">Systèmes d'Information</option>
+            <option value="Data Science">Data Science</option>
+            <option value="Sécurité Informatique">Sécurité Informatique</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+        <div class="auth-input-group">
+          <i class='bx bx-lock-alt'></i>
+          <input type="password" id="regPassword" placeholder="Mot de passe" required minlength="6" autocomplete="new-password">
+        </div>
+        <button type="submit" class="auth-btn" id="registerSubmitBtn">Register</button>
+        <div id="registerError" class="auth-error"></div>
+      </form>
+      <div class="auth-separator">or sign up with social platforms</div>
+      <div class="auth-socials">
+        <a href="#" title="Google">G</a>
+        <a href="#" title="Facebook">f</a>
+        <a href="#" title="GitHub"><i class='bx bxl-github'></i></a>
+        <a href="#" title="LinkedIn"><i class='bx bxl-linkedin'></i></a>
+      </div>
+      <p class="auth-switch-text">Already have an account? <a href="#" onclick="toggleAuthForm(); return false;">Login</a></p>
+    </div>
+
+    <!-- Panneau Bleu Animé -->
+    <div class="auth-overlay-container">
+      <div class="auth-overlay">
+        <div class="auth-overlay-panel auth-overlay-left">
+          <h2>Welcome Back!</h2>
+          <p>To keep connected with us please login with your personal info.</p>
+          <button type="button" class="auth-btn-ghost" onclick="toggleAuthForm();">Login</button>
+        </div>
+        <div class="auth-overlay-panel auth-overlay-right">
+          <h2>Hello, Welcome!</h2>
+          <p>Enter your personal details and start journey with us.</p>
+          <button type="button" class="auth-btn-ghost" onclick="toggleAuthForm();">Register</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -393,6 +662,21 @@ if(window.supabase && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) {
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
+// ==========================================
+// AUTH — ANIMATION PANNEAU
+// ==========================================
+function toggleAuthForm() {
+  const c = $('authContainer');
+  if (c) c.classList.toggle('active');
+  // Efface les erreurs en changeant de formulaire
+  if ($('loginError')) $('loginError').textContent = '';
+  if ($('registerError')) $('registerError').textContent = '';
+}
+window.toggleAuthForm = toggleAuthForm;
+
+// ==========================================
+// FILIGRANE ANTI-VOL
+// ==========================================
 function buildWatermark() {
   const name = (currentUser?.user_metadata?.full_name || currentUser?.email || 'CompoTest').toString();
   const safe = name.replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
@@ -408,6 +692,9 @@ function buildWatermark() {
   document.documentElement.style.setProperty('--watermark-svg', `url("data:image/svg+xml;charset=utf-8,${encoded}")`);
 }
 
+// ==========================================
+// PRÉ-TRAITEMENT IMAGE OCR
+// ==========================================
 async function preprocessImageForOCR(file) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -435,8 +722,11 @@ async function preprocessImageForOCR(file) {
   });
 }
 
+// ==========================================
+// AUTHENTIFICATION SUPABASE
+// ==========================================
 async function initAuth() {
-  if (!supabaseClient) { $('authGate').style.display = 'block'; return; }
+  if (!supabaseClient) { $('authGate').classList.add('show'); return; }
   supabaseClient.auth.onAuthStateChange((_event, session) => handleSession(session));
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
@@ -452,7 +742,7 @@ async function initAuth() {
 function handleSession(session) {
   if (session && session.user) {
     currentUser = session.user;
-    $('authGate').style.display = 'none';
+    $('authGate').classList.remove('show');
     $('mainApp').style.display = 'block';
     $('logoutBtn').style.display = 'block';
     $('sessionWarning').classList.add('hide');
@@ -474,7 +764,7 @@ function handleSession(session) {
     loadCloudData();
   } else {
     currentUser = null; isAdmin = false;
-    $('authGate').style.display = 'block';
+    $('authGate').classList.add('show');
     $('mainApp').style.display = 'none';
     $('pwdBtn').style.display = 'none';
     $('logoutBtn').style.display = 'none';
@@ -485,14 +775,105 @@ function handleSession(session) {
 }
 initAuth();
 
+// ==========================================
+// FORMULAIRE LOGIN
+// ==========================================
 $('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = $('loginEmail').value.trim();
+  const errEl = $('loginError');
+  errEl.textContent = '';
+  const raw = $('loginEmail').value.trim();
   const pwd = $('loginPassword').value;
-  const emailToUse = email.includes('@') ? email : email.toLowerCase() + '@comptest.local';
-  const { error } = await supabaseClient.auth.signInWithPassword({ email: emailToUse, password: pwd });
-  if (error) $('authError').textContent = 'Erreur : Identifiant ou mot de passe incorrect.';
-  else $('authError').textContent = '';
+  if (!raw || !pwd) { errEl.textContent = 'Renseigne ton matricule/email et ton mot de passe.'; return; }
+
+  // Transformation matricule → email interne
+  const emailToUse = raw.includes('@') ? raw : raw.toLowerCase() + '@comptest.local';
+  const btn = $('loginSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Connexion...';
+
+  try {
+    const { error } = await supabaseClient.auth.signInWithPassword({ email: emailToUse, password: pwd });
+    if (error) {
+      if (/invalid login/i.test(error.message) || /invalid credentials/i.test(error.message)) {
+        errEl.textContent = 'Matricule/Email ou mot de passe incorrect.';
+      } else {
+        errEl.textContent = error.message;
+      }
+    }
+    // Si succès, onAuthStateChange gère le reste
+  } catch (err) {
+    errEl.textContent = 'Erreur réseau : ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Login';
+  }
+});
+
+// ==========================================
+// FORMULAIRE INSCRIPTION
+// ==========================================
+$('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = $('registerError');
+  errEl.textContent = '';
+
+  const lastName = $('regLastName').value.trim();
+  const firstName = $('regFirstName').value.trim();
+  const matricule = $('regMatricule').value.trim();
+  const filiere = $('regFiliere').value;
+  const pwd = $('regPassword').value;
+
+  if (!lastName || !firstName || !matricule || !filiere || !pwd) {
+    errEl.textContent = 'Merci de remplir tous les champs.';
+    return;
+  }
+  if (pwd.length < 6) {
+    errEl.textContent = 'Le mot de passe doit contenir au moins 6 caractères.';
+    return;
+  }
+
+  const email = matricule.toLowerCase().replace(/\s+/g, '') + '@comptest.local';
+  const btn = $('registerSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Inscription...';
+
+  try {
+    const { error } = await supabaseClient.auth.signUp({
+      email,
+      password: pwd,
+      options: {
+        data: {
+          full_name: `${lastName} ${firstName}`,
+          role: 'etudiant',
+          filiere: filiere,
+          matricule: matricule
+        }
+      }
+    });
+    if (error) {
+      // Détection du hook Supabase "Before User Created"
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('matricule') || msg.includes('not authorized') || msg.includes('whitelist') || msg.includes('non autorisé')) {
+        errEl.textContent = 'Ce matricule n\'est pas autorisé à s\'inscrire. Contacte l\'administration.';
+      } else if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')) {
+        errEl.textContent = 'Ce matricule est déjà enregistré. Essaie de te connecter.';
+      } else {
+        errEl.textContent = error.message;
+      }
+    } else {
+      // Inscription réussie : Supabase envoie un email de confirmation (si activé)
+      // ou retourne une session active (si confirmation désactivée)
+      errEl.style.color = 'var(--green)';
+      errEl.textContent = '✅ Inscription réussie ! Vérifie ta boîte mail si une confirmation est demandée.';
+      $('registerForm').reset();
+    }
+  } catch (err) {
+    errEl.textContent = 'Erreur réseau : ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Register';
+  }
 });
 
 $('logoutBtn').addEventListener('click', () => supabaseClient.auth.signOut());
@@ -505,6 +886,9 @@ $('pwdBtn').addEventListener('click', async () => {
   else alert("✅ Mot de passe modifié avec succès !");
 });
 
+// ==========================================
+// ADMIN
+// ==========================================
 $('adminBtn').addEventListener('click', () => {
   $('adminModal').classList.add('show');
   loadAdminUsers();
@@ -621,6 +1005,9 @@ async function adminSetRole(isAdmin) {
   }
 }
 
+// ==========================================
+// HISTORIQUE
+// ==========================================
 async function loadCloudData() {
   if (!currentUser) return;
   const { data } = await supabaseClient.from('comptest_data').select('history').eq('user_id', currentUser.id).maybeSingle();
@@ -693,6 +1080,9 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
+// ==========================================
+// GESTION FICHIERS
+// ==========================================
 $('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
     const file = this.files[0];
