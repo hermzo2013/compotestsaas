@@ -1,42 +1,39 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>CompoTest</title>
-<link rel="icon" type="image/png" href="/favicon.png">
-<link rel="apple-touch-icon" href="/favicon.png">
+<link rel="icon" type="image/png" href="https://comptestsaas.onrender.com/favicon.png">
+<link rel="apple-touch-icon" href="https://comptestsaas.onrender.com/favicon.png">
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 <style>
 /* ==========================================
-   PALETTE : Bleu Lavande Sombre (harmonie login)
+   PALETTE : Bleu Lavande Sombre
    ========================================== */
 :root{
-  --blue:#6B7CDB;          /* bleu lavande de base */
-  --navy:#4B5EAA;          /* bleu lavande profond */
-  --blue-btn:#5D6EC7;      /* boutons principaux */
+  --blue:#6B7CDB;
+  --navy:#4B5EAA;
+  --blue-btn:#5D6EC7;
   --blue-btn-hover:#6B7CDB;
-  --active-bg:#E0E4F7;     /* fond actif */
-  --active-text:#4B5EAA;   /* texte actif */
-  --bg:#F3F4FA;            /* fond de page */
+  --active-bg:#E0E4F7;
+  --active-text:#4B5EAA;
+  --bg:#F3F4FA;
   --ink:#1d2940;
   --muted:#6c7890;
   --line:#e1e7f0;
   --green:#16865c;
   --red:#e11d48;
-  --lav-1:#7D90E0;         /* login (inchangé) */
-  --lav-2:#8AA1FF;         /* login (inchangé) */
+  --lav-1:#7D90E0;
+  --lav-2:#8AA1FF;
   --auth-bg:#E8EAF5;
   --input-bg:#F0F2F9;
-  /* Couleurs FIXES de l'écran de test (NE PAS TOUCHER) */
   --exam-navy:#132344;
   --exam-blue:#2457d6;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+html,body{margin:0;padding:0;min-height:100%}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 
-/* ==========================================
-   HEADER (main app) — NOUVEAU DÉGRADÉ LAVANDE
-   ========================================== */
 header{background:linear-gradient(120deg,#4B5EAA,#6B7CDB);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800}
 .brand img{height:32px;width:32px;border-radius:8px;background:#fff;object-fit:contain;padding:2px}
@@ -47,19 +44,13 @@ header{background:linear-gradient(120deg,#4B5EAA,#6B7CDB);color:white;padding:12
 .header-actions button:hover{background:rgba(255,255,255,.25)}
 .btn-admin{background:#f59e0b!important;border-color:#f59e0b!important;color:#fff!important;font-weight:800;}
 
-/* ==========================================
-   LAYOUT
-   ========================================== */
 .wrap{max-width:900px;margin:30px auto;padding:0 20px;width:100%;flex:1}
 .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(75,94,170,.06);margin-bottom:20px}
 h1{font-size:24px;margin-top:0}
 label{display:block;font-size:13px;font-weight:700;margin:15px 0 5px}
-input,select,textarea{width:100%;border:1px solid #d5ddeb;border-radius:10px;padding:12px;font:inherit}
+input,select,textarea{width:100%;border:1px solid #d5ddeb;border-radius:10px;padding:12px;font:inherit;background:#fff}
 input:focus,select:focus,textarea:focus{outline:2px solid rgba(107,124,219,.25);border-color:var(--blue)}
 
-/* ==========================================
-   BOUTONS PRINCIPAUX — NOUVELLE COULEUR
-   ========================================== */
 button{border:0;border-radius:10px;background:var(--blue-btn);color:white;font-weight:700;padding:12px 20px;cursor:pointer;font:inherit;transition:.2s}
 button:hover{background:var(--blue-btn-hover);filter:none}
 button.secondary{background:#edf0fb;color:var(--navy)}
@@ -79,9 +70,6 @@ button.danger:hover{background:#ffe0e0}
 .notice.err{background:#fff0f0;color:#a51f2a;border-color:#ef4444}
 .notice.ok{background:#e9f8f1;color:#0e5e3f;border-color:#10b981}
 
-/* ==========================================
-   ONGLETS — NOUVEAU STYLE ACTIF
-   ========================================== */
 .tabs{display:flex;gap:5px;margin-bottom:20px;border-bottom:2px solid var(--line);padding-bottom:10px;overflow-x:auto}
 .tab{padding:10px 15px;border-radius:8px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);border:0;white-space:nowrap}
 .tab:hover{color:var(--navy)}
@@ -95,9 +83,6 @@ button.danger:hover{background:#ffe0e0}
 .btn-icon{background:transparent;border:0;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.2s}
 .btn-icon:hover{background:#fee2e2}
 
-/* ==========================================
-   MODALES
-   ========================================== */
 #adminModal{display:none;position:fixed;inset:0;background:rgba(19,35,68,.5);z-index:3000;align-items:center;justify-content:center;padding:20px}
 #adminModal.show{display:flex}
 .admin-modal-content{background:#fff;border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow-y:auto;padding:30px;box-shadow:0 10px 40px rgba(75,94,170,.25)}
@@ -106,7 +91,6 @@ button.danger:hover{background:#ffe0e0}
 .admin-tab-btn{padding:10px 20px;border-radius:8px;background:#f0f3f8;color:var(--muted);font-weight:700;cursor:pointer;border:0}
 .admin-tab-btn.active{background:var(--blue-btn);color:#fff}
 
-/* MODALE ÉDITION QUIZ */
 #editQuizModal{display:none;position:fixed;inset:0;background:rgba(19,35,68,.5);z-index:3500;align-items:center;justify-content:center;padding:20px}
 #editQuizModal.show{display:flex}
 .edit-modal-content{background:#fff;border-radius:16px;width:100%;max-width:900px;max-height:92vh;overflow-y:auto;padding:24px;box-shadow:0 10px 40px rgba(75,94,170,.25)}
@@ -121,9 +105,7 @@ button.danger:hover{background:#ffe0e0}
 .edit-opt.is-correct{background:#e9f8f1;border-color:var(--green)}
 .edit-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 
-/* ==========================================
-   PAGE D'AUTHENTIFICATION ANIMÉE (INCHANGÉE)
-   ========================================== */
+/* AUTHENTIFICATION */
 #authGate{display:none;position:fixed;inset:0;background:var(--auth-bg);z-index:4000;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
 #authGate.show{display:flex;}
 .auth-container{position:relative;width:850px;height:500px;background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,0.1);overflow:hidden}
@@ -167,11 +149,9 @@ button.danger:hover{background:#ffe0e0}
 .auth-container.active .auth-overlay-left{transform:translateX(0)}
 .auth-container.active .auth-overlay-right{transform:translateX(20%)}
 
-/* ==========================================
-   ÉCRAN D'EXAMEN — COULEURS FIXES (NE PAS TOUCHER)
-   ========================================== */
-#examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:100px}
-.exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+/* EXAMEN — COULEURS FIXES */
+#examView{display:none;position:fixed;inset:0;background:#f4f7fc;z-index:2000;overflow-y:auto;padding-bottom:120px}
+.exam-header{background:#132344;color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2);padding-top:calc(15px + env(safe-area-inset-top))}
 .exam-header h2{margin:0;font-size:18px}
 .exam-body{max-width:800px;margin:25px auto;padding:0 20px}
 .exam-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:25px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.02);position:relative;overflow:hidden}
@@ -195,28 +175,22 @@ button.danger:hover{background:#ffe0e0}
 .exam-opt.locked input{cursor:default!important}
 .exam-opt span{flex:1!important;text-align:left!important;line-height:1.4!important;word-wrap:break-word!important;display:block!important}
 .exam-input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:10px;text-align:left}
-.exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
+.exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;padding-bottom:calc(15px + env(safe-area-inset-bottom));border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
 .exam-actions-left{font-size:14px;color:var(--muted);font-weight:bold}
 .exam-actions-right{display:flex;gap:10px}
-/* Boutons Précédent/Suivant — INCHANGÉS */
 .exam-actions-right button#examPrevBtn{background:#edf2ff;color:#244fc2}
 .exam-actions-right button#examNextBtn{background:#2457d6;color:#fff}
 .exam-result-box{background:#e9f8f1;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
 .exam-result-box.wrong{background:#fff1f2;border-color:var(--red)}
 .exam-explain{font-size:13px;color:#475569;margin-top:12px;padding:12px;background:#f8faff;border-radius:8px;border-left:2px solid #2457d6}
-
 .hint-btn{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:8px 15px;border-radius:8px;font-weight:bold;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:15px;transition:0.2s}
 .hint-btn:hover{background:#fde68a}
 .hint-box{display:none;margin-top:12px;padding:15px;background:#fffbeb;border-left:4px solid #f59e0b;border-radius:8px;font-size:14px;color:#78350f}
 .hint-box.show{display:block}
-
 .instant-badge{display:inline-block;background:#e0f2fe;color:#075985;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:8px;vertical-align:middle}
 .validate-btn{background:#dbeafe!important;color:#1e40af!important;font-weight:800!important;padding:12px 20px!important;border-radius:10px!important;font-size:14px!important;margin-top:14px!important;cursor:pointer!important;transition:.15s!important}
 .validate-btn:hover{background:#bfdbfe!important}
 
-/* ==========================================
-   ÉCRAN DE SCORE
-   ========================================== */
 #scoreView{display:none;position:fixed;inset:0;background:rgba(19,35,68,.75);z-index:2500;align-items:center;justify-content:center;padding:20px}
 #scoreView.show{display:flex}
 .score-card{background:#fff;border-radius:20px;padding:40px 30px;max-width:460px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;overflow:hidden}
@@ -276,7 +250,7 @@ button.danger:hover{background:#ffe0e0}
 
 <header>
   <div class="brand">
-    <img src="/favicon.png" alt="Logo CompoTest">
+    <img src="https://comptestsaas.onrender.com/favicon.png" alt="Logo CompoTest">
     Compo<span>Test</span>
   </div>
   <div class="header-actions">
@@ -290,7 +264,7 @@ button.danger:hover{background:#ffe0e0}
 <section id="authGate">
   <div class="auth-container" id="authContainer">
     <div class="auth-form-container auth-form-login">
-      <img src="/favicon.png" alt="CompoTest" class="auth-logo">
+      <img src="https://comptestsaas.onrender.com/favicon.png" alt="CompoTest" class="auth-logo">
       <h2>Connexion</h2>
       <form id="loginForm" novalidate>
         <div class="auth-input-group">
@@ -309,7 +283,7 @@ button.danger:hover{background:#ffe0e0}
     </div>
 
     <div class="auth-form-container auth-form-register">
-      <img src="/favicon.png" alt="CompoTest" class="auth-logo">
+      <img src="https://comptestsaas.onrender.com/favicon.png" alt="CompoTest" class="auth-logo">
       <h2>Inscription</h2>
       <form id="registerForm" novalidate>
         <div class="auth-input-group">
@@ -531,13 +505,19 @@ button.danger:hover{background:#ffe0e0}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./config.js"></script>
+<script src="https://comptestsaas.onrender.com/config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
+
+// ==========================================
+// ⚙️ CONFIGURATION
+// ==========================================
+const API_BASE = 'https://comptestsaas.onrender.com';
+
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let examState = null;
@@ -549,16 +529,91 @@ let libraryCache = [];
 let editingQuizId = null;
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
 
-const cfg = window.COMPOSTEST_CONFIG || {};
-if(window.supabase && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) {
-  supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
-  console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
-} else {
-  console.error('❌ Supabase NON initialisé. Config manquante :', cfg);
-}
-
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
+// ==========================================
+// ✅ STOCKAGE ADAPTATIF (Capacitor Android / Web)
+// ==========================================
+async function getStorageAdapter() {
+  // Détection Capacitor + plugin Preferences
+  const isCapacitor = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative;
+  const prefs = window.Capacitor?.Plugins?.Preferences;
+
+  if (isCapacitor && prefs) {
+    console.log('📱 Stockage : Capacitor Preferences (natif)');
+    return {
+      getItem: async (key) => {
+        try {
+          const { value } = await prefs.get({ key });
+          return value;
+        } catch (e) {
+          console.warn('Preferences.get échoué, fallback localStorage:', e);
+          return localStorage.getItem(key);
+        }
+      },
+      setItem: async (key, value) => {
+        try {
+          await prefs.set({ key, value });
+        } catch (e) {
+          console.warn('Preferences.set échoué, fallback localStorage:', e);
+          localStorage.setItem(key, value);
+        }
+      },
+      removeItem: async (key) => {
+        try {
+          await prefs.remove({ key });
+        } catch (e) {
+          console.warn('Preferences.remove échoué, fallback localStorage:', e);
+          localStorage.removeItem(key);
+        }
+      }
+    };
+  }
+
+  // Fallback web
+  console.log('🌐 Stockage : localStorage (web)');
+  return {
+    getItem: (key) => Promise.resolve(localStorage.getItem(key)),
+    setItem: (key, value) => Promise.resolve(localStorage.setItem(key, value)),
+    removeItem: (key) => Promise.resolve(localStorage.removeItem(key))
+  };
+}
+
+// ==========================================
+// 🔌 INIT SUPABASE (async)
+// ==========================================
+(async () => {
+  const cfg = window.COMPOSTEST_CONFIG || {};
+
+  if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+    console.error('❌ Supabase NON initialisé. Config manquante :', cfg);
+    $('authGate').classList.add('show');
+    return;
+  }
+
+  try {
+    const storage = await getStorageAdapter();
+    supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+      auth: {
+        storage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false  // ⚠️ Obligatoire pour Capacitor
+      }
+    });
+    console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
+
+    // Lance l'init auth une fois le client prêt
+    await initAuth();
+  } catch (e) {
+    console.error('❌ Erreur init Supabase:', e);
+    $('authGate').classList.add('show');
+  }
+})();
+
+// ==========================================
+// 🎨 ANIMATION AUTH
+// ==========================================
 function toggleAuthForm() {
   const c = $('authContainer');
   if (c) c.classList.toggle('active');
@@ -567,6 +622,9 @@ function toggleAuthForm() {
 }
 window.toggleAuthForm = toggleAuthForm;
 
+// ==========================================
+// 🖋️ FILIGRANE ANTI-VOL
+// ==========================================
 function buildWatermark() {
   const name = (currentUser?.user_metadata?.full_name || currentUser?.email || 'CompoTest').toString();
   const safe = name.replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
@@ -582,6 +640,9 @@ function buildWatermark() {
   document.documentElement.style.setProperty('--watermark-svg', `url("data:image/svg+xml;charset=utf-8,${encoded}")`);
 }
 
+// ==========================================
+// 🖼️ OCR : pré-traitement image
+// ==========================================
 async function preprocessImageForOCR(file) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -609,6 +670,9 @@ async function preprocessImageForOCR(file) {
   });
 }
 
+// ==========================================
+// 🔐 AUTHENTIFICATION
+// ==========================================
 async function initAuth() {
   if (!supabaseClient) { $('authGate').classList.add('show'); return; }
   supabaseClient.auth.onAuthStateChange((_event, session) => handleSession(session));
@@ -657,10 +721,10 @@ function handleSession(session) {
     $('clearHistoryBtn').style.display = 'none';
   }
 }
-initAuth();
 
 $('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!supabaseClient) return;
   const errEl = $('loginError');
   errEl.textContent = '';
   const raw = $('loginEmail').value.trim();
@@ -691,6 +755,7 @@ $('loginForm').addEventListener('submit', async (e) => {
 
 $('registerForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!supabaseClient) return;
   const errEl = $('registerError');
   errEl.textContent = '';
   errEl.style.color = 'var(--red)';
@@ -750,9 +815,13 @@ $('registerForm').addEventListener('submit', async (e) => {
   }
 });
 
-$('logoutBtn').addEventListener('click', () => supabaseClient.auth.signOut());
+$('logoutBtn').addEventListener('click', () => {
+  if (!supabaseClient) return;
+  supabaseClient.auth.signOut();
+});
 
 $('pwdBtn').addEventListener('click', async () => {
+  if (!supabaseClient) return;
   const newPwd = prompt("Entrez votre nouveau mot de passe (6 caractères minimum) :");
   if (!newPwd || newPwd.length < 6) return alert("Mot de passe trop court.");
   const { error } = await supabaseClient.auth.updateUser({ password: newPwd });
@@ -760,6 +829,9 @@ $('pwdBtn').addEventListener('click', async () => {
   else alert("✅ Mot de passe modifié avec succès !");
 });
 
+// ==========================================
+// 👑 ADMIN
+// ==========================================
 $('adminBtn').addEventListener('click', () => {
   $('adminModal').classList.add('show');
   loadAdminUsers();
@@ -775,10 +847,11 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
 });
 
 async function loadAdminUsers() {
+  if (!supabaseClient) return;
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) return;
   try {
-    const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+    const res = await fetch(API_BASE + '/api/admin/users', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
     const data = await res.json();
     if (!res.ok) {
       $('adminUsersList').innerHTML = `<p style="color:var(--red)">Erreur : ${esc(data.error || 'inconnue')}</p>`;
@@ -808,6 +881,7 @@ async function loadAdminUsers() {
 
 $('adminCreateForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!supabaseClient) return;
   const lastName = $('newLastName').value.trim();
   const firstName = $('newFirstName').value.trim();
   const emailInput = $('newEmail').value.trim();
@@ -823,7 +897,7 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
     email = `${slug}@comptest.local`;
   }
   const { data: { session } } = await supabaseClient.auth.getSession();
-  const res = await fetch('/api/admin/users', {
+  const res = await fetch(API_BASE + '/api/admin/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
     body: JSON.stringify({ firstName, lastName, email, password: pwd })
@@ -841,15 +915,16 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
 });
 
 async function adminChangePassword() {
+  if (!supabaseClient) return;
   const email = $('pwdEmail').value.trim().toLowerCase();
   const pwd = $('pwdNew').value;
   if (!email || !pwd || pwd.length < 6) return alert("Veuillez remplir l'email et un mot de passe de 6 caractères minimum.");
   const { data: { session } } = await supabaseClient.auth.getSession();
-  const resUsers = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
+  const resUsers = await fetch(API_BASE + '/api/admin/users', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
   const dataUsers = await resUsers.json();
   const user = dataUsers.users.find(u => u.email.toLowerCase() === email);
   if (!user) return alert("Utilisateur introuvable.");
-  const res = await fetch(`/api/admin/users/${user.id}/password`, {
+  const res = await fetch(API_BASE + `/api/admin/users/${user.id}/password`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
     body: JSON.stringify({ password: pwd })
@@ -859,10 +934,11 @@ async function adminChangePassword() {
 }
 
 async function adminSetRole(isAdmin) {
+  if (!supabaseClient) return;
   const userId = $('roleUserId').value;
   if (!userId) return alert("Sélectionnez un utilisateur.");
   const { data: { session } } = await supabaseClient.auth.getSession();
-  const res = await fetch(`/api/admin/users/${userId}/role`, {
+  const res = await fetch(API_BASE + `/api/admin/users/${userId}/role`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
     body: JSON.stringify({ is_admin: isAdmin })
@@ -876,8 +952,11 @@ async function adminSetRole(isAdmin) {
   }
 }
 
+// ==========================================
+// 📊 HISTORIQUE
+// ==========================================
 async function loadCloudData() {
-  if (!currentUser) return;
+  if (!currentUser || !supabaseClient) return;
   const { data } = await supabaseClient.from('comptest_data').select('history').eq('user_id', currentUser.id).maybeSingle();
   if (data && data.history) {
     historyData = data.history;
@@ -890,7 +969,7 @@ async function saveHistory(entry) {
   historyData.push(entry);
   localStorage.setItem('comptest_history', JSON.stringify(historyData));
   renderHistory();
-  if (currentUser) await supabaseClient.from('comptest_data').upsert(
+  if (currentUser && supabaseClient) await supabaseClient.from('comptest_data').upsert(
     { user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
   );
@@ -919,7 +998,7 @@ async function deleteHistoryItem(index) {
   historyData.splice(index, 1);
   localStorage.setItem('comptest_history', JSON.stringify(historyData));
   renderHistory();
-  if (currentUser) await supabaseClient.from('comptest_data').upsert(
+  if (currentUser && supabaseClient) await supabaseClient.from('comptest_data').upsert(
     { user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
   );
@@ -931,7 +1010,7 @@ async function clearAllHistory() {
   historyData = [];
   localStorage.setItem('comptest_history', JSON.stringify(historyData));
   renderHistory();
-  if (currentUser) await supabaseClient.from('comptest_data').upsert(
+  if (currentUser && supabaseClient) await supabaseClient.from('comptest_data').upsert(
     { user_id: currentUser.id, history: [], updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
   );
@@ -948,6 +1027,9 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
+// ==========================================
+// 📁 GESTION FICHIERS
+// ==========================================
 $('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
     const file = this.files[0];
@@ -1004,6 +1086,9 @@ $('pdfFile').addEventListener('change', async function() {
   }
 });
 
+// ==========================================
+// 🌐 FETCH AUTHENTIFIÉ
+// ==========================================
 async function fetchWithAuth(url, body, method = 'POST') {
   if (!supabaseClient) throw new Error("Supabase non configuré. Vérifie config.js.");
   let { data: { session } } = await supabaseClient.auth.getSession();
@@ -1014,7 +1099,7 @@ async function fetchWithAuth(url, body, method = 'POST') {
   }
   const options = { method, headers: { 'Authorization': `Bearer ${session.access_token}` } };
   if (body) { options.headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(body); }
-  const res = await fetch(url, options);
+  const res = await fetch(API_BASE + url, options);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || data.message || `Erreur serveur (${res.status})`);
   return data;
@@ -1096,6 +1181,9 @@ $('extractTestBtn').addEventListener('click', async () => {
   } finally { btn.innerHTML = original; btn.disabled = false; }
 });
 
+// ==========================================
+// 📚 BIBLIOTHÈQUE
+// ==========================================
 async function loadLibrary() {
   const list = $('libraryList');
   list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
@@ -1222,6 +1310,9 @@ $('editSaveBtn').addEventListener('click', async () => {
   }
 });
 
+// ==========================================
+// 📝 EXAMEN
+// ==========================================
 function startExam(quiz) {
   examState = {
     title: quiz.title,
