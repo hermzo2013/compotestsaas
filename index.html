@@ -69,7 +69,7 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 .edit-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 
 /* ==========================================
-   NOUVELLE PAGE D'AUTHENTIFICATION ANIMÉE
+   PAGE D'AUTHENTIFICATION ANIMÉE
    ========================================== */
 #authGate{
   display:none;
@@ -125,6 +125,14 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 @keyframes authShow{
   0%, 49.99% {opacity:0; z-index:1;}
   50%, 100% {opacity:1; z-index:5;}
+}
+
+.auth-logo{
+  height:60px;
+  margin-bottom:20px;
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
 }
 
 .auth-form-container h2{
@@ -189,28 +197,8 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
   margin-top:8px;min-height:16px;font-weight:600;
 }
 
-.auth-separator{
-  display:flex;align-items:center;text-align:center;
-  font-size:11px;color:var(--muted);margin:14px 0;
-}
-.auth-separator::before,.auth-separator::after{
-  content:'';flex:1;height:1px;background:var(--line);
-}
-.auth-separator::before{margin-right:8px;}
-.auth-separator::after{margin-left:8px;}
-
-.auth-socials{display:flex;justify-content:center;gap:8px;margin-bottom:8px;}
-.auth-socials a{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:34px;height:34px;border-radius:50%;
-  background:var(--input-bg);color:var(--ink);
-  font-size:16px;text-decoration:none;font-weight:800;
-  transition:background 0.2s, color 0.2s, transform 0.15s;
-}
-.auth-socials a:hover{background:var(--lav-1);color:#fff;transform:translateY(-2px);}
-
 .auth-switch-text{
-  text-align:center;font-size:12px;color:var(--muted);margin-top:6px;
+  text-align:center;font-size:12px;color:var(--muted);margin-top:16px;
 }
 .auth-switch-text a{
   color:var(--lav-1);font-weight:700;text-decoration:none;cursor:pointer;
@@ -374,14 +362,15 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
 </header>
 
 <!-- ==========================================
-     NOUVELLE PAGE D'AUTHENTIFICATION ANIMÉE
+     PAGE D'AUTHENTIFICATION ANIMÉE (modifiée)
      ========================================== -->
 <section id="authGate">
   <div class="auth-container" id="authContainer">
 
-    <!-- Formulaire Login -->
+    <!-- Formulaire Connexion -->
     <div class="auth-form-container auth-form-login">
-      <h2>Login</h2>
+      <img src="/favicon.png" alt="CompoTest" class="auth-logo">
+      <h2>Connexion</h2>
       <form id="loginForm" novalidate>
         <div class="auth-input-group">
           <i class='bx bx-user'></i>
@@ -389,25 +378,19 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
         </div>
         <div class="auth-input-group">
           <i class='bx bx-lock-alt'></i>
-          <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password">
+          <input type="password" id="loginPassword" placeholder="Mot de passe" required autocomplete="current-password">
         </div>
-        <a href="#" class="auth-forgot-link" onclick="alert('Contacte l\'administration pour réinitialiser ton mot de passe.');return false;">Forgot Password?</a>
-        <button type="submit" class="auth-btn" id="loginSubmitBtn">Login</button>
+        <a href="#" class="auth-forgot-link" onclick="alert('Contacte l\'administration pour réinitialiser ton mot de passe.');return false;">Mot de passe oublié ?</a>
+        <button type="submit" class="auth-btn" id="loginSubmitBtn">Se connecter</button>
         <div id="loginError" class="auth-error"></div>
       </form>
-      <div class="auth-separator">or login with social platforms</div>
-      <div class="auth-socials">
-        <a href="#" title="Google">G</a>
-        <a href="#" title="Facebook">f</a>
-        <a href="#" title="GitHub"><i class='bx bxl-github'></i></a>
-        <a href="#" title="LinkedIn"><i class='bx bxl-linkedin'></i></a>
-      </div>
-      <p class="auth-switch-text">Don't have an account? <a href="#" onclick="toggleAuthForm(); return false;">Register</a></p>
+      <p class="auth-switch-text">Pas encore de compte ? <a href="#" onclick="toggleAuthForm(); return false;">S'inscrire</a></p>
     </div>
 
     <!-- Formulaire Inscription -->
     <div class="auth-form-container auth-form-register">
-      <h2>Registration</h2>
+      <img src="/favicon.png" alt="CompoTest" class="auth-logo">
+      <h2>Inscription</h2>
       <form id="registerForm" novalidate>
         <div class="auth-input-group">
           <i class='bx bx-user'></i>
@@ -425,43 +408,39 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}button.d
           <i class='bx bx-book'></i>
           <select id="regFiliere" required>
             <option value="" disabled selected>Choisir une filière</option>
-            <option value="Génie Logiciel">Génie Logiciel</option>
-            <option value="Réseaux & Télécoms">Réseaux & Télécoms</option>
-            <option value="Systèmes d'Information">Systèmes d'Information</option>
-            <option value="Data Science">Data Science</option>
-            <option value="Sécurité Informatique">Sécurité Informatique</option>
-            <option value="Autre">Autre</option>
+            <option value="IDE">IDE</option>
+            <option value="SFM">SFM</option>
+            <option value="TSS IM">TSS IM</option>
+            <option value="TSS BM">TSS BM</option>
+            <option value="TSS PGP">TSS PGP</option>
+            <option value="TSS HA">TSS HA</option>
+            <option value="TSS MK">TSS MK</option>
+            <option value="TSS SM">TSS SM</option>
+            <option value="TSS MBM">TSS MBM</option>
           </select>
         </div>
         <div class="auth-input-group">
           <i class='bx bx-lock-alt'></i>
           <input type="password" id="regPassword" placeholder="Mot de passe" required minlength="6" autocomplete="new-password">
         </div>
-        <button type="submit" class="auth-btn" id="registerSubmitBtn">Register</button>
+        <button type="submit" class="auth-btn" id="registerSubmitBtn">S'inscrire</button>
         <div id="registerError" class="auth-error"></div>
       </form>
-      <div class="auth-separator">or sign up with social platforms</div>
-      <div class="auth-socials">
-        <a href="#" title="Google">G</a>
-        <a href="#" title="Facebook">f</a>
-        <a href="#" title="GitHub"><i class='bx bxl-github'></i></a>
-        <a href="#" title="LinkedIn"><i class='bx bxl-linkedin'></i></a>
-      </div>
-      <p class="auth-switch-text">Already have an account? <a href="#" onclick="toggleAuthForm(); return false;">Login</a></p>
+      <p class="auth-switch-text">Déjà un compte ? <a href="#" onclick="toggleAuthForm(); return false;">Se connecter</a></p>
     </div>
 
     <!-- Panneau Bleu Animé -->
     <div class="auth-overlay-container">
       <div class="auth-overlay">
         <div class="auth-overlay-panel auth-overlay-left">
-          <h2>Welcome Back!</h2>
-          <p>To keep connected with us please login with your personal info.</p>
-          <button type="button" class="auth-btn-ghost" onclick="toggleAuthForm();">Login</button>
+          <h2>Bon retour parmi nous !</h2>
+          <p>Connectez-vous pour accéder à votre espace.</p>
+          <button type="button" class="auth-btn-ghost" onclick="toggleAuthForm();">Se connecter</button>
         </div>
         <div class="auth-overlay-panel auth-overlay-right">
-          <h2>Hello, Welcome!</h2>
-          <p>Enter your personal details and start journey with us.</p>
-          <button type="button" class="auth-btn-ghost" onclick="toggleAuthForm();">Register</button>
+          <h2>Bonjour, Bienvenue !</h2>
+          <p>Entrez vos informations pour commencer.</p>
+          <button type="button" class="auth-btn-ghost" onclick="toggleAuthForm();">S'inscrire</button>
         </div>
       </div>
     </div>
@@ -662,21 +641,14 @@ if(window.supabase && cfg.SUPABASE_URL && cfg.SUPABASE_ANON_KEY) {
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
-// ==========================================
-// AUTH — ANIMATION PANNEAU
-// ==========================================
 function toggleAuthForm() {
   const c = $('authContainer');
   if (c) c.classList.toggle('active');
-  // Efface les erreurs en changeant de formulaire
   if ($('loginError')) $('loginError').textContent = '';
   if ($('registerError')) $('registerError').textContent = '';
 }
 window.toggleAuthForm = toggleAuthForm;
 
-// ==========================================
-// FILIGRANE ANTI-VOL
-// ==========================================
 function buildWatermark() {
   const name = (currentUser?.user_metadata?.full_name || currentUser?.email || 'CompoTest').toString();
   const safe = name.replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
@@ -692,9 +664,6 @@ function buildWatermark() {
   document.documentElement.style.setProperty('--watermark-svg', `url("data:image/svg+xml;charset=utf-8,${encoded}")`);
 }
 
-// ==========================================
-// PRÉ-TRAITEMENT IMAGE OCR
-// ==========================================
 async function preprocessImageForOCR(file) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -722,9 +691,6 @@ async function preprocessImageForOCR(file) {
   });
 }
 
-// ==========================================
-// AUTHENTIFICATION SUPABASE
-// ==========================================
 async function initAuth() {
   if (!supabaseClient) { $('authGate').classList.add('show'); return; }
   supabaseClient.auth.onAuthStateChange((_event, session) => handleSession(session));
@@ -775,9 +741,6 @@ function handleSession(session) {
 }
 initAuth();
 
-// ==========================================
-// FORMULAIRE LOGIN
-// ==========================================
 $('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const errEl = $('loginError');
@@ -786,7 +749,6 @@ $('loginForm').addEventListener('submit', async (e) => {
   const pwd = $('loginPassword').value;
   if (!raw || !pwd) { errEl.textContent = 'Renseigne ton matricule/email et ton mot de passe.'; return; }
 
-  // Transformation matricule → email interne
   const emailToUse = raw.includes('@') ? raw : raw.toLowerCase() + '@comptest.local';
   const btn = $('loginSubmitBtn');
   btn.disabled = true;
@@ -801,22 +763,19 @@ $('loginForm').addEventListener('submit', async (e) => {
         errEl.textContent = error.message;
       }
     }
-    // Si succès, onAuthStateChange gère le reste
   } catch (err) {
     errEl.textContent = 'Erreur réseau : ' + err.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Login';
+    btn.textContent = 'Se connecter';
   }
 });
 
-// ==========================================
-// FORMULAIRE INSCRIPTION
-// ==========================================
 $('registerForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const errEl = $('registerError');
   errEl.textContent = '';
+  errEl.style.color = 'var(--red)';
 
   const lastName = $('regLastName').value.trim();
   const firstName = $('regFirstName').value.trim();
@@ -852,7 +811,6 @@ $('registerForm').addEventListener('submit', async (e) => {
       }
     });
     if (error) {
-      // Détection du hook Supabase "Before User Created"
       const msg = (error.message || '').toLowerCase();
       if (msg.includes('matricule') || msg.includes('not authorized') || msg.includes('whitelist') || msg.includes('non autorisé')) {
         errEl.textContent = 'Ce matricule n\'est pas autorisé à s\'inscrire. Contacte l\'administration.';
@@ -862,8 +820,6 @@ $('registerForm').addEventListener('submit', async (e) => {
         errEl.textContent = error.message;
       }
     } else {
-      // Inscription réussie : Supabase envoie un email de confirmation (si activé)
-      // ou retourne une session active (si confirmation désactivée)
       errEl.style.color = 'var(--green)';
       errEl.textContent = '✅ Inscription réussie ! Vérifie ta boîte mail si une confirmation est demandée.';
       $('registerForm').reset();
@@ -872,7 +828,7 @@ $('registerForm').addEventListener('submit', async (e) => {
     errEl.textContent = 'Erreur réseau : ' + err.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Register';
+    btn.textContent = 'S\'inscrire';
   }
 });
 
@@ -886,9 +842,6 @@ $('pwdBtn').addEventListener('click', async () => {
   else alert("✅ Mot de passe modifié avec succès !");
 });
 
-// ==========================================
-// ADMIN
-// ==========================================
 $('adminBtn').addEventListener('click', () => {
   $('adminModal').classList.add('show');
   loadAdminUsers();
@@ -1005,9 +958,6 @@ async function adminSetRole(isAdmin) {
   }
 }
 
-// ==========================================
-// HISTORIQUE
-// ==========================================
 async function loadCloudData() {
   if (!currentUser) return;
   const { data } = await supabaseClient.from('comptest_data').select('history').eq('user_id', currentUser.id).maybeSingle();
@@ -1080,9 +1030,6 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-// ==========================================
-// GESTION FICHIERS
-// ==========================================
 $('pdfFile').addEventListener('change', async function() {
   if(this.files.length > 0) {
     const file = this.files[0];
