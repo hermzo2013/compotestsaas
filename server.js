@@ -169,41 +169,30 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION — Formats historiques + Q1/ + grille Q1 V | Q2 F
+// EXTRACTION — Fusion ancienne logique + poupy.docx
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
 
-  // 1. Nettoyage de base
+  // 1. Nettoyage de base (commun à tous les formats)
   let text = rawText
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
     .replace(/\u00A0/g, ' ')
     .replace(/\r\n?/g, '\n')
     .replace(/[’‘`´]/g, "'")
-    .replace(/[“”]/g, '"');
+    .replace(/[“”]/g, '"')
+    .replace(/[ \t]+/g, ' ');
 
-  // 2. SÉPARATION DE LA GRILLE DE RÉPONSES (formats "GRILLE REPONSES")
-  let textMain = text;
-  let textGrid = "";
-  
-  const gridSplit = text.split(/GRILLE\s+REPONSES/i);
-  if (gridSplit.length > 1) {
-    textMain = gridSplit[0];
-    textGrid = gridSplit[1];
-  }
-
-  // 3. LECTURE DE LA GRILLE
+  // 2. Extraction de la grille de réponses (Ancienne logique conservée)
   const answerKey = {};
-  
-  // --- Format historique : Q1V[Q2V[Q3F[ ---
-  const gridRegexOld = /Q(\d{1,3})\s*([VvFf]|[A-Ea-e](?:[\s\.\,][A-Ea-e])*)\b/g;
+  const gridRegex = /Q(\d{1,3})\s+(VRAI|FAUX|[A-Ea-e](?:[\s\.\,][A-Ea-e])*)/gi;
   let mGrid;
-  while ((mGrid = gridRegexOld.exec(textGrid || text)) !== null) {
+  while ((mGrid = gridRegex.exec(rawText)) !== null) {
     const qNum = parseInt(mGrid[1]);
     const val = mGrid[2].toUpperCase();
     
-    if (val === 'V') answerKey[qNum] = { type: 'tf', correct: 0 };
-    else if (val === 'F') answerKey[qNum] = { type: 'tf', correct: 1 };
+    if (val === 'VRAI') answerKey[qNum] = { type: 'tf', correct: 0 };
+    else if (val === 'FAUX') answerKey[qNum] = { type: 'tf', correct: 1 };
     else {
       const letters = val.match(/[A-E]/g);
       if (letters) {
@@ -216,33 +205,9 @@ function parseQuizText(rawText) {
     }
   }
 
-  // --- NOUVEAU format : Q1 V | Q2 F | Q16 b,c ---
-  // On scanne le texte COMPLET (car parfois la grille n'est pas dans "textGrid")
-  const gridRegexNew = /Q(\d{1,3})\s*([VvFf]|[A-Ea-e](?:[\s\/\.\,][A-Ea-e])*)\b/g;
-  let mGridNew;
-  while ((mGridNew = gridRegexNew.exec(text)) !== null) {
-    const qNum = parseInt(mGridNew[1]);
-    const val = mGridNew[2].toUpperCase();
-    
-    // On n'écrase pas une entrée déjà lue par l'ancienne regex
-    if (answerKey[qNum]) continue;
-    
-    if (val === 'V') answerKey[qNum] = { type: 'tf', correct: 0 };
-    else if (val === 'F') answerKey[qNum] = { type: 'tf', correct: 1 };
-    else {
-      const letters = val.match(/[A-E]/g);
-      if (letters) {
-        const indices = letters.map(l => l.charCodeAt(0) - 65);
-        answerKey[qNum] = { 
-          type: indices.length > 1 ? 'mcq_multi' : 'mcq', 
-          correct: indices.length > 1 ? indices : indices[0] 
-        };
-      }
-    }
-  }
-
-  // 4. DÉCOUPAGE DES QUESTIONS (accepte / en plus de . ) - :)
-  const parts = textMain.split(/(?:^|\n)\s*(?:Q\s*)?(\d{1,3})\s*[\/\.\)\-]\s+/i);
+  // 3. Découpage des questions (FUSION : Anciens formats + Astérisques)
+  // Cette Regex accepte : "1.", "Q1:", "1/", "*3.*", " 3. "
+  const parts = text.split(/(?:^|\n)\s*(?:\*\s*)?(?:Q\s*)?(\d{1,3})\s*[\/\.\)\-\:]\s*\*?\s+/i);
   
   const questions = [];
   
@@ -250,54 +215,109 @@ function parseQuizText(rawText) {
     const num = parseInt(parts[i]);
     let content = parts[i + 1] ? parts[i + 1].trim() : '';
     
-    // Ignorer le bruit
     if (!content || content.replace(/[^a-zA-Z]/g, '').length < 5) continue;
+    // Ignorer les titres de section
+    if (/^[A-Z]\.\s/.test(content)) continue;
 
-    // 5. Extraction des options (a) b) c) ou A. B. C.)
-    const optionRegex = /(?:^|\s)([a-eA-E])\s*[\)\:\-\.]\s+/g;
-    const matches = [...content.matchAll(optionRegex)];
-    
     let qText = content;
     let options = [];
     let type = 'mcq';
+    let correct = 0;
 
-    if (matches.length >= 2) {
-      qText = content.substring(0, matches[0].index).trim();
-      for (let j = 0; j < matches.length; j++) {
-        const start = matches[j].index + matches[j][0].length;
-        const end = (j + 1 < matches.length) ? matches[j + 1].index : content.length;
-        let optText = content.substring(start, end).trim().replace(/[;\.]+$/, '').trim();
-        if (optText) options.push(optText);
+    // === NOUVELLE LOGIQUE SPÉCIFIQUE (POUPY.DOCX) ===
+    
+    // Cas A : Question avec puces (tirets)
+    if (content.includes('\n-') || content.includes(' - ')) {
+      const firstDash = content.search(/(?:\n|\s)-\s/);
+      qText = content.substring(0, firstDash).trim();
+      const optionsText = content.substring(firstDash).trim();
+      
+      const rawOptions = optionsText.split(/(?:\n|\s)-\s/).filter(o => o.trim().length > 0);
+      let correctIndices = [];
+
+      rawOptions.forEach((opt, idx) => {
+        let isCorrect = false;
+        if (opt.includes('✓')) {
+          isCorrect = true;
+          correctIndices.push(idx);
+        }
+        let cleanOpt = opt.replace('✓', '').replace(/:\s*Non$/i, '').trim();
+        if (cleanOpt) options.push(cleanOpt);
+      });
+
+      if (correctIndices.length > 0) {
+        correct = correctIndices.length > 1 ? correctIndices : correctIndices[0];
+        type = correctIndices.length > 1 ? 'mcq_multi' : 'mcq';
+      } else {
+        type = options.length > 2 ? 'mcq_multi' : 'mcq';
       }
-    } else {
+    } 
+    // Cas B : Vrai/Faux en ligne (ex: "... : *Faux*")
+    else if (/[\:\-]\s*\*?(Vrai|Faux)\*?\s*$/i.test(content)) {
+      const match = content.match(/(.*?)\s*[\:\-]\s*\*?(Vrai|Faux)\*?\s*$/i);
+      qText = match[1].trim();
       type = 'tf';
       options = ['Vrai', 'Faux'];
+      correct = match[2].toLowerCase() === 'vrai' ? 0 : 1;
+    }
+    // Cas C : Question directe (ex: "... : AVC ✓")
+    else if (content.includes(':') && (content.includes('✓') || !content.includes('\n'))) {
+      const colonIndex = content.lastIndexOf(':');
+      if (colonIndex > 0) {
+         qText = content.substring(0, colonIndex).trim();
+         let answer = content.substring(colonIndex + 1).replace('✓', '').trim();
+         if (answer.length > 0 && answer.length < 100) {
+            options = [answer];
+            type = 'mcq';
+            correct = 0;
+         }
+      }
+    }
+    
+    // === ANCIENNE LOGIQUE (Si les nouveaux cas n'ont pas matché) ===
+    if (options.length === 0) {
+      // Extraction des options classiques (a) b) A. B.)
+      const optionRegex = /(?:^|\s)([a-eA-E])\s*[\)\:\-\.]\s+/g;
+      const matches = [...content.matchAll(optionRegex)];
+      
+      if (matches.length >= 2) {
+        qText = content.substring(0, matches[0].index).trim();
+        for (let j = 0; j < matches.length; j++) {
+          const start = matches[j].index + matches[j][0].length;
+          const end = (j + 1 < matches.length) ? matches[j + 1].index : content.length;
+          let optText = content.substring(start, end).trim().replace(/[;\.]+$/, '').trim();
+          if (optText) options.push(optText);
+        }
+      } else {
+        type = 'tf';
+        options = ['Vrai', 'Faux'];
+      }
     }
 
-    // 6. Application de la grille
-    let correct = 0;
+    // 4. Application de l'ancienne grille si elle existe
     if (answerKey[num]) {
       type = answerKey[num].type;
       correct = answerKey[num].correct;
-    } else {
-      if (options.length > 2) type = 'mcq_multi';
     }
 
-    // 7. Nettoyage final
-    qText = qText.replace(/GRILLE[\s\S]*/i, '').replace(/\s+/g, ' ').trim();
+    // Nettoyage final
+    qText = qText.replace(/\*/g, '').replace(/\s+/g, ' ').trim();
 
     if (qText.length > 5) {
-      questions.push({ 
-        number: num, 
-        text: qText, 
-        options: options, 
-        correct: correct, 
-        type: type 
-      });
+      questions.push({ number: num, text: qText, options: options.length > 0 ? options : ['Vrai', 'Faux'], correct: correct, type: type });
     }
   }
 
-  return questions;
+  const uniqueQuestions = [];
+  const seenNumbers = new Set();
+  for (const q of questions) {
+    if (!seenNumbers.has(q.number)) {
+      seenNumbers.add(q.number);
+      uniqueQuestions.push(q);
+    }
+  }
+
+  return uniqueQuestions;
 }
 
 function fallbackParse(rawText) {
@@ -320,7 +340,7 @@ function fallbackParse(rawText) {
 }
 
 // ==========================================
-// ROUTES API QUIZ
+// ROUTES API
 // ==========================================
 app.post('/api/parse-existing-quiz', (req, res) => {
   try {
@@ -375,9 +395,6 @@ Réponds UNIQUEMENT en JSON valide :
   }
 });
 
-// ==========================================
-// ROUTES BIBLIOTHÈQUE (Supabase REST)
-// ==========================================
 app.get('/api/quizzes', async (req, res) => {
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
