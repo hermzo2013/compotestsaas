@@ -10,6 +10,43 @@ const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
 app.use(express.json({ limit: '10mb' }));
 
+// ==========================================
+// ✅ CORS — DOIT ÊTRE AVANT LES ROUTES /api
+// ==========================================
+const ALLOWED_ORIGINS = [
+  'https://comptestsaas.onrender.com',   // site web
+  'http://localhost:3000',               // dev local
+  'http://localhost:5173',               // dev Vite
+  'capacitor://localhost',               // app mobile Capacitor iOS
+  'ionic://localhost',                   // app mobile Ionic iOS
+  'http://localhost',                    // app mobile Capacitor Android
+];
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey, x-client-info');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
+// ==========================================
+// FICHIERS STATIQUES + ROUTES HTML
+// ==========================================
 app.use(express.static(__dirname, { maxAge: '1d' }));
 
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
@@ -174,7 +211,6 @@ const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
 
-  // 1. Nettoyage de base (commun à tous les formats)
   let text = rawText
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
     .replace(/\u00A0/g, ' ')
@@ -183,7 +219,6 @@ function parseQuizText(rawText) {
     .replace(/[“”]/g, '"')
     .replace(/[ \t]+/g, ' ');
 
-  // 2. Extraction de la grille de réponses (Ancienne logique conservée)
   const answerKey = {};
   const gridRegex = /Q(\d{1,3})\s+(VRAI|FAUX|[A-Ea-e](?:[\s\.\,][A-Ea-e])*)/gi;
   let mGrid;
@@ -205,8 +240,6 @@ function parseQuizText(rawText) {
     }
   }
 
-  // 3. Découpage des questions (FUSION : Anciens formats + Astérisques)
-  // Cette Regex accepte : "1.", "Q1:", "1/", "*3.*", " 3. "
   const parts = text.split(/(?:^|\n)\s*(?:\*\s*)?(?:Q\s*)?(\d{1,3})\s*[\/\.\)\-\:]\s*\*?\s+/i);
   
   const questions = [];
@@ -216,7 +249,6 @@ function parseQuizText(rawText) {
     let content = parts[i + 1] ? parts[i + 1].trim() : '';
     
     if (!content || content.replace(/[^a-zA-Z]/g, '').length < 5) continue;
-    // Ignorer les titres de section
     if (/^[A-Z]\.\s/.test(content)) continue;
 
     let qText = content;
@@ -224,9 +256,6 @@ function parseQuizText(rawText) {
     let type = 'mcq';
     let correct = 0;
 
-    // === NOUVELLE LOGIQUE SPÉCIFIQUE (POUPY.DOCX) ===
-    
-    // Cas A : Question avec puces (tirets)
     if (content.includes('\n-') || content.includes(' - ')) {
       const firstDash = content.search(/(?:\n|\s)-\s/);
       qText = content.substring(0, firstDash).trim();
@@ -252,7 +281,6 @@ function parseQuizText(rawText) {
         type = options.length > 2 ? 'mcq_multi' : 'mcq';
       }
     } 
-    // Cas B : Vrai/Faux en ligne (ex: "... : *Faux*")
     else if (/[\:\-]\s*\*?(Vrai|Faux)\*?\s*$/i.test(content)) {
       const match = content.match(/(.*?)\s*[\:\-]\s*\*?(Vrai|Faux)\*?\s*$/i);
       qText = match[1].trim();
@@ -260,7 +288,6 @@ function parseQuizText(rawText) {
       options = ['Vrai', 'Faux'];
       correct = match[2].toLowerCase() === 'vrai' ? 0 : 1;
     }
-    // Cas C : Question directe (ex: "... : AVC ✓")
     else if (content.includes(':') && (content.includes('✓') || !content.includes('\n'))) {
       const colonIndex = content.lastIndexOf(':');
       if (colonIndex > 0) {
@@ -274,9 +301,7 @@ function parseQuizText(rawText) {
       }
     }
     
-    // === ANCIENNE LOGIQUE (Si les nouveaux cas n'ont pas matché) ===
     if (options.length === 0) {
-      // Extraction des options classiques (a) b) A. B.)
       const optionRegex = /(?:^|\s)([a-eA-E])\s*[\)\:\-\.]\s+/g;
       const matches = [...content.matchAll(optionRegex)];
       
@@ -294,13 +319,11 @@ function parseQuizText(rawText) {
       }
     }
 
-    // 4. Application de l'ancienne grille si elle existe
     if (answerKey[num]) {
       type = answerKey[num].type;
       correct = answerKey[num].correct;
     }
 
-    // Nettoyage final
     qText = qText.replace(/\*/g, '').replace(/\s+/g, ' ').trim();
 
     if (qText.length > 5) {
