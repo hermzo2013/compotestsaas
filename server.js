@@ -149,6 +149,8 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   const lastName = String(req.body?.lastName || '').trim();
   let email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
+  const niveau = String(req.body?.niveau || '').trim(); // NOUVEAU
+  
   if (!firstName || !lastName) return res.status(400).json({ error: 'Nom et prénom requis.' });
   if (!email) {
     const slug = `${firstName}.${lastName}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]/g, '');
@@ -156,10 +158,20 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Email invalide.' });
   if (password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (6 min).' });
+  
   try {
     const user = await supabaseAdmin('users', {
       method: 'POST',
-      body: JSON.stringify({ email, password, email_confirm: true, app_metadata: { compotest_access: true }, user_metadata: { full_name: `${firstName} ${lastName}` } })
+      body: JSON.stringify({ 
+        email, 
+        password, 
+        email_confirm: true, 
+        app_metadata: { compotest_access: true }, 
+        user_metadata: { 
+          full_name: `${firstName} ${lastName}`,
+          niveau: niveau // NOUVEAU : on sauvegarde le niveau dans les métadonnées
+        } 
+      })
     });
     res.json({ user });
   } catch (e) { res.status(500).json({ error: e.message }); }
