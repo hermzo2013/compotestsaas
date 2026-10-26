@@ -14,38 +14,30 @@ app.use(express.json({ limit: '10mb' }));
 // 🔍 LOG DE TOUTES LES REQUÊTES (POUR DEBUG)
 // ==========================================
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} | Origin: ${req.headers.origin || 'no origin'}`);
   next();
 });
 
 // ==========================================
-// ✅ CORS — DOIT ÊTRE AVANT LES ROUTES /api
+// ✅ CORS — ON AUTORISE TOUT POUR CAPACITOR
 // ==========================================
-const ALLOWED_ORIGINS = [
-  'https://comptestsaas.onrender.com',
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'https://localhost',
-  'http://localhost',
-  'capacitor://localhost',
-  'ionic://localhost',
-];
-
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Vary', 'Origin');
-  } else if (origin) {
+  
+  // Si une origine est présente, on la renvoie telle quelle.
+  // Sinon (ex: requêtes natives Capacitor sans origine), on met '*'.
+  if (origin) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else {
     res.header('Access-Control-Allow-Origin', '*');
   }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey, x-client-info, X-Requested-With');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '86400');
+
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -66,9 +58,7 @@ async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return res.status(401).json({ error: 'Connecte-toi.' });
   try {
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-      throw new Error("Variables Supabase manquantes sur le serveur.");
-    }
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) throw new Error("Variables Supabase manquantes.");
     const response = await fetch(`${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/user`, {
       headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }
     });
@@ -92,15 +82,11 @@ function requireAdmin(req, res, next) {
 // ==========================================
 // ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
 // ==========================================
-// ⚠️ CETTE ROUTE DOIT ÊTRE AVANT app.use('/api', authenticate)
 app.get('/api/quizzes', async (req, res) => {
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
     const response = await fetch(`${base}/rest/v1/quizzes?select=*&order=created_at.desc`, {
-      headers: {
-        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
-      }
+      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` }
     });
     if (!response.ok) throw new Error('Erreur Supabase GET');
     const data = await response.json();
@@ -117,7 +103,7 @@ app.get('/api/quizzes', async (req, res) => {
 app.use('/api', authenticate);
 
 // ==========================================
-// ROUTES ADMIN
+// ROUTES ADMIN (INCHANGÉES)
 // ==========================================
 async function supabaseAdmin(pathname, options = {}) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY manquante.");
@@ -164,11 +150,7 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   try {
     const user = await supabaseAdmin('users', {
       method: 'POST',
-      body: JSON.stringify({
-        email, password, email_confirm: true,
-        app_metadata: { compotest_access: true },
-        user_metadata: { full_name: `${firstName} ${lastName}` }
-      })
+      body: JSON.stringify({ email, password, email_confirm: true, app_metadata: { compotest_access: true }, user_metadata: { full_name: `${firstName} ${lastName}` } })
     });
     res.json({ user });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -185,10 +167,7 @@ app.patch('/api/admin/users/:id/password', requireAdmin, async (req, res) => {
 
 app.patch('/api/admin/users/:id/status', requireAdmin, async (req, res) => {
   try {
-    await supabaseAdmin(`users/${req.params.id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ ban_duration: req.body.banned ? '876000h' : 'none' })
-    });
+    await supabaseAdmin(`users/${req.params.id}`, { method: 'PUT', body: JSON.stringify({ ban_duration: req.body.banned ? '876000h' : 'none' }) });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
