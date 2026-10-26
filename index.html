@@ -514,7 +514,7 @@ button.danger:hover{background:#ffe0e0}
 const $=id=>document.getElementById(id);
 
 // ==========================================
-// ⚙️ CONFIGURATION
+// ⚙️ CONFIGURATION (URL ABSOLUE OBLIGATOIRE)
 // ==========================================
 const API_BASE = 'https://comptestsaas.onrender.com';
 
@@ -532,62 +532,14 @@ const ADMIN_EMAIL = "hermzo2013@gmail.com";
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 // ==========================================
-// ✅ STOCKAGE ADAPTATIF (Capacitor Android / Web)
-// ==========================================
-async function getStorageAdapter() {
-  const isCapacitor = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative;
-  const prefs = window.Capacitor?.Plugins?.Preferences;
-
-  if (isCapacitor && prefs) {
-    console.log('📱 Stockage : Capacitor Preferences (natif)');
-    return {
-      getItem: async (key) => {
-        try {
-          const { value } = await prefs.get({ key });
-          return value;
-        } catch (e) {
-          console.warn('Preferences.get échoué, fallback localStorage:', e);
-          return localStorage.getItem(key);
-        }
-      },
-      setItem: async (key, value) => {
-        try {
-          await prefs.set({ key, value });
-        } catch (e) {
-          console.warn('Preferences.set échoué, fallback localStorage:', e);
-          localStorage.setItem(key, value);
-        }
-      },
-      removeItem: async (key) => {
-        try {
-          await prefs.remove({ key });
-        } catch (e) {
-          console.warn('Preferences.remove échoué, fallback localStorage:', e);
-          localStorage.removeItem(key);
-        }
-      }
-    };
-  }
-
-  console.log('🌐 Stockage : localStorage (web)');
-  return {
-    getItem: (key) => Promise.resolve(localStorage.getItem(key)),
-    setItem: (key, value) => Promise.resolve(localStorage.setItem(key, value)),
-    removeItem: (key) => Promise.resolve(localStorage.removeItem(key))
-  };
-}
-
-// ==========================================
-// 🔌 INIT SUPABASE (async)
+// 🔌 INIT SUPABASE (localStorage uniquement)
 // ==========================================
 (async () => {
-  // 1. On définit les clés en dur par défaut (Fallback de sécurité)
   const defaultConfig = {
     SUPABASE_URL: 'https://drumtgglrtmubdvkpwvl.supabase.co',
     SUPABASE_ANON_KEY: 'sb_publishable_u86DlAD9qU-Byb9tR59gMA_IlGAbcxu'
   };
 
-  // 2. On utilise le fichier config.js s'il a chargé, sinon on utilise le fallback
   const cfg = window.COMPOSTEST_CONFIG || defaultConfig;
 
   if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
@@ -597,10 +549,9 @@ async function getStorageAdapter() {
   }
 
   try {
-    const storage = await getStorageAdapter();
     supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
       auth: {
-        storage,
+        storage: localStorage,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false
