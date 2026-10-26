@@ -535,7 +535,6 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 // ✅ STOCKAGE ADAPTATIF (Capacitor Android / Web)
 // ==========================================
 async function getStorageAdapter() {
-  // Détection Capacitor + plugin Preferences
   const isCapacitor = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative;
   const prefs = window.Capacitor?.Plugins?.Preferences;
 
@@ -570,7 +569,6 @@ async function getStorageAdapter() {
     };
   }
 
-  // Fallback web
   console.log('🌐 Stockage : localStorage (web)');
   return {
     getItem: (key) => Promise.resolve(localStorage.getItem(key)),
@@ -583,7 +581,14 @@ async function getStorageAdapter() {
 // 🔌 INIT SUPABASE (async)
 // ==========================================
 (async () => {
-  const cfg = window.COMPOSTEST_CONFIG || {};
+  // 1. On définit les clés en dur par défaut (Fallback de sécurité)
+  const defaultConfig = {
+    SUPABASE_URL: 'https://drumtgglrtmubdvkpwvl.supabase.co',
+    SUPABASE_ANON_KEY: 'sb_publishable_u86DlAD9qU-Byb9tR59gMA_IlGAbcxu'
+  };
+
+  // 2. On utilise le fichier config.js s'il a chargé, sinon on utilise le fallback
+  const cfg = window.COMPOSTEST_CONFIG || defaultConfig;
 
   if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
     console.error('❌ Supabase NON initialisé. Config manquante :', cfg);
@@ -598,12 +603,11 @@ async function getStorageAdapter() {
         storage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: false  // ⚠️ Obligatoire pour Capacitor
+        detectSessionInUrl: false
       }
     });
     console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
 
-    // Lance l'init auth une fois le client prêt
     await initAuth();
   } catch (e) {
     console.error('❌ Erreur init Supabase:', e);
