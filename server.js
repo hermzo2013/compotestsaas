@@ -19,12 +19,12 @@ app.use((req, res, next) => {
 });
 
 // ==========================================
-// ✅ CORS (Web uniquement, plus de Capacitor)
+// ✅ CORS (Corrigé avec la BONNE URL)
 // ==========================================
 const ALLOWED_ORIGINS = [
-  'https://comptestsaas.onrender.com', // Ton site
-  'http://localhost:3000',             // Dev local
-  'http://localhost:5173'              // Dev local
+  'https://compotestsaas.onrender.com', // ✅ LA BONNE URL
+  'http://localhost:3000',              
+  'http://localhost:5173'               
 ];
 
 app.use((req, res, next) => {
@@ -34,12 +34,11 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else if (origin) {
-    // Si une origine inconnue arrive, on la laisse passer pour le debug
-    // (mais on ne devrait plus avoir ça normalement)
+    // On laisse passer pour le debug, mais on log l'erreur
+    console.log(`⚠️ Origine inconnue tentant d'accéder : ${origin}`);
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else {
-    // Requête sans origine (ex: appel direct)
     res.header('Access-Control-Allow-Origin', '*');
   }
 
@@ -212,7 +211,7 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION (parseQuizText complet)
+// EXTRACTION
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
