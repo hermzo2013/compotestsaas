@@ -83,6 +83,17 @@ button.danger:hover{background:#ffe0e0}
 .btn-icon{background:transparent;border:0;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.2s}
 .btn-icon:hover{background:#fee2e2}
 
+/* NOUVEAU : Styles pour la Communauté */
+.community-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(75,94,170,.04);position:relative}
+.community-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid #f0f3f8;padding-bottom:8px}
+.community-author{font-weight:700;color:var(--navy);font-size:14px}
+.community-date{font-size:11px;color:var(--muted)}
+.community-content{font-size:14px;line-height:1.5;color:#1e293b;white-space:pre-wrap;word-break:break-word}
+.community-delete-btn{position:absolute;top:10px;right:10px;background:#fff0f0;color:var(--red);border:1px solid #fecaca;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-weight:700}
+.community-delete-btn:hover{background:#ffe0e0}
+.community-form{background:#f8faff;border-radius:12px;padding:16px;margin-bottom:20px;border:1px solid var(--line)}
+.community-form textarea{min-height:80px;resize:vertical;font-size:14px}
+
 #adminModal{display:none;position:fixed;inset:0;background:rgba(19,35,68,.5);z-index:3000;align-items:center;justify-content:center;padding:20px}
 #adminModal.show{display:flex}
 .admin-modal-content{background:#fff;border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow-y:auto;padding:30px;box-shadow:0 10px 40px rgba(75,94,170,.25)}
@@ -119,7 +130,6 @@ button.danger:hover{background:#ffe0e0}
 .auth-form-container h2{font-size:24px;font-weight:800;color:#000;text-align:center;margin:0 0 18px}
 .auth-input-group{position:relative;margin-bottom:12px}
 .auth-input-group i{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--muted);pointer-events:none}
-/* NOUVEAU : Style pour l'icône œil avec zone tactile agrandie */
 .auth-toggle-password{
   position:absolute;right:0;top:0;bottom:0;
   width:50px;display:flex;align-items:center;justify-content:center;
@@ -227,7 +237,7 @@ button.danger:hover{background:#ffe0e0}
 .checkbox-group input{width:20px;height:20px;cursor:pointer;margin:0;accent-color:#5D6EC7}
 .checkbox-group label{margin:0;cursor:pointer;font-size:14px;color:var(--ink)}
 
-/* NOUVEAU : Sélection multiple admin */
+/* Sélection multiple admin */
 .library-item{display:flex;align-items:center;gap:10px;}
 .library-item input[type="checkbox"]{width:20px;height:20px;cursor:pointer;accent-color:#5D6EC7;margin:0;flex-shrink:0}
 .bulk-actions{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}
@@ -374,6 +384,7 @@ button.danger:hover{background:#ffe0e0}
     <button class="tab active" data-tab="create">📚 Créer un test</button>
     <button class="tab" data-tab="library">🌍 Bibliothèque</button>
     <button class="tab" data-tab="history">📊 Mon Historique</button>
+    <button class="tab" data-tab="community">💬 Communauté</button>
   </div>
 
   <div id="tab-create" class="tab-content">
@@ -417,7 +428,6 @@ button.danger:hover{background:#ffe0e0}
       <h1>🌍 Bibliothèque Publique</h1>
       <p style="color:var(--muted);font-size:14px">Retrouvez ici tous les exercices extraits et partagés par la communauté.</p>
       <div id="libraryList"><p style="color:var(--muted)">Chargement...</p></div>
-      <!-- NOUVEAU : Bouton de suppression multiple (admin) -->
       <div class="bulk-actions" id="bulkActions" style="display:none">
         <button class="danger" onclick="deleteSelectedQuizzes()">🗑️ Supprimer la sélection</button>
       </div>
@@ -431,6 +441,24 @@ button.danger:hover{background:#ffe0e0}
         <button id="clearHistoryBtn" class="danger hide" onclick="clearAllHistory()">🗑️ Vider l'historique</button>
       </div>
       <div id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- NOUVEAU : Onglet Communauté -->
+  <div id="tab-community" class="tab-content hide">
+    <div class="panel">
+      <h1>💬 Communauté</h1>
+      <p style="color:var(--muted);font-size:14px">Posez vos questions, partagez vos astuces et échangez avec les autres étudiants.</p>
+      
+      <div class="community-form">
+        <textarea id="communityInput" placeholder="Écrivez votre message ici..." maxlength="1000"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+          <span style="font-size:11px;color:var(--muted)"><span id="communityCharCount">0</span>/1000</span>
+          <button id="communityPostBtn" onclick="postMessage()">📤 Publier</button>
+        </div>
+      </div>
+
+      <div id="communityList"><p style="color:var(--muted)">Chargement des messages...</p></div>
     </div>
   </div>
 </main>
@@ -457,7 +485,6 @@ button.danger:hover{background:#ffe0e0}
         <div><label>Nom</label><input id="newLastName" required placeholder="Dupont"></div>
         <div><label>Prénom</label><input id="newFirstName" required placeholder="Jean"></div>
         <div style="grid-column:1/-1"><label>Email interne (optionnel - auto-généré sinon)</label><input id="newEmail" type="email" placeholder="jean.dupont@comptest.local"></div>
-        <!-- NOUVEAU : Niveau dans le formulaire admin -->
         <div style="grid-column:1/-1">
           <label>Niveau</label>
           <select id="newNiveau">
@@ -564,7 +591,7 @@ const $=id=>document.getElementById(id);
 // ==========================================
 // ⚙️ CONFIGURATION (URL ABSOLUE OBLIGATOIRE)
 // ==========================================
-const API_BASE = 'https://compotestsaas.onrender.com'; // ✅ LA BONNE URL
+const API_BASE = 'https://compotestsaas.onrender.com';
 
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -575,12 +602,12 @@ let historyData = JSON.parse(localStorage.getItem('comptest_history') || '[]');
 let isAdmin = false;
 let libraryCache = []; 
 let editingQuizId = null;
-let selectedQuizIds = new Set(); // NOUVEAU
+let selectedQuizIds = new Set();
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
-// NOUVEAU : Fonction pour afficher/masquer le mot de passe avec support tactile
+// Fonction pour afficher/masquer le mot de passe avec support tactile
 function togglePasswordVisibility(inputId, btn) {
   const input = $(inputId);
   if (!input) return;
@@ -783,10 +810,10 @@ $('registerForm').addEventListener('submit', async (e) => {
   const firstName = $('regFirstName').value.trim();
   const matricule = $('regMatricule').value.trim();
   const filiere = $('regFiliere').value;
-  const niveau = $('regNiveau').value; // NOUVEAU
+  const niveau = $('regNiveau').value;
   const pwd = $('regPassword').value;
 
-  if (!lastName || !firstName || !matricule || !filiere || !niveau || !pwd) { // NOUVEAU
+  if (!lastName || !firstName || !matricule || !filiere || !niveau || !pwd) {
     errEl.textContent = 'Merci de remplir tous les champs.';
     return;
   }
@@ -809,7 +836,7 @@ $('registerForm').addEventListener('submit', async (e) => {
           full_name: `${lastName} ${firstName}`,
           role: 'etudiant',
           filiere: filiere,
-          niveau: niveau, // NOUVEAU
+          niveau: niveau,
           matricule: matricule
         }
       }
@@ -906,7 +933,7 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
   const lastName = $('newLastName').value.trim();
   const firstName = $('newFirstName').value.trim();
   const emailInput = $('newEmail').value.trim();
-  const niveau = $('newNiveau').value; // NOUVEAU
+  const niveau = $('newNiveau').value;
   const pwd = $('newPassword').value;
   if (!lastName || !firstName) {
     $('adminStatus').textContent = "❌ Nom et prénom requis.";
@@ -922,7 +949,7 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
   const res = await fetch(API_BASE + '/api/admin/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-    body: JSON.stringify({ firstName, lastName, email, password: pwd, niveau }) // NOUVEAU
+    body: JSON.stringify({ firstName, lastName, email, password: pwd, niveau })
   });
   const data = await res.json();
   if (res.ok) {
@@ -1038,6 +1065,122 @@ async function clearAllHistory() {
   );
 }
 
+// ==========================================
+// 💬 COMMUNAUTÉ (NOUVEAU)
+// ==========================================
+async function loadCommunity() {
+  if (!supabaseClient) return;
+  const list = $('communityList');
+  list.innerHTML = '<p style="color:var(--muted)">Chargement des messages...</p>';
+  
+  try {
+    const { data, error } = await supabaseClient
+      .from('community_posts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      list.innerHTML = `<p style="color:var(--red)">Erreur : ${esc(error.message)}</p>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">Aucun message pour le moment. Soyez le premier à publier !</p>';
+      return;
+    }
+
+    list.innerHTML = data.map(post => {
+      const isAuthor = currentUser && post.user_id === currentUser.id;
+      const canDelete = isAdmin || isAuthor;
+      const date = new Date(post.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+      return `
+        <div class="community-card">
+          ${canDelete ? `<button class="community-delete-btn" onclick="deleteCommunityPost('${post.id}')" title="Supprimer">🗑️</button>` : ''}
+          <div class="community-card-header">
+            <span class="community-author">👤 ${esc(post.author_name || 'Anonyme')}</span>
+            <span class="community-date">${date}</span>
+          </div>
+          <div class="community-content">${esc(post.content)}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = `<p style="color:var(--red)">Erreur réseau : ${esc(e.message)}</p>`;
+  }
+}
+window.loadCommunity = loadCommunity;
+
+async function postMessage() {
+  if (!supabaseClient || !currentUser) return;
+  const input = $('communityInput');
+  const content = input.value.trim();
+  if (!content) return alert("Écrivez un message avant de publier.");
+  if (content.length > 1000) return alert("Message trop long (1000 caractères max).");
+
+  const btn = $('communityPostBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Publication...';
+
+  try {
+    const authorName = currentUser.user_metadata?.full_name || (currentUser.email || '').split('@')[0];
+    const { error } = await supabaseClient
+      .from('community_posts')
+      .insert({
+        user_id: currentUser.id,
+        author_name: authorName,
+        content: content
+      });
+
+    if (error) {
+      alert("Erreur : " + error.message);
+    } else {
+      input.value = '';
+      $('communityCharCount').textContent = '0';
+      await loadCommunity();
+    }
+  } catch (e) {
+    alert("Erreur réseau : " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📤 Publier';
+  }
+}
+window.postMessage = postMessage;
+
+async function deleteCommunityPost(postId) {
+  if (!supabaseClient || !currentUser) return;
+  if (!confirm("Supprimer ce message ?")) return;
+
+  try {
+    const { error } = await supabaseClient
+      .from('community_posts')
+      .delete()
+      .eq('id', postId);
+
+    if (error) {
+      alert("Erreur : " + error.message);
+    } else {
+      await loadCommunity();
+    }
+  } catch (e) {
+    alert("Erreur réseau : " + e.message);
+  }
+}
+window.deleteCommunityPost = deleteCommunityPost;
+
+// Compteur de caractères
+document.addEventListener('DOMContentLoaded', () => {
+  const input = $('communityInput');
+  if (input) {
+    input.addEventListener('input', () => {
+      $('communityCharCount').textContent = input.value.length;
+    });
+  }
+});
+
+// ==========================================
+// 🔄 NAVIGATION ONGLETS
+// ==========================================
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1045,7 +1188,10 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     const target = $('tab-' + tab.dataset.tab);
     if (target) target.classList.remove('hide');
+    
+    // Chargement automatique
     if (tab.dataset.tab === 'library') loadLibrary();
+    if (tab.dataset.tab === 'community') loadCommunity();
   });
 });
 
@@ -1209,8 +1355,8 @@ $('extractTestBtn').addEventListener('click', async () => {
 async function loadLibrary() {
   const list = $('libraryList');
   list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
-  selectedQuizIds.clear(); // NOUVEAU
-  updateBulkActions(); // NOUVEAU
+  selectedQuizIds.clear();
+  updateBulkActions();
   try {
     const data = await fetchWithAuth('/api/quizzes', null, 'GET');
     if (!data.quizzes || data.quizzes.length === 0) {
@@ -1239,7 +1385,6 @@ async function loadLibrary() {
   }
 }
 
-// NOUVEAU : Gestion de la sélection
 function toggleQuizSelection(id, isChecked) {
   if (isChecked) selectedQuizIds.add(id);
   else selectedQuizIds.delete(id);
