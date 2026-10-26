@@ -125,6 +125,13 @@ button.danger:hover{background:#ffe0e0}
 .auth-input-group input:focus,
 .auth-input-group select:focus{border-color:var(--lav-1);background-color:#fff;outline:2px solid rgba(125,144,224,0.2)}
 .auth-input-group input::placeholder{color:#9aa3b8}
+
+/* ✅ NOUVEAU : icône œil pour afficher/masquer le mot de passe */
+.pwd-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:0;cursor:pointer;padding:6px;border-radius:6px;color:var(--muted);font-size:18px;display:flex;align-items:center;justify-content:center;transition:.2s}
+.pwd-toggle:hover{background:rgba(107,124,219,.1);color:var(--navy)}
+.auth-input-group input[type="password"],
+.auth-input-group input[type="text"]{padding-right:42px}
+
 .auth-forgot-link{display:block;text-align:right;font-size:12px;color:var(--lav-1);text-decoration:none;margin:-4px 0 12px;font-weight:600}
 .auth-forgot-link:hover{color:var(--lav-2)}
 .auth-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--lav-1),var(--lav-2));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:transform .15s, box-shadow .15s}
@@ -214,6 +221,12 @@ button.danger:hover{background:#ffe0e0}
 .checkbox-group input{width:20px;height:20px;cursor:pointer;margin:0;accent-color:#5D6EC7}
 .checkbox-group label{margin:0;cursor:pointer;font-size:14px;color:var(--ink)}
 
+/* ✅ NOUVEAU : sélection multiple dans la bibliothèque */
+.lib-select{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.lib-select input[type="checkbox"]{width:20px;height:20px;cursor:pointer;margin:0;accent-color:#e11d48;flex-shrink:0}
+#bulkDeleteBar{margin-bottom:15px;padding:12px 16px;background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+#bulkDeleteBar b{color:#b82e36}
+
 @media(max-width:768px){
   .auth-container{width:100%;max-width:420px;height:auto;min-height:auto;border-radius:20px}
   .auth-form-container{position:relative;width:100%;height:auto;padding:28px 22px;transition:none;overflow:visible}
@@ -274,6 +287,9 @@ button.danger:hover{background:#ffe0e0}
         <div class="auth-input-group">
           <i class='bx bx-lock-alt'></i>
           <input type="password" id="loginPassword" placeholder="Mot de passe" required autocomplete="current-password">
+          <button type="button" class="pwd-toggle" data-target="loginPassword" title="Afficher le mot de passe">
+            <i class='bx bx-show'></i>
+          </button>
         </div>
         <a href="#" class="auth-forgot-link" onclick="alert('Contacte l\'administration pour réinitialiser ton mot de passe.');return false;">Mot de passe oublié ?</a>
         <button type="submit" class="auth-btn" id="loginSubmitBtn">Se connecter</button>
@@ -313,9 +329,22 @@ button.danger:hover{background:#ffe0e0}
             <option value="TSS MBM">TSS MBM</option>
           </select>
         </div>
+        <!-- ✅ NOUVEAU : Niveau -->
+        <div class="auth-input-group">
+          <i class='bx bx-graduation'></i>
+          <select id="regNiveau" required>
+            <option value="" disabled selected>Choisir un niveau</option>
+            <option value="LICENCE 1">LICENCE 1</option>
+            <option value="LICENCE 2">LICENCE 2</option>
+            <option value="LICENCE 3">LICENCE 3</option>
+          </select>
+        </div>
         <div class="auth-input-group">
           <i class='bx bx-lock-alt'></i>
           <input type="password" id="regPassword" placeholder="Mot de passe" required minlength="6" autocomplete="new-password">
+          <button type="button" class="pwd-toggle" data-target="regPassword" title="Afficher le mot de passe">
+            <i class='bx bx-show'></i>
+          </button>
         </div>
         <button type="submit" class="auth-btn" id="registerSubmitBtn">S'inscrire</button>
         <div id="registerError" class="auth-error"></div>
@@ -387,6 +416,11 @@ button.danger:hover{background:#ffe0e0}
     <div class="panel">
       <h1>🌍 Bibliothèque Publique</h1>
       <p style="color:var(--muted);font-size:14px">Retrouvez ici tous les exercices extraits et partagés par la communauté.</p>
+      <!-- ✅ NOUVEAU : barre de suppression en masse (admin) -->
+      <div id="bulkDeleteBar" class="hide">
+        <span><b><span id="bulkCount">0</span></b> quiz sélectionné(s)</span>
+        <button class="danger" onclick="deleteSelectedQuizzes()">🗑️ Supprimer la sélection</button>
+      </div>
       <div id="libraryList"><p style="color:var(--muted)">Chargement...</p></div>
     </div>
   </div>
@@ -423,8 +457,39 @@ button.danger:hover{background:#ffe0e0}
       <form id="adminCreateForm" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label>Nom</label><input id="newLastName" required placeholder="Dupont"></div>
         <div><label>Prénom</label><input id="newFirstName" required placeholder="Jean"></div>
+        <div><label>Matricule</label><input id="newMatricule" placeholder="Optionnel" required></div>
+        <div><label>Filière</label>
+          <select id="newFiliere">
+            <option value="">--</option>
+            <option value="IDE">IDE</option>
+            <option value="SFM">SFM</option>
+            <option value="TSS IM">TSS IM</option>
+            <option value="TSS BM">TSS BM</option>
+            <option value="TSS PGP">TSS PGP</option>
+            <option value="TSS HA">TSS HA</option>
+            <option value="TSS MK">TSS MK</option>
+            <option value="TSS SM">TSS SM</option>
+            <option value="TSS MBM">TSS MBM</option>
+          </select>
+        </div>
+        <!-- ✅ NOUVEAU : Niveau dans admin -->
+        <div style="grid-column:1/-1"><label>Niveau</label>
+          <select id="newNiveau">
+            <option value="">--</option>
+            <option value="LICENCE 1">LICENCE 1</option>
+            <option value="LICENCE 2">LICENCE 2</option>
+            <option value="LICENCE 3">LICENCE 3</option>
+          </select>
+        </div>
         <div style="grid-column:1/-1"><label>Email interne (optionnel - auto-généré sinon)</label><input id="newEmail" type="email" placeholder="jean.dupont@comptest.local"></div>
-        <div style="grid-column:1/-1"><label>Mot de passe</label><input id="newPassword" type="text" required minlength="6" placeholder="6 caractères minimum"></div>
+        <div style="grid-column:1/-1"><label>Mot de passe</label>
+          <div class="auth-input-group" style="margin-bottom:0">
+            <input id="newPassword" type="password" required minlength="6" placeholder="6 caractères minimum" style="padding-left:12px">
+            <button type="button" class="pwd-toggle" data-target="newPassword" title="Afficher le mot de passe">
+              <i class='bx bx-show'></i>
+            </button>
+          </div>
+        </div>
         <button type="submit" style="grid-column:1/-1;margin-top:6px">Créer le compte</button>
       </form>
       <div id="adminStatus" style="font-size:13px;margin-top:10px;color:var(--green)"></div>
@@ -532,10 +597,28 @@ const ADMIN_EMAIL = "hermzo2013@gmail.com";
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 // ==========================================
+// ✅ NOUVEAU : Afficher/Masquer le mot de passe
+// ==========================================
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.pwd-toggle');
+  if (!btn) return;
+  e.preventDefault();
+  const targetId = btn.dataset.target;
+  const input = $(targetId);
+  if (!input) return;
+  const isPwd = input.type === 'password';
+  input.type = isPwd ? 'text' : 'password';
+  const icon = btn.querySelector('i');
+  if (icon) {
+    icon.className = isPwd ? 'bx bx-hide' : 'bx bx-show';
+  }
+  btn.title = isPwd ? 'Masquer le mot de passe' : 'Afficher le mot de passe';
+});
+
+// ==========================================
 // ✅ STOCKAGE ADAPTATIF (Capacitor Android / Web)
 // ==========================================
 async function getStorageAdapter() {
-  // Détection Capacitor + plugin Preferences
   const isCapacitor = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative;
   const prefs = window.Capacitor?.Plugins?.Preferences;
 
@@ -543,34 +626,20 @@ async function getStorageAdapter() {
     console.log('📱 Stockage : Capacitor Preferences (natif)');
     return {
       getItem: async (key) => {
-        try {
-          const { value } = await prefs.get({ key });
-          return value;
-        } catch (e) {
-          console.warn('Preferences.get échoué, fallback localStorage:', e);
-          return localStorage.getItem(key);
-        }
+        try { const { value } = await prefs.get({ key }); return value; }
+        catch (e) { console.warn('Preferences.get échoué:', e); return localStorage.getItem(key); }
       },
       setItem: async (key, value) => {
-        try {
-          await prefs.set({ key, value });
-        } catch (e) {
-          console.warn('Preferences.set échoué, fallback localStorage:', e);
-          localStorage.setItem(key, value);
-        }
+        try { await prefs.set({ key, value }); }
+        catch (e) { console.warn('Preferences.set échoué:', e); localStorage.setItem(key, value); }
       },
       removeItem: async (key) => {
-        try {
-          await prefs.remove({ key });
-        } catch (e) {
-          console.warn('Preferences.remove échoué, fallback localStorage:', e);
-          localStorage.removeItem(key);
-        }
+        try { await prefs.remove({ key }); }
+        catch (e) { console.warn('Preferences.remove échoué:', e); localStorage.removeItem(key); }
       }
     };
   }
 
-  // Fallback web
   console.log('🌐 Stockage : localStorage (web)');
   return {
     getItem: (key) => Promise.resolve(localStorage.getItem(key)),
@@ -594,16 +663,9 @@ async function getStorageAdapter() {
   try {
     const storage = await getStorageAdapter();
     supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
-      auth: {
-        storage,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false  // ⚠️ Obligatoire pour Capacitor
-      }
+      auth: { storage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false }
     });
     console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
-
-    // Lance l'init auth une fois le client prêt
     await initAuth();
   } catch (e) {
     console.error('❌ Erreur init Supabase:', e);
@@ -641,7 +703,7 @@ function buildWatermark() {
 }
 
 // ==========================================
-// 🖼️ OCR : pré-traitement image
+// 🖼️ OCR
 // ==========================================
 async function preprocessImageForOCR(file) {
   return new Promise((resolve) => {
@@ -671,7 +733,7 @@ async function preprocessImageForOCR(file) {
 }
 
 // ==========================================
-// 🔐 AUTHENTIFICATION
+// 🔐 AUTH
 // ==========================================
 async function initAuth() {
   if (!supabaseClient) { $('authGate').classList.add('show'); return; }
@@ -764,9 +826,10 @@ $('registerForm').addEventListener('submit', async (e) => {
   const firstName = $('regFirstName').value.trim();
   const matricule = $('regMatricule').value.trim();
   const filiere = $('regFiliere').value;
+  const niveau = $('regNiveau').value;
   const pwd = $('regPassword').value;
 
-  if (!lastName || !firstName || !matricule || !filiere || !pwd) {
+  if (!lastName || !firstName || !matricule || !filiere || !niveau || !pwd) {
     errEl.textContent = 'Merci de remplir tous les champs.';
     return;
   }
@@ -789,6 +852,7 @@ $('registerForm').addEventListener('submit', async (e) => {
           full_name: `${lastName} ${firstName}`,
           role: 'etudiant',
           filiere: filiere,
+          niveau: niveau,
           matricule: matricule
         }
       }
@@ -884,8 +948,12 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
   if (!supabaseClient) return;
   const lastName = $('newLastName').value.trim();
   const firstName = $('newFirstName').value.trim();
+  const matricule = $('newMatricule').value.trim();
+  const filiere = $('newFiliere').value;
+  const niveau = $('newNiveau').value;
   const emailInput = $('newEmail').value.trim();
   const pwd = $('newPassword').value;
+
   if (!lastName || !firstName) {
     $('adminStatus').textContent = "❌ Nom et prénom requis.";
     $('adminStatus').style.color = "var(--red)";
@@ -900,7 +968,7 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
   const res = await fetch(API_BASE + '/api/admin/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-    body: JSON.stringify({ firstName, lastName, email, password: pwd })
+    body: JSON.stringify({ firstName, lastName, email, password: pwd, matricule, filiere, niveau })
   });
   const data = await res.json();
   if (res.ok) {
@@ -1182,7 +1250,7 @@ $('extractTestBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
-// 📚 BIBLIOTHÈQUE
+// 📚 BIBLIOTHÈQUE (avec sélection multiple admin)
 // ==========================================
 async function loadLibrary() {
   const list = $('libraryList');
@@ -1196,7 +1264,8 @@ async function loadLibrary() {
     libraryCache = data.quizzes; 
     list.innerHTML = data.quizzes.map((q, idx) => `
       <div class="history-item">
-        <div style="flex:1;cursor:pointer" onclick="startLibraryQuizByIndex(${idx})">
+        ${isAdmin ? `<div class="lib-select"><input type="checkbox" class="quiz-select" data-id="${q.id}" onchange="updateBulkDeleteBar()"></div>` : ''}
+        <div style="flex:1;cursor:pointer;min-width:0" onclick="startLibraryQuizByIndex(${idx})">
           <div style="font-weight:700">${esc(q.title)}</div>
           <div style="font-size:12px;color:var(--muted)">
             ${esc(q.subject || 'Général')} • ${q.questions.length} question(s) • ${new Date(q.created_at).toLocaleDateString('fr-FR')}
@@ -1209,10 +1278,47 @@ async function loadLibrary() {
         </div>
       </div>
     `).join('');
+    updateBulkDeleteBar();
   } catch (e) {
     list.innerHTML = `<p style="color:var(--red)">Erreur : ${esc(e.message)}</p>`;
   }
 }
+
+// ✅ NOUVEAU : met à jour la barre de suppression en masse
+function updateBulkDeleteBar() {
+  const checked = document.querySelectorAll('.quiz-select:checked');
+  const bar = $('bulkDeleteBar');
+  if (!bar) return;
+  if (checked.length > 0) {
+    bar.classList.remove('hide');
+    $('bulkCount').textContent = checked.length;
+  } else {
+    bar.classList.add('hide');
+  }
+}
+window.updateBulkDeleteBar = updateBulkDeleteBar;
+
+// ✅ NOUVEAU : supprime les quiz sélectionnés
+async function deleteSelectedQuizzes() {
+  const checked = [...document.querySelectorAll('.quiz-select:checked')];
+  if (checked.length === 0) return;
+  if (!confirm(`Supprimer ${checked.length} quiz de la bibliothèque ?`)) return;
+  const ids = checked.map(c => c.dataset.id);
+  let okCount = 0, failCount = 0;
+  for (const id of ids) {
+    try {
+      await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE');
+      okCount++;
+    } catch (e) {
+      console.error('Erreur suppression:', id, e);
+      failCount++;
+    }
+  }
+  if (failCount === 0) alert(`✅ ${okCount} quiz supprimé(s).`);
+  else alert(`✅ ${okCount} supprimé(s), ❌ ${failCount} échec(s).`);
+  loadLibrary();
+}
+window.deleteSelectedQuizzes = deleteSelectedQuizzes;
 
 window.startLibraryQuizByIndex = (idx) => {
   const q = libraryCache[idx];
