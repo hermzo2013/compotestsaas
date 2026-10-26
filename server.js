@@ -2,7 +2,6 @@ import 'dotenv/config';
 import express from 'express';
 import OpenAI from 'openai';
 import path from 'node:path';
-import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const app = express();
@@ -15,13 +14,13 @@ app.use(express.json({ limit: '10mb' }));
 // ✅ CORS — DOIT ÊTRE AVANT LES ROUTES /api
 // ==========================================
 const ALLOWED_ORIGINS = [
-  'https://comptestsaas.onrender.com',
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'https://localhost',
-  'http://localhost',
-  'capacitor://localhost',
-  'ionic://localhost',
+  'https://comptestsaas.onrender.com',   // site web
+  'http://localhost:3000',               // dev local web
+  'http://localhost:5173',               // dev Vite
+  'https://localhost',                   // Android Capacitor 6+
+  'http://localhost',                    // Android Capacitor < 6
+  'capacitor://localhost',               // iOS Capacitor
+  'ionic://localhost',                   // Ionic iOS
 ];
 
 app.use((req, res, next) => {
@@ -31,6 +30,7 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else if (origin) {
+    // Origine inconnue : on l'autorise quand même pour ne pas bloquer l'app mobile
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else {
@@ -57,18 +57,7 @@ app.use(express.static(__dirname, { maxAge: '1d' }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
-
-// ✅ ROUTE /config.js ROBUSTE (avec vérification d'existence)
-app.get('/config.js', (_req, res) => {
-  const configPath = path.join(__dirname, 'config.js');
-  if (!fs.existsSync(configPath)) {
-    console.error('❌ config.js introuvable à :', configPath);
-    return res.status(404).send('// config.js not found');
-  }
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-  res.sendFile(configPath);
-});
+app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
 
 // ==========================================
 // AUTHENTIFICATION & ADMIN
@@ -134,9 +123,6 @@ app.get('/api/admin/users', requireAdmin, async (_req, res) => {
       created_at: u.created_at,
       banned: u.banned_until && new Date(u.banned_until) > new Date(),
       name: u.user_metadata?.full_name || u.email.split('@')[0],
-      matricule: u.user_metadata?.matricule || null,
-      filiere: u.user_metadata?.filiere || null,
-      niveau: u.user_metadata?.niveau || null,
       isAdmin: u.app_metadata?.is_admin === true || u.app_metadata?.role === 'admin'
     }));
     res.json({ users });
@@ -149,9 +135,6 @@ app.get('/api/admin/users', requireAdmin, async (_req, res) => {
 app.post('/api/admin/users', requireAdmin, async (req, res) => {
   const firstName = String(req.body?.firstName || '').trim();
   const lastName = String(req.body?.lastName || '').trim();
-  const matricule = String(req.body?.matricule || '').trim();
-  const filiere = String(req.body?.filiere || '').trim();
-  const niveau = String(req.body?.niveau || '').trim();
   let email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
 
@@ -166,17 +149,12 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
 
   try {
     const fullName = `${firstName} ${lastName}`;
-    const user_metadata = { full_name: fullName };
-    if (matricule) user_metadata.matricule = matricule;
-    if (filiere) user_metadata.filiere = filiere;
-    if (niveau) user_metadata.niveau = niveau;
-
     const user = await supabaseAdmin('users', {
       method: 'POST',
       body: JSON.stringify({
         email, password, email_confirm: true,
         app_metadata: { compotest_access: true },
-        user_metadata
+        user_metadata: { full_name: fullName }
       })
     });
     res.json({ user });
