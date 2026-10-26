@@ -123,6 +123,9 @@ app.get('/api/admin/users', requireAdmin, async (_req, res) => {
       created_at: u.created_at,
       banned: u.banned_until && new Date(u.banned_until) > new Date(),
       name: u.user_metadata?.full_name || u.email.split('@')[0],
+      matricule: u.user_metadata?.matricule || null,
+      filiere: u.user_metadata?.filiere || null,
+      niveau: u.user_metadata?.niveau || null,
       isAdmin: u.app_metadata?.is_admin === true || u.app_metadata?.role === 'admin'
     }));
     res.json({ users });
@@ -132,9 +135,13 @@ app.get('/api/admin/users', requireAdmin, async (_req, res) => {
   }
 });
 
+// ✅ NOUVELLE VERSION : accepte matricule, filiere, niveau
 app.post('/api/admin/users', requireAdmin, async (req, res) => {
   const firstName = String(req.body?.firstName || '').trim();
   const lastName = String(req.body?.lastName || '').trim();
+  const matricule = String(req.body?.matricule || '').trim();
+  const filiere = String(req.body?.filiere || '').trim();
+  const niveau = String(req.body?.niveau || '').trim();
   let email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
 
@@ -149,12 +156,17 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
 
   try {
     const fullName = `${firstName} ${lastName}`;
+    const user_metadata = { full_name: fullName };
+    if (matricule) user_metadata.matricule = matricule;
+    if (filiere) user_metadata.filiere = filiere;
+    if (niveau) user_metadata.niveau = niveau;
+
     const user = await supabaseAdmin('users', {
       method: 'POST',
       body: JSON.stringify({
         email, password, email_confirm: true,
         app_metadata: { compotest_access: true },
-        user_metadata: { full_name: fullName }
+        user_metadata
       })
     });
     res.json({ user });
@@ -211,7 +223,7 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION
+// EXTRACTION (logique conservée)
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
