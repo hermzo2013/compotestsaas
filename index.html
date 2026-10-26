@@ -568,6 +568,16 @@ button.danger:hover{background:#ffe0e0}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://comptestsaas.onrender.com/config.js"></script>
+<script>
+  // ✅ Fallback si config.js n'est pas disponible (404 sur Render)
+  if (!window.COMPOSTEST_CONFIG || !window.COMPOSTEST_CONFIG.SUPABASE_URL) {
+    console.warn('⚠️ config.js introuvable, utilisation du fallback local');
+    window.COMPOSTEST_CONFIG = {
+      SUPABASE_URL: 'https://drumtggirtmubdvkpvwl.supabase.co',
+      SUPABASE_ANON_KEY: 'sb_publishable_u86DlAD9qU-Byb9tR59gMA_IlGAbcxu'
+    };
+  }
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -590,7 +600,6 @@ let isAdmin = false;
 let libraryCache = []; 
 let editingQuizId = null;
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
-let supabaseReady = false;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -623,15 +632,15 @@ async function getStorageAdapter() {
     return {
       getItem: async (key) => {
         try { const { value } = await prefs.get({ key }); return value; }
-        catch (e) { return localStorage.getItem(key); }
+        catch (e) { console.warn('Preferences.get échoué:', e); return localStorage.getItem(key); }
       },
       setItem: async (key, value) => {
         try { await prefs.set({ key, value }); }
-        catch (e) { localStorage.setItem(key, value); }
+        catch (e) { console.warn('Preferences.set échoué:', e); localStorage.setItem(key, value); }
       },
       removeItem: async (key) => {
         try { await prefs.remove({ key }); }
-        catch (e) { localStorage.removeItem(key); }
+        catch (e) { console.warn('Preferences.remove échoué:', e); localStorage.removeItem(key); }
       }
     };
   }
@@ -645,7 +654,7 @@ async function getStorageAdapter() {
 }
 
 // ==========================================
-// 🔌 INIT SUPABASE — Corrigé : appel après DOM ready
+// 🔌 INIT SUPABASE — appelé après DOM ready
 // ==========================================
 async function initSupabase() {
   const cfg = window.COMPOSTEST_CONFIG || {};
@@ -666,7 +675,6 @@ async function initSupabase() {
     supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
       auth: { storage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false }
     });
-    supabaseReady = true;
     console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
     await initAuth();
   } catch (e) {
@@ -675,7 +683,6 @@ async function initSupabase() {
   }
 }
 
-// Lance l'init une fois le DOM prêt
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initSupabase);
 } else {
@@ -793,9 +800,6 @@ function handleSession(session) {
   }
 }
 
-// ==========================================
-// 🔐 FORMULAIRES
-// ==========================================
 $('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const errEl = $('loginError');
