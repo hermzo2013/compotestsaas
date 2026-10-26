@@ -22,7 +22,7 @@ app.use((req, res, next) => {
 // ✅ CORS (Corrigé avec la BONNE URL)
 // ==========================================
 const ALLOWED_ORIGINS = [
-  'https://compotestsaas.onrender.com', // ✅ LA BONNE URL
+  'https://compotestsaas.onrender.com',
   'http://localhost:3000',              
   'http://localhost:5173'               
 ];
@@ -34,7 +34,6 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else if (origin) {
-    // On laisse passer pour le debug, mais on log l'erreur
     console.log(`⚠️ Origine inconnue tentant d'accéder : ${origin}`);
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
@@ -169,7 +168,7 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
         app_metadata: { compotest_access: true }, 
         user_metadata: { 
           full_name: `${firstName} ${lastName}`,
-          niveau: niveau // NOUVEAU : on sauvegarde le niveau dans les métadonnées
+          niveau: niveau // NOUVEAU
         } 
       })
     });
@@ -308,6 +307,7 @@ app.post('/api/parse-existing-quiz', (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// NOUVEAU : Logique IA améliorée (détection cours vs questionnaire)
 app.post('/api/generate-post-test', async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
@@ -316,7 +316,36 @@ app.post('/api/generate-post-test', async (req, res) => {
     const response = await client.chat.completions.create({
       model: modelName(), temperature: 0.4, max_tokens: 8000, response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: `Tu es un générateur de quiz pédagogiques en FRANÇAIS. À partir du texte fourni, génère ${count} questions.\n\nTu DOIS répartir les questions entre CES 4 TYPES :\n1. "mcq" : question à choix unique. "correct" est un ENTIER.\n2. "mcq_multi" : QCM avec PLUSIEURS bonnes réponses. "correct" est un TABLEAU d'entiers.\n3. "tf" : Vrai/Faux. "options" = ["Vrai", "Faux"]. "correct" = 0 ou 1.\n4. "short" : réponse courte (1 à 3 mots). Pas d'"options". "correct" est une CHAÎNE.\n\nRépartition : ~50% mcq, ~20% mcq_multi, ~20% tf, ~10% short.\nFournis TOUJOURS une "explanation" courte.\nRéponds UNIQUEMENT en JSON valide :\n{"questions":[{"type":"mcq","text":"...","options":["A","B","C","D"],"correct":0,"explanation":"..."}]}` },
+        { 
+          role: 'system', 
+          content: `Tu es un expert en création de quiz pédagogiques en FRANÇAIS.
+
+Ta mission est d'analyser le texte fourni par l'utilisateur et de déterminer s'il s'agit :
+1. D'UN QUESTIONNAIRE DÉJÀ EXISTANT (il contient des questions numérotées, des choix multiples, des Vrai/Faux, etc.)
+2. D'UN COURS RÉDIGÉ (du texte explicatif sans questions explicites)
+
+RÈGLES STRICTES :
+
+**CAS 1 : Si le texte contient DÉJÀ des questions (ex: "1. Quelle est...", "Q1 :", "Vrai ou Faux", "a) ... b) ...")**
+- Tu DOIS extraire et conserver TOUTES les questions existantes.
+- Conserve leurs options (A, B, C, D...) et, si le texte mentionne les réponses (soulignées, en gras, avec "Réponse:", etc.), conserve-les.
+- Si les réponses ne sont pas mentionnées, mets "correct": 0 par défaut (l'admin pourra les corriger).
+- Tu peux ajouter quelques questions supplémentaires de compréhension UNIQUEMENT si le texte contient aussi des passages de cours explicatifs.
+- Les questions d'origine doivent être présentes à 100%.
+
+**CAS 2 : Si le texte est un COURS RÉDIGÉ (sans questions)**
+- Génère ${count} nouvelles questions en respectant cette répartition :
+  * ~50% "mcq" (choix unique, "correct" = ENTIER)
+  * ~20% "mcq_multi" (plusieurs bonnes réponses, "correct" = TABLEAU d'entiers)
+  * ~20% "tf" (Vrai/Faux, "options" = ["Vrai", "Faux"], "correct" = 0 ou 1)
+  * ~10% "short" (réponse courte, "correct" = CHAÎNE, pas d'options)
+- Fournis TOUJOURS une "explanation" courte.
+
+**FORMAT DE SORTIE OBLIGATOIRE (JSON valide) :**
+{"questions":[{"type":"mcq","text":"...","options":["A","B","C","D"],"correct":0,"explanation":"..."}]}
+
+Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` 
+        },
         { role: 'user', content: String(text || '').slice(0, 15000) }
       ]
     });
@@ -331,7 +360,10 @@ app.post('/api/generate-post-test', async (req, res) => {
       });
     }
     res.json(parsed);
-  } catch (e) { console.error('Erreur API IA :', e.message); res.status(502).json({ error: e.message }); }
+  } catch (e) { 
+    console.error('Erreur API IA :', e.message); 
+    res.status(502).json({ error: e.message }); 
+  }
 });
 
 app.post('/api/quizzes', async (req, res) => {
