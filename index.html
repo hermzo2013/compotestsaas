@@ -126,7 +126,7 @@ button.danger:hover{background:#ffe0e0}
 .auth-input-group select:focus{border-color:var(--lav-1);background-color:#fff;outline:2px solid rgba(125,144,224,0.2)}
 .auth-input-group input::placeholder{color:#9aa3b8}
 
-/* ✅ NOUVEAU : icône œil pour afficher/masquer le mot de passe */
+/* Icône œil pour afficher/masquer le mot de passe */
 .pwd-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:0;cursor:pointer;padding:6px;border-radius:6px;color:var(--muted);font-size:18px;display:flex;align-items:center;justify-content:center;transition:.2s}
 .pwd-toggle:hover{background:rgba(107,124,219,.1);color:var(--navy)}
 .auth-input-group input[type="password"],
@@ -221,7 +221,7 @@ button.danger:hover{background:#ffe0e0}
 .checkbox-group input{width:20px;height:20px;cursor:pointer;margin:0;accent-color:#5D6EC7}
 .checkbox-group label{margin:0;cursor:pointer;font-size:14px;color:var(--ink)}
 
-/* ✅ NOUVEAU : sélection multiple dans la bibliothèque */
+/* Sélection multiple bibliothèque */
 .lib-select{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
 .lib-select input[type="checkbox"]{width:20px;height:20px;cursor:pointer;margin:0;accent-color:#e11d48;flex-shrink:0}
 #bulkDeleteBar{margin-bottom:15px;padding:12px 16px;background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -329,7 +329,6 @@ button.danger:hover{background:#ffe0e0}
             <option value="TSS MBM">TSS MBM</option>
           </select>
         </div>
-        <!-- ✅ NOUVEAU : Niveau -->
         <div class="auth-input-group">
           <i class='bx bx-graduation'></i>
           <select id="regNiveau" required>
@@ -416,7 +415,6 @@ button.danger:hover{background:#ffe0e0}
     <div class="panel">
       <h1>🌍 Bibliothèque Publique</h1>
       <p style="color:var(--muted);font-size:14px">Retrouvez ici tous les exercices extraits et partagés par la communauté.</p>
-      <!-- ✅ NOUVEAU : barre de suppression en masse (admin) -->
       <div id="bulkDeleteBar" class="hide">
         <span><b><span id="bulkCount">0</span></b> quiz sélectionné(s)</span>
         <button class="danger" onclick="deleteSelectedQuizzes()">🗑️ Supprimer la sélection</button>
@@ -457,7 +455,7 @@ button.danger:hover{background:#ffe0e0}
       <form id="adminCreateForm" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label>Nom</label><input id="newLastName" required placeholder="Dupont"></div>
         <div><label>Prénom</label><input id="newFirstName" required placeholder="Jean"></div>
-        <div><label>Matricule</label><input id="newMatricule" placeholder="Optionnel" required></div>
+        <div><label>Matricule</label><input id="newMatricule" placeholder="Optionnel"></div>
         <div><label>Filière</label>
           <select id="newFiliere">
             <option value="">--</option>
@@ -472,7 +470,6 @@ button.danger:hover{background:#ffe0e0}
             <option value="TSS MBM">TSS MBM</option>
           </select>
         </div>
-        <!-- ✅ NOUVEAU : Niveau dans admin -->
         <div style="grid-column:1/-1"><label>Niveau</label>
           <select id="newNiveau">
             <option value="">--</option>
@@ -593,6 +590,7 @@ let isAdmin = false;
 let libraryCache = []; 
 let editingQuizId = null;
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
+let supabaseReady = false;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -609,14 +607,12 @@ document.addEventListener('click', (e) => {
   const isPwd = input.type === 'password';
   input.type = isPwd ? 'text' : 'password';
   const icon = btn.querySelector('i');
-  if (icon) {
-    icon.className = isPwd ? 'bx bx-hide' : 'bx bx-show';
-  }
+  if (icon) icon.className = isPwd ? 'bx bx-hide' : 'bx bx-show';
   btn.title = isPwd ? 'Masquer le mot de passe' : 'Afficher le mot de passe';
 });
 
 // ==========================================
-// ✅ STOCKAGE ADAPTATIF (Capacitor Android / Web)
+// ✅ STOCKAGE ADAPTATIF
 // ==========================================
 async function getStorageAdapter() {
   const isCapacitor = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative;
@@ -627,15 +623,15 @@ async function getStorageAdapter() {
     return {
       getItem: async (key) => {
         try { const { value } = await prefs.get({ key }); return value; }
-        catch (e) { console.warn('Preferences.get échoué:', e); return localStorage.getItem(key); }
+        catch (e) { return localStorage.getItem(key); }
       },
       setItem: async (key, value) => {
         try { await prefs.set({ key, value }); }
-        catch (e) { console.warn('Preferences.set échoué:', e); localStorage.setItem(key, value); }
+        catch (e) { localStorage.setItem(key, value); }
       },
       removeItem: async (key) => {
         try { await prefs.remove({ key }); }
-        catch (e) { console.warn('Preferences.remove échoué:', e); localStorage.removeItem(key); }
+        catch (e) { localStorage.removeItem(key); }
       }
     };
   }
@@ -649,13 +645,18 @@ async function getStorageAdapter() {
 }
 
 // ==========================================
-// 🔌 INIT SUPABASE (async)
+// 🔌 INIT SUPABASE — Corrigé : appel après DOM ready
 // ==========================================
-(async () => {
+async function initSupabase() {
   const cfg = window.COMPOSTEST_CONFIG || {};
 
-  if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
-    console.error('❌ Supabase NON initialisé. Config manquante :', cfg);
+  if (!window.supabase) {
+    console.error('❌ La librairie @supabase/supabase-js n\'est pas chargée.');
+    $('authGate').classList.add('show');
+    return;
+  }
+  if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
+    console.error('❌ Config Supabase manquante. Vérifie config.js :', cfg);
     $('authGate').classList.add('show');
     return;
   }
@@ -665,13 +666,21 @@ async function getStorageAdapter() {
     supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
       auth: { storage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false }
     });
+    supabaseReady = true;
     console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
     await initAuth();
   } catch (e) {
     console.error('❌ Erreur init Supabase:', e);
     $('authGate').classList.add('show');
   }
-})();
+}
+
+// Lance l'init une fois le DOM prêt
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSupabase);
+} else {
+  initSupabase();
+}
 
 // ==========================================
 // 🎨 ANIMATION AUTH
@@ -685,7 +694,7 @@ function toggleAuthForm() {
 window.toggleAuthForm = toggleAuthForm;
 
 // ==========================================
-// 🖋️ FILIGRANE ANTI-VOL
+// 🖋️ FILIGRANE
 // ==========================================
 function buildWatermark() {
   const name = (currentUser?.user_metadata?.full_name || currentUser?.email || 'CompoTest').toString();
@@ -784,11 +793,20 @@ function handleSession(session) {
   }
 }
 
+// ==========================================
+// 🔐 FORMULAIRES
+// ==========================================
 $('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!supabaseClient) return;
   const errEl = $('loginError');
   errEl.textContent = '';
+
+  if (!supabaseClient) {
+    errEl.textContent = 'Supabase non initialisé. Vérifie config.js et recharge la page.';
+    console.error('❌ supabaseClient est null');
+    return;
+  }
+
   const raw = $('loginEmail').value.trim();
   const pwd = $('loginPassword').value;
   if (!raw || !pwd) { errEl.textContent = 'Renseigne ton matricule/email et ton mot de passe.'; return; }
@@ -801,6 +819,7 @@ $('loginForm').addEventListener('submit', async (e) => {
   try {
     const { error } = await supabaseClient.auth.signInWithPassword({ email: emailToUse, password: pwd });
     if (error) {
+      console.error('Erreur login:', error);
       if (/invalid login/i.test(error.message) || /invalid credentials/i.test(error.message)) {
         errEl.textContent = 'Matricule/Email ou mot de passe incorrect.';
       } else {
@@ -808,6 +827,7 @@ $('loginForm').addEventListener('submit', async (e) => {
       }
     }
   } catch (err) {
+    console.error('Exception login:', err);
     errEl.textContent = 'Erreur réseau : ' + err.message;
   } finally {
     btn.disabled = false;
@@ -817,10 +837,15 @@ $('loginForm').addEventListener('submit', async (e) => {
 
 $('registerForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!supabaseClient) return;
   const errEl = $('registerError');
   errEl.textContent = '';
   errEl.style.color = 'var(--red)';
+
+  if (!supabaseClient) {
+    errEl.textContent = 'Supabase non initialisé. Vérifie config.js et recharge la page.';
+    console.error('❌ supabaseClient est null');
+    return;
+  }
 
   const lastName = $('regLastName').value.trim();
   const firstName = $('regFirstName').value.trim();
@@ -858,6 +883,7 @@ $('registerForm').addEventListener('submit', async (e) => {
       }
     });
     if (error) {
+      console.error('Erreur inscription:', error);
       const msg = (error.message || '').toLowerCase();
       if (msg.includes('matricule') || msg.includes('not authorized') || msg.includes('whitelist') || msg.includes('non autorisé')) {
         errEl.textContent = 'Ce matricule n\'est pas autorisé à s\'inscrire. Contacte l\'administration.';
@@ -872,6 +898,7 @@ $('registerForm').addEventListener('submit', async (e) => {
       $('registerForm').reset();
     }
   } catch (err) {
+    console.error('Exception inscription:', err);
     errEl.textContent = 'Erreur réseau : ' + err.message;
   } finally {
     btn.disabled = false;
@@ -1250,7 +1277,7 @@ $('extractTestBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
-// 📚 BIBLIOTHÈQUE (avec sélection multiple admin)
+// 📚 BIBLIOTHÈQUE
 // ==========================================
 async function loadLibrary() {
   const list = $('libraryList');
@@ -1284,7 +1311,6 @@ async function loadLibrary() {
   }
 }
 
-// ✅ NOUVEAU : met à jour la barre de suppression en masse
 function updateBulkDeleteBar() {
   const checked = document.querySelectorAll('.quiz-select:checked');
   const bar = $('bulkDeleteBar');
@@ -1298,7 +1324,6 @@ function updateBulkDeleteBar() {
 }
 window.updateBulkDeleteBar = updateBulkDeleteBar;
 
-// ✅ NOUVEAU : supprime les quiz sélectionnés
 async function deleteSelectedQuizzes() {
   const checked = [...document.querySelectorAll('.quiz-select:checked')];
   if (checked.length === 0) return;
