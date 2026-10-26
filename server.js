@@ -30,7 +30,6 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else if (origin) {
-    // Origine inconnue : on l'autorise quand même pour ne pas bloquer l'app mobile
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else {
@@ -514,4 +513,7 @@ app.delete('/api/quizzes/:id', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.listen(port, '0.0.0.0', () => console.log(`Serveur sur port ${port}`));
+app.listen(port, '0.0.0.0', () => {
+  console.log(`✅ Serveur démarré sur le port ${port}`);
+  console.log(`🌐 Environnement: ${process.env.NODE_ENV || 'development'}`);
+});
