@@ -11,7 +11,7 @@ app.disable('x-powered-by');
 app.use(express.json({ limit: '10mb' }));
 
 // ==========================================
-// 🔍 LOG DE TOUTES LES REQUÊTES (POUR DEBUG)
+// 🔍 LOG DE TOUTES LES REQUÊTES
 // ==========================================
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} | Origin: ${req.headers.origin || 'no origin'}`);
@@ -19,20 +19,30 @@ app.use((req, res, next) => {
 });
 
 // ==========================================
-// ✅ CORS — ON AUTORISE TOUT POUR CAPACITOR
+// ✅ CORS (Web uniquement, plus de Capacitor)
 // ==========================================
+const ALLOWED_ORIGINS = [
+  'https://comptestsaas.onrender.com', // Ton site
+  'http://localhost:3000',             // Dev local
+  'http://localhost:5173'              // Dev local
+];
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
-  // Si une origine est présente, on la renvoie telle quelle.
-  // Sinon (ex: requêtes natives Capacitor sans origine), on met '*'.
-  if (origin) {
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+  } else if (origin) {
+    // Si une origine inconnue arrive, on la laisse passer pour le debug
+    // (mais on ne devrait plus avoir ça normalement)
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else {
+    // Requête sans origine (ex: appel direct)
     res.header('Access-Control-Allow-Origin', '*');
   }
-  
+
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey, x-client-info, X-Requested-With');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -103,7 +113,7 @@ app.get('/api/quizzes', async (req, res) => {
 app.use('/api', authenticate);
 
 // ==========================================
-// ROUTES ADMIN (INCHANGÉES)
+// ROUTES ADMIN
 // ==========================================
 async function supabaseAdmin(pathname, options = {}) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY manquante.");
@@ -167,7 +177,10 @@ app.patch('/api/admin/users/:id/password', requireAdmin, async (req, res) => {
 
 app.patch('/api/admin/users/:id/status', requireAdmin, async (req, res) => {
   try {
-    await supabaseAdmin(`users/${req.params.id}`, { method: 'PUT', body: JSON.stringify({ ban_duration: req.body.banned ? '876000h' : 'none' }) });
+    await supabaseAdmin(`users/${req.params.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ ban_duration: req.body.banned ? '876000h' : 'none' })
+    });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -199,7 +212,7 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION
+// EXTRACTION (parseQuizText complet)
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
