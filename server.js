@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import OpenAI from 'openai';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const app = express();
@@ -14,13 +15,13 @@ app.use(express.json({ limit: '10mb' }));
 // ✅ CORS — DOIT ÊTRE AVANT LES ROUTES /api
 // ==========================================
 const ALLOWED_ORIGINS = [
-  'https://comptestsaas.onrender.com',   // site web
-  'http://localhost:3000',               // dev local web
-  'http://localhost:5173',               // dev Vite
-  'https://localhost',                   // Android Capacitor 6+
-  'http://localhost',                    // Android Capacitor < 6
-  'capacitor://localhost',               // iOS Capacitor
-  'ionic://localhost',                   // Ionic iOS
+  'https://comptestsaas.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://localhost',
+  'http://localhost',
+  'capacitor://localhost',
+  'ionic://localhost',
 ];
 
 app.use((req, res, next) => {
@@ -30,7 +31,6 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else if (origin) {
-    // Origine inconnue : on l'autorise quand même pour ne pas bloquer l'app mobile
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else {
@@ -57,7 +57,18 @@ app.use(express.static(__dirname, { maxAge: '1d' }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
-app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
+
+// ✅ ROUTE /config.js ROBUSTE (avec vérification d'existence)
+app.get('/config.js', (_req, res) => {
+  const configPath = path.join(__dirname, 'config.js');
+  if (!fs.existsSync(configPath)) {
+    console.error('❌ config.js introuvable à :', configPath);
+    return res.status(404).send('// config.js not found');
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.sendFile(configPath);
+});
 
 // ==========================================
 // AUTHENTIFICATION & ADMIN
@@ -135,7 +146,6 @@ app.get('/api/admin/users', requireAdmin, async (_req, res) => {
   }
 });
 
-// ✅ NOUVELLE VERSION : accepte matricule, filiere, niveau
 app.post('/api/admin/users', requireAdmin, async (req, res) => {
   const firstName = String(req.body?.firstName || '').trim();
   const lastName = String(req.body?.lastName || '').trim();
@@ -223,7 +233,7 @@ function aiClient() {
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
 // ==========================================
-// EXTRACTION (logique conservée)
+// EXTRACTION
 // ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
