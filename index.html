@@ -83,14 +83,43 @@ button.danger:hover{background:#ffe0e0}
 .btn-icon{background:transparent;border:0;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.2s}
 .btn-icon:hover{background:#fee2e2}
 
-/* NOUVEAU : Filtres de niveau */
+/* NOUVEAU : Barres de recherche */
+.search-bar{
+  position:relative;
+  margin-bottom:15px;
+}
+.search-bar input{
+  width:100%;
+  padding:12px 16px 12px 42px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  font-size:14px;
+  background:#f8faff;
+  transition:border-color .2s, background .2s;
+}
+.search-bar input:focus{
+  border-color:var(--lav-1);
+  background:#fff;
+  outline:2px solid rgba(125,144,224,0.2);
+}
+.search-bar .search-icon{
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:18px;
+  color:var(--muted);
+  pointer-events:none;
+}
+
+/* Filtres de niveau */
 .level-filters{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap}
 .level-filter{padding:8px 16px;border-radius:20px;background:#f0f3f8;color:var(--muted);border:1px solid var(--line);font-weight:700;font-size:13px;cursor:pointer;transition:.2s}
 .level-filter:hover{background:#e5e9f2}
 .level-filter.active{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
 .level-badge{display:inline-block;background:#E0E4F7;color:#4B5EAA;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:8px;text-transform:uppercase}
 
-/* NOUVEAU : Sections Cours */
+/* Sections Cours */
 .course-section{margin-bottom:25px}
 .course-section h2{font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line);color:var(--navy)}
 .course-item{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:#f8faff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
@@ -486,6 +515,12 @@ button.danger:hover{background:#ffe0e0}
       <h1>🌍 Bibliothèque Publique</h1>
       <p style="color:var(--muted);font-size:14px">Retrouvez ici tous les exercices extraits et partagés par la communauté.</p>
       
+      <!-- NOUVEAU : Barre de recherche bibliothèque -->
+      <div class="search-bar">
+        <i class='bx bx-search search-icon'></i>
+        <input type="text" id="quizSearch" placeholder="🔍 Rechercher un quiz par titre ou niveau (ex: santé L1)...">
+      </div>
+      
       <div class="level-filters" id="libraryFilters">
         <button class="level-filter active" data-level="all" onclick="filterLibrary('all')">Tous</button>
         <button class="level-filter" data-level="LICENCE 1" onclick="filterLibrary('LICENCE 1')">LICENCE 1</button>
@@ -504,6 +539,12 @@ button.danger:hover{background:#ffe0e0}
     <div class="panel">
       <h1>📖 Cours</h1>
       <p style="color:var(--muted);font-size:14px">Retrouvez les cours PDF classés par niveau.</p>
+      
+      <!-- NOUVEAU : Barre de recherche cours -->
+      <div class="search-bar">
+        <i class='bx bx-search search-icon'></i>
+        <input type="text" id="courseSearch" placeholder="🔍 Rechercher un cours par titre ou niveau (ex: cardio L2)...">
+      </div>
       
       <div id="adminCourseForm" class="hide" style="background:#f8faff;border-radius:12px;padding:16px;margin-bottom:20px;border:1px solid var(--line)">
         <h3 style="margin-top:0;font-size:16px">➕ Ajouter un cours (Admin)</h3>
@@ -690,6 +731,7 @@ button.danger:hover{background:#ffe0e0}
 <script src="https://compotestsaas.onrender.com/config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 'use strict';
@@ -705,6 +747,7 @@ let currentUser = null;
 let historyData = JSON.parse(localStorage.getItem('comptest_history') || '[]');
 let isAdmin = false;
 let libraryCache = []; 
+let coursesCache = [];
 let editingQuizId = null;
 let selectedQuizIds = new Set();
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
@@ -714,10 +757,74 @@ let unreadRepliesCount = 0;
 let unreadCheckInterval = null;
 let selectedAttachment = null;
 
-// NOUVEAU : Filtre actif de la bibliothèque
 let currentLibraryFilter = 'all';
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+// NOUVEAU : Fonction pour normaliser le texte (insensible aux accents et à la casse)
+function normalizeText(str) {
+  return String(str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// NOUVEAU : Analyseur de requête de recherche
+function parseSearchQuery(query) {
+  const raw = String(query || '').trim();
+  if (!raw) return { keyword: '', level: '' };
+  
+  const normalized = normalizeText(raw);
+  
+  // Détecter le niveau (L1, L2, L3, licence 1, licence 2, licence 3)
+  let level = '';
+  const levelPatterns = [
+    { regex: /\b(l\s*1|licence\s*1|lic\s*1)\b/i, level: 'LICENCE 1' },
+    { regex: /\b(l\s*2|licence\s*2|lic\s*2)\b/i, level: 'LICENCE 2' },
+    { regex: /\b(l\s*3|licence\s*3|lic\s*3)\b/i, level: 'LICENCE 3' }
+  ];
+  
+  for (const p of levelPatterns) {
+    if (p.regex.test(normalized)) {
+      level = p.level;
+      break;
+    }
+  }
+  
+  // Extraire le mot-clé en retirant le niveau détecté
+  let keyword = normalized;
+  if (level) {
+    keyword = keyword
+      .replace(/\b(l\s*1|licence\s*1|lic\s*1)\b/i, '')
+      .replace(/\b(l\s*2|licence\s*2|lic\s*2)\b/i, '')
+      .replace(/\b(l\s*3|licence\s*3|lic\s*3)\b/i, '')
+      .trim();
+  }
+  
+  return { keyword: keyword, level: level };
+}
+
+// NOUVEAU : Vérifier si un élément correspond à la recherche
+function matchesSearch(item, searchQuery, titleField = 'title') {
+  const { keyword, level } = parseSearchQuery(searchQuery);
+  
+  // Filtre par niveau
+  if (level) {
+    const itemLevel = (item.level || '').toUpperCase();
+    if (itemLevel !== level) return false;
+  }
+  
+  // Filtre par mot-clé
+  if (keyword) {
+    const itemTitle = normalizeText(item[titleField] || '');
+    if (!itemTitle.includes(keyword)) return false;
+  }
+  
+  return true;
+}
 
 function togglePasswordVisibility(inputId, btn) {
   const input = $(inputId);
@@ -853,7 +960,6 @@ function handleSession(session) {
     $('adminBtn').style.display = isAdmin ? 'block' : 'none';
     $('clearHistoryBtn').style.display = isAdmin ? 'block' : 'none';
     
-    // NOUVEAU : Afficher le formulaire d'ajout de cours pour l'admin
     if (isAdmin) {
       $('adminCourseForm').classList.remove('hide');
     } else {
@@ -994,7 +1100,7 @@ $('pwdBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
-// 📖 COURS (NOUVEAU)
+// 📖 COURS (avec recherche)
 // ==========================================
 async function loadCourses() {
   if (!supabaseClient) return;
@@ -1012,32 +1118,67 @@ async function loadCourses() {
       return;
     }
 
-    const levels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
-    
-    list.innerHTML = levels.map(level => {
-      const levelCourses = (data || []).filter(c => c.level === level);
-      return `
-        <div class="course-section">
-          <h2>${level}</h2>
-          ${levelCourses.length === 0 
-            ? '<p style="color:var(--muted);font-size:13px;">Aucun cours disponible.</p>' 
-            : levelCourses.map(c => `
-              <div class="course-item">
-                <div class="course-item-title">📄 ${esc(c.title)}</div>
-                <a href="${esc(c.file_url)}" target="_blank" rel="noopener">
-                  <i class='bx bx-download'></i> Télécharger
-                </a>
-              </div>
-            `).join('')
-          }
-        </div>
-      `;
-    }).join('');
+    coursesCache = data || [];
+    renderCourses();
   } catch (e) {
     list.innerHTML = `<p style="color:var(--red)">Erreur réseau : ${esc(e.message)}</p>`;
   }
 }
 window.loadCourses = loadCourses;
+
+// NOUVEAU : Rendu des cours avec recherche
+function renderCourses() {
+  const list = $('coursesList');
+  const searchQuery = $('courseSearch') ? $('courseSearch').value : '';
+  
+  if (!coursesCache || coursesCache.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted)">Aucun cours disponible pour le moment.</p>';
+    return;
+  }
+  
+  // Filtrer les cours
+  const filtered = coursesCache.filter(c => matchesSearch(c, searchQuery, 'title'));
+  
+  if (filtered.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted)">Aucun cours ne correspond à votre recherche.</p>';
+    return;
+  }
+  
+  const levels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
+  
+  list.innerHTML = levels.map(level => {
+    const levelCourses = filtered.filter(c => c.level === level);
+    if (levelCourses.length === 0) return '';
+    
+    return `
+      <div class="course-section">
+        <h2>${level}</h2>
+        ${levelCourses.map(c => `
+          <div class="course-item">
+            <div class="course-item-title">📄 ${esc(c.title)}</div>
+            <a href="${esc(c.file_url)}" target="_blank" rel="noopener">
+              <i class='bx bx-download'></i> Télécharger
+            </a>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }).join('');
+}
+window.renderCourses = renderCourses;
+
+// NOUVEAU : Écouteur sur la barre de recherche des cours
+document.addEventListener('DOMContentLoaded', () => {
+  const courseSearchInput = $('courseSearch');
+  if (courseSearchInput) {
+    courseSearchInput.addEventListener('input', renderCourses);
+  }
+  
+  const quizSearchInput = $('quizSearch');
+  if (quizSearchInput) {
+    quizSearchInput.addEventListener('input', renderLibraryList);
+  }
+});
 
 async function addCourse() {
   if (!isAdmin || !supabaseClient) return;
@@ -1064,7 +1205,6 @@ async function addCourse() {
   status.style.color = "var(--muted)";
   
   try {
-    // Upload dans Supabase Storage
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.pdf`;
     const filePath = `${level}/${fileName}`;
     
@@ -1078,7 +1218,6 @@ async function addCourse() {
       .from('courses_files')
       .getPublicUrl(filePath);
     
-    // Insérer dans la table courses
     const { error: dbError } = await supabaseClient
       .from('courses')
       .insert({
@@ -1092,7 +1231,6 @@ async function addCourse() {
     status.textContent = "✅ Cours ajouté avec succès !";
     status.style.color = "var(--green)";
     
-    // Reset
     $('courseTitle').value = '';
     $('courseLevel').value = '';
     $('courseFile').value = '';
@@ -1106,7 +1244,7 @@ async function addCourse() {
 window.addCourse = addCourse;
 
 // ==========================================
-// 📚 BIBLIOTHÈQUE (avec filtre niveau)
+// 📚 BIBLIOTHÈQUE (avec recherche + filtre)
 // ==========================================
 function filterLibrary(level) {
   currentLibraryFilter = level;
@@ -1117,6 +1255,7 @@ function filterLibrary(level) {
 }
 window.filterLibrary = filterLibrary;
 
+// NOUVEAU : Rendu de la bibliothèque avec recherche + filtre
 function renderLibraryList() {
   const list = $('libraryList');
   if (!libraryCache || libraryCache.length === 0) {
@@ -1124,12 +1263,27 @@ function renderLibraryList() {
     return;
   }
   
-  const filtered = currentLibraryFilter === 'all' 
-    ? libraryCache 
-    : libraryCache.filter(q => q.level === currentLibraryFilter);
+  const searchQuery = $('quizSearch') ? $('quizSearch').value : '';
+  const { keyword, level } = parseSearchQuery(searchQuery);
+  
+  // Combiner filtre niveau (boutons) et recherche
+  let filtered = libraryCache;
+  
+  // Filtre par bouton niveau
+  if (currentLibraryFilter !== 'all') {
+    filtered = filtered.filter(q => q.level === currentLibraryFilter);
+  }
+  
+  // Filtre par recherche (niveau + mot-clé)
+  if (level) {
+    filtered = filtered.filter(q => q.level === level);
+  }
+  if (keyword) {
+    filtered = filtered.filter(q => normalizeText(q.title).includes(keyword));
+  }
   
   if (filtered.length === 0) {
-    list.innerHTML = `<p style="color:var(--muted)">Aucun exercice pour le niveau ${currentLibraryFilter}.</p>`;
+    list.innerHTML = '<p style="color:var(--muted)">Aucun exercice ne correspond à votre recherche.</p>';
     return;
   }
   
@@ -1154,6 +1308,7 @@ function renderLibraryList() {
     `;
   }).join('');
 }
+window.renderLibraryList = renderLibraryList;
 
 async function loadLibrary() {
   const list = $('libraryList');
@@ -1808,11 +1963,15 @@ $('pdfFile').addEventListener('change', async function() {
         }
         text = pages.join('\n');
       } else if (name.endsWith('.docx')) {
-        status.textContent = 'Extraction du DOCX...';
-        const zip = await JSZip.loadAsync(await file.arrayBuffer());
-        const docXml = zip.file('word/document.xml');
-        const xml = await docXml.async('string');
-        text = xml.replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, ' ').replace(/[ \t]+/g, ' ');
+        status.textContent = 'Extraction du DOCX (rapide)...';
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer });
+          text = result.value;
+        } catch (e) {
+          console.error('Erreur mammoth:', e);
+          throw new Error("Impossible de lire le DOCX : " + e.message);
+        }
       } else {
         status.textContent = 'Lecture du texte...';
         text = await file.text();
@@ -1848,7 +2007,6 @@ async function fetchWithAuth(url, body, method = 'POST') {
 }
 
 async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
-  // NOUVEAU : Récupérer le niveau
   const level = $('quizLevel').value;
   if (!level) {
     alert("Veuillez sélectionner un niveau avant de générer ou extraire.");
