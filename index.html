@@ -11,13 +11,13 @@
    PALETTE : Révisio (Vert Santé)
    ========================================== */
 :root{
-  --blue:#10B981; /* Vert principal */
-  --navy:#065F46; /* Vert foncé */
+  --blue:#10B981;
+  --navy:#065F46;
   --blue-btn:#10B981;
   --blue-btn-hover:#059669;
   --active-bg:#D1FAE5;
   --active-text:#065F46;
-  --bg:#F2F9F5; /* Vert menthe très pâle */
+  --bg:#F2F9F5;
   --ink:#1F2937;
   --muted:#6B7280;
   --line:#E5E7EB;
@@ -36,7 +36,6 @@ body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:
 
 header{background:linear-gradient(120deg,#065F46,#10B981);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800}
-/* NOUVEAU : Logo agrandi */
 .brand img{height:50px;width:auto;border-radius:8px;background:#fff;object-fit:contain;padding:2px}
 .brand span{color:#fff}
 .header-actions{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
@@ -84,20 +83,17 @@ button.danger:hover{background:#FEE2E2}
 .btn-icon{background:transparent;border:0;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.2s}
 .btn-icon:hover{background:#FEE2E2}
 
-/* Barres de recherche */
 .search-bar{position:relative;margin-bottom:15px;}
 .search-bar input{width:100%;padding:12px 16px 12px 42px;border:1px solid var(--line);border-radius:12px;font-size:14px;background:#F9FAFB;transition:border-color .2s, background .2s;}
 .search-bar input:focus{border-color:var(--lav-1);background:#fff;outline:2px solid rgba(16,185,129,0.2);}
 .search-bar .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--muted);pointer-events:none;}
 
-/* Filtres de niveau */
 .level-filters{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap}
 .level-filter{padding:8px 16px;border-radius:20px;background:#F3F4F6;color:var(--muted);border:1px solid var(--line);font-weight:700;font-size:13px;cursor:pointer;transition:.2s}
 .level-filter:hover{background:#E5E7EB}
 .level-filter.active{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
 .level-badge{display:inline-block;background:#D1FAE5;color:#065F46;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:8px;text-transform:uppercase}
 
-/* Accordéon des cours */
 .course-accordion{margin-bottom:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;transition:box-shadow 0.2s;}
 .course-accordion:hover{box-shadow:0 2px 8px rgba(16,185,129,0.08);}
 .course-accordion summary{padding:14px 18px;background:#F9FAFB;cursor:pointer;font-weight:800;font-size:15px;color:var(--navy);display:flex;align-items:center;gap:10px;list-style:none;user-select:none;transition:background 0.2s;border-radius:12px;}
@@ -109,7 +105,6 @@ button.danger:hover{background:#FEE2E2}
 .course-accordion .course-count{margin-left:auto;background:#D1FAE5;color:var(--navy);font-size:11px;font-weight:800;padding:2px 10px;border-radius:99px;}
 .course-accordion-body{padding:8px 12px 12px;}
 
-/* Barre d'outils par dossier */
 .course-toolbar{
   display:none;
   align-items:center;
@@ -165,7 +160,6 @@ button.danger:hover{background:#FEE2E2}
   background:#FEE2E2;
 }
 
-/* Affichage mobile des cours */
 .course-item{
   display:flex;
   justify-content:space-between;
@@ -223,7 +217,92 @@ button.danger:hover{background:#FEE2E2}
   white-space:nowrap;
 }
 .course-item-actions a:hover{background:var(--blue-btn-hover)}
+/* ← MODIF VIDEO : bouton vidéo (bleu info) */
+.course-item-actions button.btn-video{
+  background:#0EA5E9;
+  color:#fff;
+  padding:8px 14px;
+  border-radius:8px;
+  font-size:12px;
+  font-weight:700;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  white-space:nowrap;
+  border:0;
+  cursor:pointer;
+}
+.course-item-actions button.btn-video:hover{background:#0284C7}
 .course-empty{padding:12px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ← MODIF VIDEO : modale de lecture vidéo (au-dessus de tout) */
+#videoModal{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(6,95,70,.85);
+  z-index:5100;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+#videoModal.show{display:flex;}
+.video-modal-content{
+  background:#000;
+  border-radius:16px;
+  width:100%;
+  max-width:900px;
+  max-height:92vh;
+  overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+  display:flex;
+  flex-direction:column;
+}
+.video-modal-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 16px;
+  background:#111827;
+  color:#fff;
+  flex-shrink:0;
+}
+.video-modal-header h3{margin:0;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;padding-right:12px;}
+.video-modal-header button{
+  background:rgba(255,255,255,.15);
+  color:#fff;
+  border:0;
+  width:36px;height:36px;
+  border-radius:50%;
+  cursor:pointer;
+  font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  padding:0;
+}
+.video-modal-header button:hover{background:rgba(255,255,255,.3);}
+.video-modal-body{
+  position:relative;
+  width:100%;
+  aspect-ratio:16/9;
+  background:#000;
+  flex:1;
+  min-height:0;
+}
+.video-modal-body iframe,
+.video-modal-body video{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:0;
+  display:block;
+}
+.video-modal-error{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:#fff;text-align:center;padding:20px;gap:10px;
+}
+.video-modal-error a{color:#34D399;word-break:break-all;}
 
 /* BULLE FLOTTANTE COMMUNAUTÉ */
 #communityWidget {position: fixed !important;bottom: 20px !important;right: 20px !important;z-index: 9999 !important;width: 60px;height: 60px;border-radius: 50%;background: linear-gradient(135deg, var(--lav-1), var(--lav-2));color: #fff;display: flex;align-items: center;justify-content: center;font-size: 28px;cursor: pointer;box-shadow: 0 6px 20px rgba(16,185,129,0.5);transition: transform 0.2s, box-shadow 0.2s;border: none;}
@@ -282,6 +361,8 @@ button.danger:hover{background:#FEE2E2}
   .course-toolbar button{padding:5px 10px;font-size:11px;}
   .course-item{padding:10px;}
   .course-item-actions a{padding:6px 10px;font-size:11px;}
+  /* ← MODIF VIDEO : bouton vidéo compact sur mobile */
+  .course-item-actions button.btn-video{padding:6px 10px;font-size:11px;}
   .brand img{height:40px;}
 }
 
@@ -310,18 +391,14 @@ button.danger:hover{background:#FEE2E2}
 /* AUTHENTIFICATION */
 #authGate{display:none;position:fixed;inset:0;background:var(--auth-bg);z-index:4000;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
 #authGate.show{display:flex;}
-/* ← MODIF LOGO PC : hauteur adaptative (déjà en place) */
 .auth-container{position:relative;width:850px;height:min(560px, 92vh);background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(6,95,70,0.1);overflow:hidden}
-/* ← MODIF LOGO PC : justify-content:safe center (centre si ça rentre, aligne en haut si débordement) + padding-top 28px + scroll tactile */
 .auth-form-container{position:absolute;top:0;height:100%;width:50%;padding:24px 45px 30px;padding-top:28px;display:flex;flex-direction:column;justify-content:safe center;transition:all 0.6s ease-in-out;background:#fff;z-index:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
 .auth-form-login{left:0;opacity:1;z-index:2}
 .auth-form-register{left:0;opacity:0;z-index:1}
 .auth-container.active .auth-form-login{transform:translateX(0);opacity:0;z-index:1}
 .auth-container.active .auth-form-register{transform:translateX(100%);opacity:1;z-index:5;animation:authShow 0.6s}
 @keyframes authShow{0%,49.99%{opacity:0;z-index:1}50%,100%{opacity:1;z-index:5}}
-/* ← MODIF LOGO PC : hauteur 60px sur PC, margin-bottom réduite à 10px */
 .auth-logo{height:60px;max-height:64px;width:auto;flex-shrink:0;margin:0 auto 10px;display:block;object-fit:contain;max-width:100%}
-/* ← MODIF LOGO PC : margin-top 10px pour ne pas coller le titre au logo */
 .auth-form-container h2{font-size:24px;font-weight:800;color:#000;text-align:center;margin:10px 0 14px}
 .auth-input-group{position:relative;margin-bottom:12px}
 .auth-input-group i{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--muted);pointer-events:none}
@@ -358,7 +435,7 @@ button.danger:hover{background:#FEE2E2}
 .auth-container.active .auth-overlay-left{transform:translateX(0)}
 .auth-container.active .auth-overlay-right{transform:translateX(20%)}
 
-/* EXAMEN — COULEURS FIXES */
+/* EXAMEN */
 #examView{display:none;position:fixed;inset:0;background:#F3F4F6;z-index:2000;overflow-y:auto;padding-bottom:120px}
 .exam-header{background:var(--exam-navy);color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2);padding-top:calc(15px + env(safe-area-inset-top))}
 .exam-header h2{margin:0;font-size:18px}
@@ -436,7 +513,6 @@ button.danger:hover{background:#FEE2E2}
   .auth-container.active .auth-form-register{display:block}
   .auth-overlay-container{display:none}
   .auth-form-container h2{font-size:22px;margin-bottom:18px}
-  /* ← MODIF LOGO PC : taille mobile inchangée (déjà parfaite) */
   .auth-logo{height:48px;max-height:52px;margin-bottom:14px}
 }
 @media(max-width:600px){
@@ -455,7 +531,6 @@ button.danger:hover{background:#FEE2E2}
   .score-card{padding:30px 20px}
   .score-value{font-size:40px}
 }
-/* ← MODIF LOGO PC : sur écrans larges, on force la taille du logo (au cas où safe center ne soit pas supporté) */
 @media(min-width:769px){
   .auth-logo{height:60px;max-height:64px}
 }
@@ -668,6 +743,11 @@ button.danger:hover{background:#FEE2E2}
             </select>
           </div>
           <div><label>Fichier PDF</label><input id="courseFile" type="file" accept=".pdf"></div>
+          <!-- ← MODIF VIDEO : champ vidéo optionnel en pleine largeur -->
+          <div style="grid-column:1/-1">
+            <label>Lien vidéo (optionnel - YouTube, Vimeo ou .mp4)</label>
+            <input id="courseVideoUrl" type="url" placeholder="https://www.youtube.com/watch?v=... ou https://.../video.mp4">
+          </div>
         </div>
         <button onclick="addCourse()" style="margin-top:12px;width:100%">📤 Ajouter le cours</button>
         <div id="courseStatus" style="font-size:12px;margin-top:8px"></div>
@@ -833,6 +913,17 @@ button.danger:hover{background:#FEE2E2}
       <button class="btn-corrections" id="scoreCorrectionsBtn">📝 Voir mes corrections</button>
       <button class="btn-home" id="scoreHomeBtn">🏠 Retour à l'accueil</button>
     </div>
+  </div>
+</div>
+
+<!-- ← MODIF VIDEO : modale de lecture vidéo -->
+<div id="videoModal">
+  <div class="video-modal-content">
+    <div class="video-modal-header">
+      <h3 id="videoModalTitle">Vidéo du cours</h3>
+      <button onclick="closeVideoModal()" title="Fermer">✖</button>
+    </div>
+    <div class="video-modal-body" id="videoModalBody"></div>
   </div>
 </div>
 
@@ -1187,6 +1278,134 @@ $('pwdBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
+// 🎬 LECTURE VIDÉO (modale)
+// ==========================================
+function extractYouTubeId(url) {
+  // Gère : watch?v=ID, youtu.be/ID, shorts/ID, embed/ID, live/ID
+  const patterns = [
+    /[?&]v=([\w-]{11})/,
+    /youtu\.be\/([\w-]{11})/,
+    /shorts\/([\w-]{11})/,
+    /embed\/([\w-]{11})/,
+    /live\/([\w-]{11})/
+  ];
+  for (const re of patterns) {
+    const m = String(url || '').match(re);
+    if (m && m[1]) return m[1];
+  }
+  return null;
+}
+
+function extractVimeoId(url) {
+  const m = String(url || '').match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  return m ? m[1] : null;
+}
+
+function buildVideoEmbed(url) {
+  const u = String(url || '').trim();
+  if (!u) return { type: 'error', message: 'Lien vidéo manquant.' };
+
+  const ytId = extractYouTubeId(u);
+  if (ytId) {
+    return {
+      type: 'iframe',
+      src: `https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`,
+      allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+    };
+  }
+
+  const vimeoId = extractVimeoId(u);
+  if (vimeoId) {
+    return {
+      type: 'iframe',
+      src: `https://player.vimeo.com/video/${vimeoId}`,
+      allow: 'autoplay; fullscreen; picture-in-picture'
+    };
+  }
+
+  // Fichier vidéo direct
+  if (/\.(mp4|webm|ogg|ogv|mov)(\?.*)?$/i.test(u)) {
+    return { type: 'video', src: u };
+  }
+
+  // Fallback : iframe générique (lecteurs externes type Dailymotion, Loom, etc.)
+  return {
+    type: 'iframe',
+    src: u,
+    allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+  };
+}
+
+function openVideoModal(url, title) {
+  const modal = $('videoModal');
+  const body = $('videoModalBody');
+  if (!modal || !body) return;
+
+  $('videoModalTitle').textContent = title ? `▶️ ${title}` : '▶️ Vidéo du cours';
+  body.innerHTML = '';
+
+  const embed = buildVideoEmbed(url);
+
+  if (embed.type === 'iframe') {
+    const iframe = document.createElement('iframe');
+    iframe.src = embed.src;
+    iframe.allow = embed.allow || '';
+    iframe.allowFullscreen = true;
+    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+    iframe.setAttribute('loading', 'lazy');
+    body.appendChild(iframe);
+  } else if (embed.type === 'video') {
+    const video = document.createElement('video');
+    video.src = embed.src;
+    video.controls = true;
+    video.autoplay = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('preload', 'metadata');
+    body.appendChild(video);
+  } else {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'video-modal-error';
+    errorDiv.innerHTML = `
+      <div style="font-size:32px">🎬</div>
+      <div>Impossible de lire cette vidéo intégrée.</div>
+      <div><a href="${esc(url)}" target="_blank" rel="noopener">Ouvrir dans un nouvel onglet</a></div>
+    `;
+    body.appendChild(errorDiv);
+  }
+
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+window.openVideoModal = openVideoModal;
+
+function closeVideoModal() {
+  const modal = $('videoModal');
+  const body = $('videoModalBody');
+  if (!modal) return;
+  // Stoppe la lecture (iframe/video) en vidant le body
+  if (body) body.innerHTML = '';
+  modal.classList.remove('show');
+  document.body.style.overflow = 'auto';
+}
+window.closeVideoModal = closeVideoModal;
+
+// Fermeture par clic sur le fond + touche Échap
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = $('videoModal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeVideoModal();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const m = $('videoModal');
+      if (m && m.classList.contains('show')) closeVideoModal();
+    }
+  });
+});
+
+// ==========================================
 // 📖 COURS
 // ==========================================
 async function loadCourses() {
@@ -1272,6 +1491,11 @@ function renderCourses() {
                 <a href="${esc(c.file_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation();">
                   <i class='bx bx-download'></i> <span class="hide-mobile">Télécharger</span>
                 </a>
+                ${c.video_url ? `
+                  <button type="button" class="btn-video" onclick="event.stopPropagation(); openVideoModal('${esc(c.video_url).replace(/'/g, "\\'")}', '${esc(c.title).replace(/'/g, "\\'")}');" title="Voir la vidéo">
+                    <i class='bx bx-play-circle'></i> <span class="hide-mobile">Vidéo</span>
+                  </button>
+                ` : ''}
               </div>
             </div>
           `).join('')}
@@ -1410,9 +1634,10 @@ async function addCourse() {
   const level = $('courseLevel').value;
   const fileInput = $('courseFile');
   const status = $('courseStatus');
+  const videoUrl = $('courseVideoUrl') ? $('courseVideoUrl').value.trim() : '';
   
   if (!title || !level || !fileInput.files || fileInput.files.length === 0) {
-    status.textContent = "❌ Tous les champs sont requis.";
+    status.textContent = "❌ Titre, niveau et fichier PDF sont requis.";
     status.style.color = "var(--red)";
     return;
   }
@@ -1469,12 +1694,14 @@ async function addCourse() {
       .from('courses_files')
       .getPublicUrl(filePath);
     
+    // ← MODIF VIDEO : on ajoute video_url (NULL si vide)
     const { error: dbError } = await supabaseClient
       .from('courses')
       .insert({
         title: title,
         level: level,
-        file_url: urlData.publicUrl
+        file_url: urlData.publicUrl,
+        video_url: videoUrl || null
       });
     
     if (dbError) throw new Error("Erreur DB : " + dbError.message);
@@ -1485,6 +1712,8 @@ async function addCourse() {
     $('courseTitle').value = '';
     $('courseLevel').value = '';
     $('courseFile').value = '';
+    // ← MODIF VIDEO : reset du champ vidéo
+    if ($('courseVideoUrl')) $('courseVideoUrl').value = '';
     
     await loadCourses();
   } catch (e) {
