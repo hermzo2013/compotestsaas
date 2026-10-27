@@ -10,17 +10,11 @@ const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
 app.use(express.json({ limit: '10mb' }));
 
-// ==========================================
-// 🔍 LOG DE TOUTES LES REQUÊTES
-// ==========================================
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} | Origin: ${req.headers.origin || 'no origin'}`);
   next();
 });
 
-// ==========================================
-// ✅ CORS (Corrigé avec la BONNE URL)
-// ==========================================
 const ALLOWED_ORIGINS = [
   'https://compotestsaas.onrender.com',
   'http://localhost:3000',              
@@ -50,18 +44,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// ==========================================
-// FICHIERS STATIQUES
-// ==========================================
 app.use(express.static(__dirname, { maxAge: '1d' }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
 
-// ==========================================
-// AUTHENTIFICATION
-// ==========================================
 async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return res.status(401).json({ error: 'Connecte-toi.' });
@@ -87,9 +75,6 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// ==========================================
-// ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
-// ==========================================
 app.get('/api/quizzes', async (req, res) => {
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
@@ -105,14 +90,8 @@ app.get('/api/quizzes', async (req, res) => {
   }
 });
 
-// ==========================================
-// MIDDLEWARE D'AUTHENTIFICATION POUR LE RESTE DE /api
-// ==========================================
 app.use('/api', authenticate);
 
-// ==========================================
-// ROUTES ADMIN
-// ==========================================
 async function supabaseAdmin(pathname, options = {}) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY manquante.");
   const base = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -148,7 +127,7 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   const lastName = String(req.body?.lastName || '').trim();
   let email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
-  const niveau = String(req.body?.niveau || '').trim(); // NOUVEAU
+  const niveau = String(req.body?.niveau || '').trim();
   
   if (!firstName || !lastName) return res.status(400).json({ error: 'Nom et prénom requis.' });
   if (!email) {
@@ -168,7 +147,7 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
         app_metadata: { compotest_access: true }, 
         user_metadata: { 
           full_name: `${firstName} ${lastName}`,
-          niveau: niveau // NOUVEAU
+          niveau: niveau
         } 
       })
     });
@@ -212,18 +191,12 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ==========================================
-// IA
-// ==========================================
 function aiClient() {
   if (!process.env.AI_API_KEY) return null;
   return new OpenAI({ apiKey: process.env.AI_API_KEY, baseURL: process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1', timeout: 120000 });
 }
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
-// ==========================================
-// EXTRACTION
-// ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
   let text = rawText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ').replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n').replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/[ \t]+/g, ' ');
@@ -307,7 +280,6 @@ app.post('/api/parse-existing-quiz', (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// NOUVEAU : Logique IA améliorée (détection cours vs questionnaire)
 app.post('/api/generate-post-test', async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
@@ -316,9 +288,7 @@ app.post('/api/generate-post-test', async (req, res) => {
     const response = await client.chat.completions.create({
       model: modelName(), temperature: 0.4, max_tokens: 8000, response_format: { type: 'json_object' },
       messages: [
-        { 
-          role: 'system', 
-          content: `Tu es un expert en création de quiz pédagogiques en FRANÇAIS.
+        { role: 'system', content: `Tu es un expert en création de quiz pédagogiques en FRANÇAIS.
 
 Ta mission est d'analyser le texte fourni par l'utilisateur et de déterminer s'il s'agit :
 1. D'UN QUESTIONNAIRE DÉJÀ EXISTANT (il contient des questions numérotées, des choix multiples, des Vrai/Faux, etc.)
@@ -344,8 +314,7 @@ RÈGLES STRICTES :
 **FORMAT DE SORTIE OBLIGATOIRE (JSON valide) :**
 {"questions":[{"type":"mcq","text":"...","options":["A","B","C","D"],"correct":0,"explanation":"..."}]}
 
-Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` 
-        },
+Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
         { role: 'user', content: String(text || '').slice(0, 15000) }
       ]
     });
@@ -367,14 +336,21 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.`
 });
 
 app.post('/api/quizzes', async (req, res) => {
-  const { title, subject, questions } = req.body;
+  const { title, subject, level, questions } = req.body;
   if (!title || !questions || !Array.isArray(questions) || questions.length === 0) return res.status(400).json({ error: 'Titre et questions requis.' });
+  
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
     const response = await fetch(`${base}/rest/v1/quizzes`, {
       method: 'POST',
       headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ title: String(title).slice(0, 200), subject: String(subject || 'Général').slice(0, 200), questions, created_by: req.user.id })
+      body: JSON.stringify({ 
+        title: String(title).slice(0, 200), 
+        subject: String(subject || 'Général').slice(0, 200), 
+        level: level || null,
+        questions, 
+        created_by: req.user.id 
+      })
     });
     if (!response.ok) { const err = await response.text(); throw new Error(`Erreur Supabase POST: ${err}`); }
     const data = await response.json(); res.json({ quiz: data[0] });
