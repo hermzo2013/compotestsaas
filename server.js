@@ -10,15 +10,21 @@ const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
 app.use(express.json({ limit: '10mb' }));
 
+// ==========================================
+// 🔍 LOG DE TOUTES LES REQUÊTES
+// ==========================================
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} | Origin: ${req.headers.origin || 'no origin'}`);
   next();
 });
 
+// ==========================================
+// ✅ CORS
+// ==========================================
 const ALLOWED_ORIGINS = [
   'https://compotestsaas.onrender.com',
-  'http://localhost:3000',              
-  'http://localhost:5173'               
+  'http://localhost:3000',
+  'http://localhost:5173'
 ];
 
 app.use((req, res, next) => {
@@ -44,12 +50,43 @@ app.use((req, res, next) => {
   next();
 });
 
+// ==========================================
+// 🛡️ ROUTE HEALTH CHECK (pour UptimeRobot)
+// ==========================================
+// Objectif : éviter de consommer les heures Render la nuit.
+// UptimeRobot ping cette route toutes les 5 minutes.
+// Entre 00h et 04h (heure GMT / Côte d'Ivoire), on renvoie 503
+// pour que Render ne soit pas maintenu éveillé inutilement.
+app.get('/api/health', (req, res) => {
+  const now = new Date();
+  
+  // Heure en GMT (Côte d'Ivoire = GMT+0, donc pas de décalage)
+  const hourUTC = now.getUTCHours();
+  
+  // Plage de veille : 00h00 → 03h59 (4h du matin)
+  const isSleeping = hourUTC >= 0 && hourUTC < 4;
+  
+  if (isSleeping) {
+    console.log(`[${new Date().toISOString()}] 😴 Health check ignoré (veille programmée, ${hourUTC}h UTC)`);
+    return res.status(503).send('Service en veille programmée (00h-04h GMT)');
+  }
+  
+  console.log(`[${new Date().toISOString()}] ✅ Health check OK (${hourUTC}h UTC)`);
+  res.status(200).send('OK');
+});
+
+// ==========================================
+// FICHIERS STATIQUES
+// ==========================================
 app.use(express.static(__dirname, { maxAge: '1d' }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
 
+// ==========================================
+// AUTHENTIFICATION
+// ==========================================
 async function authenticate(req, res, next) {
   const token = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return res.status(401).json({ error: 'Connecte-toi.' });
@@ -75,6 +112,9 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ==========================================
+// ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
+// ==========================================
 app.get('/api/quizzes', async (req, res) => {
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
@@ -90,8 +130,14 @@ app.get('/api/quizzes', async (req, res) => {
   }
 });
 
+// ==========================================
+// MIDDLEWARE D'AUTHENTIFICATION POUR LE RESTE DE /api
+// ==========================================
 app.use('/api', authenticate);
 
+// ==========================================
+// ROUTES ADMIN
+// ==========================================
 async function supabaseAdmin(pathname, options = {}) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("SUPABASE_SERVICE_ROLE_KEY manquante.");
   const base = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -191,12 +237,18 @@ app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ==========================================
+// IA
+// ==========================================
 function aiClient() {
   if (!process.env.AI_API_KEY) return null;
   return new OpenAI({ apiKey: process.env.AI_API_KEY, baseURL: process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1', timeout: 120000 });
 }
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
+// ==========================================
+// EXTRACTION
+// ==========================================
 function parseQuizText(rawText) {
   if (!rawText || typeof rawText !== 'string') return [];
   let text = rawText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ').replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n').replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/[ \t]+/g, ' ');
