@@ -84,7 +84,7 @@ button.danger:hover{background:#ffe0e0}
 .btn-icon:hover{background:#fee2e2}
 
 /* ==========================================
-   NOUVEAU : BULLE FLOTTANTE COMMUNAUTÉ
+   BULLE FLOTTANTE COMMUNAUTÉ
    ========================================== */
 #communityWidget {
   position: fixed !important;
@@ -135,7 +135,6 @@ button.danger:hover{background:#ffe0e0}
   50% { transform: scale(1.15); }
 }
 
-/* Fenêtre de chat */
 #communityPopup {
   position: fixed !important;
   bottom: 90px !important;
@@ -148,7 +147,7 @@ button.danger:hover{background:#ffe0e0}
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(19,35,68,0.25);
-  display: none; /* Caché par défaut */
+  display: none;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -281,6 +280,36 @@ button.danger:hover{background:#ffe0e0}
   color: var(--navy);
 }
 
+/* Pièces jointes */
+.chat-attachment {
+  margin-top: 6px;
+}
+.chat-attachment img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: block;
+  border: 1px solid var(--line);
+}
+.chat-attachment a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #edf0fb;
+  color: var(--navy);
+  padding: 6px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid #d5ddeb;
+  transition: background 0.2s;
+}
+.chat-attachment a:hover {
+  background: #dde2f7;
+}
+
 .community-chat-textarea {
   width: 100%;
   min-height: 60px;
@@ -317,6 +346,60 @@ button.danger:hover{background:#ffe0e0}
   font-weight: 800;
   cursor: pointer;
   padding: 0 5px;
+  font-size: 14px;
+}
+
+/* NOUVEAU : Bouton trombone + aperçu fichier */
+.chat-input-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.chat-attach-btn {
+  background: #edf0fb;
+  color: var(--navy);
+  border: 1px solid #d5ddeb;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.chat-attach-btn:hover {
+  background: #dde2f7;
+}
+.chat-attach-preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f3f8;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--ink);
+  flex: 1;
+  overflow: hidden;
+}
+.chat-attach-preview span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.chat-attach-preview button {
+  background: transparent;
+  border: 0;
+  color: var(--red);
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0;
   font-size: 14px;
 }
 
@@ -689,15 +772,12 @@ button.danger:hover{background:#ffe0e0}
   dev. par <b>NSC-GROUP</b> ( THC )
 </footer>
 
-<!-- ==========================================
-     NOUVEAU : BULLE FLOTTANTE COMMUNAUTÉ
-     ========================================== -->
+<!-- BULLE FLOTTANTE COMMUNAUTÉ -->
 <div id="communityWidget" onclick="toggleCommunityPopup()" title="Ouvrir le chat Communauté">
   💬
   <span id="communityWidgetBadge" class="widget-badge" style="display:none">0</span>
 </div>
 
-<!-- Fenêtre de chat -->
 <div id="communityPopup">
   <div class="community-popup-header">
     <h3>💬 Communauté</h3>
@@ -711,6 +791,19 @@ button.danger:hover{background:#ffe0e0}
       <span id="replyingToText">Répondre à ...</span>
       <button onclick="cancelReply()" title="Annuler">✖</button>
     </div>
+    
+    <!-- NOUVEAU : Bouton trombone + input fichier caché + aperçu -->
+    <input type="file" id="communityFileInput" accept="image/*,.pdf" style="display:none" onchange="onAttachmentSelected(this)">
+    <div class="chat-input-toolbar" id="attachmentToolbar">
+      <button type="button" class="chat-attach-btn" onclick="document.getElementById('communityFileInput').click()" title="Joindre un fichier">
+        <i class='bx bx-paperclip'></i>
+      </button>
+      <div id="attachmentPreview" class="chat-attach-preview" style="display:none;">
+        <span id="attachmentName"></span>
+        <button type="button" onclick="removeAttachment()" title="Retirer">✖</button>
+      </div>
+    </div>
+    
     <textarea id="communityInput" class="community-chat-textarea" placeholder="Écrivez votre message..." maxlength="1000"></textarea>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
       <span style="font-size:10px;color:var(--muted)"><span id="communityCharCount">0</span>/1000</span>
@@ -857,16 +950,15 @@ let editingQuizId = null;
 let selectedQuizIds = new Set();
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
 
-// Variable pour gérer la réponse en cours
 let replyingTo = null;
-
-// Compteur de messages non lus
 let unreadRepliesCount = 0;
 let unreadCheckInterval = null;
 
+// NOUVEAU : Fichier sélectionné pour la pièce jointe
+let selectedAttachment = null;
+
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
-// Fonction pour afficher/masquer le mot de passe
 function togglePasswordVisibility(inputId, btn) {
   const input = $(inputId);
   if (!input) return;
@@ -999,8 +1091,6 @@ function handleSession(session) {
     $('mainApp').style.display = 'block';
     $('logoutBtn').style.display = 'block';
     $('sessionWarning').classList.add('hide');
-    
-    // Afficher la bulle flottante
     $('communityWidget').style.display = 'flex';
 
     let displayName = currentUser.user_metadata?.full_name || (currentUser.email || '').split('@')[0];
@@ -1019,7 +1109,6 @@ function handleSession(session) {
     if(isAdmin) loadAdminUsers();
     loadCloudData();
     
-    // Démarrer la vérification des réponses non lues
     checkUnreadReplies();
     if (unreadCheckInterval) clearInterval(unreadCheckInterval);
     unreadCheckInterval = setInterval(checkUnreadReplies, 30000);
@@ -1032,7 +1121,6 @@ function handleSession(session) {
     $('userLabel').textContent = 'Non connecté';
     $('adminBtn').style.display = 'none';
     $('clearHistoryBtn').style.display = 'none';
-    // Cacher la bulle flottante
     $('communityWidget').style.display = 'none';
     $('communityPopup').classList.remove('show');
     if (unreadCheckInterval) { clearInterval(unreadCheckInterval); unreadCheckInterval = null; }
@@ -1150,7 +1238,7 @@ $('pwdBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
-// 💬 COMMUNAUTÉ (BULLE FLOTTANTE)
+// 💬 COMMUNAUTÉ (avec pièces jointes)
 // ==========================================
 function toggleCommunityPopup() {
   const popup = $('communityPopup');
@@ -1164,6 +1252,57 @@ function toggleCommunityPopup() {
   }
 }
 window.toggleCommunityPopup = toggleCommunityPopup;
+
+// NOUVEAU : Sélection d'un fichier
+function onAttachmentSelected(input) {
+  if (!input.files || input.files.length === 0) return;
+  const file = input.files[0];
+  
+  // Limite de taille : 5 Mo
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Fichier trop volumineux (5 Mo maximum).");
+    input.value = '';
+    return;
+  }
+  
+  selectedAttachment = file;
+  $('attachmentName').textContent = file.name;
+  $('attachmentPreview').style.display = 'flex';
+}
+window.onAttachmentSelected = onAttachmentSelected;
+
+function removeAttachment() {
+  selectedAttachment = null;
+  $('communityFileInput').value = '';
+  $('attachmentPreview').style.display = 'none';
+  $('attachmentName').textContent = '';
+}
+window.removeAttachment = removeAttachment;
+
+// NOUVEAU : Upload d'une pièce jointe dans Supabase Storage
+async function uploadAttachment(file) {
+  if (!supabaseClient || !file) return null;
+  
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+  const filePath = `${currentUser.id}/${fileName}`;
+  
+  const { data, error } = await supabaseClient.storage
+    .from('community_attachments')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+  
+  if (error) throw new Error("Erreur upload : " + error.message);
+  
+  const { data: urlData } = supabaseClient.storage
+    .from('community_attachments')
+    .getPublicUrl(filePath);
+  
+  return urlData.publicUrl;
+}
+window.uploadAttachment = uploadAttachment;
 
 async function loadCommunity() {
   if (!supabaseClient) return;
@@ -1200,6 +1339,16 @@ async function loadCommunity() {
         }
       }
       
+      // NOUVEAU : Affichage de la pièce jointe
+      let attachmentHtml = '';
+      if (post.attachment_url) {
+        if (post.attachment_type === 'image') {
+          attachmentHtml = `<div class="chat-attachment"><img src="${esc(post.attachment_url)}" alt="Pièce jointe" onclick="window.open('${esc(post.attachment_url)}', '_blank')"></div>`;
+        } else {
+          attachmentHtml = `<div class="chat-attachment"><a href="${esc(post.attachment_url)}" target="_blank" rel="noopener"><i class='bx bx-file'></i> Télécharger le fichier</a></div>`;
+        }
+      }
+      
       const replyBtn = !isAuthor ? `<button onclick="startReply('${post.id}', '${post.user_id}', '${esc(post.author_name || 'Anonyme')}')">↩️ Répondre</button>` : '';
       const deleteBtn = canDelete ? `<button class="del" onclick="deleteCommunityPost('${post.id}')">🗑️</button>` : '';
       
@@ -1211,6 +1360,7 @@ async function loadCommunity() {
           </div>
           ${replyContext}
           <div class="chat-msg-content">${esc(post.content)}</div>
+          ${attachmentHtml}
           <div class="chat-msg-actions">
             ${replyBtn}
             ${deleteBtn}
@@ -1249,20 +1399,41 @@ async function postMessage() {
   if (!supabaseClient || !currentUser) return;
   const input = $('communityInput');
   const content = input.value.trim();
-  if (!content) return alert("Écrivez un message avant de publier.");
+  
+  // Autoriser l'envoi même si le texte est vide, du moment qu'il y a une pièce jointe
+  if (!content && !selectedAttachment) return alert("Écrivez un message ou joignez un fichier.");
   if (content.length > 1000) return alert("Message trop long (1000 caractères max).");
 
   const btn = $('communityPostBtn');
+  const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '⏳...';
 
   try {
+    let attachmentUrl = null;
+    let attachmentType = null;
+    
+    // NOUVEAU : Upload de la pièce jointe si présente
+    if (selectedAttachment) {
+      btn.textContent = '📎 Envoi...';
+      attachmentUrl = await uploadAttachment(selectedAttachment);
+      
+      // Déterminer le type
+      if (selectedAttachment.type.startsWith('image/')) {
+        attachmentType = 'image';
+      } else {
+        attachmentType = 'file';
+      }
+    }
+    
     const authorName = currentUser.user_metadata?.full_name || (currentUser.email || '').split('@')[0];
     
     const postData = {
       user_id: currentUser.id,
       author_name: authorName,
-      content: content
+      content: content || '(pièce jointe)',
+      attachment_url: attachmentUrl,
+      attachment_type: attachmentType
     };
     
     if (replyingTo) {
@@ -1279,14 +1450,15 @@ async function postMessage() {
     } else {
       input.value = '';
       $('communityCharCount').textContent = '0';
+      removeAttachment();
       cancelReply();
       await loadCommunity();
     }
   } catch (e) {
-    alert("Erreur réseau : " + e.message);
+    alert("Erreur : " + e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = '📤 Publier';
+    btn.textContent = originalText;
   }
 }
 window.postMessage = postMessage;
