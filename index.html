@@ -83,340 +83,74 @@ button.danger:hover{background:#ffe0e0}
 .btn-icon{background:transparent;border:0;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.2s}
 .btn-icon:hover{background:#fee2e2}
 
-/* ==========================================
-   BULLE FLOTTANTE COMMUNAUTÉ
-   ========================================== */
-#communityWidget {
-  position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  z-index: 9999 !important;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--lav-1), var(--lav-2));
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(125,144,224,0.5);
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: none;
-}
-#communityWidget:hover {
-  transform: scale(1.08);
-  box-shadow: 0 8px 25px rgba(125,144,224,0.7);
-}
-#communityWidget:active {
-  transform: scale(0.95);
-}
-#communityWidget .widget-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: var(--red);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 5px;
-  border: 2px solid #fff;
-  animation: pulse 2s infinite;
-}
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-}
+/* NOUVEAU : Filtres de niveau */
+.level-filters{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap}
+.level-filter{padding:8px 16px;border-radius:20px;background:#f0f3f8;color:var(--muted);border:1px solid var(--line);font-weight:700;font-size:13px;cursor:pointer;transition:.2s}
+.level-filter:hover{background:#e5e9f2}
+.level-filter.active{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
+.level-badge{display:inline-block;background:#E0E4F7;color:#4B5EAA;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:8px;text-transform:uppercase}
 
-#communityPopup {
-  position: fixed !important;
-  bottom: 90px !important;
-  right: 20px !important;
-  z-index: 9998 !important;
-  width: 360px;
-  max-width: calc(100vw - 40px);
-  height: 500px;
-  max-height: calc(100vh - 120px);
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(19,35,68,0.25);
-  display: none;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--line);
-}
-#communityPopup.show {
-  display: flex;
-  animation: slideUp 0.25s ease-out;
-}
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* NOUVEAU : Sections Cours */
+.course-section{margin-bottom:25px}
+.course-section h2{font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid var(--line);color:var(--navy)}
+.course-item{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:#f8faff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+.course-item-title{font-weight:700;font-size:14px}
+.course-item a{background:var(--blue-btn);color:#fff;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px}
+.course-item a:hover{background:var(--blue-btn-hover)}
 
-.community-popup-header {
-  background: linear-gradient(120deg, var(--navy), var(--blue));
-  color: #fff;
-  padding: 14px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
-}
-.community-popup-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-}
-.community-popup-header button {
-  background: rgba(255,255,255,0.2);
-  border: 0;
-  color: #fff;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-  padding: 0;
-}
-.community-popup-header button:hover {
-  background: rgba(255,255,255,0.35);
-}
+/* BULLE FLOTTANTE COMMUNAUTÉ */
+#communityWidget {position: fixed !important;bottom: 20px !important;right: 20px !important;z-index: 9999 !important;width: 60px;height: 60px;border-radius: 50%;background: linear-gradient(135deg, var(--lav-1), var(--lav-2));color: #fff;display: flex;align-items: center;justify-content: center;font-size: 28px;cursor: pointer;box-shadow: 0 6px 20px rgba(125,144,224,0.5);transition: transform 0.2s, box-shadow 0.2s;border: none;}
+#communityWidget:hover {transform: scale(1.08);box-shadow: 0 8px 25px rgba(125,144,224,0.7);}
+#communityWidget:active {transform: scale(0.95);}
+#communityWidget .widget-badge {position: absolute;top: -4px;right: -4px;background: var(--red);color: #fff;font-size: 11px;font-weight: 800;min-width: 20px;height: 20px;border-radius: 10px;display: flex;align-items: center;justify-content: center;padding: 0 5px;border: 2px solid #fff;animation: pulse 2s infinite;}
+@keyframes pulse {0%, 100% { transform: scale(1); }50% { transform: scale(1.15); }}
 
-.community-popup-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-  background: #f8faff;
-}
+#communityPopup {position: fixed !important;bottom: 90px !important;right: 20px !important;z-index: 9998 !important;width: 360px;max-width: calc(100vw - 40px);height: 500px;max-height: calc(100vh - 120px);background: #fff;border-radius: 16px;box-shadow: 0 10px 40px rgba(19,35,68,0.25);display: none;flex-direction: column;overflow: hidden;border: 1px solid var(--line);}
+#communityPopup.show {display: flex;animation: slideUp 0.25s ease-out;}
+@keyframes slideUp {from { opacity: 0; transform: translateY(20px); }to { opacity: 1; transform: translateY(0); }}
 
-.community-popup-footer {
-  flex-shrink: 0;
-  padding: 10px;
-  border-top: 1px solid var(--line);
-  background: #fff;
-}
+.community-popup-header {background: linear-gradient(120deg, var(--navy), var(--blue));color: #fff;padding: 14px 16px;display: flex;justify-content: space-between;align-items: center;flex-shrink: 0;}
+.community-popup-header h3 {margin: 0;font-size: 16px;font-weight: 800;}
+.community-popup-header button {background: rgba(255,255,255,0.2);border: 0;color: #fff;width: 32px;height: 32px;border-radius: 50%;cursor: pointer;font-size: 18px;display: flex;align-items: center;justify-content: center;transition: background 0.2s;padding: 0;}
+.community-popup-header button:hover {background: rgba(255,255,255,0.35);}
+.community-popup-body {flex: 1;overflow-y: auto;padding: 12px;background: #f8faff;}
+.community-popup-footer {flex-shrink: 0;padding: 10px;border-top: 1px solid var(--line);background: #fff;}
 
-/* Cartes de messages dans le popup */
-.chat-msg {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 4px rgba(75,94,170,0.05);
-  position: relative;
-}
-.chat-msg.is-mine {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-}
-.chat-msg-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-.chat-msg-author {
-  font-weight: 800;
-  color: var(--navy);
-  font-size: 12px;
-}
-.chat-msg-date {
-  font-size: 10px;
-  color: var(--muted);
-}
-.chat-msg-content {
-  font-size: 13px;
-  line-height: 1.4;
-  color: #1e293b;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.chat-msg-actions {
-  margin-top: 6px;
-  display: flex;
-  gap: 6px;
-}
-.chat-msg-actions button {
-  background: #edf0fb;
-  color: var(--navy);
-  border: 1px solid #d5ddeb;
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.chat-msg-actions button:hover {
-  background: #dde2f7;
-}
-.chat-msg-actions button.del {
-  background: #fff0f0;
-  color: var(--red);
-  border-color: #fecaca;
-}
-.chat-msg-actions button.del:hover {
-  background: #ffe0e0;
-}
-.chat-reply-info {
-  font-size: 10px;
-  color: var(--muted);
-  font-style: italic;
-  margin-bottom: 4px;
-}
-.chat-reply-info b {
-  color: var(--navy);
-}
+.chat-msg {background: #fff;border: 1px solid var(--line);border-radius: 12px;padding: 10px 12px;margin-bottom: 10px;box-shadow: 0 1px 4px rgba(75,94,170,0.05);position: relative;}
+.chat-msg.is-mine {background: #eef2ff;border-color: #c7d2fe;}
+.chat-msg-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 6px;}
+.chat-msg-author {font-weight: 800;color: var(--navy);font-size: 12px;}
+.chat-msg-date {font-size: 10px;color: var(--muted);}
+.chat-msg-content {font-size: 13px;line-height: 1.4;color: #1e293b;white-space: pre-wrap;word-break: break-word;}
+.chat-msg-actions {margin-top: 6px;display: flex;gap: 6px;}
+.chat-msg-actions button {background: #edf0fb;color: var(--navy);border: 1px solid #d5ddeb;border-radius: 6px;padding: 3px 8px;font-size: 10px;font-weight: 700;cursor: pointer;}
+.chat-msg-actions button:hover {background: #dde2f7;}
+.chat-msg-actions button.del {background: #fff0f0;color: var(--red);border-color: #fecaca;}
+.chat-msg-actions button.del:hover {background: #ffe0e0;}
+.chat-reply-info {font-size: 10px;color: var(--muted);font-style: italic;margin-bottom: 4px;}
+.chat-reply-info b {color: var(--navy);}
 
-/* Pièces jointes */
-.chat-attachment {
-  margin-top: 6px;
-}
-.chat-attachment img {
-  max-width: 100%;
-  max-height: 200px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: block;
-  border: 1px solid var(--line);
-}
-.chat-attachment a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #edf0fb;
-  color: var(--navy);
-  padding: 6px 10px;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 12px;
-  font-weight: 700;
-  border: 1px solid #d5ddeb;
-  transition: background 0.2s;
-}
-.chat-attachment a:hover {
-  background: #dde2f7;
-}
+.chat-attachment {margin-top: 6px;}
+.chat-attachment img {max-width: 100%;max-height: 200px;border-radius: 8px;cursor: pointer;display: block;border: 1px solid var(--line);}
+.chat-attachment a {display: inline-flex;align-items: center;gap: 6px;background: #edf0fb;color: var(--navy);padding: 6px 10px;border-radius: 8px;text-decoration: none;font-size: 12px;font-weight: 700;border: 1px solid #d5ddeb;transition: background 0.2s;}
+.chat-attachment a:hover {background: #dde2f7;}
 
-.community-chat-textarea {
-  width: 100%;
-  min-height: 60px;
-  max-height: 100px;
-  resize: vertical;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-}
-.community-chat-textarea:focus {
-  border-color: var(--lav-1);
-  outline: 2px solid rgba(125,144,224,0.2);
-}
+.community-chat-textarea {width: 100%;min-height: 60px;max-height: 100px;resize: vertical;border: 1px solid var(--line);border-radius: 10px;padding: 8px 10px;font-size: 13px;font-family: inherit;outline: none;}
+.community-chat-textarea:focus {border-color: var(--lav-1);outline: 2px solid rgba(125,144,224,0.2);}
 
-.community-replying-to {
-  background: #fff7df;
-  border: 1px solid #fcd34d;
-  border-radius: 8px;
-  padding: 6px 10px;
-  margin-bottom: 8px;
-  font-size: 11px;
-  color: #92400e;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.community-replying-to button {
-  background: transparent;
-  border: 0;
-  color: var(--red);
-  font-weight: 800;
-  cursor: pointer;
-  padding: 0 5px;
-  font-size: 14px;
-}
+.community-replying-to {background: #fff7df;border: 1px solid #fcd34d;border-radius: 8px;padding: 6px 10px;margin-bottom: 8px;font-size: 11px;color: #92400e;display: flex;justify-content: space-between;align-items: center;}
+.community-replying-to button {background: transparent;border: 0;color: var(--red);font-weight: 800;cursor: pointer;padding: 0 5px;font-size: 14px;}
 
-/* NOUVEAU : Bouton trombone + aperçu fichier */
-.chat-input-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.chat-attach-btn {
-  background: #edf0fb;
-  color: var(--navy);
-  border: 1px solid #d5ddeb;
-  border-radius: 8px;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 20px;
-  padding: 0;
-  flex-shrink: 0;
-  transition: background 0.2s;
-}
-.chat-attach-btn:hover {
-  background: #dde2f7;
-}
-.chat-attach-preview {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #f0f3f8;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  color: var(--ink);
-  flex: 1;
-  overflow: hidden;
-}
-.chat-attach-preview span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-.chat-attach-preview button {
-  background: transparent;
-  border: 0;
-  color: var(--red);
-  font-weight: 800;
-  cursor: pointer;
-  padding: 0;
-  font-size: 14px;
-}
+.chat-input-toolbar {display: flex;align-items: center;gap: 8px;margin-bottom: 6px;}
+.chat-attach-btn {background: #edf0fb;color: var(--navy);border: 1px solid #d5ddeb;border-radius: 8px;width: 36px;height: 36px;display: flex;align-items: center;justify-content: center;cursor: pointer;font-size: 20px;padding: 0;flex-shrink: 0;transition: background 0.2s;}
+.chat-attach-btn:hover {background: #dde2f7;}
+.chat-attach-preview {display: flex;align-items: center;gap: 6px;background: #f0f3f8;padding: 6px 10px;border-radius: 8px;font-size: 11px;color: var(--ink);flex: 1;overflow: hidden;}
+.chat-attach-preview span {overflow: hidden;text-overflow: ellipsis;white-space: nowrap;flex: 1;}
+.chat-attach-preview button {background: transparent;border: 0;color: var(--red);font-weight: 800;cursor: pointer;padding: 0;font-size: 14px;}
 
 @media(max-width: 480px) {
-  #communityPopup {
-    width: calc(100vw - 20px);
-    right: 10px !important;
-    bottom: 85px !important;
-    max-height: calc(100vh - 100px);
-  }
-  #communityWidget {
-    bottom: 15px !important;
-    right: 15px !important;
-    width: 55px;
-    height: 55px;
-    font-size: 24px;
-  }
+  #communityPopup {width: calc(100vw - 20px);right: 10px !important;bottom: 85px !important;max-height: calc(100vh - 100px);}
+  #communityWidget {bottom: 15px !important;right: 15px !important;width: 55px;height: 55px;font-size: 24px;}
 }
 
 #adminModal{display:none;position:fixed;inset:0;background:rgba(19,35,68,.5);z-index:3000;align-items:center;justify-content:center;padding:20px}
@@ -455,16 +189,7 @@ button.danger:hover{background:#ffe0e0}
 .auth-form-container h2{font-size:24px;font-weight:800;color:#000;text-align:center;margin:0 0 18px}
 .auth-input-group{position:relative;margin-bottom:12px}
 .auth-input-group i{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--muted);pointer-events:none}
-.auth-toggle-password{
-  position:absolute;right:0;top:0;bottom:0;
-  width:50px;display:flex;align-items:center;justify-content:center;
-  font-size:20px;color:var(--muted);cursor:pointer;
-  pointer-events:auto;transition:color .2s;
-  background:transparent;border:none;padding:0;
-  z-index:10;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
+.auth-toggle-password{position:absolute;right:0;top:0;bottom:0;width:50px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--muted);cursor:pointer;pointer-events:auto;transition:color .2s;background:transparent;border:none;padding:0;z-index:10;touch-action: manipulation;-webkit-tap-highlight-color: transparent;}
 .auth-toggle-password:hover{color:var(--navy)}
 
 .auth-input-group input,
@@ -707,6 +432,7 @@ button.danger:hover{background:#ffe0e0}
   <div class="tabs">
     <button class="tab active" data-tab="create">📚 Créer un test</button>
     <button class="tab" data-tab="library">🌍 Bibliothèque</button>
+    <button class="tab" data-tab="courses">📖 Cours</button>
     <button class="tab" data-tab="history">📊 Mon Historique</button>
   </div>
 
@@ -716,6 +442,15 @@ button.danger:hover{background:#ffe0e0}
       <div class="grid-2">
         <div><label for="quizTitle">Titre</label><input id="quizTitle" placeholder="Ex. Examen Blanc"></div>
         <div><label for="quizSubject">Matière</label><input id="quizSubject" placeholder="Ex. Immunologie"></div>
+      </div>
+      <div>
+        <label for="quizLevel">Niveau <span style="color:var(--red)">*</span></label>
+        <select id="quizLevel" required>
+          <option value="" disabled selected>Choisir un niveau</option>
+          <option value="LICENCE 1">LICENCE 1</option>
+          <option value="LICENCE 2">LICENCE 2</option>
+          <option value="LICENCE 3">LICENCE 3</option>
+        </select>
       </div>
       <label>Fichier (PDF, DOCX, TXT, IMAGE)</label>
       <div class="filebox">
@@ -750,10 +485,45 @@ button.danger:hover{background:#ffe0e0}
     <div class="panel">
       <h1>🌍 Bibliothèque Publique</h1>
       <p style="color:var(--muted);font-size:14px">Retrouvez ici tous les exercices extraits et partagés par la communauté.</p>
+      
+      <div class="level-filters" id="libraryFilters">
+        <button class="level-filter active" data-level="all" onclick="filterLibrary('all')">Tous</button>
+        <button class="level-filter" data-level="LICENCE 1" onclick="filterLibrary('LICENCE 1')">LICENCE 1</button>
+        <button class="level-filter" data-level="LICENCE 2" onclick="filterLibrary('LICENCE 2')">LICENCE 2</button>
+        <button class="level-filter" data-level="LICENCE 3" onclick="filterLibrary('LICENCE 3')">LICENCE 3</button>
+      </div>
+      
       <div id="libraryList"><p style="color:var(--muted)">Chargement...</p></div>
       <div class="bulk-actions" id="bulkActions" style="display:none">
         <button class="danger" onclick="deleteSelectedQuizzes()">🗑️ Supprimer la sélection</button>
       </div>
+    </div>
+  </div>
+
+  <div id="tab-courses" class="tab-content hide">
+    <div class="panel">
+      <h1>📖 Cours</h1>
+      <p style="color:var(--muted);font-size:14px">Retrouvez les cours PDF classés par niveau.</p>
+      
+      <div id="adminCourseForm" class="hide" style="background:#f8faff;border-radius:12px;padding:16px;margin-bottom:20px;border:1px solid var(--line)">
+        <h3 style="margin-top:0;font-size:16px">➕ Ajouter un cours (Admin)</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="grid-column:1/-1"><label>Titre du cours</label><input id="courseTitle" placeholder="Ex. Anatomie - Chapitre 1"></div>
+          <div><label>Niveau</label>
+            <select id="courseLevel">
+              <option value="" disabled selected>Choisir un niveau</option>
+              <option value="LICENCE 1">LICENCE 1</option>
+              <option value="LICENCE 2">LICENCE 2</option>
+              <option value="LICENCE 3">LICENCE 3</option>
+            </select>
+          </div>
+          <div><label>Fichier PDF</label><input id="courseFile" type="file" accept=".pdf"></div>
+        </div>
+        <button onclick="addCourse()" style="margin-top:12px;width:100%">📤 Ajouter le cours</button>
+        <div id="courseStatus" style="font-size:12px;margin-top:8px"></div>
+      </div>
+
+      <div id="coursesList"></div>
     </div>
   </div>
 
@@ -791,8 +561,6 @@ button.danger:hover{background:#ffe0e0}
       <span id="replyingToText">Répondre à ...</span>
       <button onclick="cancelReply()" title="Annuler">✖</button>
     </div>
-    
-    <!-- NOUVEAU : Bouton trombone + input fichier caché + aperçu -->
     <input type="file" id="communityFileInput" accept="image/*,.pdf" style="display:none" onchange="onAttachmentSelected(this)">
     <div class="chat-input-toolbar" id="attachmentToolbar">
       <button type="button" class="chat-attach-btn" onclick="document.getElementById('communityFileInput').click()" title="Joindre un fichier">
@@ -803,7 +571,6 @@ button.danger:hover{background:#ffe0e0}
         <button type="button" onclick="removeAttachment()" title="Retirer">✖</button>
       </div>
     </div>
-    
     <textarea id="communityInput" class="community-chat-textarea" placeholder="Écrivez votre message..." maxlength="1000"></textarea>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
       <span style="font-size:10px;color:var(--muted)"><span id="communityCharCount">0</span>/1000</span>
@@ -818,13 +585,11 @@ button.danger:hover{background:#ffe0e0}
       <h2 style="margin:0">⚙️ Panneau d'Administration</h2>
       <button class="ghost" onclick="document.getElementById('adminModal').classList.remove('show')">✖ Fermer</button>
     </div>
-    
     <div class="admin-tabs">
       <button class="admin-tab-btn active" data-atab="create">➕ Créer un compte</button>
       <button class="admin-tab-btn" data-atab="password">🔑 Modifier MDP</button>
       <button class="admin-tab-btn" data-atab="role">👑 Attribuer un rôle</button>
     </div>
-
     <div id="atab-create" class="atab-content">
       <form id="adminCreateForm" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label>Nom</label><input id="newLastName" required placeholder="Dupont"></div>
@@ -849,7 +614,6 @@ button.danger:hover{background:#ffe0e0}
       </form>
       <div id="adminStatus" style="font-size:13px;margin-top:10px;color:var(--green)"></div>
     </div>
-
     <div id="atab-password" class="atab-content hide">
       <p style="color:var(--muted);font-size:13px">Sélectionnez un utilisateur ou saisissez son email pour réinitialiser son mot de passe.</p>
       <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:15px">
@@ -858,7 +622,6 @@ button.danger:hover{background:#ffe0e0}
         <button onclick="adminChangePassword()" style="margin-bottom:2px">Modifier</button>
       </div>
     </div>
-
     <div id="atab-role" class="atab-content hide">
       <p style="color:var(--muted);font-size:13px">Sélectionnez un utilisateur pour lui attribuer ou retirer le rôle Administrateur.</p>
       <div style="margin-top:15px">
@@ -873,7 +636,6 @@ button.danger:hover{background:#ffe0e0}
         <div id="roleStatus" style="font-size:13px;margin-top:15px"></div>
       </div>
     </div>
-
     <h3 style="margin-top:30px">Comptes existants</h3>
     <div id="adminUsersList">Chargement...</div>
   </div>
@@ -933,9 +695,6 @@ button.danger:hover{background:#ffe0e0}
 'use strict';
 const $=id=>document.getElementById(id);
 
-// ==========================================
-// ⚙️ CONFIGURATION
-// ==========================================
 const API_BASE = 'https://compotestsaas.onrender.com';
 
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -953,9 +712,10 @@ const ADMIN_EMAIL = "hermzo2013@gmail.com";
 let replyingTo = null;
 let unreadRepliesCount = 0;
 let unreadCheckInterval = null;
-
-// NOUVEAU : Fichier sélectionné pour la pièce jointe
 let selectedAttachment = null;
+
+// NOUVEAU : Filtre actif de la bibliothèque
+let currentLibraryFilter = 'all';
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -1008,9 +768,6 @@ window.togglePasswordVisibility = togglePasswordVisibility;
   }
 })();
 
-// ==========================================
-// 🎨 ANIMATION AUTH
-// ==========================================
 function toggleAuthForm() {
   const c = $('authContainer');
   if (c) c.classList.toggle('active');
@@ -1019,9 +776,6 @@ function toggleAuthForm() {
 }
 window.toggleAuthForm = toggleAuthForm;
 
-// ==========================================
-// 🖋️ FILIGRANE ANTI-VOL
-// ==========================================
 function buildWatermark() {
   const name = (currentUser?.user_metadata?.full_name || currentUser?.email || 'CompoTest').toString();
   const safe = name.replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
@@ -1037,9 +791,6 @@ function buildWatermark() {
   document.documentElement.style.setProperty('--watermark-svg', `url("data:image/svg+xml;charset=utf-8,${encoded}")`);
 }
 
-// ==========================================
-// 🖼️ OCR : pré-traitement image
-// ==========================================
 async function preprocessImageForOCR(file) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -1067,9 +818,6 @@ async function preprocessImageForOCR(file) {
   });
 }
 
-// ==========================================
-// 🔐 AUTHENTIFICATION
-// ==========================================
 async function initAuth() {
   if (!supabaseClient) { $('authGate').classList.add('show'); return; }
   supabaseClient.auth.onAuthStateChange((_event, session) => handleSession(session));
@@ -1104,6 +852,13 @@ function handleSession(session) {
     $('pwdBtn').style.display = isAdmin ? 'block' : 'none';
     $('adminBtn').style.display = isAdmin ? 'block' : 'none';
     $('clearHistoryBtn').style.display = isAdmin ? 'block' : 'none';
+    
+    // NOUVEAU : Afficher le formulaire d'ajout de cours pour l'admin
+    if (isAdmin) {
+      $('adminCourseForm').classList.remove('hide');
+    } else {
+      $('adminCourseForm').classList.add('hide');
+    }
 
     buildWatermark();
     if(isAdmin) loadAdminUsers();
@@ -1123,6 +878,7 @@ function handleSession(session) {
     $('clearHistoryBtn').style.display = 'none';
     $('communityWidget').style.display = 'none';
     $('communityPopup').classList.remove('show');
+    $('adminCourseForm').classList.add('hide');
     if (unreadCheckInterval) { clearInterval(unreadCheckInterval); unreadCheckInterval = null; }
     updateCommunityBadge(0);
   }
@@ -1238,7 +994,312 @@ $('pwdBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
-// 💬 COMMUNAUTÉ (avec pièces jointes)
+// 📖 COURS (NOUVEAU)
+// ==========================================
+async function loadCourses() {
+  if (!supabaseClient) return;
+  const list = $('coursesList');
+  list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
+  
+  try {
+    const { data, error } = await supabaseClient
+      .from('courses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      list.innerHTML = `<p style="color:var(--red)">Erreur : ${esc(error.message)}</p>`;
+      return;
+    }
+
+    const levels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
+    
+    list.innerHTML = levels.map(level => {
+      const levelCourses = (data || []).filter(c => c.level === level);
+      return `
+        <div class="course-section">
+          <h2>${level}</h2>
+          ${levelCourses.length === 0 
+            ? '<p style="color:var(--muted);font-size:13px;">Aucun cours disponible.</p>' 
+            : levelCourses.map(c => `
+              <div class="course-item">
+                <div class="course-item-title">📄 ${esc(c.title)}</div>
+                <a href="${esc(c.file_url)}" target="_blank" rel="noopener">
+                  <i class='bx bx-download'></i> Télécharger
+                </a>
+              </div>
+            `).join('')
+          }
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    list.innerHTML = `<p style="color:var(--red)">Erreur réseau : ${esc(e.message)}</p>`;
+  }
+}
+window.loadCourses = loadCourses;
+
+async function addCourse() {
+  if (!isAdmin || !supabaseClient) return;
+  
+  const title = $('courseTitle').value.trim();
+  const level = $('courseLevel').value;
+  const fileInput = $('courseFile');
+  const status = $('courseStatus');
+  
+  if (!title || !level || !fileInput.files || fileInput.files.length === 0) {
+    status.textContent = "❌ Tous les champs sont requis.";
+    status.style.color = "var(--red)";
+    return;
+  }
+  
+  const file = fileInput.files[0];
+  if (file.size > 10 * 1024 * 1024) {
+    status.textContent = "❌ Fichier trop volumineux (10 Mo max).";
+    status.style.color = "var(--red)";
+    return;
+  }
+  
+  status.textContent = "⏳ Upload en cours...";
+  status.style.color = "var(--muted)";
+  
+  try {
+    // Upload dans Supabase Storage
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.pdf`;
+    const filePath = `${level}/${fileName}`;
+    
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from('courses_files')
+      .upload(filePath, file, { cacheControl: '3600', upsert: false });
+    
+    if (uploadError) throw new Error("Erreur upload : " + uploadError.message);
+    
+    const { data: urlData } = supabaseClient.storage
+      .from('courses_files')
+      .getPublicUrl(filePath);
+    
+    // Insérer dans la table courses
+    const { error: dbError } = await supabaseClient
+      .from('courses')
+      .insert({
+        title: title,
+        level: level,
+        file_url: urlData.publicUrl
+      });
+    
+    if (dbError) throw new Error("Erreur DB : " + dbError.message);
+    
+    status.textContent = "✅ Cours ajouté avec succès !";
+    status.style.color = "var(--green)";
+    
+    // Reset
+    $('courseTitle').value = '';
+    $('courseLevel').value = '';
+    $('courseFile').value = '';
+    
+    await loadCourses();
+  } catch (e) {
+    status.textContent = "❌ " + e.message;
+    status.style.color = "var(--red)";
+  }
+}
+window.addCourse = addCourse;
+
+// ==========================================
+// 📚 BIBLIOTHÈQUE (avec filtre niveau)
+// ==========================================
+function filterLibrary(level) {
+  currentLibraryFilter = level;
+  document.querySelectorAll('.level-filter').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.level === level);
+  });
+  renderLibraryList();
+}
+window.filterLibrary = filterLibrary;
+
+function renderLibraryList() {
+  const list = $('libraryList');
+  if (!libraryCache || libraryCache.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted)">Aucun exercice dans la bibliothèque pour le moment.</p>';
+    return;
+  }
+  
+  const filtered = currentLibraryFilter === 'all' 
+    ? libraryCache 
+    : libraryCache.filter(q => q.level === currentLibraryFilter);
+  
+  if (filtered.length === 0) {
+    list.innerHTML = `<p style="color:var(--muted)">Aucun exercice pour le niveau ${currentLibraryFilter}.</p>`;
+    return;
+  }
+  
+  list.innerHTML = filtered.map(q => {
+    const idx = libraryCache.indexOf(q);
+    const levelBadge = q.level ? `<span class="level-badge">${esc(q.level.replace('LICENCE ', 'L'))}</span>` : '';
+    return `
+      <div class="history-item library-item">
+        ${isAdmin ? `<input type="checkbox" class="quiz-select-checkbox" data-id="${q.id}" onchange="toggleQuizSelection('${q.id}', this.checked)">` : ''}
+        <div style="flex:1;cursor:pointer" onclick="startLibraryQuizByIndex(${idx})">
+          <div style="font-weight:700">${esc(q.title)} ${levelBadge}</div>
+          <div style="font-size:12px;color:var(--muted)">
+            ${esc(q.subject || 'Général')} • ${q.questions.length} question(s) • ${new Date(q.created_at).toLocaleDateString('fr-FR')}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-icon" onclick="startLibraryQuizByIndex(${idx})" title="Commencer">▶️</button>
+          ${isAdmin ? `<button class="btn-icon" onclick="openEditQuiz(${idx})" title="Modifier les corrections">✏️</button>` : ''}
+          ${isAdmin ? `<button class="btn-icon" onclick="deleteLibraryQuiz('${q.id}')" title="Supprimer">🗑️</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadLibrary() {
+  const list = $('libraryList');
+  list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
+  selectedQuizIds.clear();
+  updateBulkActions();
+  try {
+    const data = await fetchWithAuth('/api/quizzes', null, 'GET');
+    libraryCache = data.quizzes || [];
+    renderLibraryList();
+  } catch (e) {
+    list.innerHTML = `<p style="color:var(--red)">Erreur : ${esc(e.message)}</p>`;
+  }
+}
+
+function toggleQuizSelection(id, isChecked) {
+  if (isChecked) selectedQuizIds.add(id);
+  else selectedQuizIds.delete(id);
+  updateBulkActions();
+}
+window.toggleQuizSelection = toggleQuizSelection;
+
+function updateBulkActions() {
+  const bulk = $('bulkActions');
+  if (!bulk) return;
+  bulk.style.display = (isAdmin && selectedQuizIds.size > 0) ? 'flex' : 'none';
+}
+
+async function deleteSelectedQuizzes() {
+  if (!isAdmin || selectedQuizIds.size === 0) return;
+  if (!confirm(`Supprimer les ${selectedQuizIds.size} quiz sélectionnés ?`)) return;
+  const ids = Array.from(selectedQuizIds);
+  let successCount = 0;
+  for (const id of ids) {
+    try {
+      await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE');
+      successCount++;
+    } catch (e) {
+      console.error(`Erreur suppression ${id}:`, e);
+    }
+  }
+  alert(`✅ ${successCount} quiz supprimé(s).`);
+  selectedQuizIds.clear();
+  updateBulkActions();
+  loadLibrary();
+}
+window.deleteSelectedQuizzes = deleteSelectedQuizzes;
+
+window.startLibraryQuizByIndex = (idx) => {
+  const q = libraryCache[idx];
+  if (!q) return alert("Exercice introuvable.");
+  startExam({ title: q.title, questions: q.questions });
+};
+
+window.deleteLibraryQuiz = async (id) => {
+  if (!confirm("Supprimer cet exercice de la bibliothèque ?")) return;
+  try {
+    await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE');
+    loadLibrary();
+  } catch (e) { alert("Erreur : " + e.message); }
+};
+
+window.openEditQuiz = (idx) => {
+  const quiz = libraryCache[idx];
+  if (!quiz) return alert("Quiz introuvable.");
+  editingQuizId = quiz.id;
+  $('editQuizTitle').textContent = "✏️ Éditer : " + quiz.title;
+  const body = $('editQuizBody');
+  body.innerHTML = quiz.questions.map((q, qi) => {
+    const isMulti = q.type === 'mcq_multi';
+    let correctArr = [];
+    if (isMulti) correctArr = Array.isArray(q.correct) ? q.correct : [];
+    else if (q.type === 'mcq' || q.type === 'tf') correctArr = [q.correct];
+    else if (q.type === 'short') correctArr = [];
+
+    const typeLabel = { mcq: 'Choix unique', mcq_multi: 'QCM multi', tf: 'Vrai/Faux', short: 'Réponse courte' }[q.type] || 'Choix unique';
+
+    let optsHtml = '';
+    if (q.type === 'short') {
+      optsHtml = `<input type="text" class="edit-short-input" data-q="${qi}" value="${esc(q.correct || '')}" placeholder="Réponse attendue" style="width:100%;padding:10px;border:1px solid #d5ddeb;border-radius:8px">`;
+    } else {
+      optsHtml = (q.options || []).map((opt, oi) => {
+        const checked = correctArr.includes(oi) ? 'checked' : '';
+        const inputType = isMulti ? 'checkbox' : 'radio';
+        const nameAttr = isMulti ? '' : `name="q_${qi}"`;
+        return `<div class="edit-opt ${checked ? 'is-correct' : ''}">
+          <input type="${inputType}" ${nameAttr} data-q="${qi}" data-opt="${oi}" ${checked}>
+          <label>${esc(opt)}</label>
+        </div>`;
+      }).join('');
+    }
+
+    return `<div class="edit-q-block">
+      <div class="edit-q-text">Q${qi + 1}. ${esc(q.text)} <span class="edit-q-type">${typeLabel}</span></div>
+      ${optsHtml}
+    </div>`;
+  }).join('');
+
+  body.querySelectorAll('.edit-opt input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const block = inp.closest('.edit-opt');
+      if (inp.type === 'checkbox') {
+        block.classList.toggle('is-correct', inp.checked);
+      } else {
+        const name = inp.name;
+        body.querySelectorAll(`input[name="${name}"]`).forEach(other => {
+          other.closest('.edit-opt').classList.remove('is-correct');
+        });
+        block.classList.toggle('is-correct', inp.checked);
+      }
+    });
+  });
+
+  $('editQuizModal').classList.add('show');
+};
+
+$('editSaveBtn').addEventListener('click', async () => {
+  const quiz = libraryCache.find(q => q.id === editingQuizId);
+  if (!quiz) return alert("Quiz introuvable.");
+  const newQuestions = quiz.questions.map((q, qi) => {
+    let newCorrect;
+    if (q.type === 'short') {
+      const inp = document.querySelector(`.edit-short-input[data-q="${qi}"]`);
+      newCorrect = inp ? inp.value.trim() : (q.correct || '');
+    } else if (q.type === 'mcq_multi') {
+      newCorrect = [...document.querySelectorAll(`input[data-q="${qi}"]:checked`)].map(x => parseInt(x.dataset.opt));
+    } else {
+      const checked = document.querySelector(`input[data-q="${qi}"]:checked`);
+      newCorrect = checked ? parseInt(checked.dataset.opt) : 0;
+    }
+    return { ...q, correct: newCorrect };
+  });
+
+  try {
+    await fetchWithAuth(`/api/quizzes/${editingQuizId}`, { questions: newQuestions }, 'PUT');
+    const localQuiz = libraryCache.find(q => q.id === editingQuizId);
+    if (localQuiz) localQuiz.questions = newQuestions;
+    alert("✅ Corrections sauvegardées !");
+    $('editQuizModal').classList.remove('show');
+  } catch (e) {
+    alert("❌ Erreur : " + e.message);
+  }
+});
+
+// ==========================================
+// 💬 COMMUNAUTÉ
 // ==========================================
 function toggleCommunityPopup() {
   const popup = $('communityPopup');
@@ -1253,18 +1314,14 @@ function toggleCommunityPopup() {
 }
 window.toggleCommunityPopup = toggleCommunityPopup;
 
-// NOUVEAU : Sélection d'un fichier
 function onAttachmentSelected(input) {
   if (!input.files || input.files.length === 0) return;
   const file = input.files[0];
-  
-  // Limite de taille : 5 Mo
   if (file.size > 5 * 1024 * 1024) {
     alert("Fichier trop volumineux (5 Mo maximum).");
     input.value = '';
     return;
   }
-  
   selectedAttachment = file;
   $('attachmentName').textContent = file.name;
   $('attachmentPreview').style.display = 'flex';
@@ -1279,27 +1336,18 @@ function removeAttachment() {
 }
 window.removeAttachment = removeAttachment;
 
-// NOUVEAU : Upload d'une pièce jointe dans Supabase Storage
 async function uploadAttachment(file) {
   if (!supabaseClient || !file) return null;
-  
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
   const filePath = `${currentUser.id}/${fileName}`;
-  
   const { data, error } = await supabaseClient.storage
     .from('community_attachments')
-    .upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: false
-    });
-  
+    .upload(filePath, file, { cacheControl: '3600', upsert: false });
   if (error) throw new Error("Erreur upload : " + error.message);
-  
   const { data: urlData } = supabaseClient.storage
     .from('community_attachments')
     .getPublicUrl(filePath);
-  
   return urlData.publicUrl;
 }
 window.uploadAttachment = uploadAttachment;
@@ -1308,28 +1356,23 @@ async function loadCommunity() {
   if (!supabaseClient) return;
   const list = $('communityList');
   list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">Chargement...</p>';
-  
   try {
     const { data, error } = await supabaseClient
       .from('community_posts')
       .select('*')
       .order('created_at', { ascending: false });
-
     if (error) {
       list.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Erreur : ${esc(error.message)}</p>`;
       return;
     }
-
     if (!data || data.length === 0) {
       list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">Aucun message pour le moment. Soyez le premier à publier !</p>';
       return;
     }
-
     list.innerHTML = data.map(post => {
       const isAuthor = currentUser && post.user_id === currentUser.id;
       const canDelete = isAdmin || isAuthor;
       const date = new Date(post.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
-      
       let replyContext = '';
       if (post.reply_to_id) {
         const parentPost = data.find(p => p.id === post.reply_to_id);
@@ -1338,8 +1381,6 @@ async function loadCommunity() {
           replyContext = `<div class="chat-reply-info">↩️ En réponse à <b>@${esc(parentAuthor)}</b></div>`;
         }
       }
-      
-      // NOUVEAU : Affichage de la pièce jointe
       let attachmentHtml = '';
       if (post.attachment_url) {
         if (post.attachment_type === 'image') {
@@ -1348,10 +1389,8 @@ async function loadCommunity() {
           attachmentHtml = `<div class="chat-attachment"><a href="${esc(post.attachment_url)}" target="_blank" rel="noopener"><i class='bx bx-file'></i> Télécharger le fichier</a></div>`;
         }
       }
-      
       const replyBtn = !isAuthor ? `<button onclick="startReply('${post.id}', '${post.user_id}', '${esc(post.author_name || 'Anonyme')}')">↩️ Répondre</button>` : '';
       const deleteBtn = canDelete ? `<button class="del" onclick="deleteCommunityPost('${post.id}')">🗑️</button>` : '';
-      
       return `
         <div class="chat-msg ${isAuthor ? 'is-mine' : ''}">
           <div class="chat-msg-header">
@@ -1380,7 +1419,6 @@ function startReply(postId, userId, authorName) {
   input.value = `@${authorName} `;
   input.focus();
   $('communityCharCount').textContent = input.value.length;
-  
   const replyBox = $('replyingTo');
   replyBox.style.display = 'flex';
   $('replyingToText').innerHTML = `↩️ Répondre à <b>@${esc(authorName)}</b>`;
@@ -1399,35 +1437,21 @@ async function postMessage() {
   if (!supabaseClient || !currentUser) return;
   const input = $('communityInput');
   const content = input.value.trim();
-  
-  // Autoriser l'envoi même si le texte est vide, du moment qu'il y a une pièce jointe
   if (!content && !selectedAttachment) return alert("Écrivez un message ou joignez un fichier.");
   if (content.length > 1000) return alert("Message trop long (1000 caractères max).");
-
   const btn = $('communityPostBtn');
   const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '⏳...';
-
   try {
     let attachmentUrl = null;
     let attachmentType = null;
-    
-    // NOUVEAU : Upload de la pièce jointe si présente
     if (selectedAttachment) {
       btn.textContent = '📎 Envoi...';
       attachmentUrl = await uploadAttachment(selectedAttachment);
-      
-      // Déterminer le type
-      if (selectedAttachment.type.startsWith('image/')) {
-        attachmentType = 'image';
-      } else {
-        attachmentType = 'file';
-      }
+      attachmentType = selectedAttachment.type.startsWith('image/') ? 'image' : 'file';
     }
-    
     const authorName = currentUser.user_metadata?.full_name || (currentUser.email || '').split('@')[0];
-    
     const postData = {
       user_id: currentUser.id,
       author_name: authorName,
@@ -1435,16 +1459,13 @@ async function postMessage() {
       attachment_url: attachmentUrl,
       attachment_type: attachmentType
     };
-    
     if (replyingTo) {
       postData.reply_to_id = replyingTo.postId;
       postData.recipient_id = replyingTo.userId;
     }
-    
     const { error } = await supabaseClient
       .from('community_posts')
       .insert(postData);
-
     if (error) {
       alert("Erreur : " + error.message);
     } else {
@@ -1466,13 +1487,11 @@ window.postMessage = postMessage;
 async function deleteCommunityPost(postId) {
   if (!supabaseClient || !currentUser) return;
   if (!confirm("Supprimer ce message ?")) return;
-
   try {
     const { error } = await supabaseClient
       .from('community_posts')
       .delete()
       .eq('id', postId);
-
     if (error) {
       alert("Erreur : " + error.message);
     } else {
@@ -1486,20 +1505,16 @@ window.deleteCommunityPost = deleteCommunityPost;
 
 async function checkUnreadReplies() {
   if (!supabaseClient || !currentUser) return;
-  
   try {
     const readIds = JSON.parse(localStorage.getItem('comptest_read_community') || '[]');
-    
     const { data, error } = await supabaseClient
       .from('community_posts')
       .select('id')
       .eq('recipient_id', currentUser.id);
-    
     if (error) {
       console.error('Erreur checkUnreadReplies:', error);
       return;
     }
-    
     const unread = (data || []).filter(post => !readIds.includes(post.id));
     unreadRepliesCount = unread.length;
     updateCommunityBadge(unreadRepliesCount);
@@ -1522,19 +1537,16 @@ function updateCommunityBadge(count) {
 
 async function markRepliesAsRead() {
   if (!supabaseClient || !currentUser) return;
-  
   try {
     const { data } = await supabaseClient
       .from('community_posts')
       .select('id')
       .eq('recipient_id', currentUser.id);
-    
     if (data && data.length > 0) {
       const readIds = JSON.parse(localStorage.getItem('comptest_read_community') || '[]');
       const newReadIds = [...new Set([...readIds, ...data.map(p => p.id)])];
       localStorage.setItem('comptest_read_community', JSON.stringify(newReadIds));
     }
-    
     unreadRepliesCount = 0;
     updateCommunityBadge(0);
   } catch (e) {
@@ -1743,6 +1755,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     if (target) target.classList.remove('hide');
     
     if (tab.dataset.tab === 'library') loadLibrary();
+    if (tab.dataset.tab === 'courses') loadCourses();
   });
 });
 
@@ -1835,6 +1848,13 @@ async function fetchWithAuth(url, body, method = 'POST') {
 }
 
 async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
+  // NOUVEAU : Récupérer le niveau
+  const level = $('quizLevel').value;
+  if (!level) {
+    alert("Veuillez sélectionner un niveau avant de générer ou extraire.");
+    return;
+  }
+  
   let quizzesToStart = [];
   if (shouldSplit && questions.length > 50) {
     const chunks = [];
@@ -1843,14 +1863,14 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
     for (let i = 0; i < chunks.length; i++) {
       const chunkTitle = `${baseTitle} - Partie ${i + 1}`;
       try {
-        await fetchWithAuth('/api/quizzes', { title: chunkTitle, subject, questions: chunks[i] });
+        await fetchWithAuth('/api/quizzes', { title: chunkTitle, subject, level, questions: chunks[i] });
         quizzesToStart.push({ title: chunkTitle, questions: chunks[i] });
       } catch (e) { console.error(`Erreur sauvegarde ${chunkTitle}:`, e); }
     }
     $('analysisStatus').textContent += ` ✅ ${chunks.length} quiz publiés !`;
   } else {
     try {
-      await fetchWithAuth('/api/quizzes', { title: baseTitle, subject, questions });
+      await fetchWithAuth('/api/quizzes', { title: baseTitle, subject, level, questions });
       quizzesToStart.push({ title: baseTitle, questions });
       $('analysisStatus').textContent += ' ✅ Publié !';
     } catch (e) {
@@ -1866,6 +1886,12 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
 
 $('generatePostTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value.trim(); if(!text) return;
+  const level = $('quizLevel').value;
+  if (!level) {
+    $('analysisStatus').className = 'notice err';
+    $('analysisStatus').textContent = '❌ Veuillez sélectionner un niveau avant de générer.';
+    return;
+  }
   const btn = $('generatePostTestBtn'); 
   const original = btn.innerHTML;
   btn.innerHTML = '⏳ Génération...'; btn.disabled = true;
@@ -1889,6 +1915,12 @@ $('generatePostTestBtn').addEventListener('click', async () => {
 
 $('extractTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value; if(!text) return;
+  const level = $('quizLevel').value;
+  if (!level) {
+    $('analysisStatus').className = 'notice err';
+    $('analysisStatus').textContent = '❌ Veuillez sélectionner un niveau avant d\'extraire.';
+    return;
+  }
   const btn = $('extractTestBtn');
   const original = btn.innerHTML;
   btn.innerHTML = '⏳ Extraction...'; btn.disabled = true;
@@ -1908,175 +1940,6 @@ $('extractTestBtn').addEventListener('click', async () => {
     if (/Session expirée/i.test(err.message)) { $('sessionWarning').classList.remove('hide'); setTimeout(() => supabaseClient.auth.signOut(), 1500); }
     else { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ ' + err.message; }
   } finally { btn.innerHTML = original; btn.disabled = false; }
-});
-
-// ==========================================
-// 📚 BIBLIOTHÈQUE
-// ==========================================
-async function loadLibrary() {
-  const list = $('libraryList');
-  list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
-  selectedQuizIds.clear();
-  updateBulkActions();
-  try {
-    const data = await fetchWithAuth('/api/quizzes', null, 'GET');
-    if (!data.quizzes || data.quizzes.length === 0) {
-      list.innerHTML = '<p style="color:var(--muted)">Aucun exercice dans la bibliothèque pour le moment.</p>';
-      return;
-    }
-    libraryCache = data.quizzes; 
-    list.innerHTML = data.quizzes.map((q, idx) => `
-      <div class="history-item library-item">
-        ${isAdmin ? `<input type="checkbox" class="quiz-select-checkbox" data-id="${q.id}" onchange="toggleQuizSelection('${q.id}', this.checked)">` : ''}
-        <div style="flex:1;cursor:pointer" onclick="startLibraryQuizByIndex(${idx})">
-          <div style="font-weight:700">${esc(q.title)}</div>
-          <div style="font-size:12px;color:var(--muted)">
-            ${esc(q.subject || 'Général')} • ${q.questions.length} question(s) • ${new Date(q.created_at).toLocaleDateString('fr-FR')}
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn-icon" onclick="startLibraryQuizByIndex(${idx})" title="Commencer">▶️</button>
-          ${isAdmin ? `<button class="btn-icon" onclick="openEditQuiz(${idx})" title="Modifier les corrections">✏️</button>` : ''}
-          ${isAdmin ? `<button class="btn-icon" onclick="deleteLibraryQuiz('${q.id}')" title="Supprimer">🗑️</button>` : ''}
-        </div>
-      </div>
-    `).join('');
-  } catch (e) {
-    list.innerHTML = `<p style="color:var(--red)">Erreur : ${esc(e.message)}</p>`;
-  }
-}
-
-function toggleQuizSelection(id, isChecked) {
-  if (isChecked) selectedQuizIds.add(id);
-  else selectedQuizIds.delete(id);
-  updateBulkActions();
-}
-window.toggleQuizSelection = toggleQuizSelection;
-
-function updateBulkActions() {
-  const bulk = $('bulkActions');
-  if (!bulk) return;
-  if (isAdmin && selectedQuizIds.size > 0) {
-    bulk.style.display = 'flex';
-  } else {
-    bulk.style.display = 'none';
-  }
-}
-
-async function deleteSelectedQuizzes() {
-  if (!isAdmin || selectedQuizIds.size === 0) return;
-  if (!confirm(`Supprimer les ${selectedQuizIds.size} quiz sélectionnés ?`)) return;
-  const ids = Array.from(selectedQuizIds);
-  let successCount = 0;
-  for (const id of ids) {
-    try {
-      await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE');
-      successCount++;
-    } catch (e) {
-      console.error(`Erreur suppression ${id}:`, e);
-    }
-  }
-  alert(`✅ ${successCount} quiz supprimé(s).`);
-  selectedQuizIds.clear();
-  updateBulkActions();
-  loadLibrary();
-}
-window.deleteSelectedQuizzes = deleteSelectedQuizzes;
-
-window.startLibraryQuizByIndex = (idx) => {
-  const q = libraryCache[idx];
-  if (!q) return alert("Exercice introuvable.");
-  startExam({ title: q.title, questions: q.questions });
-};
-
-window.deleteLibraryQuiz = async (id) => {
-  if (!confirm("Supprimer cet exercice de la bibliothèque ?")) return;
-  try {
-    await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE');
-    loadLibrary();
-  } catch (e) { alert("Erreur : " + e.message); }
-};
-
-window.openEditQuiz = (idx) => {
-  const quiz = libraryCache[idx];
-  if (!quiz) return alert("Quiz introuvable.");
-  editingQuizId = quiz.id;
-  $('editQuizTitle').textContent = "✏️ Éditer : " + quiz.title;
-  const body = $('editQuizBody');
-  body.innerHTML = quiz.questions.map((q, qi) => {
-    const isMulti = q.type === 'mcq_multi';
-    let correctArr = [];
-    if (isMulti) correctArr = Array.isArray(q.correct) ? q.correct : [];
-    else if (q.type === 'mcq' || q.type === 'tf') correctArr = [q.correct];
-    else if (q.type === 'short') correctArr = [];
-
-    const typeLabel = { mcq: 'Choix unique', mcq_multi: 'QCM multi', tf: 'Vrai/Faux', short: 'Réponse courte' }[q.type] || 'Choix unique';
-
-    let optsHtml = '';
-    if (q.type === 'short') {
-      optsHtml = `<input type="text" class="edit-short-input" data-q="${qi}" value="${esc(q.correct || '')}" placeholder="Réponse attendue" style="width:100%;padding:10px;border:1px solid #d5ddeb;border-radius:8px">`;
-    } else {
-      optsHtml = (q.options || []).map((opt, oi) => {
-        const checked = correctArr.includes(oi) ? 'checked' : '';
-        const inputType = isMulti ? 'checkbox' : 'radio';
-        const nameAttr = isMulti ? '' : `name="q_${qi}"`;
-        return `<div class="edit-opt ${checked ? 'is-correct' : ''}">
-          <input type="${inputType}" ${nameAttr} data-q="${qi}" data-opt="${oi}" ${checked}>
-          <label>${esc(opt)}</label>
-        </div>`;
-      }).join('');
-    }
-
-    return `<div class="edit-q-block">
-      <div class="edit-q-text">Q${qi + 1}. ${esc(q.text)} <span class="edit-q-type">${typeLabel}</span></div>
-      ${optsHtml}
-    </div>`;
-  }).join('');
-
-  body.querySelectorAll('.edit-opt input').forEach(inp => {
-    inp.addEventListener('change', () => {
-      const block = inp.closest('.edit-opt');
-      if (inp.type === 'checkbox') {
-        block.classList.toggle('is-correct', inp.checked);
-      } else {
-        const name = inp.name;
-        body.querySelectorAll(`input[name="${name}"]`).forEach(other => {
-          other.closest('.edit-opt').classList.remove('is-correct');
-        });
-        block.classList.toggle('is-correct', inp.checked);
-      }
-    });
-  });
-
-  $('editQuizModal').classList.add('show');
-};
-
-$('editSaveBtn').addEventListener('click', async () => {
-  const quiz = libraryCache.find(q => q.id === editingQuizId);
-  if (!quiz) return alert("Quiz introuvable.");
-  const newQuestions = quiz.questions.map((q, qi) => {
-    let newCorrect;
-    if (q.type === 'short') {
-      const inp = document.querySelector(`.edit-short-input[data-q="${qi}"]`);
-      newCorrect = inp ? inp.value.trim() : (q.correct || '');
-    } else if (q.type === 'mcq_multi') {
-      newCorrect = [...document.querySelectorAll(`input[data-q="${qi}"]:checked`)].map(x => parseInt(x.dataset.opt));
-    } else {
-      const checked = document.querySelector(`input[data-q="${qi}"]:checked`);
-      newCorrect = checked ? parseInt(checked.dataset.opt) : 0;
-    }
-    return { ...q, correct: newCorrect };
-  });
-
-  try {
-    await fetchWithAuth(`/api/quizzes/${editingQuizId}`, { questions: newQuestions }, 'PUT');
-    const localQuiz = libraryCache.find(q => q.id === editingQuizId);
-    if (localQuiz) localQuiz.questions = newQuestions;
-    alert("✅ Corrections sauvegardées !");
-    $('editQuizModal').classList.remove('show');
-  } catch (e) {
-    alert("❌ Erreur : " + e.message);
-  }
 });
 
 // ==========================================
