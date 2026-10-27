@@ -217,7 +217,6 @@ button.danger:hover{background:#FEE2E2}
   white-space:nowrap;
 }
 .course-item-actions a:hover{background:var(--blue-btn-hover)}
-/* ← MODIF VIDEO : bouton vidéo (bleu info) */
 .course-item-actions button.btn-video{
   background:#0EA5E9;
   color:#fff;
@@ -233,9 +232,23 @@ button.danger:hover{background:#FEE2E2}
   cursor:pointer;
 }
 .course-item-actions button.btn-video:hover{background:#0284C7}
+/* ← MODIF EDIT COURS : bouton d'édition (icône ✏️) */
+.course-item-actions .btn-edit-course{
+  background:#FEF3C7;
+  color:#92400E;
+  border:1px solid #FCD34D;
+  padding:6px 10px;
+  border-radius:8px;
+  font-size:16px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .2s;
+}
+.course-item-actions .btn-edit-course:hover{background:#FDE68A}
 .course-empty{padding:12px;text-align:center;color:var(--muted);font-size:13px}
 
-/* ← MODIF VIDEO : modale de lecture vidéo (au-dessus de tout) */
 #videoModal{
   display:none;
   position:fixed;inset:0;
@@ -304,6 +317,27 @@ button.danger:hover{background:#FEE2E2}
 }
 .video-modal-error a{color:#34D399;word-break:break-all;}
 
+/* ← MODIF EDIT COURS : modale d'édition de cours (design cohérent avec #editQuizModal) */
+#editCourseModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.5);z-index:3600;align-items:center;justify-content:center;padding:20px}
+#editCourseModal.show{display:flex}
+.edit-course-modal-content{background:#fff;border-radius:16px;width:100%;max-width:700px;max-height:92vh;overflow-y:auto;padding:24px;box-shadow:0 10px 40px rgba(6,95,70,.25)}
+.edit-course-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.edit-course-modal-header h2{margin:0;font-size:18px;color:var(--exam-navy)}
+.edit-course-field{margin-bottom:14px}
+.edit-course-field label{display:block;font-size:13px;font-weight:700;margin:0 0 6px;color:var(--ink)}
+.edit-course-field input[type="text"],
+.edit-course-field input[type="url"],
+.edit-course-field select{width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:10px;font-size:14px;font-family:inherit;background:#fff;outline:none;transition:border-color .2s}
+.edit-course-field input:focus,
+.edit-course-field select:focus{border-color:var(--lav-1);outline:2px solid rgba(16,185,129,0.2)}
+.edit-course-hint{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic}
+.edit-course-current-file{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);background:#F9FAFB;padding:8px 10px;border-radius:8px;border:1px solid var(--line);margin-top:6px;overflow:hidden}
+.edit-course-current-file span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.edit-course-current-file a{color:var(--lav-1);font-weight:700;text-decoration:none;white-space:nowrap}
+.edit-course-current-file a:hover{text-decoration:underline}
+.edit-course-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);flex-wrap:wrap}
+#editCourseStatus{font-size:13px;margin-top:10px;text-align:right}
+
 /* BULLE FLOTTANTE COMMUNAUTÉ */
 #communityWidget {position: fixed !important;bottom: 20px !important;right: 20px !important;z-index: 9999 !important;width: 60px;height: 60px;border-radius: 50%;background: linear-gradient(135deg, var(--lav-1), var(--lav-2));color: #fff;display: flex;align-items: center;justify-content: center;font-size: 28px;cursor: pointer;box-shadow: 0 6px 20px rgba(16,185,129,0.5);transition: transform 0.2s, box-shadow 0.2s;border: none;}
 #communityWidget:hover {transform: scale(1.08);box-shadow: 0 8px 25px rgba(16,185,129,0.7);}
@@ -361,8 +395,9 @@ button.danger:hover{background:#FEE2E2}
   .course-toolbar button{padding:5px 10px;font-size:11px;}
   .course-item{padding:10px;}
   .course-item-actions a{padding:6px 10px;font-size:11px;}
-  /* ← MODIF VIDEO : bouton vidéo compact sur mobile */
   .course-item-actions button.btn-video{padding:6px 10px;font-size:11px;}
+  /* ← MODIF EDIT COURS : bouton d'édition compact sur mobile */
+  .course-item-actions .btn-edit-course{padding:5px 8px;font-size:14px;}
   .brand img{height:40px;}
 }
 
@@ -743,7 +778,6 @@ button.danger:hover{background:#FEE2E2}
             </select>
           </div>
           <div><label>Fichier PDF</label><input id="courseFile" type="file" accept=".pdf"></div>
-          <!-- ← MODIF VIDEO : champ vidéo optionnel en pleine largeur -->
           <div style="grid-column:1/-1">
             <label>Lien vidéo (optionnel - YouTube, Vimeo ou .mp4)</label>
             <input id="courseVideoUrl" type="url" placeholder="https://www.youtube.com/watch?v=... ou https://.../video.mp4">
@@ -886,6 +920,53 @@ button.danger:hover{background:#FEE2E2}
   </div>
 </div>
 
+<!-- ← MODIF EDIT COURS : modale d'édition de cours -->
+<div id="editCourseModal">
+  <div class="edit-course-modal-content">
+    <div class="edit-course-modal-header">
+      <h2>✏️ Éditer le cours</h2>
+      <button class="ghost" onclick="closeEditCourse()" title="Fermer">✖</button>
+    </div>
+
+    <div class="edit-course-field">
+      <label for="editCourseTitle">Titre du cours</label>
+      <input type="text" id="editCourseTitle" placeholder="Titre du cours" maxlength="200">
+    </div>
+
+    <div class="edit-course-field">
+      <label for="editCourseLevel">Niveau</label>
+      <select id="editCourseLevel">
+        <option value="LICENCE 1">LICENCE 1</option>
+        <option value="LICENCE 2">LICENCE 2</option>
+        <option value="LICENCE 3">LICENCE 3</option>
+      </select>
+    </div>
+
+    <div class="edit-course-field">
+      <label for="editCourseVideoUrl">Lien vidéo (optionnel)</label>
+      <input type="url" id="editCourseVideoUrl" placeholder="https://www.youtube.com/watch?v=... ou https://.../video.mp4">
+      <div class="edit-course-hint">Laisse vide pour retirer la vidéo.</div>
+    </div>
+
+    <div class="edit-course-field">
+      <label for="editCourseFile">Remplacer le PDF (optionnel)</label>
+      <input type="file" id="editCourseFile" accept=".pdf">
+      <div class="edit-course-hint">Laisse vide pour conserver le PDF actuel.</div>
+      <div class="edit-course-current-file" id="editCourseCurrentFile">
+        <i class='bx bx-file'></i>
+        <span id="editCourseCurrentFileName">Fichier actuel</span>
+        <a id="editCourseCurrentFileLink" href="#" target="_blank" rel="noopener">Ouvrir</a>
+      </div>
+    </div>
+
+    <div class="edit-course-footer">
+      <button class="ghost" onclick="closeEditCourse()">Annuler</button>
+      <button class="success" id="editCourseSaveBtn" onclick="saveEditCourse()">💾 Sauvegarder les modifications</button>
+    </div>
+    <div id="editCourseStatus"></div>
+  </div>
+</div>
+
 <div id="examView">
   <div class="exam-header">
     <div><h2 id="examTitle">Test</h2><div id="examMeta" style="font-size:12px;opacity:.8"></div></div>
@@ -916,7 +997,6 @@ button.danger:hover{background:#FEE2E2}
   </div>
 </div>
 
-<!-- ← MODIF VIDEO : modale de lecture vidéo -->
 <div id="videoModal">
   <div class="video-modal-content">
     <div class="video-modal-header">
@@ -959,6 +1039,9 @@ let unreadCheckInterval = null;
 let selectedAttachment = null;
 
 let currentLibraryFilter = 'all';
+
+// ← MODIF EDIT COURS : état du cours en cours d'édition
+let editingCourseId = null;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -1281,7 +1364,6 @@ $('pwdBtn').addEventListener('click', async () => {
 // 🎬 LECTURE VIDÉO (modale)
 // ==========================================
 function extractYouTubeId(url) {
-  // Gère : watch?v=ID, youtu.be/ID, shorts/ID, embed/ID, live/ID
   const patterns = [
     /[?&]v=([\w-]{11})/,
     /youtu\.be\/([\w-]{11})/,
@@ -1323,12 +1405,10 @@ function buildVideoEmbed(url) {
     };
   }
 
-  // Fichier vidéo direct
   if (/\.(mp4|webm|ogg|ogv|mov)(\?.*)?$/i.test(u)) {
     return { type: 'video', src: u };
   }
 
-  // Fallback : iframe générique (lecteurs externes type Dailymotion, Loom, etc.)
   return {
     type: 'iframe',
     src: u,
@@ -1382,14 +1462,12 @@ function closeVideoModal() {
   const modal = $('videoModal');
   const body = $('videoModalBody');
   if (!modal) return;
-  // Stoppe la lecture (iframe/video) en vidant le body
   if (body) body.innerHTML = '';
   modal.classList.remove('show');
   document.body.style.overflow = 'auto';
 }
 window.closeVideoModal = closeVideoModal;
 
-// Fermeture par clic sur le fond + touche Échap
 document.addEventListener('DOMContentLoaded', () => {
   const modal = $('videoModal');
   if (modal) {
@@ -1494,6 +1572,11 @@ function renderCourses() {
                 ${c.video_url ? `
                   <button type="button" class="btn-video" onclick="event.stopPropagation(); openVideoModal('${esc(c.video_url).replace(/'/g, "\\'")}', '${esc(c.title).replace(/'/g, "\\'")}');" title="Voir la vidéo">
                     <i class='bx bx-play-circle'></i> <span class="hide-mobile">Vidéo</span>
+                  </button>
+                ` : ''}
+                ${isAdmin ? `
+                  <button type="button" class="btn-edit-course" onclick="event.stopPropagation(); openEditCourse('${c.id}');" title="Modifier ce cours">
+                    <i class='bx bx-edit'></i>
                   </button>
                 ` : ''}
               </div>
@@ -1694,7 +1777,6 @@ async function addCourse() {
       .from('courses_files')
       .getPublicUrl(filePath);
     
-    // ← MODIF VIDEO : on ajoute video_url (NULL si vide)
     const { error: dbError } = await supabaseClient
       .from('courses')
       .insert({
@@ -1712,7 +1794,6 @@ async function addCourse() {
     $('courseTitle').value = '';
     $('courseLevel').value = '';
     $('courseFile').value = '';
-    // ← MODIF VIDEO : reset du champ vidéo
     if ($('courseVideoUrl')) $('courseVideoUrl').value = '';
     
     await loadCourses();
@@ -1722,6 +1803,220 @@ async function addCourse() {
   }
 }
 window.addCourse = addCourse;
+
+// ==========================================
+// ✏️ ÉDITION DE COURS (admin)
+// ==========================================
+function openEditCourse(courseId) {
+  if (!isAdmin) return;
+  const course = coursesCache.find(c => c.id === courseId);
+  if (!course) return alert("Cours introuvable.");
+
+  editingCourseId = courseId;
+
+  $('editCourseTitle').value = course.title || '';
+  $('editCourseLevel').value = course.level || 'LICENCE 1';
+  $('editCourseVideoUrl').value = course.video_url || '';
+
+  // Reset du champ fichier (toujours vide à l'ouverture)
+  $('editCourseFile').value = '';
+
+  // Infos du fichier actuel
+  const fileNameEl = $('editCourseCurrentFileName');
+  const fileLinkEl = $('editCourseCurrentFileLink');
+  const currentFileEl = $('editCourseCurrentFile');
+  if (course.file_url) {
+    let displayName = 'PDF actuel';
+    try {
+      const parts = decodeURIComponent(course.file_url).split('/');
+      displayName = parts[parts.length - 1] || 'PDF actuel';
+    } catch (e) { /* noop */ }
+    if (fileNameEl) fileNameEl.textContent = displayName;
+    if (fileLinkEl) fileLinkEl.href = course.file_url;
+    if (currentFileEl) currentFileEl.style.display = 'flex';
+  } else {
+    if (fileNameEl) fileNameEl.textContent = 'Aucun fichier';
+    if (fileLinkEl) fileLinkEl.removeAttribute('href');
+    if (currentFileEl) currentFileEl.style.display = 'none';
+  }
+
+  // Reset du status
+  const status = $('editCourseStatus');
+  if (status) { status.textContent = ''; status.style.color = ''; }
+
+  $('editCourseModal').classList.add('show');
+}
+window.openEditCourse = openEditCourse;
+
+function closeEditCourse() {
+  $('editCourseModal').classList.remove('show');
+  editingCourseId = null;
+  const status = $('editCourseStatus');
+  if (status) { status.textContent = ''; status.style.color = ''; }
+}
+window.closeEditCourse = closeEditCourse;
+
+async function saveEditCourse() {
+  if (!isAdmin || !supabaseClient) return;
+  if (!editingCourseId) return alert("Aucun cours sélectionné.");
+
+  const course = coursesCache.find(c => c.id === editingCourseId);
+  if (!course) return alert("Cours introuvable.");
+
+  const status = $('editCourseStatus');
+  const saveBtn = $('editCourseSaveBtn');
+
+  const newTitle = $('editCourseTitle').value.trim();
+  const newLevel = $('editCourseLevel').value;
+  const newVideoUrl = $('editCourseVideoUrl').value.trim();
+  const newFileInput = $('editCourseFile');
+
+  if (!newTitle || !newLevel) {
+    status.textContent = "❌ Le titre et le niveau sont requis.";
+    status.style.color = "var(--red)";
+    return;
+  }
+
+  const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
+  if (!validLevels.includes(newLevel)) {
+    status.textContent = "❌ Niveau invalide.";
+    status.style.color = "var(--red)";
+    return;
+  }
+
+  // Vérifie les doublons (même titre + même niveau sur un AUTRE cours)
+  try {
+    const { data: duplicate, error: dupErr } = await supabaseClient
+      .from('courses')
+      .select('id, title, level, file_url')
+      .eq('title', newTitle)
+      .eq('level', newLevel)
+      .neq('id', editingCourseId)
+      .maybeSingle();
+
+    if (dupErr && dupErr.code !== 'PGRST116') {
+      // PGRST116 = "0 lignes trouvées" (pas une vraie erreur)
+      console.warn('Erreur vérif doublon:', dupErr);
+    }
+
+    if (duplicate) {
+      const ok = confirm(`⚠️ Un autre cours nommé "${newTitle}" existe déjà en ${newLevel}.\n\nCliquer sur OK va REMPLACER et SUPPRIMER cet autre cours (PDF inclus). Continuer ?`);
+      if (!ok) {
+        status.textContent = "❌ Modification annulée.";
+        status.style.color = "var(--muted)";
+        return;
+      }
+      // Supprime le PDF de l'autre cours + sa ligne
+      try {
+        const dupFilePath = decodeURIComponent(duplicate.file_url.split('/courses_files/')[1] || '');
+        if (dupFilePath) {
+          await supabaseClient.storage.from('courses_files').remove([dupFilePath]);
+        }
+      } catch (e) { console.warn('Erreur suppression PDF doublon:', e); }
+      await supabaseClient.from('courses').delete().eq('id', duplicate.id);
+    }
+  } catch (e) {
+    console.warn('Erreur vérif doublon:', e);
+    // On continue quand même : la contrainte n'est pas bloquante
+  }
+
+  // Gère le remplacement optionnel du PDF
+  let finalFileUrl = course.file_url;
+  let uploadedNewFilePath = null;
+
+  const hasNewFile = newFileInput && newFileInput.files && newFileInput.files.length > 0;
+
+  if (hasNewFile) {
+    const file = newFileInput.files[0];
+    if (file.size > 10 * 1024 * 1024) {
+      status.textContent = "❌ Fichier trop volumineux (10 Mo max).";
+      status.style.color = "var(--red)";
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = '⏳ Upload...';
+    status.textContent = "⏳ Upload du nouveau PDF...";
+    status.style.color = "var(--muted)";
+
+    try {
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.pdf`;
+      const filePath = `${newLevel}/${fileName}`;
+      const { error: uploadError } = await supabaseClient.storage
+        .from('courses_files')
+        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadError) throw new Error("Erreur upload : " + uploadError.message);
+
+      const { data: urlData } = supabaseClient.storage
+        .from('courses_files')
+        .getPublicUrl(filePath);
+
+      finalFileUrl = urlData.publicUrl;
+      uploadedNewFilePath = filePath;
+
+      // Supprime l'ancien PDF (si présent)
+      try {
+        const oldFilePath = decodeURIComponent(course.file_url.split('/courses_files/')[1] || '');
+        if (oldFilePath) {
+          await supabaseClient.storage.from('courses_files').remove([oldFilePath]);
+        }
+      } catch (e) {
+        console.warn('Erreur suppression ancien PDF:', e);
+        // On continue quand même
+      }
+    } catch (e) {
+      status.textContent = "❌ " + e.message;
+      status.style.color = "var(--red)";
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 Sauvegarder les modifications';
+      return;
+    }
+  }
+
+  // Update en base
+  saveBtn.textContent = '⏳ Sauvegarde...';
+  status.textContent = "⏳ Sauvegarde en base...";
+  status.style.color = "var(--muted)";
+
+  try {
+    const { error: updateError } = await supabaseClient
+      .from('courses')
+      .update({
+        title: newTitle,
+        level: newLevel,
+        file_url: finalFileUrl,
+        video_url: newVideoUrl || null
+      })
+      .eq('id', editingCourseId);
+
+    if (updateError) throw new Error("Erreur DB : " + updateError.message);
+
+    status.textContent = "✅ Cours modifié avec succès !";
+    status.style.color = "var(--green)";
+
+    // Ferme la modale et recharge
+    setTimeout(async () => {
+      closeEditCourse();
+      await loadCourses();
+    }, 600);
+  } catch (e) {
+    // Si un nouveau PDF a été uploadé mais que l'update a échoué → nettoie pour éviter l'orphelin
+    if (uploadedNewFilePath) {
+      try {
+        await supabaseClient.storage.from('courses_files').remove([uploadedNewFilePath]);
+      } catch (cleanupErr) {
+        console.warn('Erreur nettoyage nouveau PDF orphelin:', cleanupErr);
+      }
+    }
+    status.textContent = "❌ " + e.message;
+    status.style.color = "var(--red)";
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = '💾 Sauvegarder les modifications';
+  }
+}
+window.saveEditCourse = saveEditCourse;
 
 document.addEventListener('DOMContentLoaded', () => {
   const courseSearchInput = $('courseSearch');
@@ -1733,6 +2028,20 @@ document.addEventListener('DOMContentLoaded', () => {
   if (quizSearchInput) {
     quizSearchInput.addEventListener('input', renderLibraryList);
   }
+
+  // ← MODIF EDIT COURS : clic sur le fond de la modale d'édition = fermeture + Échap
+  const editCourseModal = $('editCourseModal');
+  if (editCourseModal) {
+    editCourseModal.addEventListener('click', (e) => {
+      if (e.target === editCourseModal) closeEditCourse();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const m = $('editCourseModal');
+      if (m && m.classList.contains('show')) closeEditCourse();
+    }
+  });
 });
 
 // ==========================================
