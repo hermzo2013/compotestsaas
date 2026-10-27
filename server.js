@@ -59,11 +59,7 @@ app.use((req, res, next) => {
 // pour que Render ne soit pas maintenu éveillé inutilement.
 app.get('/api/health', (req, res) => {
   const now = new Date();
-  
-  // Heure en GMT (Côte d'Ivoire = GMT+0, donc pas de décalage)
   const hourUTC = now.getUTCHours();
-  
-  // Plage de veille : 00h00 → 03h59 (4h du matin)
   const isSleeping = hourUTC >= 0 && hourUTC < 4;
   
   if (isSleeping) {
@@ -387,6 +383,9 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
   }
 });
 
+// ==========================================
+// ROUTES QUIZ (CRÉATION, MODIFICATION, SUPPRESSION)
+// ==========================================
 app.post('/api/quizzes', async (req, res) => {
   const { title, subject, level, questions } = req.body;
   if (!title || !questions || !Array.isArray(questions) || questions.length === 0) return res.status(400).json({ error: 'Titre et questions requis.' });
@@ -409,15 +408,70 @@ app.post('/api/quizzes', async (req, res) => {
   } catch (e) { console.error('Erreur POST quizzes:', e.message); res.status(500).json({ error: e.message }); }
 });
 
-app.put('/api/quizzes/:id', requireAdmin, async (req, res) => {
-  const { questions } = req.body;
-  if (!Array.isArray(questions) || questions.length === 0) return res.status(400).json({ error: 'Tableau de questions requis.' });
+// NOUVEAU : PATCH /api/quizzes/:id pour modifier les questions OU le niveau
+app.patch('/api/quizzes/:id', requireAdmin, async (req, res) => {
+  const { questions, level } = req.body;
+  
+  const updates = {};
+  if (questions !== undefined) {
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ error: 'Tableau de questions requis.' });
+    }
+    updates.questions = questions;
+  }
+  if (level !== undefined) {
+    const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
+    if (!validLevels.includes(level)) {
+      return res.status(400).json({ error: 'Niveau invalide. Utilise : LICENCE 1, LICENCE 2 ou LICENCE 3.' });
+    }
+    updates.level = level;
+  }
+  
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ error: 'Aucune modification fournie.' });
+  }
+  
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
     const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, {
       method: 'PATCH',
       headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ questions })
+      body: JSON.stringify(updates)
+    });
+    if (!response.ok) { const err = await response.text(); throw new Error(`Erreur Supabase PATCH: ${err}`); }
+    const data = await response.json(); res.json({ quiz: data[0] });
+  } catch (e) { console.error('Erreur PATCH quizzes:', e.message); res.status(500).json({ error: e.message }); }
+});
+
+// Ancienne route PUT conservée pour compatibilité (questions uniquement)
+app.put('/api/quizzes/:id', requireAdmin, async (req, res) => {
+  const { questions, level } = req.body;
+  
+  const updates = {};
+  if (questions !== undefined) {
+    if (!Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ error: 'Tableau de questions requis.' });
+    }
+    updates.questions = questions;
+  }
+  if (level !== undefined) {
+    const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
+    if (!validLevels.includes(level)) {
+      return res.status(400).json({ error: 'Niveau invalide.' });
+    }
+    updates.level = level;
+  }
+  
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ error: 'Aucune modification fournie.' });
+  }
+  
+  try {
+    const base = process.env.SUPABASE_URL.replace(/\/$/, '');
+    const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, {
+      method: 'PATCH',
+      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify(updates)
     });
     if (!response.ok) { const err = await response.text(); throw new Error(`Erreur Supabase PATCH: ${err}`); }
     const data = await response.json(); res.json({ quiz: data[0] });
@@ -436,6 +490,9 @@ app.delete('/api/quizzes/:id', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ==========================================
+// 🚀 DÉMARRAGE
+// ==========================================
 app.listen(port, '0.0.0.0', () => {
   console.log(`✅ Serveur démarré sur le port ${port}`);
   console.log(`🌐 Environnement: ${process.env.NODE_ENV || 'development'}`);
