@@ -84,33 +84,10 @@ button.danger:hover{background:#ffe0e0}
 .btn-icon:hover{background:#fee2e2}
 
 /* Barres de recherche */
-.search-bar{
-  position:relative;
-  margin-bottom:15px;
-}
-.search-bar input{
-  width:100%;
-  padding:12px 16px 12px 42px;
-  border:1px solid var(--line);
-  border-radius:12px;
-  font-size:14px;
-  background:#f8faff;
-  transition:border-color .2s, background .2s;
-}
-.search-bar input:focus{
-  border-color:var(--lav-1);
-  background:#fff;
-  outline:2px solid rgba(125,144,224,0.2);
-}
-.search-bar .search-icon{
-  position:absolute;
-  left:14px;
-  top:50%;
-  transform:translateY(-50%);
-  font-size:18px;
-  color:var(--muted);
-  pointer-events:none;
-}
+.search-bar{position:relative;margin-bottom:15px;}
+.search-bar input{width:100%;padding:12px 16px 12px 42px;border:1px solid var(--line);border-radius:12px;font-size:14px;background:#f8faff;transition:border-color .2s, background .2s;}
+.search-bar input:focus{border-color:var(--lav-1);background:#fff;outline:2px solid rgba(125,144,224,0.2);}
+.search-bar .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--muted);pointer-events:none;}
 
 /* Filtres de niveau */
 .level-filters{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap}
@@ -119,83 +96,34 @@ button.danger:hover{background:#ffe0e0}
 .level-filter.active{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
 .level-badge{display:inline-block;background:#E0E4F7;color:#4B5EAA;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:8px;text-transform:uppercase}
 
-/* ==========================================
-   NOUVEAU : Accordéon des cours
-   ========================================== */
-.course-accordion {
-  margin-bottom: 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
-  transition: box-shadow 0.2s;
-}
-.course-accordion:hover {
-  box-shadow: 0 2px 8px rgba(75,94,170,0.08);
-}
-.course-accordion summary {
-  padding: 14px 18px;
-  background: #f8faff;
-  cursor: pointer;
-  font-weight: 800;
-  font-size: 15px;
-  color: var(--navy);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  list-style: none;
-  user-select: none;
-  transition: background 0.2s;
-  border-radius: 12px;
-}
-.course-accordion summary::-webkit-details-marker {
-  display: none;
-}
-.course-accordion summary::before {
-  content: '▶';
-  display: inline-block;
-  font-size: 12px;
-  color: var(--blue-btn);
-  transition: transform 0.25s ease;
-  flex-shrink: 0;
-}
-.course-accordion[open] summary::before {
-  transform: rotate(90deg);
-}
-.course-accordion summary:hover {
-  background: #edf0fb;
-}
-.course-accordion[open] summary {
-  border-bottom: 1px solid var(--line);
-  border-radius: 12px 12px 0 0;
-}
-.course-accordion .course-count {
-  margin-left: auto;
-  background: #E0E4F7;
-  color: var(--navy);
-  font-size: 11px;
-  font-weight: 800;
-  padding: 2px 10px;
-  border-radius: 99px;
-}
-.course-accordion-body {
-  padding: 8px 12px 12px;
-}
-.course-accordion-body .course-item {
-  margin-top: 8px;
-}
+/* Accordéon des cours */
+.course-accordion{margin-bottom:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;transition:box-shadow 0.2s;}
+.course-accordion:hover{box-shadow:0 2px 8px rgba(75,94,170,0.08);}
+.course-accordion summary{padding:14px 18px;background:#f8faff;cursor:pointer;font-weight:800;font-size:15px;color:var(--navy);display:flex;align-items:center;gap:10px;list-style:none;user-select:none;transition:background 0.2s;border-radius:12px;}
+.course-accordion summary::-webkit-details-marker{display:none;}
+.course-accordion summary::before{content:'▶';display:inline-block;font-size:12px;color:var(--blue-btn);transition:transform 0.25s ease;flex-shrink:0;}
+.course-accordion[open] summary::before{transform:rotate(90deg);}
+.course-accordion summary:hover{background:#edf0fb;}
+.course-accordion[open] summary{border-bottom:1px solid var(--line);border-radius:12px 12px 0 0;}
+.course-accordion .course-count{margin-left:auto;background:#E0E4F7;color:var(--navy);font-size:11px;font-weight:800;padding:2px 10px;border-radius:99px;}
+.course-accordion-body{padding:8px 12px 12px;}
+.course-accordion-body .course-item{margin-top:8px;}
 
-.course-item{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:#f8faff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+/* NOUVEAU : Bouton "Supprimer la sélection" par niveau */
+.course-bulk-actions{padding:8px 12px;background:#fff7df;border-bottom:1px solid #fcd34d;display:flex;justify-content:flex-end;gap:10px;}
+.course-bulk-actions button{background:#fff0f0;color:var(--red);border:1px solid #fecaca;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;}
+.course-bulk-actions button:hover{background:#ffe0e0;}
+
+.course-item{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:#f8faff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;gap:10px}
 .course-item:last-child{margin-bottom:0}
-.course-item-title{font-weight:700;font-size:14px}
-.course-item a{background:var(--blue-btn);color:#fff;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.course-item a:hover{background:var(--blue-btn-hover)}
-.course-empty {
-  padding: 12px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 13px;
-}
+.course-item-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.course-item-left input[type="checkbox"]{width:18px;height:18px;cursor:pointer;accent-color:#5D6EC7;flex-shrink:0}
+.course-item-title{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.course-item-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.course-item-actions a{background:var(--blue-btn);color:#fff;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.course-item-actions a:hover{background:var(--blue-btn-hover)}
+.course-item-actions .btn-icon{font-size:16px;padding:6px 8px}
+.course-empty{padding:12px;text-align:center;color:var(--muted);font-size:13px}
 
 /* BULLE FLOTTANTE COMMUNAUTÉ */
 #communityWidget {position: fixed !important;bottom: 20px !important;right: 20px !important;z-index: 9999 !important;width: 60px;height: 60px;border-radius: 50%;background: linear-gradient(135deg, var(--lav-1), var(--lav-2));color: #fff;display: flex;align-items: center;justify-content: center;font-size: 28px;cursor: pointer;box-shadow: 0 6px 20px rgba(125,144,224,0.5);transition: transform 0.2s, box-shadow 0.2s;border: none;}
@@ -818,6 +746,7 @@ let libraryCache = [];
 let coursesCache = [];
 let editingQuizId = null;
 let selectedQuizIds = new Set();
+let selectedCourseIds = new Set();
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
 
 let replyingTo = null;
@@ -1145,7 +1074,7 @@ $('pwdBtn').addEventListener('click', async () => {
 });
 
 // ==========================================
-// 📖 COURS (avec recherche + accordéon)
+// 📖 COURS (avec accordéon, recherche, suppression, déplacement, doublons)
 // ==========================================
 async function loadCourses() {
   if (!supabaseClient) return;
@@ -1164,6 +1093,7 @@ async function loadCourses() {
     }
 
     coursesCache = data || [];
+    selectedCourseIds.clear();
     renderCourses();
   } catch (e) {
     list.innerHTML = `<p style="color:var(--red)">Erreur réseau : ${esc(e.message)}</p>`;
@@ -1171,7 +1101,7 @@ async function loadCourses() {
 }
 window.loadCourses = loadCourses;
 
-// NOUVEAU : Rendu des cours en accordéon avec recherche
+// Rendu des cours en accordéon avec recherche
 function renderCourses() {
   const list = $('coursesList');
   const searchQuery = $('courseSearch') ? $('courseSearch').value : '';
@@ -1183,7 +1113,6 @@ function renderCourses() {
     return;
   }
   
-  // Filtrer les cours
   let filtered = coursesCache;
   if (level) {
     filtered = filtered.filter(c => c.level === level);
@@ -1203,8 +1132,8 @@ function renderCourses() {
     const levelCourses = filtered.filter(c => c.level === levelName);
     if (levelCourses.length === 0) return '';
     
-    // NOUVEAU : Ouvrir automatiquement si l'utilisateur cherche
     const shouldOpen = isSearching;
+    const selectedInLevel = levelCourses.filter(c => selectedCourseIds.has(c.id)).length;
     
     return `
       <details class="course-accordion" ${shouldOpen ? 'open' : ''}>
@@ -1212,13 +1141,25 @@ function renderCourses() {
           📂 ${levelName}
           <span class="course-count">${levelCourses.length}</span>
         </summary>
+        ${isAdmin && selectedInLevel > 0 ? `
+          <div class="course-bulk-actions">
+            <button onclick="deleteSelectedCourses('${levelName}')">🗑️ Supprimer la sélection (${selectedInLevel})</button>
+          </div>
+        ` : ''}
         <div class="course-accordion-body">
           ${levelCourses.map(c => `
             <div class="course-item">
-              <div class="course-item-title">📄 ${esc(c.title)}</div>
-              <a href="${esc(c.file_url)}" target="_blank" rel="noopener">
-                <i class='bx bx-download'></i> Télécharger
-              </a>
+              <div class="course-item-left">
+                ${isAdmin ? `<input type="checkbox" onchange="toggleCourseSelection('${c.id}', this.checked)" ${selectedCourseIds.has(c.id) ? 'checked' : ''}>` : ''}
+                <div class="course-item-title">📄 ${esc(c.title)}</div>
+              </div>
+              <div class="course-item-actions">
+                <a href="${esc(c.file_url)}" target="_blank" rel="noopener">
+                  <i class='bx bx-download'></i> Télécharger
+                </a>
+                ${isAdmin ? `<button class="btn-icon" onclick="moveCourse('${c.id}', '${esc(c.level)}')" title="Déplacer vers un autre niveau">➡️</button>` : ''}
+                ${isAdmin ? `<button class="btn-icon" onclick="deleteCourse('${c.id}', '${esc(c.file_url)}')" title="Supprimer">🗑️</button>` : ''}
+              </div>
             </div>
           `).join('')}
         </div>
@@ -1228,19 +1169,143 @@ function renderCourses() {
 }
 window.renderCourses = renderCourses;
 
-// NOUVEAU : Écouteur sur la barre de recherche des cours
-document.addEventListener('DOMContentLoaded', () => {
-  const courseSearchInput = $('courseSearch');
-  if (courseSearchInput) {
-    courseSearchInput.addEventListener('input', renderCourses);
+// NOUVEAU : Sélection d'un cours
+function toggleCourseSelection(id, isChecked) {
+  if (isChecked) selectedCourseIds.add(id);
+  else selectedCourseIds.delete(id);
+  renderCourses();
+}
+window.toggleCourseSelection = toggleCourseSelection;
+
+// NOUVEAU : Suppression d'un cours individuel
+async function deleteCourse(courseId, fileUrl) {
+  if (!isAdmin || !supabaseClient) return;
+  if (!confirm("Supprimer ce cours ? Cette action est irréversible.")) return;
+  
+  try {
+    // Extraire le chemin du fichier depuis l'URL publique
+    const filePath = decodeURIComponent(fileUrl.split('/courses_files/')[1] || '');
+    
+    if (filePath) {
+      const { error: storageError } = await supabaseClient.storage
+        .from('courses_files')
+        .remove([filePath]);
+      if (storageError) console.warn('Erreur suppression fichier:', storageError.message);
+    }
+    
+    const { error: dbError } = await supabaseClient
+      .from('courses')
+      .delete()
+      .eq('id', courseId);
+    
+    if (dbError) throw new Error(dbError.message);
+    
+    selectedCourseIds.delete(courseId);
+    await loadCourses();
+  } catch (e) {
+    alert("❌ Erreur : " + e.message);
+  }
+}
+window.deleteCourse = deleteCourse;
+
+// NOUVEAU : Suppression multiple de cours (par niveau)
+async function deleteSelectedCourses(levelName) {
+  if (!isAdmin || !supabaseClient) return;
+  
+  const levelCourses = coursesCache.filter(c => c.level === levelName && selectedCourseIds.has(c.id));
+  if (levelCourses.length === 0) return;
+  
+  if (!confirm(`Supprimer les ${levelCourses.length} cours sélectionnés en ${levelName} ?`)) return;
+  
+  let successCount = 0;
+  for (const course of levelCourses) {
+    try {
+      const filePath = decodeURIComponent(course.file_url.split('/courses_files/')[1] || '');
+      if (filePath) {
+        await supabaseClient.storage.from('courses_files').remove([filePath]);
+      }
+      const { error } = await supabaseClient.from('courses').delete().eq('id', course.id);
+      if (!error) {
+        selectedCourseIds.delete(course.id);
+        successCount++;
+      }
+    } catch (e) {
+      console.error(`Erreur suppression ${course.id}:`, e);
+    }
   }
   
-  const quizSearchInput = $('quizSearch');
-  if (quizSearchInput) {
-    quizSearchInput.addEventListener('input', renderLibraryList);
-  }
-});
+  alert(`✅ ${successCount} cours supprimé(s).`);
+  await loadCourses();
+}
+window.deleteSelectedCourses = deleteSelectedCourses;
 
+// NOUVEAU : Déplacer un cours vers un autre niveau
+async function moveCourse(courseId, currentLevel) {
+  if (!isAdmin || !supabaseClient) return;
+  
+  const newLevel = prompt("Nouveau niveau (LICENCE 1, LICENCE 2, LICENCE 3) :", currentLevel);
+  if (!newLevel) return;
+  
+  const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
+  const normalizedLevel = newLevel.trim().toUpperCase();
+  
+  if (!validLevels.includes(normalizedLevel)) {
+    alert("❌ Niveau invalide. Utilise : LICENCE 1, LICENCE 2 ou LICENCE 3.");
+    return;
+  }
+  
+  if (normalizedLevel === currentLevel) {
+    alert("ℹ️ Le cours est déjà dans ce niveau.");
+    return;
+  }
+  
+  try {
+    const { error } = await supabaseClient
+      .from('courses')
+      .update({ level: normalizedLevel })
+      .eq('id', courseId);
+    
+    if (error) throw new Error(error.message);
+    
+    alert(`✅ Cours déplacé vers ${normalizedLevel}.`);
+    await loadCourses();
+  } catch (e) {
+    alert("❌ Erreur : " + e.message);
+  }
+}
+window.moveCourse = moveCourse;
+
+// NOUVEAU : Déplacer un quiz vers un autre niveau
+async function moveQuiz(quizId, currentLevel) {
+  if (!isAdmin || !supabaseClient) return;
+  
+  const newLevel = prompt("Nouveau niveau (LICENCE 1, LICENCE 2, LICENCE 3) :", currentLevel || '');
+  if (!newLevel) return;
+  
+  const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
+  const normalizedLevel = newLevel.trim().toUpperCase();
+  
+  if (!validLevels.includes(normalizedLevel)) {
+    alert("❌ Niveau invalide. Utilise : LICENCE 1, LICENCE 2 ou LICENCE 3.");
+    return;
+  }
+  
+  if (normalizedLevel === currentLevel) {
+    alert("ℹ️ Le quiz est déjà dans ce niveau.");
+    return;
+  }
+  
+  try {
+    await fetchWithAuth(`/api/quizzes/${quizId}`, { level: normalizedLevel }, 'PATCH');
+    alert(`✅ Quiz déplacé vers ${normalizedLevel}.`);
+    await loadLibrary();
+  } catch (e) {
+    alert("❌ Erreur : " + e.message);
+  }
+}
+window.moveQuiz = moveQuiz;
+
+// NOUVEAU : Ajout de cours avec gestion des doublons
 async function addCourse() {
   if (!isAdmin || !supabaseClient) return;
   
@@ -1262,10 +1327,41 @@ async function addCourse() {
     return;
   }
   
-  status.textContent = "⏳ Upload en cours...";
+  status.textContent = "⏳ Vérification des doublons...";
   status.style.color = "var(--muted)";
   
   try {
+    // NOUVEAU : Vérifier si un cours avec le même titre ET le même niveau existe
+    const { data: existingCourse } = await supabaseClient
+      .from('courses')
+      .select('*')
+      .eq('title', title)
+      .eq('level', level)
+      .maybeSingle();
+    
+    let isReplacing = false;
+    
+    if (existingCourse) {
+      const confirmReplace = confirm(`⚠️ Un cours nommé "${title}" existe déjà en ${level}.\n\nCliquez sur OK pour REMPLACER l'ancien cours, ou Annuler pour conserver l'ancien.`);
+      if (!confirmReplace) {
+        status.textContent = "❌ Ajout annulé.";
+        status.style.color = "var(--red)";
+        return;
+      }
+      isReplacing = true;
+      
+      // Supprimer l'ancien fichier du stockage
+      const oldFilePath = decodeURIComponent(existingCourse.file_url.split('/courses_files/')[1] || '');
+      if (oldFilePath) {
+        await supabaseClient.storage.from('courses_files').remove([oldFilePath]);
+      }
+      
+      // Supprimer l'ancienne ligne
+      await supabaseClient.from('courses').delete().eq('id', existingCourse.id);
+    }
+    
+    status.textContent = "⏳ Upload en cours...";
+    
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.pdf`;
     const filePath = `${level}/${fileName}`;
     
@@ -1289,7 +1385,7 @@ async function addCourse() {
     
     if (dbError) throw new Error("Erreur DB : " + dbError.message);
     
-    status.textContent = "✅ Cours ajouté avec succès !";
+    status.textContent = isReplacing ? "✅ Cours remplacé !" : "✅ Cours ajouté !";
     status.style.color = "var(--green)";
     
     $('courseTitle').value = '';
@@ -1304,8 +1400,21 @@ async function addCourse() {
 }
 window.addCourse = addCourse;
 
+// Écouteur sur la barre de recherche des cours
+document.addEventListener('DOMContentLoaded', () => {
+  const courseSearchInput = $('courseSearch');
+  if (courseSearchInput) {
+    courseSearchInput.addEventListener('input', renderCourses);
+  }
+  
+  const quizSearchInput = $('quizSearch');
+  if (quizSearchInput) {
+    quizSearchInput.addEventListener('input', renderLibraryList);
+  }
+});
+
 // ==========================================
-// 📚 BIBLIOTHÈQUE (avec recherche + filtre)
+// 📚 BIBLIOTHÈQUE (avec recherche + filtre + déplacement quiz)
 // ==========================================
 function filterLibrary(level) {
   currentLibraryFilter = level;
@@ -1358,6 +1467,7 @@ function renderLibraryList() {
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="btn-icon" onclick="startLibraryQuizByIndex(${idx})" title="Commencer">▶️</button>
+          ${isAdmin ? `<button class="btn-icon" onclick="moveQuiz('${q.id}', '${esc(q.level || '')}')" title="Déplacer vers un autre niveau">➡️</button>` : ''}
           ${isAdmin ? `<button class="btn-icon" onclick="openEditQuiz(${idx})" title="Modifier les corrections">✏️</button>` : ''}
           ${isAdmin ? `<button class="btn-icon" onclick="deleteLibraryQuiz('${q.id}')" title="Supprimer">🗑️</button>` : ''}
         </div>
