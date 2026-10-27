@@ -107,22 +107,121 @@ button.danger:hover{background:#ffe0e0}
 .course-accordion[open] summary{border-bottom:1px solid var(--line);border-radius:12px 12px 0 0;}
 .course-accordion .course-count{margin-left:auto;background:#E0E4F7;color:var(--navy);font-size:11px;font-weight:800;padding:2px 10px;border-radius:99px;}
 .course-accordion-body{padding:8px 12px 12px;}
-.course-accordion-body .course-item{margin-top:8px;}
 
-/* NOUVEAU : Bouton "Supprimer la sélection" par niveau */
-.course-bulk-actions{padding:8px 12px;background:#fff7df;border-bottom:1px solid #fcd34d;display:flex;justify-content:flex-end;gap:10px;}
-.course-bulk-actions button{background:#fff0f0;color:var(--red);border:1px solid #fecaca;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;}
-.course-bulk-actions button:hover{background:#ffe0e0;}
+/* NOUVEAU : Barre d'outils par dossier (en haut) */
+.course-toolbar{
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 14px;
+  background:#fff7df;
+  border-bottom:1px solid #fcd34d;
+  flex-wrap:wrap;
+}
+.course-toolbar.visible{display:flex;}
+.course-toolbar .selected-count{
+  font-size:12px;
+  font-weight:700;
+  color:#92400e;
+  flex-shrink:0;
+}
+.course-toolbar .toolbar-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.course-toolbar button{
+  padding:6px 12px;
+  font-size:12px;
+  font-weight:700;
+  border-radius:8px;
+  border:1px solid;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  transition:opacity 0.2s;
+}
+.course-toolbar button:disabled{
+  opacity:0.4;
+  cursor:not-allowed;
+}
+.course-toolbar button.btn-move{
+  background:#edf0fb;
+  color:var(--navy);
+  border-color:#b8c2ea;
+}
+.course-toolbar button.btn-move:hover:not(:disabled){
+  background:#dde2f7;
+}
+.course-toolbar button.btn-delete{
+  background:#fff0f0;
+  color:var(--red);
+  border-color:#fecaca;
+}
+.course-toolbar button.btn-delete:hover:not(:disabled){
+  background:#ffe0e0;
+}
 
-.course-item{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:#f8faff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;gap:10px}
+/* CORRECTION BUG 2 : Affichage mobile des cours */
+.course-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 15px;
+  background:#f8faff;
+  border:1px solid var(--line);
+  border-radius:10px;
+  margin-bottom:8px;
+  gap:10px;
+  min-width:0;
+}
 .course-item:last-child{margin-bottom:0}
-.course-item-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
-.course-item-left input[type="checkbox"]{width:18px;height:18px;cursor:pointer;accent-color:#5D6EC7;flex-shrink:0}
-.course-item-title{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.course-item-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.course-item-actions a{background:var(--blue-btn);color:#fff;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.course-item-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex:1;
+  min-width:0;
+}
+.course-item-left input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  cursor:pointer;
+  accent-color:#5D6EC7;
+  flex-shrink:0;
+  margin:0;
+}
+.course-item-title{
+  font-weight:700;
+  font-size:14px;
+  flex:1;
+  min-width:0;
+  word-wrap:break-word;
+  overflow-wrap:break-word;
+  line-height:1.4;
+}
+.course-item-actions{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-shrink:0;
+}
+.course-item-actions a{
+  background:var(--blue-btn);
+  color:#fff;
+  padding:8px 14px;
+  border-radius:8px;
+  text-decoration:none;
+  font-size:12px;
+  font-weight:700;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  white-space:nowrap;
+}
 .course-item-actions a:hover{background:var(--blue-btn-hover)}
-.course-item-actions .btn-icon{font-size:16px;padding:6px 8px}
 .course-empty{padding:12px;text-align:center;color:var(--muted);font-size:13px}
 
 /* BULLE FLOTTANTE COMMUNAUTÉ */
@@ -178,6 +277,10 @@ button.danger:hover{background:#ffe0e0}
 @media(max-width: 480px) {
   #communityPopup {width: calc(100vw - 20px);right: 10px !important;bottom: 85px !important;max-height: calc(100vh - 100px);}
   #communityWidget {bottom: 15px !important;right: 15px !important;width: 55px;height: 55px;font-size: 24px;}
+  .course-toolbar{padding:8px 10px;}
+  .course-toolbar button{padding:5px 10px;font-size:11px;}
+  .course-item{padding:10px;}
+  .course-item-actions a{padding:6px 10px;font-size:11px;}
 }
 
 #adminModal{display:none;position:fixed;inset:0;background:rgba(19,35,68,.5);z-index:3000;align-items:center;justify-content:center;padding:20px}
@@ -1101,7 +1204,7 @@ async function loadCourses() {
 }
 window.loadCourses = loadCourses;
 
-// Rendu des cours en accordéon avec recherche
+// Rendu des cours en accordéon avec recherche + barre d'outils groupée
 function renderCourses() {
   const list = $('coursesList');
   const searchQuery = $('courseSearch') ? $('courseSearch').value : '';
@@ -1134,31 +1237,32 @@ function renderCourses() {
     
     const shouldOpen = isSearching;
     const selectedInLevel = levelCourses.filter(c => selectedCourseIds.has(c.id)).length;
+    const hasSelection = selectedInLevel > 0;
     
     return `
-      <details class="course-accordion" ${shouldOpen ? 'open' : ''}>
+      <details class="course-accordion" ${shouldOpen ? 'open' : ''} data-level="${levelName}">
         <summary>
           📂 ${levelName}
           <span class="course-count">${levelCourses.length}</span>
         </summary>
-        ${isAdmin && selectedInLevel > 0 ? `
-          <div class="course-bulk-actions">
-            <button onclick="deleteSelectedCourses('${levelName}')">🗑️ Supprimer la sélection (${selectedInLevel})</button>
+        <div class="course-toolbar ${hasSelection ? 'visible' : ''}" onclick="event.stopPropagation();">
+          <span class="selected-count">${selectedInLevel} sélectionné${selectedInLevel > 1 ? 's' : ''}</span>
+          <div class="toolbar-actions">
+            <button class="btn-move" onclick="event.stopPropagation(); moveSelectedCourses('${levelName}');" ${!hasSelection ? 'disabled' : ''}>➡️ Déplacer</button>
+            <button class="btn-delete" onclick="event.stopPropagation(); deleteSelectedCourses('${levelName}');" ${!hasSelection ? 'disabled' : ''}>🗑️ Supprimer</button>
           </div>
-        ` : ''}
+        </div>
         <div class="course-accordion-body">
           ${levelCourses.map(c => `
             <div class="course-item">
               <div class="course-item-left">
-                ${isAdmin ? `<input type="checkbox" onchange="toggleCourseSelection('${c.id}', this.checked)" ${selectedCourseIds.has(c.id) ? 'checked' : ''}>` : ''}
-                <div class="course-item-title">📄 ${esc(c.title)}</div>
+                ${isAdmin ? `<input type="checkbox" onclick="event.stopPropagation();" onchange="toggleCourseSelection('${c.id}', this.checked, '${levelName}');" ${selectedCourseIds.has(c.id) ? 'checked' : ''}>` : ''}
+                <span class="course-item-title">📄 ${esc(c.title)}</span>
               </div>
               <div class="course-item-actions">
-                <a href="${esc(c.file_url)}" target="_blank" rel="noopener">
-                  <i class='bx bx-download'></i> Télécharger
+                <a href="${esc(c.file_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation();">
+                  <i class='bx bx-download'></i> <span class="hide-mobile">Télécharger</span>
                 </a>
-                ${isAdmin ? `<button class="btn-icon" onclick="moveCourse('${c.id}', '${esc(c.level)}')" title="Déplacer vers un autre niveau">➡️</button>` : ''}
-                ${isAdmin ? `<button class="btn-icon" onclick="deleteCourse('${c.id}', '${esc(c.file_url)}')" title="Supprimer">🗑️</button>` : ''}
               </div>
             </div>
           `).join('')}
@@ -1169,44 +1273,28 @@ function renderCourses() {
 }
 window.renderCourses = renderCourses;
 
-// NOUVEAU : Sélection d'un cours
-function toggleCourseSelection(id, isChecked) {
+// NOUVEAU : Sélection d'un cours (met à jour la barre d'outils du niveau)
+function toggleCourseSelection(id, isChecked, levelName) {
   if (isChecked) selectedCourseIds.add(id);
   else selectedCourseIds.delete(id);
-  renderCourses();
-}
-window.toggleCourseSelection = toggleCourseSelection;
-
-// NOUVEAU : Suppression d'un cours individuel
-async function deleteCourse(courseId, fileUrl) {
-  if (!isAdmin || !supabaseClient) return;
-  if (!confirm("Supprimer ce cours ? Cette action est irréversible.")) return;
   
-  try {
-    // Extraire le chemin du fichier depuis l'URL publique
-    const filePath = decodeURIComponent(fileUrl.split('/courses_files/')[1] || '');
+  // Re-render uniquement le niveau concerné (plus fluide)
+  const accordion = document.querySelector(`.course-accordion[data-level="${levelName}"]`);
+  if (accordion) {
+    const levelCourses = coursesCache.filter(c => c.level === levelName);
+    const selectedInLevel = levelCourses.filter(c => selectedCourseIds.has(c.id)).length;
+    const hasSelection = selectedInLevel > 0;
     
-    if (filePath) {
-      const { error: storageError } = await supabaseClient.storage
-        .from('courses_files')
-        .remove([filePath]);
-      if (storageError) console.warn('Erreur suppression fichier:', storageError.message);
+    const toolbar = accordion.querySelector('.course-toolbar');
+    if (toolbar) {
+      toolbar.classList.toggle('visible', hasSelection);
+      toolbar.querySelector('.selected-count').textContent = `${selectedInLevel} sélectionné${selectedInLevel > 1 ? 's' : ''}`;
+      toolbar.querySelector('.btn-move').disabled = !hasSelection;
+      toolbar.querySelector('.btn-delete').disabled = !hasSelection;
     }
-    
-    const { error: dbError } = await supabaseClient
-      .from('courses')
-      .delete()
-      .eq('id', courseId);
-    
-    if (dbError) throw new Error(dbError.message);
-    
-    selectedCourseIds.delete(courseId);
-    await loadCourses();
-  } catch (e) {
-    alert("❌ Erreur : " + e.message);
   }
 }
-window.deleteCourse = deleteCourse;
+window.toggleCourseSelection = toggleCourseSelection;
 
 // NOUVEAU : Suppression multiple de cours (par niveau)
 async function deleteSelectedCourses(levelName) {
@@ -1239,9 +1327,12 @@ async function deleteSelectedCourses(levelName) {
 }
 window.deleteSelectedCourses = deleteSelectedCourses;
 
-// NOUVEAU : Déplacer un cours vers un autre niveau
-async function moveCourse(courseId, currentLevel) {
+// NOUVEAU : Déplacer les cours sélectionnés vers un autre niveau
+async function moveSelectedCourses(currentLevel) {
   if (!isAdmin || !supabaseClient) return;
+  
+  const levelCourses = coursesCache.filter(c => c.level === currentLevel && selectedCourseIds.has(c.id));
+  if (levelCourses.length === 0) return;
   
   const newLevel = prompt("Nouveau niveau (LICENCE 1, LICENCE 2, LICENCE 3) :", currentLevel);
   if (!newLevel) return;
@@ -1255,25 +1346,28 @@ async function moveCourse(courseId, currentLevel) {
   }
   
   if (normalizedLevel === currentLevel) {
-    alert("ℹ️ Le cours est déjà dans ce niveau.");
+    alert("ℹ️ Les cours sont déjà dans ce niveau.");
     return;
   }
+  
+  const ids = levelCourses.map(c => c.id);
   
   try {
     const { error } = await supabaseClient
       .from('courses')
       .update({ level: normalizedLevel })
-      .eq('id', courseId);
+      .in('id', ids);
     
     if (error) throw new Error(error.message);
     
-    alert(`✅ Cours déplacé vers ${normalizedLevel}.`);
+    alert(`✅ ${ids.length} cours déplacé(s) vers ${normalizedLevel}.`);
+    selectedCourseIds.clear();
     await loadCourses();
   } catch (e) {
     alert("❌ Erreur : " + e.message);
   }
 }
-window.moveCourse = moveCourse;
+window.moveSelectedCourses = moveSelectedCourses;
 
 // NOUVEAU : Déplacer un quiz vers un autre niveau
 async function moveQuiz(quizId, currentLevel) {
@@ -1331,7 +1425,6 @@ async function addCourse() {
   status.style.color = "var(--muted)";
   
   try {
-    // NOUVEAU : Vérifier si un cours avec le même titre ET le même niveau existe
     const { data: existingCourse } = await supabaseClient
       .from('courses')
       .select('*')
@@ -1350,13 +1443,11 @@ async function addCourse() {
       }
       isReplacing = true;
       
-      // Supprimer l'ancien fichier du stockage
       const oldFilePath = decodeURIComponent(existingCourse.file_url.split('/courses_files/')[1] || '');
       if (oldFilePath) {
         await supabaseClient.storage.from('courses_files').remove([oldFilePath]);
       }
       
-      // Supprimer l'ancienne ligne
       await supabaseClient.from('courses').delete().eq('id', existingCourse.id);
     }
     
