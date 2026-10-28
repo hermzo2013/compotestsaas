@@ -106,7 +106,7 @@ button.danger:hover{background:#FEE2E2}
 }
 
 /* ==========================================
-   🆕 BARRE D'ACTIONS STICKY (STICKY NATIF PAR DÉFAUT)
+   🆕 BARRE D'ACTIONS STICKY BIBLIOTHÈQUE
    ========================================== */
 #libraryActionBar{
   display:none;
@@ -157,7 +157,6 @@ button.danger:hover{background:#FEE2E2}
 
 /* ==========================================
    🔧 FALLBACK FIXED POUR MOBILE / WEBVIEW
-   (Chrome Android, Safari iOS < 16, WebView Capacitor)
    ========================================== */
 body.library-bar-fixed #libraryActionBar{
   position: fixed !important;
@@ -173,7 +172,6 @@ body.library-bar-fixed #libraryActionBar{
   z-index: 1000 !important;
 }
 
-/* Compensation : espace réservé au-dessus de la liste quand la barre est visible */
 body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
   padding-top: 70px !important;
 }
@@ -513,6 +511,184 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
   padding-bottom:4px;
 }
 .mode-modal-actions button{flex:1;margin:0;}
+
+/* ==========================================
+   🆕 MODALE D'AIDE (Mot de passe oublié / Contact Admin)
+   ========================================== */
+#helpModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(6,95,70,.6);
+  z-index:4600;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+#helpModal.show{display:flex;}
+.help-modal-content{
+  background:#fff;
+  border-radius:16px;
+  width:100%;
+  max-width:500px;
+  max-height:90vh;
+  overflow-y:auto;
+  padding:28px;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.help-modal-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:8px;
+  border-bottom:1px solid var(--line);
+  padding-bottom:14px;
+}
+.help-modal-header h2{margin:0;font-size:20px;color:var(--exam-navy);}
+.help-modal-header button{
+  background:transparent;
+  border:0;
+  font-size:22px;
+  color:var(--muted);
+  cursor:pointer;
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s;
+  padding:0;
+}
+.help-modal-header button:hover{background:#F3F4F6;}
+.help-modal-content p.help-intro{
+  color:var(--muted);
+  font-size:13px;
+  margin:0 0 16px;
+  line-height:1.5;
+}
+.help-field{margin-bottom:14px;}
+.help-field label{
+  display:block;
+  font-size:13px;
+  font-weight:700;
+  margin:0 0 6px;
+  color:var(--ink);
+}
+.help-field input,
+.help-field textarea{
+  width:100%;
+  padding:12px;
+  border:1px solid #D1D5DB;
+  border-radius:10px;
+  font-size:14px;
+  font-family:inherit;
+  outline:none;
+  transition:border-color .2s, box-shadow .2s;
+  background:#fff;
+}
+.help-field input:focus,
+.help-field textarea:focus{
+  border-color:var(--lav-1);
+  outline:2px solid rgba(16,185,129,0.2);
+}
+.help-field textarea{min-height:110px;resize:vertical;}
+.help-modal-footer{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid var(--line);
+  flex-wrap:wrap;
+}
+.help-modal-footer button{flex:1;min-width:120px;}
+.help-status{
+  font-size:13px;
+  margin-top:12px;
+  text-align:center;
+  min-height:18px;
+  font-weight:600;
+}
+
+/* ==========================================
+   🆕 ONGLET ADMIN : MESSAGES D'AIDE
+   ========================================== */
+.admin-msg-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+  margin-top:8px;
+}
+.admin-msg-table th,
+.admin-msg-table td{
+  text-align:left;
+  padding:10px;
+  border-bottom:1px solid var(--line);
+  vertical-align:top;
+}
+.admin-msg-table th{color:var(--muted);font-weight:700;background:#F9FAFB;}
+.admin-msg-table tr.unread td{background:#FFFBEB;}
+.admin-msg-table tr.read td{background:#fff;}
+.admin-msg-table td.msg-content{
+  max-width:380px;
+  word-wrap:break-word;
+  white-space:pre-wrap;
+  line-height:1.4;
+}
+.admin-msg-badge{
+  display:inline-block;
+  font-size:10px;
+  font-weight:800;
+  padding:3px 8px;
+  border-radius:99px;
+  text-transform:uppercase;
+}
+.admin-msg-badge.unread{background:#FEF3C7;color:#92400E;}
+.admin-msg-badge.read{background:#D1FAE5;color:#065F46;}
+.admin-msg-actions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.admin-msg-actions button,
+.admin-msg-actions a{
+  padding:5px 10px;
+  font-size:11px;
+  font-weight:700;
+  border-radius:6px;
+  border:1px solid;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  white-space:nowrap;
+}
+.admin-msg-actions button.btn-mark-read{
+  background:#ECFDF5;
+  color:var(--navy);
+  border-color:#A7F3D0;
+}
+.admin-msg-actions button.btn-mark-read:hover{background:#D1FAE5;}
+.admin-msg-actions a.btn-reply{
+  background:#E0F2FE;
+  color:#075985;
+  border-color:#BAE6FD;
+}
+.admin-msg-actions a.btn-reply:hover{background:#BAE6FD;}
+.admin-msg-actions button.btn-del-msg{
+  background:#FEF2F2;
+  color:var(--red);
+  border-color:#FECACA;
+}
+.admin-msg-actions button.btn-del-msg:hover{background:#FEE2E2;}
+
+@media(max-width:600px){
+  .admin-msg-table{font-size:12px;}
+  .admin-msg-table th,
+  .admin-msg-table td{padding:8px 6px;}
+  .admin-msg-table td.msg-content{max-width:150px;}
+  .admin-msg-actions button,
+  .admin-msg-actions a{font-size:10px;padding:4px 6px;}
+  .help-modal-content{padding:22px 18px;}
+}
 </style>
 </head><body>
 
@@ -540,7 +716,7 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
       <form id="loginForm" novalidate>
         <div class="auth-input-group"><i class='bx bx-user'></i><input type="text" id="loginEmail" placeholder="Matricule ou Email" required autocomplete="username"></div>
         <div class="auth-input-group"><i class='bx bx-lock-alt'></i><input type="password" id="loginPassword" placeholder="Mot de passe" required autocomplete="current-password"><button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('loginPassword', this)"><i class='bx bx-show'></i></button></div>
-        <a href="#" class="auth-forgot-link" onclick="alert('Contacte l\'administration pour réinitialiser ton mot de passe.');return false;">Mot de passe oublié ?</a>
+        <a href="#" class="auth-forgot-link" onclick="event.preventDefault(); openHelpModal();">❓ Besoin d'aide ?</a>
         <button type="submit" class="auth-btn" id="loginSubmitBtn">Se connecter</button>
         <div id="loginError" class="auth-error"></div>
       </form>
@@ -651,7 +827,6 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
         <button class="level-filter" data-level="LICENCE 3" onclick="filterLibrary('LICENCE 3')">LICENCE 3</button>
       </div>
 
-      <!-- 🆕 BARRE D'ACTIONS STICKY -->
       <div id="libraryActionBar">
         <span class="selected-count" id="librarySelectedCount">0 sélectionné</span>
         <div class="toolbar-actions">
@@ -725,6 +900,34 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
   </div>
 </div>
 
+<!-- 🆕 MODALE D'AIDE (Contact Admin) -->
+<div id="helpModal">
+  <div class="help-modal-content">
+    <div class="help-modal-header">
+      <h2>❓ Besoin d'aide ?</h2>
+      <button onclick="closeHelpModal()" title="Fermer">✖</button>
+    </div>
+    <p class="help-intro">
+      Décris ton problème (mot de passe oublié, problème d'inscription, etc.) et l'administrateur te répondra par email.
+    </p>
+    <form id="helpForm" novalidate>
+      <div class="help-field">
+        <label for="helpEmail">Ton email</label>
+        <input type="email" id="helpEmail" placeholder="ton.email@exemple.com" required>
+      </div>
+      <div class="help-field">
+        <label for="helpMessage">Décris ton problème</label>
+        <textarea id="helpMessage" placeholder="Ex. Je n'arrive pas à me connecter avec mon matricule..." required maxlength="2000"></textarea>
+      </div>
+      <div class="help-modal-footer">
+        <button type="button" class="ghost" onclick="closeHelpModal()">Annuler</button>
+        <button type="submit" class="success" id="helpSubmitBtn">📤 Envoyer le message</button>
+      </div>
+      <div id="helpStatus" class="help-status"></div>
+    </form>
+  </div>
+</div>
+
 <div id="adminModal">
   <div class="admin-modal-content">
     <div class="admin-header"><h2 style="margin:0">⚙️ Panneau d'Administration</h2><button class="ghost" onclick="document.getElementById('adminModal').classList.remove('show')">✖ Fermer</button></div>
@@ -732,6 +935,7 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
       <button class="admin-tab-btn active" data-atab="create">➕ Créer un compte</button>
       <button class="admin-tab-btn" data-atab="password">🔑 Modifier MDP</button>
       <button class="admin-tab-btn" data-atab="role">👑 Attribuer un rôle</button>
+      <button class="admin-tab-btn" data-atab="messages">📩 Messages d'aide</button>
     </div>
     <div id="atab-create" class="atab-content">
       <form id="adminCreateForm" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -776,6 +980,21 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
         <div id="roleStatus" style="font-size:13px;margin-top:15px"></div>
       </div>
     </div>
+
+    <!-- 🆕 ONGLET MESSAGES D'AIDE -->
+    <div id="atab-messages" class="atab-content hide">
+      <p style="color:var(--muted);font-size:13px;margin-top:0;">
+        Messages envoyés par les utilisateurs depuis la page de connexion. Clique sur "Marquer comme lu" après traitement.
+      </p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+        <span id="adminMsgSummary" style="font-size:12px;color:var(--muted);font-weight:700;"></span>
+        <button class="ghost" type="button" onclick="loadAdminMessages()" style="padding:6px 12px;font-size:12px;">🔄 Rafraîchir</button>
+      </div>
+      <div id="adminMessagesList">
+        <p style="color:var(--muted);font-size:13px;">Chargement...</p>
+      </div>
+    </div>
+
     <h3 style="margin-top:30px">Comptes existants</h3>
     <div id="adminUsersList">Chargement...</div>
   </div>
@@ -972,39 +1191,17 @@ function togglePasswordVisibility(inputId, btn) {
 }
 window.togglePasswordVisibility = togglePasswordVisibility;
 
-/* ============================================
-   🔧 DÉTECTION ROBUSTE : Sticky fiable ou pas ?
-   - Chrome Android (toutes versions) → NON fiable
-   - Safari iOS < 16 → NON fiable
-   - WebView (Android 'wv', iOS UIWebView) → NON fiable
-   - Desktop moderne → fiable
-============================================ */
 function detectStickySupport() {
   const ua = navigator.userAgent;
-  
-  // Safari iOS < 16 : sticky buggé
   const iosMatch = ua.match(/OS (\d+)[_.](\d+)/);
   const isOldIOS = /iP(hone|ad|od)/.test(ua) && iosMatch && (parseInt(iosMatch[1], 10) < 16);
-  
-  // Chrome Android : sticky instable sur mobile
   const isChromeAndroid = /Android/.test(ua) && /Chrome\//.test(ua);
-  
-  // WebViews
   const isWebView = /wv/.test(ua) || (/iPhone|iPad/.test(ua) && !/Safari\//.test(ua));
-  
-  // Fallback CSS natif
-  const supportsSticky = CSS.supports && (
-    CSS.supports('position', 'sticky') || 
-    CSS.supports('position', '-webkit-sticky')
-  );
-  
+  const supportsSticky = CSS.supports && (CSS.supports('position', 'sticky') || CSS.supports('position', '-webkit-sticky'));
   const needFallback = !supportsSticky || isOldIOS || isChromeAndroid || isWebView;
-  
   if (needFallback) {
     document.body.classList.add('library-bar-fixed');
-    console.log('🔧 Fallback fixed activé — raison :', {
-      supportsSticky, isOldIOS, isChromeAndroid, isWebView
-    });
+    console.log('🔧 Fallback fixed activé — raison :', { supportsSticky, isOldIOS, isChromeAndroid, isWebView });
     return false;
   }
   console.log('✅ Sticky natif fiable — pas de fallback');
@@ -2136,6 +2333,7 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
     document.querySelectorAll('.atab-content').forEach(c => c.classList.add('hide'));
     btn.classList.add('active');
     $('atab-' + btn.dataset.atab).classList.remove('hide');
+    if (btn.dataset.atab === 'messages') loadAdminMessages();
   });
 });
 
@@ -2153,6 +2351,7 @@ async function loadAdminUsers() {
     $('adminUsersList').innerHTML = `<table class="admin-table"><thead><tr><th>Nom</th><th>Email</th><th>Statut</th><th>Rôle</th></tr></thead><tbody>
       ${data.users.map(u => `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.banned ? '<span style="color:var(--red)">Désactivé</span>' : '<span style="color:var(--green)">Actif</span>'}</td><td>${u.isAdmin ? '<span class="badge-admin">ADMIN</span>' : 'Utilisateur'}</td></tr>`).join('')}
     </tbody></table>`;
+    loadAdminMessages();
   } catch (err) { $('adminUsersList').innerHTML = `<p style="color:var(--red)">Erreur réseau : ${esc(err.message)}</p>`; }
 }
 
@@ -2220,6 +2419,217 @@ async function adminSetRole(isAdmin) {
   if (res.ok) { $('roleStatus').innerHTML = `<span style="color:var(--green)">✅ Rôle mis à jour !</span>`; loadAdminUsers(); }
   else { const d = await res.json(); $('roleStatus').innerHTML = `<span style="color:var(--red)">❌ ${d.error}</span>`; }
 }
+
+// ==========================================
+// 🆕 MODALE D'AIDE (Contact Admin)
+// ==========================================
+window.openHelpModal = function() {
+  const modal = $('helpModal');
+  if (!modal) return;
+  const loginEmailVal = ($('loginEmail') && $('loginEmail').value.trim()) || '';
+  let prefilled = '';
+  if (loginEmailVal) {
+    prefilled = loginEmailVal.includes('@')
+      ? loginEmailVal
+      : loginEmailVal.toLowerCase() + '@comptest.local';
+  }
+  if (currentUser?.email) prefilled = currentUser.email;
+  
+  $('helpEmail').value = prefilled;
+  $('helpMessage').value = '';
+  $('helpStatus').textContent = '';
+  $('helpStatus').style.color = '';
+  modal.classList.add('show');
+  
+  setTimeout(() => {
+    if (prefilled) $('helpMessage').focus();
+    else $('helpEmail').focus();
+  }, 100);
+};
+
+window.closeHelpModal = function() {
+  const modal = $('helpModal');
+  if (modal) modal.classList.remove('show');
+  const status = $('helpStatus');
+  if (status) { status.textContent = ''; status.style.color = ''; }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const helpForm = $('helpForm');
+  if (helpForm) {
+    helpForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!supabaseClient) { 
+        $('helpStatus').textContent = '❌ Erreur : service indisponible.';
+        $('helpStatus').style.color = 'var(--red)';
+        return;
+      }
+      const email = $('helpEmail').value.trim();
+      const message = $('helpMessage').value.trim();
+      const statusEl = $('helpStatus');
+      const btn = $('helpSubmitBtn');
+      
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        statusEl.textContent = '❌ Merci de saisir un email valide.';
+        statusEl.style.color = 'var(--red)';
+        return;
+      }
+      if (!message || message.length < 5) {
+        statusEl.textContent = '❌ Décris ton problème en quelques mots (5 caractères min).';
+        statusEl.style.color = 'var(--red)';
+        return;
+      }
+      if (message.length > 2000) {
+        statusEl.textContent = '❌ Message trop long (2000 caractères max).';
+        statusEl.style.color = 'var(--red)';
+        return;
+      }
+      
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = '⏳ Envoi...';
+      statusEl.textContent = '';
+      
+      try {
+        const { error } = await supabaseClient.from('admin_messages').insert({
+          user_email: email,
+          message: message,
+          status: 'non_lu'
+        });
+        if (error) throw new Error(error.message);
+        
+        statusEl.textContent = '✅ Message envoyé à l\'administrateur. Il vous répondra rapidement.';
+        statusEl.style.color = 'var(--green)';
+        $('helpMessage').value = '';
+        
+        setTimeout(() => { closeHelpModal(); }, 2500);
+      } catch (err) {
+        statusEl.textContent = '❌ Erreur : ' + err.message;
+        statusEl.style.color = 'var(--red)';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+  }
+  
+  const helpModal = $('helpModal');
+  if (helpModal) {
+    helpModal.addEventListener('click', (e) => {
+      if (e.target === helpModal) closeHelpModal();
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const m = $('helpModal');
+      if (m && m.classList.contains('show')) closeHelpModal();
+    }
+  });
+});
+
+// ==========================================
+// 🆕 ADMIN : Chargement des messages d'aide
+// ==========================================
+async function loadAdminMessages() {
+  const list = $('adminMessagesList');
+  const summary = $('adminMsgSummary');
+  if (!list || !summary) return;
+  if (!supabaseClient) { list.innerHTML = '<p style="color:var(--red)">Supabase non configuré.</p>'; return; }
+  list.innerHTML = '<p style="color:var(--muted);font-size:13px;">Chargement...</p>';
+  try {
+    const { data, error } = await supabaseClient
+      .from('admin_messages')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    
+    const messages = data || [];
+    const unreadCount = messages.filter(m => m.status === 'non_lu').length;
+    summary.textContent = `${messages.length} message${messages.length > 1 ? 's' : ''} • ${unreadCount} non lu${unreadCount > 1 ? 's' : ''}`;
+    
+    if (messages.length === 0) {
+      list.innerHTML = '<p style="color:var(--muted);font-size:13px;">Aucun message d\'aide pour le moment.</p>';
+      return;
+    }
+    
+    list.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table class="admin-msg-table">
+          <thead>
+            <tr>
+              <th>Statut</th>
+              <th>Email</th>
+              <th>Date</th>
+              <th>Message</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${messages.map(m => {
+              const isUnread = m.status === 'non_lu';
+              const date = new Date(m.created_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+              const safeEmail = esc(m.user_email || '');
+              const subject = encodeURIComponent('Réponse à votre demande d\'aide - Révisio');
+              const body = encodeURIComponent(`Bonjour,\n\nSuite à votre message :\n"${(m.message || '').substring(0, 120)}..."\n\n`);
+              return `
+                <tr class="${isUnread ? 'unread' : 'read'}">
+                  <td>
+                    <span class="admin-msg-badge ${isUnread ? 'unread' : 'read'}">
+                      ${isUnread ? '● Non lu' : '✓ Lu'}
+                    </span>
+                  </td>
+                  <td style="word-break:break-all;">${safeEmail}</td>
+                  <td style="white-space:nowrap;font-size:11px;color:var(--muted);">${date}</td>
+                  <td class="msg-content">${esc(m.message || '')}</td>
+                  <td>
+                    <div class="admin-msg-actions">
+                      ${isUnread ? `<button class="btn-mark-read" onclick="markAdminMessageRead('${m.id}')">✓ Lu</button>` : ''}
+                      <a class="btn-reply" href="mailto:${safeEmail}?subject=${subject}&body=${body}">✉️ Répondre</a>
+                      <button class="btn-del-msg" onclick="deleteAdminMessage('${m.id}')" title="Supprimer">🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (e) {
+    list.innerHTML = `<p style="color:var(--red);font-size:13px;">Erreur : ${esc(e.message)}</p>`;
+  }
+}
+window.loadAdminMessages = loadAdminMessages;
+
+window.markAdminMessageRead = async function(id) {
+  if (!supabaseClient) return;
+  try {
+    const { error } = await supabaseClient
+      .from('admin_messages')
+      .update({ status: 'lu' })
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+    await loadAdminMessages();
+  } catch (e) {
+    alert("❌ Erreur : " + e.message);
+  }
+};
+
+window.deleteAdminMessage = async function(id) {
+  if (!isAdmin) return;
+  if (!confirm("Supprimer ce message d'aide ?")) return;
+  if (!supabaseClient) return;
+  try {
+    const { error } = await supabaseClient
+      .from('admin_messages')
+      .delete()
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+    await loadAdminMessages();
+  } catch (e) {
+    alert("❌ Erreur : " + e.message);
+  }
+};
 
 // ==========================================
 // 📊 HISTORIQUE
