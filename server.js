@@ -3,6 +3,8 @@ import express from 'express';
 import OpenAI from 'openai';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// ← FIX #4 : import express-rate-limit
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -24,49 +26,76 @@ app.use((req, res, next) => {
 const ALLOWED_ORIGINS = [
   'https://compotestsaas.onrender.com',
   'http://localhost:3000',
-  'http://localhost:5173'
+  'http://localhost:5173',
+  'https://localhost',
+  'http://localhost',
+  'capacitor://localhost',
+  'ionic://localhost',
 ];
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else if (origin) {
-    console.log(`⚠️ Origine inconnue tentant d'accéder : ${origin}`);
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
   } else {
     res.header('Access-Control-Allow-Origin', '*');
   }
-
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey, x-client-info, X-Requested-With');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '86400');
-
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 
 // ==========================================
+// 🛡️ FIX #4 : RATE LIMITING
+// ==========================================
+// Limiteur global sur /api/* (sauf /api/health qui doit toujours répondre pour UptimeRobot)
+const globalApiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60,             // 60 requêtes par IP par minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/api/health', // ← exclut /api/health
+  message: { error: 'Trop de requêtes, réessaie dans une minute.' }
+});
+
+// Limiteur strict sur les routes IA (consomme des tokens Groq)
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,             // 10 requêtes IA par IP par minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes IA, réessaie dans une minute.' }
+});
+
+// Application des limiteurs (ordre : global, puis strict pour les routes IA)
+app.use('/api', globalApiLimiter);
+app.use('/api/generate-post-test', aiLimiter);
+app.use('/api/parse-existing-quiz', aiLimiter);
+
+// ==========================================
 // 🛡️ ROUTE HEALTH CHECK (pour UptimeRobot)
 // ==========================================
-// Objectif : éviter de consommer les heures Render la nuit.
-// UptimeRobot ping cette route toutes les 5 minutes.
-// Entre 00h et 04h (heure GMT / Côte d'Ivoire), on renvoie 503
-// pour que Render ne soit pas maintenu éveillé inutilement.
+// ⏰ FIX #5 : Documentation UptimeRobot / cron-job.org :
+//   - URL à pinger : GET https://compotestsaas.onrender.com/api/health
+//   - Intervalle : toutes les 14 minutes
+//   - Fenêtre active : 04h00 → 23h59 GMT (le serveur est en veille 00h-04h)
+//   - Timeout : 30 s
+//   - Alertes si statut ≠ 200
 app.get('/api/health', (req, res) => {
   const now = new Date();
   const hourUTC = now.getUTCHours();
   const isSleeping = hourUTC >= 0 && hourUTC < 4;
-  
   if (isSleeping) {
     console.log(`[${new Date().toISOString()}] 😴 Health check ignoré (veille programmée, ${hourUTC}h UTC)`);
     return res.status(503).send('Service en veille programmée (00h-04h GMT)');
   }
-  
   console.log(`[${new Date().toISOString()}] ✅ Health check OK (${hourUTC}h UTC)`);
   res.status(200).send('OK');
 });
@@ -75,8 +104,15 @@ app.get('/api/health', (req, res) => {
 // FICHIERS STATIQUES
 // ==========================================
 app.use(express.static(__dirname, { maxAge: '1d' }));
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+
+// ← FIX #3 : Cache-Control no-cache sur index.html (force le rechargement après déploiement)
+const noCacheHeaders = {
+  'Cache-Control': 'no-cache, no-store, must-revalidate',
+  'Pragma': 'no-cache',
+  'Expires': '0'
+};
+app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html'), { headers: noCacheHeaders }));
+app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html'), { headers: noCacheHeaders }));
 app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
 
@@ -170,7 +206,6 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   let email = String(req.body?.email || '').trim().toLowerCase();
   const password = String(req.body?.password || '');
   const niveau = String(req.body?.niveau || '').trim();
-  
   if (!firstName || !lastName) return res.status(400).json({ error: 'Nom et prénom requis.' });
   if (!email) {
     const slug = `${firstName}.${lastName}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]/g, '');
@@ -178,19 +213,13 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Email invalide.' });
   if (password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (6 min).' });
-  
   try {
     const user = await supabaseAdmin('users', {
       method: 'POST',
-      body: JSON.stringify({ 
-        email, 
-        password, 
-        email_confirm: true, 
-        app_metadata: { compotest_access: true }, 
-        user_metadata: { 
-          full_name: `${firstName} ${lastName}`,
-          niveau: niveau
-        } 
+      body: JSON.stringify({
+        email, password, email_confirm: true,
+        app_metadata: { compotest_access: true },
+        user_metadata: { full_name: `${firstName} ${lastName}`, niveau }
       })
     });
     res.json({ user });
@@ -377,9 +406,9 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
       });
     }
     res.json(parsed);
-  } catch (e) { 
-    console.error('Erreur API IA :', e.message); 
-    res.status(502).json({ error: e.message }); 
+  } catch (e) {
+    console.error('Erreur API IA :', e.message);
+    res.status(502).json({ error: e.message });
   }
 });
 
@@ -389,18 +418,17 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
 app.post('/api/quizzes', async (req, res) => {
   const { title, subject, level, questions } = req.body;
   if (!title || !questions || !Array.isArray(questions) || questions.length === 0) return res.status(400).json({ error: 'Titre et questions requis.' });
-  
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
     const response = await fetch(`${base}/rest/v1/quizzes`, {
       method: 'POST',
       headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ 
-        title: String(title).slice(0, 200), 
-        subject: String(subject || 'Général').slice(0, 200), 
+      body: JSON.stringify({
+        title: String(title).slice(0, 200),
+        subject: String(subject || 'Général').slice(0, 200),
         level: level || null,
-        questions, 
-        created_by: req.user.id 
+        questions,
+        created_by: req.user.id
       })
     });
     if (!response.ok) { const err = await response.text(); throw new Error(`Erreur Supabase POST: ${err}`); }
@@ -408,29 +436,19 @@ app.post('/api/quizzes', async (req, res) => {
   } catch (e) { console.error('Erreur POST quizzes:', e.message); res.status(500).json({ error: e.message }); }
 });
 
-// NOUVEAU : PATCH /api/quizzes/:id pour modifier les questions OU le niveau
 app.patch('/api/quizzes/:id', requireAdmin, async (req, res) => {
   const { questions, level } = req.body;
-  
   const updates = {};
   if (questions !== undefined) {
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return res.status(400).json({ error: 'Tableau de questions requis.' });
-    }
+    if (!Array.isArray(questions) || questions.length === 0) return res.status(400).json({ error: 'Tableau de questions requis.' });
     updates.questions = questions;
   }
   if (level !== undefined) {
     const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
-    if (!validLevels.includes(level)) {
-      return res.status(400).json({ error: 'Niveau invalide. Utilise : LICENCE 1, LICENCE 2 ou LICENCE 3.' });
-    }
+    if (!validLevels.includes(level)) return res.status(400).json({ error: 'Niveau invalide.' });
     updates.level = level;
   }
-  
-  if (Object.keys(updates).length === 0) {
-    return res.status(400).json({ error: 'Aucune modification fournie.' });
-  }
-  
+  if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Aucune modification fournie.' });
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
     const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, {
@@ -443,29 +461,19 @@ app.patch('/api/quizzes/:id', requireAdmin, async (req, res) => {
   } catch (e) { console.error('Erreur PATCH quizzes:', e.message); res.status(500).json({ error: e.message }); }
 });
 
-// Ancienne route PUT conservée pour compatibilité (questions uniquement)
 app.put('/api/quizzes/:id', requireAdmin, async (req, res) => {
   const { questions, level } = req.body;
-  
   const updates = {};
   if (questions !== undefined) {
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return res.status(400).json({ error: 'Tableau de questions requis.' });
-    }
+    if (!Array.isArray(questions) || questions.length === 0) return res.status(400).json({ error: 'Tableau de questions requis.' });
     updates.questions = questions;
   }
   if (level !== undefined) {
     const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
-    if (!validLevels.includes(level)) {
-      return res.status(400).json({ error: 'Niveau invalide.' });
-    }
+    if (!validLevels.includes(level)) return res.status(400).json({ error: 'Niveau invalide.' });
     updates.level = level;
   }
-  
-  if (Object.keys(updates).length === 0) {
-    return res.status(400).json({ error: 'Aucune modification fournie.' });
-  }
-  
+  if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Aucune modification fournie.' });
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
     const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, {
