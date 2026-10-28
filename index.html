@@ -7,33 +7,10 @@
 <link rel="apple-touch-icon" href="/favicon.png">
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 <style>
-/* ==========================================
-   PALETTE : Révisio (Vert Santé)
-   ========================================== */
-:root{
-  --blue:#10B981;
-  --navy:#065F46;
-  --blue-btn:#10B981;
-  --blue-btn-hover:#059669;
-  --active-bg:#D1FAE5;
-  --active-text:#065F46;
-  --bg:#F2F9F5;
-  --ink:#1F2937;
-  --muted:#6B7280;
-  --line:#E5E7EB;
-  --green:#10B981;
-  --red:#EF4444;
-  --lav-1:#10B981; 
-  --lav-2:#34D399;
-  --auth-bg:#ECFDF5;
-  --input-bg:#F9FAFB;
-  --exam-navy:#064E3B;
-  --exam-blue:#10B981;
-}
+:root{--blue:#10B981;--navy:#065F46;--blue-btn:#10B981;--blue-btn-hover:#059669;--active-bg:#D1FAE5;--active-text:#065F46;--bg:#F2F9F5;--ink:#1F2937;--muted:#6B7280;--line:#E5E7EB;--green:#10B981;--red:#EF4444;--lav-1:#10B981;--lav-2:#34D399;--auth-bg:#ECFDF5;--input-bg:#F9FAFB;--exam-navy:#064E3B;--exam-blue:#10B981;}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;min-height:100%}
 body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
-
 header{background:linear-gradient(120deg,#065F46,#10B981);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800}
 .brand img{height:50px;width:auto;border-radius:8px;background:#fff;object-fit:contain;padding:2px}
@@ -43,14 +20,12 @@ header{background:linear-gradient(120deg,#065F46,#10B981);color:white;padding:12
 .header-actions button{padding:6px 10px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;cursor:pointer;transition:.2s;font-size:12px;white-space:nowrap}
 .header-actions button:hover{background:rgba(255,255,255,.25)}
 .btn-admin{background:#F59E0B!important;border-color:#F59E0B!important;color:#fff!important;font-weight:800;}
-
 .wrap{max-width:900px;margin:30px auto;padding:0 20px;width:100%;flex:1}
 .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(16,185,129,.06);margin-bottom:20px}
 h1{font-size:24px;margin-top:0}
 label{display:block;font-size:13px;font-weight:700;margin:15px 0 5px}
 input,select,textarea{width:100%;border:1px solid #D1D5DB;border-radius:10px;padding:12px;font:inherit;background:#fff}
 input:focus,select:focus,textarea:focus{outline:2px solid rgba(16,185,129,.25);border-color:var(--blue)}
-
 button{border:0;border-radius:10px;background:var(--blue-btn);color:white;font-weight:700;padding:12px 20px;cursor:pointer;font:inherit;transition:.2s}
 button:hover{background:var(--blue-btn-hover);filter:none}
 button.secondary{background:#ECFDF5;color:var(--navy)}
@@ -61,7 +36,6 @@ button.success{background:var(--green);font-size:16px;padding:15px 25px}
 button.success:hover{filter:brightness(1.1)}
 button.danger{background:#FEF2F2;color:#B91C1C}
 button.danger:hover{background:#FEE2E2}
-
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
 .filebox{border:2px dashed #A7F3D0;border-radius:12px;padding:20px;background:#F0FDF4;text-align:center}
 .hide{display:none!important}
@@ -69,12 +43,10 @@ button.danger:hover{background:#FEE2E2}
 .notice{padding:12px;border-radius:10px;background:#FFFBEB;color:#92400E;font-size:13px;margin-top:15px;border-left:4px solid #F59E0B}
 .notice.err{background:#FEF2F2;color:#991B1B;border-color:#EF4444}
 .notice.ok{background:#ECFDF5;color:#065F46;border-color:#10B981}
-
 .tabs{display:flex;gap:5px;margin-bottom:20px;border-bottom:2px solid var(--line);padding-bottom:10px;overflow-x:auto;position:relative}
 .tab{padding:10px 15px;border-radius:8px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);border:0;white-space:nowrap;position:relative}
 .tab:hover{color:var(--navy)}
 .tab.active{background:var(--active-bg);color:var(--active-text)}
-
 .history-item{background:#F9FAFB;border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .admin-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:15px}
 .admin-table th,.admin-table td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
@@ -82,18 +54,15 @@ button.danger:hover{background:#FEE2E2}
 .badge-admin{display:inline-block;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;margin-left:6px}
 .btn-icon{background:transparent;border:0;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.2s}
 .btn-icon:hover{background:#FEE2E2}
-
 .search-bar{position:relative;margin-bottom:15px;}
 .search-bar input{width:100%;padding:12px 16px 12px 42px;border:1px solid var(--line);border-radius:12px;font-size:14px;background:#F9FAFB;transition:border-color .2s, background .2s;}
 .search-bar input:focus{border-color:var(--lav-1);background:#fff;outline:2px solid rgba(16,185,129,0.2);}
 .search-bar .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--muted);pointer-events:none;}
-
 .level-filters{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap}
 .level-filter{padding:8px 16px;border-radius:20px;background:#F3F4F6;color:var(--muted);border:1px solid var(--line);font-weight:700;font-size:13px;cursor:pointer;transition:.2s}
 .level-filter:hover{background:#E5E7EB}
 .level-filter.active{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
 .level-badge{display:inline-block;background:#D1FAE5;color:#065F46;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:8px;text-transform:uppercase}
-
 .course-accordion{margin-bottom:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;transition:box-shadow 0.2s;}
 .course-accordion:hover{box-shadow:0 2px 8px rgba(16,185,129,0.08);}
 .course-accordion summary{padding:14px 18px;background:#F9FAFB;cursor:pointer;font-weight:800;font-size:15px;color:var(--navy);display:flex;align-items:center;gap:10px;list-style:none;user-select:none;transition:background 0.2s;border-radius:12px;}
@@ -104,218 +73,40 @@ button.danger:hover{background:#FEE2E2}
 .course-accordion[open] summary{border-bottom:1px solid var(--line);border-radius:12px 12px 0 0;}
 .course-accordion .course-count{margin-left:auto;background:#D1FAE5;color:var(--navy);font-size:11px;font-weight:800;padding:2px 10px;border-radius:99px;}
 .course-accordion-body{padding:8px 12px 12px;}
-
-.course-toolbar{
-  display:none;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:10px 14px;
-  background:#FFFBEB;
-  border-bottom:1px solid #FCD34D;
-  flex-wrap:wrap;
-}
+.course-toolbar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:#FFFBEB;border-bottom:1px solid #FCD34D;flex-wrap:wrap;}
 .course-toolbar.visible{display:flex;}
-.course-toolbar .selected-count{
-  font-size:12px;
-  font-weight:700;
-  color:#92400E;
-  flex-shrink:0;
-}
-.course-toolbar .toolbar-actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.course-toolbar button{
-  padding:6px 12px;
-  font-size:12px;
-  font-weight:700;
-  border-radius:8px;
-  border:1px solid;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  transition:opacity 0.2s;
-}
-.course-toolbar button:disabled{
-  opacity:0.4;
-  cursor:not-allowed;
-}
-.course-toolbar button.btn-move{
-  background:#ECFDF5;
-  color:var(--navy);
-  border-color:#A7F3D0;
-}
-.course-toolbar button.btn-move:hover:not(:disabled){
-  background:#D1FAE5;
-}
-.course-toolbar button.btn-delete{
-  background:#FEF2F2;
-  color:var(--red);
-  border-color:#FECACA;
-}
-.course-toolbar button.btn-delete:hover:not(:disabled){
-  background:#FEE2E2;
-}
-
-.course-item{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:12px 15px;
-  background:#F9FAFB;
-  border:1px solid var(--line);
-  border-radius:10px;
-  margin-bottom:8px;
-  gap:10px;
-  min-width:0;
-}
+.course-toolbar .selected-count{font-size:12px;font-weight:700;color:#92400E;flex-shrink:0;}
+.course-toolbar .toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.course-toolbar button{padding:6px 12px;font-size:12px;font-weight:700;border-radius:8px;border:1px solid;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:opacity 0.2s;}
+.course-toolbar button:disabled{opacity:0.4;cursor:not-allowed;}
+.course-toolbar button.btn-move{background:#ECFDF5;color:var(--navy);border-color:#A7F3D0;}
+.course-toolbar button.btn-move:hover:not(:disabled){background:#D1FAE5;}
+.course-toolbar button.btn-delete{background:#FEF2F2;color:var(--red);border-color:#FECACA;}
+.course-toolbar button.btn-delete:hover:not(:disabled){background:#FEE2E2;}
+.course-item{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:#F9FAFB;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;gap:10px;min-width:0;}
 .course-item:last-child{margin-bottom:0}
-.course-item-left{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex:1;
-  min-width:0;
-}
-.course-item-left input[type="checkbox"]{
-  width:18px;
-  height:18px;
-  cursor:pointer;
-  accent-color:#10B981;
-  flex-shrink:0;
-  margin:0;
-}
-.course-item-title{
-  font-weight:700;
-  font-size:14px;
-  flex:1;
-  min-width:0;
-  word-wrap:break-word;
-  overflow-wrap:break-word;
-  line-height:1.4;
-}
-.course-item-actions{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  flex-shrink:0;
-}
-.course-item-actions a{
-  background:var(--blue-btn);
-  color:#fff;
-  padding:8px 14px;
-  border-radius:8px;
-  text-decoration:none;
-  font-size:12px;
-  font-weight:700;
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  white-space:nowrap;
-}
+.course-item-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.course-item-left input[type="checkbox"]{width:18px;height:18px;cursor:pointer;accent-color:#10B981;flex-shrink:0;margin:0;}
+.course-item-title{font-weight:700;font-size:14px;flex:1;min-width:0;word-wrap:break-word;overflow-wrap:break-word;line-height:1.4;}
+.course-item-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.course-item-actions a{background:var(--blue-btn);color:#fff;padding:8px 14px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
 .course-item-actions a:hover{background:var(--blue-btn-hover)}
-.course-item-actions button.btn-video{
-  background:#0EA5E9;
-  color:#fff;
-  padding:8px 14px;
-  border-radius:8px;
-  font-size:12px;
-  font-weight:700;
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  white-space:nowrap;
-  border:0;
-  cursor:pointer;
-}
+.course-item-actions button.btn-video{background:#0EA5E9;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;border:0;cursor:pointer;}
 .course-item-actions button.btn-video:hover{background:#0284C7}
-.course-item-actions .btn-edit-course{
-  background:#FEF3C7;
-  color:#92400E;
-  border:1px solid #FCD34D;
-  padding:6px 10px;
-  border-radius:8px;
-  font-size:16px;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  transition:background .2s;
-}
+.course-item-actions .btn-edit-course{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;padding:6px 10px;border-radius:8px;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .2s;}
 .course-item-actions .btn-edit-course:hover{background:#FDE68A}
 .course-empty{padding:12px;text-align:center;color:var(--muted);font-size:13px}
-
-#videoModal{
-  display:none;
-  position:fixed;inset:0;
-  background:rgba(6,95,70,.85);
-  z-index:5100;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
-}
+#videoModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.85);z-index:5100;align-items:center;justify-content:center;padding:20px;}
 #videoModal.show{display:flex;}
-.video-modal-content{
-  background:#000;
-  border-radius:16px;
-  width:100%;
-  max-width:900px;
-  max-height:92vh;
-  overflow:hidden;
-  box-shadow:0 20px 60px rgba(0,0,0,.5);
-  display:flex;
-  flex-direction:column;
-}
-.video-modal-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:12px 16px;
-  background:#111827;
-  color:#fff;
-  flex-shrink:0;
-}
+.video-modal-content{background:#000;border-radius:16px;width:100%;max-width:900px;max-height:92vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column;}
+.video-modal-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#111827;color:#fff;flex-shrink:0;}
 .video-modal-header h3{margin:0;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;padding-right:12px;}
-.video-modal-header button{
-  background:rgba(255,255,255,.15);
-  color:#fff;
-  border:0;
-  width:36px;height:36px;
-  border-radius:50%;
-  cursor:pointer;
-  font-size:18px;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-  padding:0;
-}
+.video-modal-header button{background:rgba(255,255,255,.15);color:#fff;border:0;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;}
 .video-modal-header button:hover{background:rgba(255,255,255,.3);}
-.video-modal-body{
-  position:relative;
-  width:100%;
-  aspect-ratio:16/9;
-  background:#000;
-  flex:1;
-  min-height:0;
-}
-.video-modal-body iframe,
-.video-modal-body video{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  border:0;
-  display:block;
-}
-.video-modal-error{
-  position:absolute;inset:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  color:#fff;text-align:center;padding:20px;gap:10px;
-}
+.video-modal-body{position:relative;width:100%;aspect-ratio:16/9;background:#000;flex:1;min-height:0;}
+.video-modal-body iframe,.video-modal-body video{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;}
+.video-modal-error{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px;gap:10px;}
 .video-modal-error a{color:#34D399;word-break:break-all;}
-
 #editCourseModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.5);z-index:3600;align-items:center;justify-content:center;padding:20px}
 #editCourseModal.show{display:flex}
 .edit-course-modal-content{background:#fff;border-radius:16px;width:100%;max-width:700px;max-height:92vh;overflow-y:auto;padding:24px;box-shadow:0 10px 40px rgba(6,95,70,.25)}
@@ -323,11 +114,8 @@ button.danger:hover{background:#FEE2E2}
 .edit-course-modal-header h2{margin:0;font-size:18px;color:var(--exam-navy)}
 .edit-course-field{margin-bottom:14px}
 .edit-course-field label{display:block;font-size:13px;font-weight:700;margin:0 0 6px;color:var(--ink)}
-.edit-course-field input[type="text"],
-.edit-course-field input[type="url"],
-.edit-course-field select{width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:10px;font-size:14px;font-family:inherit;background:#fff;outline:none;transition:border-color .2s}
-.edit-course-field input:focus,
-.edit-course-field select:focus{border-color:var(--lav-1);outline:2px solid rgba(16,185,129,0.2)}
+.edit-course-field input[type="text"],.edit-course-field input[type="url"],.edit-course-field select{width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:10px;font-size:14px;font-family:inherit;background:#fff;outline:none;transition:border-color .2s}
+.edit-course-field input:focus,.edit-course-field select:focus{border-color:var(--lav-1);outline:2px solid rgba(16,185,129,0.2)}
 .edit-course-hint{font-size:11px;color:var(--muted);margin-top:4px;font-style:italic}
 .edit-course-current-file{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);background:#F9FAFB;padding:8px 10px;border-radius:8px;border:1px solid var(--line);margin-top:6px;overflow:hidden}
 .edit-course-current-file span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -335,59 +123,50 @@ button.danger:hover{background:#FEE2E2}
 .edit-course-current-file a:hover{text-decoration:underline}
 .edit-course-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);flex-wrap:wrap}
 #editCourseStatus{font-size:13px;margin-top:10px;text-align:right}
-
-#communityWidget {position: fixed !important;bottom: 20px !important;right: 20px !important;z-index: 9999 !important;width: 60px;height: 60px;border-radius: 50%;background: linear-gradient(135deg, var(--lav-1), var(--lav-2));color: #fff;display: flex;align-items: center;justify-content: center;font-size: 28px;cursor: pointer;box-shadow: 0 6px 20px rgba(16,185,129,0.5);transition: transform 0.2s, box-shadow 0.2s;border: none;}
-#communityWidget:hover {transform: scale(1.08);box-shadow: 0 8px 25px rgba(16,185,129,0.7);}
-#communityWidget:active {transform: scale(0.95);}
-#communityWidget .widget-badge {position: absolute;top: -4px;right: -4px;background: var(--red);color: #fff;font-size: 11px;font-weight: 800;min-width: 20px;height: 20px;border-radius: 10px;display: flex;align-items: center;justify-content: center;padding: 0 5px;border: 2px solid #fff;animation: pulse 2s infinite;}
-@keyframes pulse {0%, 100% { transform: scale(1); }50% { transform: scale(1.15); }}
-
-#communityPopup {position: fixed !important;bottom: 90px !important;right: 20px !important;z-index: 9998 !important;width: 360px;max-width: calc(100vw - 40px);height: 500px;max-height: calc(100vh - 120px);background: #fff;border-radius: 16px;box-shadow: 0 10px 40px rgba(6,95,70,0.25);display: none;flex-direction: column;overflow: hidden;border: 1px solid var(--line);}
-#communityPopup.show {display: flex;animation: slideUp 0.25s ease-out;}
-@keyframes slideUp {from { opacity: 0; transform: translateY(20px); }to { opacity: 1; transform: translateY(0); }}
-
-.community-popup-header {background: linear-gradient(120deg, var(--navy), var(--blue));color: #fff;padding: 14px 16px;display: flex;justify-content: space-between;align-items: center;flex-shrink: 0;}
-.community-popup-header h3 {margin: 0;font-size: 16px;font-weight: 800;}
-.community-popup-header button {background: rgba(255,255,255,0.2);border: 0;color: #fff;width: 32px;height: 32px;border-radius: 50%;cursor: pointer;font-size: 18px;display: flex;align-items: center;justify-content: center;transition: background 0.2s;padding: 0;}
-.community-popup-header button:hover {background: rgba(255,255,255,0.35);}
-.community-popup-body {flex: 1;overflow-y: auto;padding: 12px;background: #F9FAFB;}
-.community-popup-footer {flex-shrink: 0;padding: 10px;border-top: 1px solid var(--line);background: #fff;}
-
-.chat-msg {background: #fff;border: 1px solid var(--line);border-radius: 12px;padding: 10px 12px;margin-bottom: 10px;box-shadow: 0 1px 4px rgba(16,185,129,0.05);position: relative;}
-.chat-msg.is-mine {background: #F0FDF4;border-color: #A7F3D0;}
-.chat-msg-header {display: flex;justify-content: space-between;align-items: center;margin-bottom: 6px;}
-.chat-msg-author {font-weight: 800;color: var(--navy);font-size: 12px;}
-.chat-msg-date {font-size: 10px;color: var(--muted);}
-.chat-msg-content {font-size: 13px;line-height: 1.4;color: #1F2937;white-space: pre-wrap;word-break: break-word;}
-.chat-msg-actions {margin-top: 6px;display: flex;gap: 6px;}
-.chat-msg-actions button {background: #ECFDF5;color: var(--navy);border: 1px solid #D1D5DB;border-radius: 6px;padding: 3px 8px;font-size: 10px;font-weight: 700;cursor: pointer;}
-.chat-msg-actions button:hover {background: #D1FAE5;}
-.chat-msg-actions button.del {background: #FEF2F2;color: var(--red);border-color: #FECACA;}
-.chat-msg-actions button.del:hover {background: #FEE2E2;}
-.chat-reply-info {font-size: 10px;color: var(--muted);font-style: italic;margin-bottom: 4px;}
-.chat-reply-info b {color: var(--navy);}
-
-.chat-attachment {margin-top: 6px;}
-.chat-attachment img {max-width: 100%;max-height: 200px;border-radius: 8px;cursor: pointer;display: block;border: 1px solid var(--line);}
-.chat-attachment a {display: inline-flex;align-items: center;gap: 6px;background: #ECFDF5;color: var(--navy);padding: 6px 10px;border-radius: 8px;text-decoration: none;font-size: 12px;font-weight: 700;border: 1px solid #D1D5DB;transition: background 0.2s;}
-.chat-attachment a:hover {background: #D1FAE5;}
-
-.community-chat-textarea {width: 100%;min-height: 60px;max-height: 100px;resize: vertical;border: 1px solid var(--line);border-radius: 10px;padding: 8px 10px;font-size: 13px;font-family: inherit;outline: none;}
-.community-chat-textarea:focus {border-color: var(--lav-1);outline: 2px solid rgba(16,185,129,0.2);}
-
-.community-replying-to {background: #FFFBEB;border: 1px solid #FCD34D;border-radius: 8px;padding: 6px 10px;margin-bottom: 8px;font-size: 11px;color: #92400E;display: flex;justify-content: space-between;align-items: center;}
-.community-replying-to button {background: transparent;border: 0;color: var(--red);font-weight: 800;cursor: pointer;padding: 0 5px;font-size: 14px;}
-
-.chat-input-toolbar {display: flex;align-items: center;gap: 8px;margin-bottom: 6px;}
-.chat-attach-btn {background: #ECFDF5;color: var(--navy);border: 1px solid #D1D5DB;border-radius: 8px;width: 36px;height: 36px;display: flex;align-items: center;justify-content: center;cursor: pointer;font-size: 20px;padding: 0;flex-shrink: 0;transition: background 0.2s;}
-.chat-attach-btn:hover {background: #D1FAE5;}
-.chat-attach-preview {display: flex;align-items: center;gap: 6px;background: #F3F4F6;padding: 6px 10px;border-radius: 8px;font-size: 11px;color: var(--ink);flex: 1;overflow: hidden;}
-.chat-attach-preview span {overflow: hidden;text-overflow: ellipsis;white-space: nowrap;flex: 1;}
-.chat-attach-preview button {background: transparent;border: 0;color: var(--red);font-weight: 800;cursor: pointer;padding: 0;font-size: 14px;}
-
-@media(max-width: 480px) {
-  #communityPopup {width: calc(100vw - 20px);right: 10px !important;bottom: 85px !important;max-height: calc(100vh - 100px);}
-  #communityWidget {bottom: 15px !important;right: 15px !important;width: 55px;height: 55px;font-size: 24px;}
+#communityWidget{position:fixed!important;bottom:20px!important;right:20px!important;z-index:9999!important;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--lav-1),var(--lav-2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;box-shadow:0 6px 20px rgba(16,185,129,0.5);transition:transform 0.2s, box-shadow 0.2s;border:none;}
+#communityWidget:hover{transform:scale(1.08);box-shadow:0 8px 25px rgba(16,185,129,0.7);}
+#communityWidget:active{transform:scale(0.95);}
+#communityWidget .widget-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:11px;font-weight:800;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid #fff;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+#communityPopup{position:fixed!important;bottom:90px!important;right:20px!important;z-index:9998!important;width:360px;max-width:calc(100vw - 40px);height:500px;max-height:calc(100vh - 120px);background:#fff;border-radius:16px;box-shadow:0 10px 40px rgba(6,95,70,0.25);display:none;flex-direction:column;overflow:hidden;border:1px solid var(--line);}
+#communityPopup.show{display:flex;animation:slideUp 0.25s ease-out;}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.community-popup-header{background:linear-gradient(120deg,var(--navy),var(--blue));color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.community-popup-header h3{margin:0;font-size:16px;font-weight:800;}
+.community-popup-header button{background:rgba(255,255,255,0.2);border:0;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:background 0.2s;padding:0;}
+.community-popup-header button:hover{background:rgba(255,255,255,0.35);}
+.community-popup-body{flex:1;overflow-y:auto;padding:12px;background:#F9FAFB;}
+.community-popup-footer{flex-shrink:0;padding:10px;border-top:1px solid var(--line);background:#fff;}
+.chat-msg{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(16,185,129,0.05);position:relative;}
+.chat-msg.is-mine{background:#F0FDF4;border-color:#A7F3D0;}
+.chat-msg-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.chat-msg-author{font-weight:800;color:var(--navy);font-size:12px;}
+.chat-msg-date{font-size:10px;color:var(--muted);}
+.chat-msg-content{font-size:13px;line-height:1.4;color:#1F2937;white-space:pre-wrap;word-break:break-word;}
+.chat-msg-actions{margin-top:6px;display:flex;gap:6px;}
+.chat-msg-actions button{background:#ECFDF5;color:var(--navy);border:1px solid #D1D5DB;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;}
+.chat-msg-actions button:hover{background:#D1FAE5;}
+.chat-msg-actions button.del{background:#FEF2F2;color:var(--red);border-color:#FECACA;}
+.chat-msg-actions button.del:hover{background:#FEE2E2;}
+.chat-reply-info{font-size:10px;color:var(--muted);font-style:italic;margin-bottom:4px;}
+.chat-reply-info b{color:var(--navy);}
+.chat-attachment{margin-top:6px;}
+.chat-attachment img{max-width:100%;max-height:200px;border-radius:8px;cursor:pointer;display:block;border:1px solid var(--line);}
+.chat-attachment a{display:inline-flex;align-items:center;gap:6px;background:#ECFDF5;color:var(--navy);padding:6px 10px;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;border:1px solid #D1D5DB;transition:background 0.2s;}
+.chat-attachment a:hover{background:#D1FAE5;}
+.community-chat-textarea{width:100%;min-height:60px;max-height:100px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;}
+.community-chat-textarea:focus{border-color:var(--lav-1);outline:2px solid rgba(16,185,129,0.2);}
+.community-replying-to{background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:6px 10px;margin-bottom:8px;font-size:11px;color:#92400E;display:flex;justify-content:space-between;align-items:center;}
+.community-replying-to button{background:transparent;border:0;color:var(--red);font-weight:800;cursor:pointer;padding:0 5px;font-size:14px;}
+.chat-input-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.chat-attach-btn{background:#ECFDF5;color:var(--navy);border:1px solid #D1D5DB;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;padding:0;flex-shrink:0;transition:background 0.2s;}
+.chat-attach-btn:hover{background:#D1FAE5;}
+.chat-attach-preview{display:flex;align-items:center;gap:6px;background:#F3F4F6;padding:6px 10px;border-radius:8px;font-size:11px;color:var(--ink);flex:1;overflow:hidden;}
+.chat-attach-preview span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.chat-attach-preview button{background:transparent;border:0;color:var(--red);font-weight:800;cursor:pointer;padding:0;font-size:14px;}
+@media(max-width:480px){
+  #communityPopup{width:calc(100vw - 20px);right:10px!important;bottom:85px!important;max-height:calc(100vh - 100px);}
+  #communityWidget{bottom:15px!important;right:15px!important;width:55px;height:55px;font-size:24px;}
   .course-toolbar{padding:8px 10px;}
   .course-toolbar button{padding:5px 10px;font-size:11px;}
   .course-item{padding:10px;}
@@ -396,7 +175,6 @@ button.danger:hover{background:#FEE2E2}
   .course-item-actions .btn-edit-course{padding:5px 8px;font-size:14px;}
   .brand img{height:40px;}
 }
-
 #adminModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.5);z-index:3000;align-items:center;justify-content:center;padding:20px}
 #adminModal.show{display:flex}
 .admin-modal-content{background:#fff;border-radius:16px;width:100%;max-width:900px;max-height:90vh;overflow-y:auto;padding:30px;box-shadow:0 10px 40px rgba(6,95,70,.25)}
@@ -404,7 +182,6 @@ button.danger:hover{background:#FEE2E2}
 .admin-tabs{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
 .admin-tab-btn{padding:10px 20px;border-radius:8px;background:#F3F4F6;color:var(--muted);font-weight:700;cursor:pointer;border:0}
 .admin-tab-btn.active{background:var(--blue-btn);color:#fff}
-
 #editQuizModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.5);z-index:3500;align-items:center;justify-content:center;padding:20px}
 #editQuizModal.show{display:flex}
 .edit-modal-content{background:#fff;border-radius:16px;width:100%;max-width:900px;max-height:92vh;overflow-y:auto;padding:24px;box-shadow:0 10px 40px rgba(6,95,70,.25)}
@@ -418,10 +195,9 @@ button.danger:hover{background:#FEE2E2}
 .edit-opt label{margin:0;font-size:14px;font-weight:400;cursor:pointer;flex:1;color:#1E293B}
 .edit-opt.is-correct{background:#ECFDF5;border-color:var(--green)}
 .edit-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
-
 #authGate{display:none;position:fixed;inset:0;background:var(--auth-bg);z-index:4000;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
 #authGate.show{display:flex;}
-.auth-container{position:relative;width:850px;height:min(560px, 92vh);background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(6,95,70,0.1);overflow:hidden}
+.auth-container{position:relative;width:850px;height:min(560px,92vh);background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(6,95,70,0.1);overflow:hidden}
 .auth-form-container{position:absolute;top:0;height:100%;width:50%;padding:24px 45px 30px;padding-top:28px;display:flex;flex-direction:column;justify-content:safe center;transition:all 0.6s ease-in-out;background:#fff;z-index:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
 .auth-form-login{left:0;opacity:1;z-index:2}
 .auth-form-register{left:0;opacity:0;z-index:1}
@@ -432,14 +208,11 @@ button.danger:hover{background:#FEE2E2}
 .auth-form-container h2{font-size:24px;font-weight:800;color:#000;text-align:center;margin:10px 0 14px}
 .auth-input-group{position:relative;margin-bottom:12px}
 .auth-input-group i{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--muted);pointer-events:none}
-.auth-toggle-password{position:absolute;right:0;top:0;bottom:0;width:50px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--muted);cursor:pointer;pointer-events:auto;transition:color .2s;background:transparent;border:none;padding:0;z-index:10;touch-action: manipulation;-webkit-tap-highlight-color: transparent;}
+.auth-toggle-password{position:absolute;right:0;top:0;bottom:0;width:50px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--muted);cursor:pointer;pointer-events:auto;transition:color .2s;background:transparent;border:none;padding:0;z-index:10;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 .auth-toggle-password:hover{color:var(--navy)}
-
-.auth-input-group input,
-.auth-input-group select{width:100%;padding:12px 50px 12px 42px;background:var(--input-bg);border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;color:var(--ink);outline:none;transition:border-color .2s, background .2s}
+.auth-input-group input,.auth-input-group select{width:100%;padding:12px 50px 12px 42px;background:var(--input-bg);border:1px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;color:var(--ink);outline:none;transition:border-color .2s, background .2s}
 .auth-input-group select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%236B7280'><path d='M7 10l5 5 5-5z'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
-.auth-input-group input:focus,
-.auth-input-group select:focus{border-color:var(--lav-1);background-color:#fff;outline:2px solid rgba(16,185,129,0.2)}
+.auth-input-group input:focus,.auth-input-group select:focus{border-color:var(--lav-1);background-color:#fff;outline:2px solid rgba(16,185,129,0.2)}
 .auth-input-group input::placeholder{color:#9CA3AF}
 .auth-forgot-link{display:block;text-align:right;font-size:12px;color:var(--lav-1);text-decoration:none;margin:-4px 0 12px;font-weight:600}
 .auth-forgot-link:hover{color:var(--lav-2)}
@@ -464,7 +237,6 @@ button.danger:hover{background:#FEE2E2}
 .auth-container.active .auth-overlay{transform:translateX(50%)}
 .auth-container.active .auth-overlay-left{transform:translateX(0)}
 .auth-container.active .auth-overlay-right{transform:translateX(20%)}
-
 #examView{display:none;position:fixed;inset:0;background:#F3F4F6;z-index:2000;overflow-y:auto;padding-bottom:120px}
 .exam-header{background:var(--exam-navy);color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2);padding-top:calc(15px + env(safe-area-inset-top))}
 .exam-header h2{margin:0;font-size:18px}
@@ -505,7 +277,6 @@ button.danger:hover{background:#FEE2E2}
 .instant-badge{display:inline-block;background:#E0F2FE;color:#075985;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:8px;vertical-align:middle}
 .validate-btn{background:#D1FAE5!important;color:#065F46!important;font-weight:800!important;padding:12px 20px!important;border-radius:10px!important;font-size:14px!important;margin-top:14px!important;cursor:pointer!important;transition:.15s!important}
 .validate-btn:hover{background:#A7F3D0!important}
-
 #scoreView{display:none;position:fixed;inset:0;background:rgba(6,95,70,.75);z-index:2500;align-items:center;justify-content:center;padding:20px}
 #scoreView.show{display:flex}
 .score-card{background:#fff;border-radius:20px;padding:40px 30px;max-width:460px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;overflow:hidden}
@@ -521,18 +292,14 @@ button.danger:hover{background:#FEE2E2}
 .score-actions button{width:100%;padding:14px;font-size:15px}
 .btn-corrections{background:var(--exam-blue);color:#fff}
 .btn-home{background:#F3F4F6;color:#374151}
-
 .app-footer{text-align:center;padding:20px;color:var(--muted);font-size:12px;border-top:1px solid var(--line);background:#fff;margin-top:20px}
 .app-footer b{color:var(--blue-btn)}
-
 .checkbox-group{display:flex;align-items:center;gap:10px;margin-top:15px;background:#F9FAFB;padding:12px;border-radius:10px;border:1px solid var(--line)}
 .checkbox-group input{width:20px;height:20px;cursor:pointer;margin:0;accent-color:#10B981}
 .checkbox-group label{margin:0;cursor:pointer;font-size:14px;color:var(--ink)}
-
 .library-item{display:flex;align-items:center;gap:10px;}
 .library-item input[type="checkbox"]{width:20px;height:20px;cursor:pointer;accent-color:#10B981;margin:0;flex-shrink:0}
 .bulk-actions{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}
-
 @media(max-width:768px){
   .auth-container{width:100%;max-width:420px;height:auto;min-height:auto;border-radius:20px}
   .auth-form-container{position:relative;width:100%;height:auto;padding:24px 22px 28px;transition:none;overflow:visible}
@@ -560,9 +327,7 @@ button.danger:hover{background:#FEE2E2}
   .score-card{padding:30px 20px}
   .score-value{font-size:40px}
 }
-@media(min-width:769px){
-  .auth-logo{height:60px;max-height:64px}
-}
+@media(min-width:769px){.auth-logo{height:60px;max-height:64px}}
 </style>
 </head><body>
 
@@ -588,55 +353,32 @@ button.danger:hover{background:#FEE2E2}
       <img src="https://compotestsaas.onrender.com/site.png" alt="Révisio" class="auth-logo">
       <h2>Bienvenue sur Révisio</h2>
       <form id="loginForm" novalidate>
-        <div class="auth-input-group">
-          <i class='bx bx-user'></i>
-          <input type="text" id="loginEmail" placeholder="Matricule ou Email" required autocomplete="username">
-        </div>
-        <div class="auth-input-group">
-          <i class='bx bx-lock-alt'></i>
-          <input type="password" id="loginPassword" placeholder="Mot de passe" required autocomplete="current-password">
-          <button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('loginPassword', this)"><i class='bx bx-show'></i></button>
-        </div>
+        <div class="auth-input-group"><i class='bx bx-user'></i><input type="text" id="loginEmail" placeholder="Matricule ou Email" required autocomplete="username"></div>
+        <div class="auth-input-group"><i class='bx bx-lock-alt'></i><input type="password" id="loginPassword" placeholder="Mot de passe" required autocomplete="current-password"><button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('loginPassword', this)"><i class='bx bx-show'></i></button></div>
         <a href="#" class="auth-forgot-link" onclick="alert('Contacte l\'administration pour réinitialiser ton mot de passe.');return false;">Mot de passe oublié ?</a>
         <button type="submit" class="auth-btn" id="loginSubmitBtn">Se connecter</button>
         <div id="loginError" class="auth-error"></div>
       </form>
       <p class="auth-switch-text">Pas encore de compte ? <a href="#" onclick="toggleAuthForm(); return false;">S'inscrire</a></p>
     </div>
-
     <div class="auth-form-container auth-form-register">
       <img src="https://compotestsaas.onrender.com/site.png" alt="Révisio" class="auth-logo">
       <h2>Inscription</h2>
       <form id="registerForm" novalidate>
-        <div class="auth-input-group">
-          <i class='bx bx-user'></i>
-          <input type="text" id="regLastName" placeholder="Nom" required>
-        </div>
-        <div class="auth-input-group">
-          <i class='bx bx-user'></i>
-          <input type="text" id="regFirstName" placeholder="Prénom" required>
-        </div>
-        <div class="auth-input-group">
-          <i class='bx bx-id-card'></i>
-          <input type="text" id="regMatricule" placeholder="Matricule" required>
-        </div>
-        <div class="auth-input-group">
-          <i class='bx bx-book'></i>
+        <div class="auth-input-group"><i class='bx bx-user'></i><input type="text" id="regLastName" placeholder="Nom" required></div>
+        <div class="auth-input-group"><i class='bx bx-user'></i><input type="text" id="regFirstName" placeholder="Prénom" required></div>
+        <div class="auth-input-group"><i class='bx bx-id-card'></i><input type="text" id="regMatricule" placeholder="Matricule" required></div>
+        <div class="auth-input-group"><i class='bx bx-book'></i>
           <select id="regFiliere" required>
             <option value="" disabled selected>Choisir une filière</option>
-            <option value="IDE">IDE</option>
-            <option value="SFM">SFM</option>
-            <option value="TSS IM">TSS IM</option>
-            <option value="TSS BM">TSS BM</option>
-            <option value="TSS PGP">TSS PGP</option>
-            <option value="TSS HA">TSS HA</option>
-            <option value="TSS MK">TSS MK</option>
-            <option value="TSS SM">TSS SM</option>
+            <option value="IDE">IDE</option><option value="SFM">SFM</option>
+            <option value="TSS IM">TSS IM</option><option value="TSS BM">TSS BM</option>
+            <option value="TSS PGP">TSS PGP</option><option value="TSS HA">TSS HA</option>
+            <option value="TSS MK">TSS MK</option><option value="TSS SM">TSS SM</option>
             <option value="TSS MBM">TSS MBM</option>
           </select>
         </div>
-        <div class="auth-input-group">
-          <i class='bx bx-graduation'></i>
+        <div class="auth-input-group"><i class='bx bx-graduation'></i>
           <select id="regNiveau" required>
             <option value="" disabled selected>Choisir un niveau</option>
             <option value="LICENCE 1">LICENCE 1</option>
@@ -644,17 +386,12 @@ button.danger:hover{background:#FEE2E2}
             <option value="LICENCE 3">LICENCE 3</option>
           </select>
         </div>
-        <div class="auth-input-group">
-          <i class='bx bx-lock-alt'></i>
-          <input type="password" id="regPassword" placeholder="Mot de passe" required minlength="6" autocomplete="new-password">
-          <button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('regPassword', this)"><i class='bx bx-show'></i></button>
-        </div>
+        <div class="auth-input-group"><i class='bx bx-lock-alt'></i><input type="password" id="regPassword" placeholder="Mot de passe" required minlength="6" autocomplete="new-password"><button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('regPassword', this)"><i class='bx bx-show'></i></button></div>
         <button type="submit" class="auth-btn" id="registerSubmitBtn">S'inscrire</button>
         <div id="registerError" class="auth-error"></div>
       </form>
       <p class="auth-switch-text">Déjà un compte ? <a href="#" onclick="toggleAuthForm(); return false;">Se connecter</a></p>
     </div>
-
     <div class="auth-overlay-container">
       <div class="auth-overlay">
         <div class="auth-overlay-panel auth-overlay-left">
@@ -679,7 +416,6 @@ button.danger:hover{background:#FEE2E2}
     <button class="tab" data-tab="courses">📖 Cours</button>
     <button class="tab" data-tab="history">📊 Mon Historique</button>
   </div>
-
   <div id="tab-create" class="tab-content">
     <div class="panel">
       <h1>Importer un document ou une photo</h1>
@@ -703,62 +439,43 @@ button.danger:hover{background:#FEE2E2}
         <span id="fileName" style="margin-left:10px;font-weight:600;font-size:14px;color:var(--navy)">Aucun fichier</span>
         <div id="pdfStatus" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
       </div>
-      
       <div class="checkbox-group">
         <input type="checkbox" id="splitQuizCheckbox">
         <label for="splitQuizCheckbox">Scinder automatiquement en quiz de 50 questions maximum</label>
       </div>
-
       <div id="textAreaWrap" class="hide" style="margin-top:20px">
         <label for="pdfText">Texte extrait</label>
         <textarea id="pdfText" style="min-height:150px"></textarea>
       </div>
       <div class="actions" id="actionButtons" style="margin-top:25px;display:none;justify-content:center;gap:20px">
-        <button id="generatePostTestBtn" class="success" style="flex:1;text-align:left;padding:15px;">
-          <div style="font-size:16px;font-weight:800">✨ GÉNÉRER 50 QUESTIONS (IA)</div>
-        </button>
-        <button id="extractTestBtn" class="secondary" style="flex:1;text-align:left;padding:15px;">
-          <div style="font-size:16px;font-weight:800">📋 EXTRAIRE QUESTIONNAIRE</div>
-        </button>
+        <button id="generatePostTestBtn" class="success" style="flex:1;text-align:left;padding:15px;"><div style="font-size:16px;font-weight:800">✨ GÉNÉRER 50 QUESTIONS (IA)</div></button>
+        <button id="extractTestBtn" class="secondary" style="flex:1;text-align:left;padding:15px;"><div style="font-size:16px;font-weight:800">📋 EXTRAIRE QUESTIONNAIRE</div></button>
       </div>
       <div id="analysisStatus" class="notice hide"></div>
     </div>
   </div>
-
   <div id="tab-library" class="tab-content hide">
     <div class="panel">
       <h1>🌍 Bibliothèque Publique</h1>
       <p style="color:var(--muted);font-size:14px">Retrouvez ici tous les exercices extraits et partagés par la communauté.</p>
-      
-      <div class="search-bar">
-        <i class='bx bx-search search-icon'></i>
-        <input type="text" id="quizSearch" placeholder="🔍 Rechercher un quiz par titre ou niveau (ex: santé L1)...">
-      </div>
-      
+      <div class="search-bar"><i class='bx bx-search search-icon'></i><input type="text" id="quizSearch" placeholder="🔍 Rechercher un quiz par titre ou niveau (ex: santé L1)..."></div>
       <div class="level-filters" id="libraryFilters">
         <button class="level-filter active" data-level="all" onclick="filterLibrary('all')">Tous</button>
         <button class="level-filter" data-level="LICENCE 1" onclick="filterLibrary('LICENCE 1')">LICENCE 1</button>
         <button class="level-filter" data-level="LICENCE 2" onclick="filterLibrary('LICENCE 2')">LICENCE 2</button>
         <button class="level-filter" data-level="LICENCE 3" onclick="filterLibrary('LICENCE 3')">LICENCE 3</button>
       </div>
-      
       <div id="libraryList"><p style="color:var(--muted)">Chargement...</p></div>
       <div class="bulk-actions" id="bulkActions" style="display:none">
         <button class="danger" onclick="deleteSelectedQuizzes()">🗑️ Supprimer la sélection</button>
       </div>
     </div>
   </div>
-
   <div id="tab-courses" class="tab-content hide">
     <div class="panel">
       <h1>📖 Cours</h1>
       <p style="color:var(--muted);font-size:14px">Retrouvez les cours PDF classés par niveau.</p>
-      
-      <div class="search-bar">
-        <i class='bx bx-search search-icon'></i>
-        <input type="text" id="courseSearch" placeholder="🔍 Rechercher un cours par titre ou niveau (ex: cardio L2)...">
-      </div>
-      
+      <div class="search-bar"><i class='bx bx-search search-icon'></i><input type="text" id="courseSearch" placeholder="🔍 Rechercher un cours par titre ou niveau (ex: cardio L2)..."></div>
       <div id="adminCourseForm" class="hide" style="background:#F9FAFB;border-radius:12px;padding:16px;margin-bottom:20px;border:1px solid var(--line)">
         <h3 style="margin-top:0;font-size:16px">➕ Ajouter un cours (Admin)</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -780,11 +497,9 @@ button.danger:hover{background:#FEE2E2}
         <button onclick="addCourse()" style="margin-top:12px;width:100%">📤 Ajouter le cours</button>
         <div id="courseStatus" style="font-size:12px;margin-top:8px"></div>
       </div>
-
       <div id="coursesList"></div>
     </div>
   </div>
-
   <div id="tab-history" class="tab-content hide">
     <div class="panel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
@@ -796,37 +511,18 @@ button.danger:hover{background:#FEE2E2}
   </div>
 </main>
 
-<footer class="app-footer">
-  dev. par <b>NSC-GROUP</b> ( THC )
-</footer>
+<footer class="app-footer">dev. par <b>NSC-GROUP</b> ( THC )</footer>
 
-<div id="communityWidget" onclick="toggleCommunityPopup()" title="Ouvrir le chat Communauté">
-  💬
-  <span id="communityWidgetBadge" class="widget-badge" style="display:none">0</span>
-</div>
-
+<div id="communityWidget" onclick="toggleCommunityPopup()" title="Ouvrir le chat Communauté">💬<span id="communityWidgetBadge" class="widget-badge" style="display:none">0</span></div>
 <div id="communityPopup">
-  <div class="community-popup-header">
-    <h3>💬 Communauté</h3>
-    <button onclick="toggleCommunityPopup()" title="Fermer">✖</button>
-  </div>
-  <div class="community-popup-body" id="communityList">
-    <p style="color:var(--muted);text-align:center;padding:20px;">Chargement...</p>
-  </div>
+  <div class="community-popup-header"><h3>💬 Communauté</h3><button onclick="toggleCommunityPopup()" title="Fermer">✖</button></div>
+  <div class="community-popup-body" id="communityList"><p style="color:var(--muted);text-align:center;padding:20px;">Chargement...</p></div>
   <div class="community-popup-footer">
-    <div id="replyingTo" class="community-replying-to" style="display:none;">
-      <span id="replyingToText">Répondre à ...</span>
-      <button onclick="cancelReply()" title="Annuler">✖</button>
-    </div>
+    <div id="replyingTo" class="community-replying-to" style="display:none;"><span id="replyingToText">Répondre à ...</span><button onclick="cancelReply()" title="Annuler">✖</button></div>
     <input type="file" id="communityFileInput" accept="image/*,.pdf" style="display:none" onchange="onAttachmentSelected(this)">
     <div class="chat-input-toolbar" id="attachmentToolbar">
-      <button type="button" class="chat-attach-btn" onclick="document.getElementById('communityFileInput').click()" title="Joindre un fichier">
-        <i class='bx bx-paperclip'></i>
-      </button>
-      <div id="attachmentPreview" class="chat-attach-preview" style="display:none;">
-        <span id="attachmentName"></span>
-        <button type="button" onclick="removeAttachment()" title="Retirer">✖</button>
-      </div>
+      <button type="button" class="chat-attach-btn" onclick="document.getElementById('communityFileInput').click()" title="Joindre un fichier"><i class='bx bx-paperclip'></i></button>
+      <div id="attachmentPreview" class="chat-attach-preview" style="display:none;"><span id="attachmentName"></span><button type="button" onclick="removeAttachment()" title="Retirer">✖</button></div>
     </div>
     <textarea id="communityInput" class="community-chat-textarea" placeholder="Écrivez votre message..." maxlength="1000"></textarea>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
@@ -838,10 +534,7 @@ button.danger:hover{background:#FEE2E2}
 
 <div id="adminModal">
   <div class="admin-modal-content">
-    <div class="admin-header">
-      <h2 style="margin:0">⚙️ Panneau d'Administration</h2>
-      <button class="ghost" onclick="document.getElementById('adminModal').classList.remove('show')">✖ Fermer</button>
-    </div>
+    <div class="admin-header"><h2 style="margin:0">⚙️ Panneau d'Administration</h2><button class="ghost" onclick="document.getElementById('adminModal').classList.remove('show')">✖ Fermer</button></div>
     <div class="admin-tabs">
       <button class="admin-tab-btn active" data-atab="create">➕ Créer un compte</button>
       <button class="admin-tab-btn" data-atab="password">🔑 Modifier MDP</button>
@@ -852,8 +545,7 @@ button.danger:hover{background:#FEE2E2}
         <div><label>Nom</label><input id="newLastName" required placeholder="Dupont"></div>
         <div><label>Prénom</label><input id="newFirstName" required placeholder="Jean"></div>
         <div style="grid-column:1/-1"><label>Email interne (optionnel - auto-généré sinon)</label><input id="newEmail" type="email" placeholder="jean.dupont@comptest.local"></div>
-        <div style="grid-column:1/-1">
-          <label>Niveau</label>
+        <div style="grid-column:1/-1"><label>Niveau</label>
           <select id="newNiveau">
             <option value="" disabled selected>Choisir un niveau</option>
             <option value="LICENCE 1">LICENCE 1</option>
@@ -883,9 +575,7 @@ button.danger:hover{background:#FEE2E2}
       <p style="color:var(--muted);font-size:13px">Sélectionnez un utilisateur pour lui attribuer ou retirer le rôle Administrateur.</p>
       <div style="margin-top:15px">
         <label>Utilisateur</label>
-        <select id="roleUserId" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ccc">
-          <option value="">-- Chargement des utilisateurs... --</option>
-        </select>
+        <select id="roleUserId" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ccc"><option value="">-- Chargement des utilisateurs... --</option></select>
         <div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap">
           <button class="success" onclick="adminSetRole(true)" style="flex:1;min-width:140px">👑 Promouvoir Admin</button>
           <button class="danger" onclick="adminSetRole(false)" style="flex:1;min-width:140px">⬇️ Retirer Admin</button>
@@ -900,10 +590,7 @@ button.danger:hover{background:#FEE2E2}
 
 <div id="editQuizModal">
   <div class="edit-modal-content">
-    <div class="edit-modal-header">
-      <h2 style="margin:0" id="editQuizTitle">✏️ Éditer le quiz</h2>
-      <button class="ghost" onclick="document.getElementById('editQuizModal').classList.remove('show')">✖ Fermer</button>
-    </div>
+    <div class="edit-modal-header"><h2 style="margin:0" id="editQuizTitle">✏️ Éditer le quiz</h2><button class="ghost" onclick="document.getElementById('editQuizModal').classList.remove('show')">✖ Fermer</button></div>
     <p style="color:var(--muted);font-size:13px;margin-top:0">Cochez la ou les bonnes réponses pour chaque question. Pour les QCM multi, plusieurs réponses sont possibles.</p>
     <div id="editQuizBody"></div>
     <div class="edit-footer">
@@ -915,16 +602,9 @@ button.danger:hover{background:#FEE2E2}
 
 <div id="editCourseModal">
   <div class="edit-course-modal-content">
-    <div class="edit-course-modal-header">
-      <h2>✏️ Éditer le cours</h2>
-      <button class="ghost" onclick="closeEditCourse()" title="Fermer">✖</button>
-    </div>
-    <div class="edit-course-field">
-      <label for="editCourseTitle">Titre du cours</label>
-      <input type="text" id="editCourseTitle" placeholder="Titre du cours" maxlength="200">
-    </div>
-    <div class="edit-course-field">
-      <label for="editCourseLevel">Niveau</label>
+    <div class="edit-course-modal-header"><h2>✏️ Éditer le cours</h2><button class="ghost" onclick="closeEditCourse()" title="Fermer">✖</button></div>
+    <div class="edit-course-field"><label for="editCourseTitle">Titre du cours</label><input type="text" id="editCourseTitle" placeholder="Titre du cours" maxlength="200"></div>
+    <div class="edit-course-field"><label for="editCourseLevel">Niveau</label>
       <select id="editCourseLevel">
         <option value="LICENCE 1">LICENCE 1</option>
         <option value="LICENCE 2">LICENCE 2</option>
@@ -940,11 +620,7 @@ button.danger:hover{background:#FEE2E2}
       <label for="editCourseFile">Remplacer le PDF (optionnel)</label>
       <input type="file" id="editCourseFile" accept=".pdf">
       <div class="edit-course-hint">Laisse vide pour conserver le PDF actuel.</div>
-      <div class="edit-course-current-file" id="editCourseCurrentFile">
-        <i class='bx bx-file'></i>
-        <span id="editCourseCurrentFileName">Fichier actuel</span>
-        <a id="editCourseCurrentFileLink" href="#" target="_blank" rel="noopener">Ouvrir</a>
-      </div>
+      <div class="edit-course-current-file" id="editCourseCurrentFile"><i class='bx bx-file'></i><span id="editCourseCurrentFileName">Fichier actuel</span><a id="editCourseCurrentFileLink" href="#" target="_blank" rel="noopener">Ouvrir</a></div>
     </div>
     <div class="edit-course-footer">
       <button class="ghost" onclick="closeEditCourse()">Annuler</button>
@@ -955,10 +631,7 @@ button.danger:hover{background:#FEE2E2}
 </div>
 
 <div id="examView">
-  <div class="exam-header">
-    <div><h2 id="examTitle">Test</h2><div id="examMeta" style="font-size:12px;opacity:.8"></div></div>
-    <button class="ghost" id="examQuitBtn" style="background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.3)">← Quitter</button>
-  </div>
+  <div class="exam-header"><div><h2 id="examTitle">Test</h2><div id="examMeta" style="font-size:12px;opacity:.8"></div></div><button class="ghost" id="examQuitBtn" style="background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.3)">← Quitter</button></div>
   <div class="exam-body" id="examBody"></div>
   <div class="exam-actions">
     <div class="exam-actions-left" id="examProgressText">Question 1 / 50</div>
@@ -986,10 +659,7 @@ button.danger:hover{background:#FEE2E2}
 
 <div id="videoModal">
   <div class="video-modal-content">
-    <div class="video-modal-header">
-      <h3 id="videoModalTitle">Vidéo du cours</h3>
-      <button onclick="closeVideoModal()" title="Fermer">✖</button>
-    </div>
+    <div class="video-modal-header"><h3 id="videoModalTitle">Vidéo du cours</h3><button onclick="closeVideoModal()" title="Fermer">✖</button></div>
     <div class="video-modal-body" id="videoModalBody"></div>
   </div>
 </div>
@@ -1005,7 +675,6 @@ button.danger:hover{background:#FEE2E2}
 const $=id=>document.getElementById(id);
 
 const API_BASE = 'https://compotestsaas.onrender.com';
-
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let examState = null;
@@ -1019,25 +688,17 @@ let editingQuizId = null;
 let selectedQuizIds = new Set();
 let selectedCourseIds = new Set();
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
-
 let replyingTo = null;
 let unreadRepliesCount = 0;
 let unreadCheckInterval = null;
 let selectedAttachment = null;
-
 let currentLibraryFilter = 'all';
 let editingCourseId = null;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 function normalizeText(str) {
-  return String(str || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function parseSearchQuery(query) {
@@ -1050,39 +711,25 @@ function parseSearchQuery(query) {
     { regex: /\b(l\s*2|licence\s*2|lic\s*2)\b/i, level: 'LICENCE 2' },
     { regex: /\b(l\s*3|licence\s*3|lic\s*3)\b/i, level: 'LICENCE 3' }
   ];
-  for (const p of levelPatterns) {
-    if (p.regex.test(normalized)) { level = p.level; break; }
-  }
+  for (const p of levelPatterns) { if (p.regex.test(normalized)) { level = p.level; break; } }
   let keyword = normalized;
   if (level) {
-    keyword = keyword
-      .replace(/\b(l\s*1|licence\s*1|lic\s*1)\b/i, '')
-      .replace(/\b(l\s*2|licence\s*2|lic\s*2)\b/i, '')
-      .replace(/\b(l\s*3|licence\s*3|lic\s*3)\b/i, '')
-      .trim();
+    keyword = keyword.replace(/\b(l\s*1|licence\s*1|lic\s*1)\b/i, '').replace(/\b(l\s*2|licence\s*2|lic\s*2)\b/i, '').replace(/\b(l\s*3|licence\s*3|lic\s*3)\b/i, '').trim();
   }
-  return { keyword: keyword, level: level };
+  return { keyword, level };
 }
 
 function togglePasswordVisibility(inputId, btn) {
   const input = $(inputId);
   if (!input) return;
   const icon = btn.querySelector('i');
-  if (input.type === 'password') {
-    input.type = 'text';
-    icon.className = 'bx bx-hide';
-  } else {
-    input.type = 'password';
-    icon.className = 'bx bx-show';
-  }
+  if (input.type === 'password') { input.type = 'text'; icon.className = 'bx bx-hide'; }
+  else { input.type = 'password'; icon.className = 'bx bx-show'; }
 }
 window.togglePasswordVisibility = togglePasswordVisibility;
 
 (async () => {
-  const defaultConfig = {
-    SUPABASE_URL: 'https://drumtgglrtmubdvkpwvl.supabase.co',
-    SUPABASE_ANON_KEY: 'sb_publishable_u86DlAD9qU-Byb9tR59gMA_IlGAbcxu'
-  };
+  const defaultConfig = { SUPABASE_URL: 'https://drumtgglrtmubdvkpwvl.supabase.co', SUPABASE_ANON_KEY: 'sb_publishable_u86DlAD9qU-Byb9tR59gMA_IlGAbcxu' };
   const cfg = window.COMPOSTEST_CONFIG || defaultConfig;
   if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
     console.error('❌ Supabase NON initialisé. Config manquante :', cfg);
@@ -1090,14 +737,7 @@ window.togglePasswordVisibility = togglePasswordVisibility;
     return;
   }
   try {
-    supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
-      auth: {
-        storage: localStorage,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false
-      }
-    });
+    supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { storage: localStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false } });
     console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
     await initAuth();
   } catch (e) {
@@ -1219,18 +859,11 @@ $('loginForm').addEventListener('submit', async (e) => {
   try {
     const { error } = await supabaseClient.auth.signInWithPassword({ email: emailToUse, password: pwd });
     if (error) {
-      if (/invalid login/i.test(error.message) || /invalid credentials/i.test(error.message)) {
-        errEl.textContent = 'Matricule/Email ou mot de passe incorrect.';
-      } else {
-        errEl.textContent = error.message;
-      }
+      if (/invalid login/i.test(error.message) || /invalid credentials/i.test(error.message)) errEl.textContent = 'Matricule/Email ou mot de passe incorrect.';
+      else errEl.textContent = error.message;
     }
-  } catch (err) {
-    errEl.textContent = 'Erreur réseau : ' + err.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Se connecter';
-  }
+  } catch (err) { errEl.textContent = 'Erreur réseau : ' + err.message; }
+  finally { btn.disabled = false; btn.textContent = 'Se connecter'; }
 });
 
 $('registerForm').addEventListener('submit', async (e) => {
@@ -1245,50 +878,29 @@ $('registerForm').addEventListener('submit', async (e) => {
   const filiere = $('regFiliere').value;
   const niveau = $('regNiveau').value;
   const pwd = $('regPassword').value;
-  if (!lastName || !firstName || !matricule || !filiere || !niveau || !pwd) {
-    errEl.textContent = 'Merci de remplir tous les champs.';
-    return;
-  }
-  if (pwd.length < 6) {
-    errEl.textContent = 'Le mot de passe doit contenir au moins 6 caractères.';
-    return;
-  }
+  if (!lastName || !firstName || !matricule || !filiere || !niveau || !pwd) { errEl.textContent = 'Merci de remplir tous les champs.'; return; }
+  if (pwd.length < 6) { errEl.textContent = 'Le mot de passe doit contenir au moins 6 caractères.'; return; }
   const email = matricule.toLowerCase().replace(/\s+/g, '') + '@comptest.local';
   const btn = $('registerSubmitBtn');
   btn.disabled = true;
   btn.textContent = 'Inscription...';
   try {
-    const { error } = await supabaseClient.auth.signUp({
-      email, password: pwd,
-      options: { data: { full_name: `${lastName} ${firstName}`, role: 'etudiant', filiere, niveau, matricule } }
-    });
+    const { error } = await supabaseClient.auth.signUp({ email, password: pwd, options: { data: { full_name: `${lastName} ${firstName}`, role: 'etudiant', filiere, niveau, matricule } } });
     if (error) {
       const msg = (error.message || '').toLowerCase();
-      if (msg.includes('matricule') || msg.includes('not authorized') || msg.includes('whitelist') || msg.includes('non autorisé')) {
-        errEl.textContent = 'Ce matricule n\'est pas autorisé à s\'inscrire. Contacte l\'administration.';
-      } else if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')) {
-        errEl.textContent = 'Ce matricule est déjà enregistré. Essaie de te connecter.';
-      } else {
-        errEl.textContent = error.message;
-      }
+      if (msg.includes('matricule') || msg.includes('not authorized') || msg.includes('whitelist') || msg.includes('non autorisé')) errEl.textContent = 'Ce matricule n\'est pas autorisé à s\'inscrire. Contacte l\'administration.';
+      else if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')) errEl.textContent = 'Ce matricule est déjà enregistré. Essaie de te connecter.';
+      else errEl.textContent = error.message;
     } else {
       errEl.style.color = 'var(--green)';
       errEl.textContent = '✅ Inscription réussie !';
       $('registerForm').reset();
     }
-  } catch (err) {
-    errEl.textContent = 'Erreur réseau : ' + err.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'S\'inscrire';
-  }
+  } catch (err) { errEl.textContent = 'Erreur réseau : ' + err.message; }
+  finally { btn.disabled = false; btn.textContent = 'S\'inscrire'; }
 });
 
-$('logoutBtn').addEventListener('click', () => {
-  if (!supabaseClient) return;
-  supabaseClient.auth.signOut();
-});
-
+$('logoutBtn').addEventListener('click', () => { if (supabaseClient) supabaseClient.auth.signOut(); });
 $('pwdBtn').addEventListener('click', async () => {
   if (!supabaseClient) return;
   const newPwd = prompt("Entrez votre nouveau mot de passe (6 caractères minimum) :");
@@ -1302,54 +914,24 @@ $('pwdBtn').addEventListener('click', async () => {
 // 🎬 LECTURE VIDÉO (modale)
 // ==========================================
 function extractYouTubeId(url) {
-  const patterns = [
-    /[?&]v=([\w-]{11})/,
-    /youtu\.be\/([\w-]{11})/,
-    /shorts\/([\w-]{11})/,
-    /embed\/([\w-]{11})/,
-    /live\/([\w-]{11})/
-  ];
-  for (const re of patterns) {
-    const m = String(url || '').match(re);
-    if (m && m[1]) return m[1];
-  }
+  const patterns = [/[?&]v=([\w-]{11})/, /youtu\.be\/([\w-]{11})/, /shorts\/([\w-]{11})/, /embed\/([\w-]{11})/, /live\/([\w-]{11})/];
+  for (const re of patterns) { const m = String(url || '').match(re); if (m && m[1]) return m[1]; }
   return null;
 }
-
 function extractVimeoId(url) {
   const m = String(url || '').match(/vimeo\.com\/(?:video\/)?(\d+)/);
   return m ? m[1] : null;
 }
-
 function buildVideoEmbed(url) {
   const u = String(url || '').trim();
   if (!u) return { type: 'error', message: 'Lien vidéo manquant.' };
   const ytId = extractYouTubeId(u);
-  if (ytId) {
-    return {
-      type: 'iframe',
-      src: `https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`,
-      allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
-    };
-  }
+  if (ytId) return { type: 'iframe', src: `https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1`, allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' };
   const vimeoId = extractVimeoId(u);
-  if (vimeoId) {
-    return {
-      type: 'iframe',
-      src: `https://player.vimeo.com/video/${vimeoId}`,
-      allow: 'autoplay; fullscreen; picture-in-picture'
-    };
-  }
-  if (/\.(mp4|webm|ogg|ogv|mov)(\?.*)?$/i.test(u)) {
-    return { type: 'video', src: u };
-  }
-  return {
-    type: 'iframe',
-    src: u,
-    allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-  };
+  if (vimeoId) return { type: 'iframe', src: `https://player.vimeo.com/video/${vimeoId}`, allow: 'autoplay; fullscreen; picture-in-picture' };
+  if (/\.(mp4|webm|ogg|ogv|mov)(\?.*)?$/i.test(u)) return { type: 'video', src: u };
+  return { type: 'iframe', src: u, allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture' };
 }
-
 function openVideoModal(url, title) {
   const modal = $('videoModal');
   const body = $('videoModalBody');
@@ -1383,7 +965,6 @@ function openVideoModal(url, title) {
   document.body.style.overflow = 'hidden';
 }
 window.openVideoModal = openVideoModal;
-
 function closeVideoModal() {
   const modal = $('videoModal');
   const body = $('videoModalBody');
@@ -1393,12 +974,9 @@ function closeVideoModal() {
   document.body.style.overflow = 'auto';
 }
 window.closeVideoModal = closeVideoModal;
-
 document.addEventListener('DOMContentLoaded', () => {
   const modal = $('videoModal');
-  if (modal) {
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeVideoModal(); });
-  }
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeVideoModal(); });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       const m = $('videoModal');
@@ -1415,16 +993,13 @@ async function loadCourses() {
   const list = $('coursesList');
   list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
   try {
-    const { data, error } = await supabaseClient
-      .from('courses')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabaseClient.from('courses').select('*').order('created_at', { ascending: false });
     if (error) {
       list.innerHTML = `<p style="color:var(--red)">Erreur : ${esc(error.message)}</p>`;
       return;
     }
     coursesCache = data || [];
-    // ← DEBUG TEMPORAIRE
+    // ← DEBUG TEMPORAIRE (à retirer plus tard)
     console.log('📚 Cours chargés :', coursesCache.map(c => ({ id: c.id, title: c.title, video_url: c.video_url })));
     selectedCourseIds.clear();
     renderCourses();
@@ -1573,7 +1148,7 @@ async function moveQuiz(quizId, currentLevel) {
 window.moveQuiz = moveQuiz;
 
 // ==========================================
-// ➕ AJOUT DE COURS (avec debug et vérification)
+// ➕ AJOUT DE COURS (vérification stricte)
 // ==========================================
 async function addCourse() {
   if (!isAdmin || !supabaseClient) return;
@@ -1582,8 +1157,6 @@ async function addCourse() {
   const fileInput = $('courseFile');
   const status = $('courseStatus');
   const videoUrl = $('courseVideoUrl') ? $('courseVideoUrl').value.trim() : '';
-
-  console.log('🆕 addCourse — Données lues :', { title, level, videoUrl, hasFile: !!(fileInput.files && fileInput.files.length) });
 
   if (!title || !level || !fileInput.files || fileInput.files.length === 0) {
     status.textContent = "❌ Titre, niveau et fichier PDF sont requis.";
@@ -1603,11 +1176,7 @@ async function addCourse() {
     let isReplacing = false;
     if (existingCourse) {
       const confirmReplace = confirm(`⚠️ Un cours nommé "${title}" existe déjà en ${level}.\n\nCliquez sur OK pour REMPLACER l'ancien cours, ou Annuler pour conserver l'ancien.`);
-      if (!confirmReplace) {
-        status.textContent = "❌ Ajout annulé.";
-        status.style.color = "var(--red)";
-        return;
-      }
+      if (!confirmReplace) { status.textContent = "❌ Ajout annulé."; status.style.color = "var(--red)"; return; }
       isReplacing = true;
       const oldFilePath = decodeURIComponent(existingCourse.file_url.split('/courses_files/')[1] || '');
       if (oldFilePath) await supabaseClient.storage.from('courses_files').remove([oldFilePath]);
@@ -1619,24 +1188,22 @@ async function addCourse() {
     const { error: uploadError } = await supabaseClient.storage.from('courses_files').upload(filePath, file, { cacheControl: '3600', upsert: false });
     if (uploadError) throw new Error("Erreur upload : " + uploadError.message);
     const { data: urlData } = supabaseClient.storage.from('courses_files').getPublicUrl(filePath);
-    const insertPayload = {
-      title: title,
-      level: level,
-      file_url: urlData.publicUrl,
-      video_url: videoUrl || null
-    };
-    console.log('🆕 addCourse — Payload INSERT :', insertPayload);
+    const insertPayload = { title, level, file_url: urlData.publicUrl, video_url: videoUrl || null };
     const { data: inserted, error: dbError } = await supabaseClient.from('courses').insert(insertPayload).select();
     if (dbError) throw new Error("Erreur DB : " + dbError.message);
-    console.log('🆕 addCourse — Réponse INSERT :', inserted);
-    // Vérification post-insert
-    if (videoUrl && inserted && inserted[0] && !inserted[0].video_url) {
-      status.textContent = "⚠️ Attention : le cours est créé MAIS la vidéo n'a pas été sauvegardée. Vérifie que la colonne video_url existe dans Supabase (ALTER TABLE courses ADD COLUMN video_url TEXT).";
-      status.style.color = "var(--red)";
-    } else {
-      status.textContent = isReplacing ? "✅ Cours remplacé !" : "✅ Cours ajouté !";
-      status.style.color = "var(--green)";
+    // Vérification stricte : l'insert doit renvoyer 1 ligne
+    if (!inserted || inserted.length === 0) {
+      throw new Error("Le cours n'a pas pu être vérifié après l'INSERT (0 ligne retournée). Vérifie les policies RLS INSERT/SELECT sur la table courses.");
     }
+    const justInserted = inserted[0];
+    if (videoUrl && !justInserted.video_url) {
+      status.textContent = "⚠️ Le cours est créé MAIS la vidéo n'a pas été sauvegardée. Vérifie la colonne video_url dans Supabase.";
+      status.style.color = "var(--red)";
+      await loadCourses();
+      return;
+    }
+    status.textContent = isReplacing ? "✅ Cours remplacé !" : "✅ Cours ajouté !";
+    status.style.color = "var(--green)";
     $('courseTitle').value = '';
     $('courseLevel').value = '';
     $('courseFile').value = '';
@@ -1650,7 +1217,7 @@ async function addCourse() {
 window.addCourse = addCourse;
 
 // ==========================================
-// ✏️ ÉDITION DE COURS (avec debug et vérification)
+// ✏️ ÉDITION DE COURS (vérification stricte)
 // ==========================================
 function openEditCourse(courseId) {
   if (!isAdmin) return;
@@ -1701,8 +1268,6 @@ async function saveEditCourse() {
   const newVideoUrl = $('editCourseVideoUrl').value.trim();
   const newFileInput = $('editCourseFile');
 
-  console.log('✏️ saveEditCourse — Données lues :', { newTitle, newLevel, newVideoUrl, hasNewFile: !!(newFileInput.files && newFileInput.files.length) });
-
   if (!newTitle || !newLevel) {
     status.textContent = "❌ Le titre et le niveau sont requis.";
     status.style.color = "var(--red)";
@@ -1732,11 +1297,7 @@ async function saveEditCourse() {
   const hasNewFile = newFileInput && newFileInput.files && newFileInput.files.length > 0;
   if (hasNewFile) {
     const file = newFileInput.files[0];
-    if (file.size > 10 * 1024 * 1024) {
-      status.textContent = "❌ Fichier trop volumineux (10 Mo max).";
-      status.style.color = "var(--red)";
-      return;
-    }
+    if (file.size > 10 * 1024 * 1024) { status.textContent = "❌ Fichier trop volumineux (10 Mo max)."; status.style.color = "var(--red)"; return; }
     saveBtn.disabled = true;
     saveBtn.textContent = '⏳ Upload...';
     status.textContent = "⏳ Upload du nouveau PDF...";
@@ -1766,37 +1327,40 @@ async function saveEditCourse() {
   status.textContent = "⏳ Sauvegarde en base...";
   status.style.color = "var(--muted)";
 
-  const updatePayload = {
-    title: newTitle,
-    level: newLevel,
-    file_url: finalFileUrl,
-    video_url: newVideoUrl || null
-  };
-  console.log('✏️ saveEditCourse — Payload UPDATE :', updatePayload);
+  const updatePayload = { title: newTitle, level: newLevel, file_url: finalFileUrl, video_url: newVideoUrl || null };
 
   try {
     const { data: updated, error: updateError } = await supabaseClient.from('courses').update(updatePayload).eq('id', editingCourseId).select();
     if (updateError) throw new Error("Erreur DB : " + updateError.message);
-    console.log('✏️ saveEditCourse — Réponse UPDATE :', updated);
 
-    // Vérification post-update
-    if (newVideoUrl && updated && updated[0] && !updated[0].video_url) {
-      status.textContent = "⚠️ Titre/niveau/PDF sauvegardés MAIS la vidéo n'a pas été enregistrée. Vérifie que la colonne video_url existe dans Supabase.";
-      status.style.color = "var(--red)";
-    } else {
-      status.textContent = "✅ Cours modifié avec succès !";
-      status.style.color = "var(--green)";
-      setTimeout(async () => {
-        closeEditCourse();
-        await loadCourses();
-      }, 600);
+    // ← VÉRIFICATION STRICTE : si 0 ligne retournée = policy RLS UPDATE manquante
+    if (!updated || updated.length === 0) {
+      throw new Error(
+        "Aucune ligne modifiée. La mise à jour a été silencieusement rejetée.\n\n" +
+        "Cause la plus probable : il manque une policy RLS 'UPDATE' sur la table 'courses'.\n\n" +
+        "→ Exécute dans Supabase SQL Editor :\n" +
+        "CREATE POLICY \"Admins peuvent modifier des cours\" ON public.courses FOR UPDATE TO authenticated USING (auth.jwt() -> 'app_metadata' ->> 'is_admin' = 'true' OR auth.jwt() ->> 'email' = 'hermzo2013@gmail.com') WITH CHECK (auth.jwt() -> 'app_metadata' ->> 'is_admin' = 'true' OR auth.jwt() ->> 'email' = 'hermzo2013@gmail.com');"
+      );
     }
+
+    const updatedRow = updated[0];
+    if (newVideoUrl && !updatedRow.video_url) {
+      status.textContent = "⚠️ Le cours a été mis à jour MAIS la vidéo n'a pas été sauvegardée.";
+      status.style.color = "var(--red)";
+      await loadCourses();
+      return;
+    }
+
+    status.textContent = "✅ Cours modifié avec succès !";
+    status.style.color = "var(--green)";
+    setTimeout(async () => { closeEditCourse(); await loadCourses(); }, 600);
   } catch (e) {
     if (uploadedNewFilePath) {
       try { await supabaseClient.storage.from('courses_files').remove([uploadedNewFilePath]); } catch (cleanupErr) {}
     }
     status.textContent = "❌ " + e.message;
     status.style.color = "var(--red)";
+    alert("❌ " + e.message);
   } finally {
     saveBtn.disabled = false;
     saveBtn.textContent = '💾 Sauvegarder les modifications';
@@ -2036,10 +1600,7 @@ async function loadCommunity() {
   try {
     const { data, error } = await supabaseClient.from('community_posts').select('*').order('created_at', { ascending: false });
     if (error) { list.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Erreur : ${esc(error.message)}</p>`; return; }
-    if (!data || data.length === 0) {
-      list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">Aucun message pour le moment. Soyez le premier à publier !</p>';
-      return;
-    }
+    if (!data || data.length === 0) { list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">Aucun message pour le moment. Soyez le premier à publier !</p>'; return; }
     list.innerHTML = data.map(post => {
       const isAuthor = currentUser && post.user_id === currentUser.id;
       const canDelete = isAdmin || isAuthor;
@@ -2061,9 +1622,7 @@ async function loadCommunity() {
         ${replyContext}<div class="chat-msg-content">${esc(post.content)}</div>${attachmentHtml}
         <div class="chat-msg-actions">${replyBtn}${deleteBtn}</div></div>`;
     }).join('');
-  } catch (e) {
-    list.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Erreur réseau : ${esc(e.message)}</p>`;
-  }
+  } catch (e) { list.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Erreur réseau : ${esc(e.message)}</p>`; }
 }
 window.loadCommunity = loadCommunity;
 
@@ -2164,7 +1723,6 @@ window.markRepliesAsRead = markRepliesAsRead;
 // 👑 ADMIN
 // ==========================================
 $('adminBtn').addEventListener('click', () => { $('adminModal').classList.add('show'); loadAdminUsers(); });
-
 document.querySelectorAll('.admin-tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
