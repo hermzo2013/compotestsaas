@@ -232,7 +232,6 @@ button.danger:hover{background:#FEE2E2}
   cursor:pointer;
 }
 .course-item-actions button.btn-video:hover{background:#0284C7}
-/* ← MODIF EDIT COURS : bouton d'édition (icône ✏️) */
 .course-item-actions .btn-edit-course{
   background:#FEF3C7;
   color:#92400E;
@@ -317,7 +316,6 @@ button.danger:hover{background:#FEE2E2}
 }
 .video-modal-error a{color:#34D399;word-break:break-all;}
 
-/* ← MODIF EDIT COURS : modale d'édition de cours (design cohérent avec #editQuizModal) */
 #editCourseModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.5);z-index:3600;align-items:center;justify-content:center;padding:20px}
 #editCourseModal.show{display:flex}
 .edit-course-modal-content{background:#fff;border-radius:16px;width:100%;max-width:700px;max-height:92vh;overflow-y:auto;padding:24px;box-shadow:0 10px 40px rgba(6,95,70,.25)}
@@ -338,7 +336,6 @@ button.danger:hover{background:#FEE2E2}
 .edit-course-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);flex-wrap:wrap}
 #editCourseStatus{font-size:13px;margin-top:10px;text-align:right}
 
-/* BULLE FLOTTANTE COMMUNAUTÉ */
 #communityWidget {position: fixed !important;bottom: 20px !important;right: 20px !important;z-index: 9999 !important;width: 60px;height: 60px;border-radius: 50%;background: linear-gradient(135deg, var(--lav-1), var(--lav-2));color: #fff;display: flex;align-items: center;justify-content: center;font-size: 28px;cursor: pointer;box-shadow: 0 6px 20px rgba(16,185,129,0.5);transition: transform 0.2s, box-shadow 0.2s;border: none;}
 #communityWidget:hover {transform: scale(1.08);box-shadow: 0 8px 25px rgba(16,185,129,0.7);}
 #communityWidget:active {transform: scale(0.95);}
@@ -396,7 +393,6 @@ button.danger:hover{background:#FEE2E2}
   .course-item{padding:10px;}
   .course-item-actions a{padding:6px 10px;font-size:11px;}
   .course-item-actions button.btn-video{padding:6px 10px;font-size:11px;}
-  /* ← MODIF EDIT COURS : bouton d'édition compact sur mobile */
   .course-item-actions .btn-edit-course{padding:5px 8px;font-size:14px;}
   .brand img{height:40px;}
 }
@@ -423,7 +419,6 @@ button.danger:hover{background:#FEE2E2}
 .edit-opt.is-correct{background:#ECFDF5;border-color:var(--green)}
 .edit-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 
-/* AUTHENTIFICATION */
 #authGate{display:none;position:fixed;inset:0;background:var(--auth-bg);z-index:4000;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
 #authGate.show{display:flex;}
 .auth-container{position:relative;width:850px;height:min(560px, 92vh);background:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(6,95,70,0.1);overflow:hidden}
@@ -470,7 +465,6 @@ button.danger:hover{background:#FEE2E2}
 .auth-container.active .auth-overlay-left{transform:translateX(0)}
 .auth-container.active .auth-overlay-right{transform:translateX(20%)}
 
-/* EXAMEN */
 #examView{display:none;position:fixed;inset:0;background:#F3F4F6;z-index:2000;overflow-y:auto;padding-bottom:120px}
 .exam-header{background:var(--exam-navy);color:#fff;padding:15px 25px;position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.2);padding-top:calc(15px + env(safe-area-inset-top))}
 .exam-header h2{margin:0;font-size:18px}
@@ -806,7 +800,6 @@ button.danger:hover{background:#FEE2E2}
   dev. par <b>NSC-GROUP</b> ( THC )
 </footer>
 
-<!-- BULLE FLOTTANTE COMMUNAUTÉ -->
 <div id="communityWidget" onclick="toggleCommunityPopup()" title="Ouvrir le chat Communauté">
   💬
   <span id="communityWidgetBadge" class="widget-badge" style="display:none">0</span>
@@ -920,19 +913,16 @@ button.danger:hover{background:#FEE2E2}
   </div>
 </div>
 
-<!-- ← MODIF EDIT COURS : modale d'édition de cours -->
 <div id="editCourseModal">
   <div class="edit-course-modal-content">
     <div class="edit-course-modal-header">
       <h2>✏️ Éditer le cours</h2>
       <button class="ghost" onclick="closeEditCourse()" title="Fermer">✖</button>
     </div>
-
     <div class="edit-course-field">
       <label for="editCourseTitle">Titre du cours</label>
       <input type="text" id="editCourseTitle" placeholder="Titre du cours" maxlength="200">
     </div>
-
     <div class="edit-course-field">
       <label for="editCourseLevel">Niveau</label>
       <select id="editCourseLevel">
@@ -941,13 +931,11 @@ button.danger:hover{background:#FEE2E2}
         <option value="LICENCE 3">LICENCE 3</option>
       </select>
     </div>
-
     <div class="edit-course-field">
       <label for="editCourseVideoUrl">Lien vidéo (optionnel)</label>
       <input type="url" id="editCourseVideoUrl" placeholder="https://www.youtube.com/watch?v=... ou https://.../video.mp4">
       <div class="edit-course-hint">Laisse vide pour retirer la vidéo.</div>
     </div>
-
     <div class="edit-course-field">
       <label for="editCourseFile">Remplacer le PDF (optionnel)</label>
       <input type="file" id="editCourseFile" accept=".pdf">
@@ -958,7 +946,6 @@ button.danger:hover{background:#FEE2E2}
         <a id="editCourseCurrentFileLink" href="#" target="_blank" rel="noopener">Ouvrir</a>
       </div>
     </div>
-
     <div class="edit-course-footer">
       <button class="ghost" onclick="closeEditCourse()">Annuler</button>
       <button class="success" id="editCourseSaveBtn" onclick="saveEditCourse()">💾 Sauvegarder les modifications</button>
@@ -1039,8 +1026,6 @@ let unreadCheckInterval = null;
 let selectedAttachment = null;
 
 let currentLibraryFilter = 'all';
-
-// ← MODIF EDIT COURS : état du cours en cours d'édition
 let editingCourseId = null;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -1058,23 +1043,16 @@ function normalizeText(str) {
 function parseSearchQuery(query) {
   const raw = String(query || '').trim();
   if (!raw) return { keyword: '', level: '' };
-  
   const normalized = normalizeText(raw);
-  
   let level = '';
   const levelPatterns = [
     { regex: /\b(l\s*1|licence\s*1|lic\s*1)\b/i, level: 'LICENCE 1' },
     { regex: /\b(l\s*2|licence\s*2|lic\s*2)\b/i, level: 'LICENCE 2' },
     { regex: /\b(l\s*3|licence\s*3|lic\s*3)\b/i, level: 'LICENCE 3' }
   ];
-  
   for (const p of levelPatterns) {
-    if (p.regex.test(normalized)) {
-      level = p.level;
-      break;
-    }
+    if (p.regex.test(normalized)) { level = p.level; break; }
   }
-  
   let keyword = normalized;
   if (level) {
     keyword = keyword
@@ -1083,7 +1061,6 @@ function parseSearchQuery(query) {
       .replace(/\b(l\s*3|licence\s*3|lic\s*3)\b/i, '')
       .trim();
   }
-  
   return { keyword: keyword, level: level };
 }
 
@@ -1101,23 +1078,17 @@ function togglePasswordVisibility(inputId, btn) {
 }
 window.togglePasswordVisibility = togglePasswordVisibility;
 
-// ==========================================
-// 🔌 INIT SUPABASE
-// ==========================================
 (async () => {
   const defaultConfig = {
     SUPABASE_URL: 'https://drumtgglrtmubdvkpwvl.supabase.co',
     SUPABASE_ANON_KEY: 'sb_publishable_u86DlAD9qU-Byb9tR59gMA_IlGAbcxu'
   };
-
   const cfg = window.COMPOSTEST_CONFIG || defaultConfig;
-
   if (!window.supabase || !cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) {
     console.error('❌ Supabase NON initialisé. Config manquante :', cfg);
     $('authGate').classList.add('show');
     return;
   }
-
   try {
     supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
       auth: {
@@ -1128,7 +1099,6 @@ window.togglePasswordVisibility = togglePasswordVisibility;
       }
     });
     console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
-
     await initAuth();
   } catch (e) {
     console.error('❌ Erreur init Supabase:', e);
@@ -1148,12 +1118,8 @@ function buildWatermark() {
   const name = (currentUser?.user_metadata?.full_name || currentUser?.email || 'Révisio').toString();
   const safe = name.replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
-    <text x="120" y="110" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700"
-      fill="rgba(0,0,0,0.15)" text-anchor="middle"
-      transform="rotate(-30 120 120)">${safe}</text>
-    <text x="120" y="180" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700"
-      fill="rgba(0,0,0,0.15)" text-anchor="middle"
-      transform="rotate(-30 120 120)">${safe}</text>
+    <text x="120" y="110" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="rgba(0,0,0,0.15)" text-anchor="middle" transform="rotate(-30 120 120)">${safe}</text>
+    <text x="120" y="180" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="rgba(0,0,0,0.15)" text-anchor="middle" transform="rotate(-30 120 120)">${safe}</text>
   </svg>`;
   const encoded = encodeURIComponent(svg).replace(/'/g, '%27').replace(/"/g, '%22');
   document.documentElement.style.setProperty('--watermark-svg', `url("data:image/svg+xml;charset=utf-8,${encoded}")`);
@@ -1208,29 +1174,16 @@ function handleSession(session) {
     $('logoutBtn').style.display = 'block';
     $('sessionWarning').classList.add('hide');
     $('communityWidget').style.display = 'flex';
-
     let displayName = currentUser.user_metadata?.full_name || (currentUser.email || '').split('@')[0];
     $('userLabel').textContent = "👤 " + displayName;
-
-    isAdmin =
-      currentUser.app_metadata?.is_admin === true ||
-      currentUser.app_metadata?.role === 'admin' ||
-      Boolean(ADMIN_EMAIL && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase());
-
+    isAdmin = currentUser.app_metadata?.is_admin === true || currentUser.app_metadata?.role === 'admin' || Boolean(ADMIN_EMAIL && currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase());
     $('pwdBtn').style.display = isAdmin ? 'block' : 'none';
     $('adminBtn').style.display = isAdmin ? 'block' : 'none';
     $('clearHistoryBtn').style.display = isAdmin ? 'block' : 'none';
-    
-    if (isAdmin) {
-      $('adminCourseForm').classList.remove('hide');
-    } else {
-      $('adminCourseForm').classList.add('hide');
-    }
-
+    if (isAdmin) { $('adminCourseForm').classList.remove('hide'); } else { $('adminCourseForm').classList.add('hide'); }
     buildWatermark();
     if(isAdmin) loadAdminUsers();
     loadCloudData();
-    
     checkUnreadReplies();
     if (unreadCheckInterval) clearInterval(unreadCheckInterval);
     unreadCheckInterval = setInterval(checkUnreadReplies, 30000);
@@ -1259,12 +1212,10 @@ $('loginForm').addEventListener('submit', async (e) => {
   const raw = $('loginEmail').value.trim();
   const pwd = $('loginPassword').value;
   if (!raw || !pwd) { errEl.textContent = 'Renseigne ton matricule/email et ton mot de passe.'; return; }
-
   const emailToUse = raw.includes('@') ? raw : raw.toLowerCase() + '@comptest.local';
   const btn = $('loginSubmitBtn');
   btn.disabled = true;
   btn.textContent = 'Connexion...';
-
   try {
     const { error } = await supabaseClient.auth.signInWithPassword({ email: emailToUse, password: pwd });
     if (error) {
@@ -1288,14 +1239,12 @@ $('registerForm').addEventListener('submit', async (e) => {
   const errEl = $('registerError');
   errEl.textContent = '';
   errEl.style.color = 'var(--red)';
-
   const lastName = $('regLastName').value.trim();
   const firstName = $('regFirstName').value.trim();
   const matricule = $('regMatricule').value.trim();
   const filiere = $('regFiliere').value;
   const niveau = $('regNiveau').value;
   const pwd = $('regPassword').value;
-
   if (!lastName || !firstName || !matricule || !filiere || !niveau || !pwd) {
     errEl.textContent = 'Merci de remplir tous les champs.';
     return;
@@ -1304,25 +1253,14 @@ $('registerForm').addEventListener('submit', async (e) => {
     errEl.textContent = 'Le mot de passe doit contenir au moins 6 caractères.';
     return;
   }
-
   const email = matricule.toLowerCase().replace(/\s+/g, '') + '@comptest.local';
   const btn = $('registerSubmitBtn');
   btn.disabled = true;
   btn.textContent = 'Inscription...';
-
   try {
     const { error } = await supabaseClient.auth.signUp({
-      email,
-      password: pwd,
-      options: {
-        data: {
-          full_name: `${lastName} ${firstName}`,
-          role: 'etudiant',
-          filiere: filiere,
-          niveau: niveau,
-          matricule: matricule
-        }
-      }
+      email, password: pwd,
+      options: { data: { full_name: `${lastName} ${firstName}`, role: 'etudiant', filiere, niveau, matricule } }
     });
     if (error) {
       const msg = (error.message || '').toLowerCase();
@@ -1335,7 +1273,7 @@ $('registerForm').addEventListener('submit', async (e) => {
       }
     } else {
       errEl.style.color = 'var(--green)';
-      errEl.textContent = '✅ Inscription réussie ! Vérifie ta boîte mail si une confirmation est demandée.';
+      errEl.textContent = '✅ Inscription réussie !';
       $('registerForm').reset();
     }
   } catch (err) {
@@ -1386,7 +1324,6 @@ function extractVimeoId(url) {
 function buildVideoEmbed(url) {
   const u = String(url || '').trim();
   if (!u) return { type: 'error', message: 'Lien vidéo manquant.' };
-
   const ytId = extractYouTubeId(u);
   if (ytId) {
     return {
@@ -1395,7 +1332,6 @@ function buildVideoEmbed(url) {
       allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
     };
   }
-
   const vimeoId = extractVimeoId(u);
   if (vimeoId) {
     return {
@@ -1404,11 +1340,9 @@ function buildVideoEmbed(url) {
       allow: 'autoplay; fullscreen; picture-in-picture'
     };
   }
-
   if (/\.(mp4|webm|ogg|ogv|mov)(\?.*)?$/i.test(u)) {
     return { type: 'video', src: u };
   }
-
   return {
     type: 'iframe',
     src: u,
@@ -1420,12 +1354,9 @@ function openVideoModal(url, title) {
   const modal = $('videoModal');
   const body = $('videoModalBody');
   if (!modal || !body) return;
-
   $('videoModalTitle').textContent = title ? `▶️ ${title}` : '▶️ Vidéo du cours';
   body.innerHTML = '';
-
   const embed = buildVideoEmbed(url);
-
   if (embed.type === 'iframe') {
     const iframe = document.createElement('iframe');
     iframe.src = embed.src;
@@ -1445,14 +1376,9 @@ function openVideoModal(url, title) {
   } else {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'video-modal-error';
-    errorDiv.innerHTML = `
-      <div style="font-size:32px">🎬</div>
-      <div>Impossible de lire cette vidéo intégrée.</div>
-      <div><a href="${esc(url)}" target="_blank" rel="noopener">Ouvrir dans un nouvel onglet</a></div>
-    `;
+    errorDiv.innerHTML = `<div style="font-size:32px">🎬</div><div>Impossible de lire cette vidéo intégrée.</div><div><a href="${esc(url)}" target="_blank" rel="noopener">Ouvrir dans un nouvel onglet</a></div>`;
     body.appendChild(errorDiv);
   }
-
   modal.classList.add('show');
   document.body.style.overflow = 'hidden';
 }
@@ -1471,9 +1397,7 @@ window.closeVideoModal = closeVideoModal;
 document.addEventListener('DOMContentLoaded', () => {
   const modal = $('videoModal');
   if (modal) {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeVideoModal();
-    });
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeVideoModal(); });
   }
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
@@ -1490,19 +1414,18 @@ async function loadCourses() {
   if (!supabaseClient) return;
   const list = $('coursesList');
   list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
-  
   try {
     const { data, error } = await supabaseClient
       .from('courses')
       .select('*')
       .order('created_at', { ascending: false });
-
     if (error) {
       list.innerHTML = `<p style="color:var(--red)">Erreur : ${esc(error.message)}</p>`;
       return;
     }
-
     coursesCache = data || [];
+    // ← DEBUG TEMPORAIRE
+    console.log('📚 Cours chargés :', coursesCache.map(c => ({ id: c.id, title: c.title, video_url: c.video_url })));
     selectedCourseIds.clear();
     renderCourses();
   } catch (e) {
@@ -1516,41 +1439,27 @@ function renderCourses() {
   const searchQuery = $('courseSearch') ? $('courseSearch').value : '';
   const { keyword, level } = parseSearchQuery(searchQuery);
   const isSearching = Boolean(keyword || level);
-  
   if (!coursesCache || coursesCache.length === 0) {
     list.innerHTML = '<p style="color:var(--muted)">Aucun cours disponible pour le moment.</p>';
     return;
   }
-  
   let filtered = coursesCache;
-  if (level) {
-    filtered = filtered.filter(c => c.level === level);
-  }
-  if (keyword) {
-    filtered = filtered.filter(c => normalizeText(c.title).includes(keyword));
-  }
-  
+  if (level) filtered = filtered.filter(c => c.level === level);
+  if (keyword) filtered = filtered.filter(c => normalizeText(c.title).includes(keyword));
   if (filtered.length === 0) {
     list.innerHTML = '<p style="color:var(--muted)">Aucun cours ne correspond à votre recherche.</p>';
     return;
   }
-  
   const levels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
-  
   list.innerHTML = levels.map(levelName => {
     const levelCourses = filtered.filter(c => c.level === levelName);
     if (levelCourses.length === 0) return '';
-    
     const shouldOpen = isSearching;
     const selectedInLevel = levelCourses.filter(c => selectedCourseIds.has(c.id)).length;
     const hasSelection = selectedInLevel > 0;
-    
     return `
       <details class="course-accordion" ${shouldOpen ? 'open' : ''} data-level="${levelName}">
-        <summary>
-          📂 ${levelName}
-          <span class="course-count">${levelCourses.length}</span>
-        </summary>
+        <summary>📂 ${levelName}<span class="course-count">${levelCourses.length}</span></summary>
         <div class="course-toolbar ${hasSelection ? 'visible' : ''}" onclick="event.stopPropagation();">
           <span class="selected-count">${selectedInLevel} sélectionné${selectedInLevel > 1 ? 's' : ''}</span>
           <div class="toolbar-actions">
@@ -1590,15 +1499,12 @@ function renderCourses() {
 window.renderCourses = renderCourses;
 
 function toggleCourseSelection(id, isChecked, levelName) {
-  if (isChecked) selectedCourseIds.add(id);
-  else selectedCourseIds.delete(id);
-  
+  if (isChecked) selectedCourseIds.add(id); else selectedCourseIds.delete(id);
   const accordion = document.querySelector(`.course-accordion[data-level="${levelName}"]`);
   if (accordion) {
     const levelCourses = coursesCache.filter(c => c.level === levelName);
     const selectedInLevel = levelCourses.filter(c => selectedCourseIds.has(c.id)).length;
     const hasSelection = selectedInLevel > 0;
-    
     const toolbar = accordion.querySelector('.course-toolbar');
     if (toolbar) {
       toolbar.classList.toggle('visible', hasSelection);
@@ -1612,29 +1518,18 @@ window.toggleCourseSelection = toggleCourseSelection;
 
 async function deleteSelectedCourses(levelName) {
   if (!isAdmin || !supabaseClient) return;
-  
   const levelCourses = coursesCache.filter(c => c.level === levelName && selectedCourseIds.has(c.id));
   if (levelCourses.length === 0) return;
-  
   if (!confirm(`Supprimer les ${levelCourses.length} cours sélectionnés en ${levelName} ?`)) return;
-  
   let successCount = 0;
   for (const course of levelCourses) {
     try {
       const filePath = decodeURIComponent(course.file_url.split('/courses_files/')[1] || '');
-      if (filePath) {
-        await supabaseClient.storage.from('courses_files').remove([filePath]);
-      }
+      if (filePath) await supabaseClient.storage.from('courses_files').remove([filePath]);
       const { error } = await supabaseClient.from('courses').delete().eq('id', course.id);
-      if (!error) {
-        selectedCourseIds.delete(course.id);
-        successCount++;
-      }
-    } catch (e) {
-      console.error(`Erreur suppression ${course.id}:`, e);
-    }
+      if (!error) { selectedCourseIds.delete(course.id); successCount++; }
+    } catch (e) { console.error(`Erreur suppression ${course.id}:`, e); }
   }
-  
   alert(`✅ ${successCount} cours supprimé(s).`);
   await loadCourses();
 }
@@ -1642,109 +1537,70 @@ window.deleteSelectedCourses = deleteSelectedCourses;
 
 async function moveSelectedCourses(currentLevel) {
   if (!isAdmin || !supabaseClient) return;
-  
   const levelCourses = coursesCache.filter(c => c.level === currentLevel && selectedCourseIds.has(c.id));
   if (levelCourses.length === 0) return;
-  
   const newLevel = prompt("Nouveau niveau (LICENCE 1, LICENCE 2, LICENCE 3) :", currentLevel);
   if (!newLevel) return;
-  
   const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
   const normalizedLevel = newLevel.trim().toUpperCase();
-  
-  if (!validLevels.includes(normalizedLevel)) {
-    alert("❌ Niveau invalide. Utilise : LICENCE 1, LICENCE 2 ou LICENCE 3.");
-    return;
-  }
-  
-  if (normalizedLevel === currentLevel) {
-    alert("ℹ️ Les cours sont déjà dans ce niveau.");
-    return;
-  }
-  
+  if (!validLevels.includes(normalizedLevel)) { alert("❌ Niveau invalide."); return; }
+  if (normalizedLevel === currentLevel) { alert("ℹ️ Les cours sont déjà dans ce niveau."); return; }
   const ids = levelCourses.map(c => c.id);
-  
   try {
-    const { error } = await supabaseClient
-      .from('courses')
-      .update({ level: normalizedLevel })
-      .in('id', ids);
-    
+    const { error } = await supabaseClient.from('courses').update({ level: normalizedLevel }).in('id', ids);
     if (error) throw new Error(error.message);
-    
     alert(`✅ ${ids.length} cours déplacé(s) vers ${normalizedLevel}.`);
     selectedCourseIds.clear();
     await loadCourses();
-  } catch (e) {
-    alert("❌ Erreur : " + e.message);
-  }
+  } catch (e) { alert("❌ Erreur : " + e.message); }
 }
 window.moveSelectedCourses = moveSelectedCourses;
 
 async function moveQuiz(quizId, currentLevel) {
   if (!isAdmin || !supabaseClient) return;
-  
   const newLevel = prompt("Nouveau niveau (LICENCE 1, LICENCE 2, LICENCE 3) :", currentLevel || '');
   if (!newLevel) return;
-  
   const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
   const normalizedLevel = newLevel.trim().toUpperCase();
-  
-  if (!validLevels.includes(normalizedLevel)) {
-    alert("❌ Niveau invalide. Utilise : LICENCE 1, LICENCE 2 ou LICENCE 3.");
-    return;
-  }
-  
-  if (normalizedLevel === currentLevel) {
-    alert("ℹ️ Le quiz est déjà dans ce niveau.");
-    return;
-  }
-  
+  if (!validLevels.includes(normalizedLevel)) { alert("❌ Niveau invalide."); return; }
+  if (normalizedLevel === currentLevel) { alert("ℹ️ Le quiz est déjà dans ce niveau."); return; }
   try {
     await fetchWithAuth(`/api/quizzes/${quizId}`, { level: normalizedLevel }, 'PATCH');
     alert(`✅ Quiz déplacé vers ${normalizedLevel}.`);
     await loadLibrary();
-  } catch (e) {
-    alert("❌ Erreur : " + e.message);
-  }
+  } catch (e) { alert("❌ Erreur : " + e.message); }
 }
 window.moveQuiz = moveQuiz;
 
+// ==========================================
+// ➕ AJOUT DE COURS (avec debug et vérification)
+// ==========================================
 async function addCourse() {
   if (!isAdmin || !supabaseClient) return;
-  
   const title = $('courseTitle').value.trim();
   const level = $('courseLevel').value;
   const fileInput = $('courseFile');
   const status = $('courseStatus');
   const videoUrl = $('courseVideoUrl') ? $('courseVideoUrl').value.trim() : '';
-  
+
+  console.log('🆕 addCourse — Données lues :', { title, level, videoUrl, hasFile: !!(fileInput.files && fileInput.files.length) });
+
   if (!title || !level || !fileInput.files || fileInput.files.length === 0) {
     status.textContent = "❌ Titre, niveau et fichier PDF sont requis.";
     status.style.color = "var(--red)";
     return;
   }
-  
   const file = fileInput.files[0];
   if (file.size > 10 * 1024 * 1024) {
     status.textContent = "❌ Fichier trop volumineux (10 Mo max).";
     status.style.color = "var(--red)";
     return;
   }
-  
   status.textContent = "⏳ Vérification des doublons...";
   status.style.color = "var(--muted)";
-  
   try {
-    const { data: existingCourse } = await supabaseClient
-      .from('courses')
-      .select('*')
-      .eq('title', title)
-      .eq('level', level)
-      .maybeSingle();
-    
+    const { data: existingCourse } = await supabaseClient.from('courses').select('*').eq('title', title).eq('level', level).maybeSingle();
     let isReplacing = false;
-    
     if (existingCourse) {
       const confirmReplace = confirm(`⚠️ Un cours nommé "${title}" existe déjà en ${level}.\n\nCliquez sur OK pour REMPLACER l'ancien cours, ou Annuler pour conserver l'ancien.`);
       if (!confirmReplace) {
@@ -1753,49 +1609,38 @@ async function addCourse() {
         return;
       }
       isReplacing = true;
-      
       const oldFilePath = decodeURIComponent(existingCourse.file_url.split('/courses_files/')[1] || '');
-      if (oldFilePath) {
-        await supabaseClient.storage.from('courses_files').remove([oldFilePath]);
-      }
-      
+      if (oldFilePath) await supabaseClient.storage.from('courses_files').remove([oldFilePath]);
       await supabaseClient.from('courses').delete().eq('id', existingCourse.id);
     }
-    
     status.textContent = "⏳ Upload en cours...";
-    
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.pdf`;
     const filePath = `${level}/${fileName}`;
-    
-    const { data: uploadData, error: uploadError } = await supabaseClient.storage
-      .from('courses_files')
-      .upload(filePath, file, { cacheControl: '3600', upsert: false });
-    
+    const { error: uploadError } = await supabaseClient.storage.from('courses_files').upload(filePath, file, { cacheControl: '3600', upsert: false });
     if (uploadError) throw new Error("Erreur upload : " + uploadError.message);
-    
-    const { data: urlData } = supabaseClient.storage
-      .from('courses_files')
-      .getPublicUrl(filePath);
-    
-    const { error: dbError } = await supabaseClient
-      .from('courses')
-      .insert({
-        title: title,
-        level: level,
-        file_url: urlData.publicUrl,
-        video_url: videoUrl || null
-      });
-    
+    const { data: urlData } = supabaseClient.storage.from('courses_files').getPublicUrl(filePath);
+    const insertPayload = {
+      title: title,
+      level: level,
+      file_url: urlData.publicUrl,
+      video_url: videoUrl || null
+    };
+    console.log('🆕 addCourse — Payload INSERT :', insertPayload);
+    const { data: inserted, error: dbError } = await supabaseClient.from('courses').insert(insertPayload).select();
     if (dbError) throw new Error("Erreur DB : " + dbError.message);
-    
-    status.textContent = isReplacing ? "✅ Cours remplacé !" : "✅ Cours ajouté !";
-    status.style.color = "var(--green)";
-    
+    console.log('🆕 addCourse — Réponse INSERT :', inserted);
+    // Vérification post-insert
+    if (videoUrl && inserted && inserted[0] && !inserted[0].video_url) {
+      status.textContent = "⚠️ Attention : le cours est créé MAIS la vidéo n'a pas été sauvegardée. Vérifie que la colonne video_url existe dans Supabase (ALTER TABLE courses ADD COLUMN video_url TEXT).";
+      status.style.color = "var(--red)";
+    } else {
+      status.textContent = isReplacing ? "✅ Cours remplacé !" : "✅ Cours ajouté !";
+      status.style.color = "var(--green)";
+    }
     $('courseTitle').value = '';
     $('courseLevel').value = '';
     $('courseFile').value = '';
     if ($('courseVideoUrl')) $('courseVideoUrl').value = '';
-    
     await loadCourses();
   } catch (e) {
     status.textContent = "❌ " + e.message;
@@ -1805,32 +1650,23 @@ async function addCourse() {
 window.addCourse = addCourse;
 
 // ==========================================
-// ✏️ ÉDITION DE COURS (admin)
+// ✏️ ÉDITION DE COURS (avec debug et vérification)
 // ==========================================
 function openEditCourse(courseId) {
   if (!isAdmin) return;
   const course = coursesCache.find(c => c.id === courseId);
   if (!course) return alert("Cours introuvable.");
-
   editingCourseId = courseId;
-
   $('editCourseTitle').value = course.title || '';
   $('editCourseLevel').value = course.level || 'LICENCE 1';
   $('editCourseVideoUrl').value = course.video_url || '';
-
-  // Reset du champ fichier (toujours vide à l'ouverture)
   $('editCourseFile').value = '';
-
-  // Infos du fichier actuel
   const fileNameEl = $('editCourseCurrentFileName');
   const fileLinkEl = $('editCourseCurrentFileLink');
   const currentFileEl = $('editCourseCurrentFile');
   if (course.file_url) {
     let displayName = 'PDF actuel';
-    try {
-      const parts = decodeURIComponent(course.file_url).split('/');
-      displayName = parts[parts.length - 1] || 'PDF actuel';
-    } catch (e) { /* noop */ }
+    try { const parts = decodeURIComponent(course.file_url).split('/'); displayName = parts[parts.length - 1] || 'PDF actuel'; } catch (e) {}
     if (fileNameEl) fileNameEl.textContent = displayName;
     if (fileLinkEl) fileLinkEl.href = course.file_url;
     if (currentFileEl) currentFileEl.style.display = 'flex';
@@ -1839,11 +1675,8 @@ function openEditCourse(courseId) {
     if (fileLinkEl) fileLinkEl.removeAttribute('href');
     if (currentFileEl) currentFileEl.style.display = 'none';
   }
-
-  // Reset du status
   const status = $('editCourseStatus');
   if (status) { status.textContent = ''; status.style.color = ''; }
-
   $('editCourseModal').classList.add('show');
 }
 window.openEditCourse = openEditCourse;
@@ -1859,73 +1692,44 @@ window.closeEditCourse = closeEditCourse;
 async function saveEditCourse() {
   if (!isAdmin || !supabaseClient) return;
   if (!editingCourseId) return alert("Aucun cours sélectionné.");
-
   const course = coursesCache.find(c => c.id === editingCourseId);
   if (!course) return alert("Cours introuvable.");
-
   const status = $('editCourseStatus');
   const saveBtn = $('editCourseSaveBtn');
-
   const newTitle = $('editCourseTitle').value.trim();
   const newLevel = $('editCourseLevel').value;
   const newVideoUrl = $('editCourseVideoUrl').value.trim();
   const newFileInput = $('editCourseFile');
+
+  console.log('✏️ saveEditCourse — Données lues :', { newTitle, newLevel, newVideoUrl, hasNewFile: !!(newFileInput.files && newFileInput.files.length) });
 
   if (!newTitle || !newLevel) {
     status.textContent = "❌ Le titre et le niveau sont requis.";
     status.style.color = "var(--red)";
     return;
   }
-
   const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
   if (!validLevels.includes(newLevel)) {
     status.textContent = "❌ Niveau invalide.";
     status.style.color = "var(--red)";
     return;
   }
-
-  // Vérifie les doublons (même titre + même niveau sur un AUTRE cours)
   try {
-    const { data: duplicate, error: dupErr } = await supabaseClient
-      .from('courses')
-      .select('id, title, level, file_url')
-      .eq('title', newTitle)
-      .eq('level', newLevel)
-      .neq('id', editingCourseId)
-      .maybeSingle();
-
-    if (dupErr && dupErr.code !== 'PGRST116') {
-      // PGRST116 = "0 lignes trouvées" (pas une vraie erreur)
-      console.warn('Erreur vérif doublon:', dupErr);
-    }
-
+    const { data: duplicate } = await supabaseClient.from('courses').select('id, title, level, file_url').eq('title', newTitle).eq('level', newLevel).neq('id', editingCourseId).maybeSingle();
     if (duplicate) {
       const ok = confirm(`⚠️ Un autre cours nommé "${newTitle}" existe déjà en ${newLevel}.\n\nCliquer sur OK va REMPLACER et SUPPRIMER cet autre cours (PDF inclus). Continuer ?`);
-      if (!ok) {
-        status.textContent = "❌ Modification annulée.";
-        status.style.color = "var(--muted)";
-        return;
-      }
-      // Supprime le PDF de l'autre cours + sa ligne
+      if (!ok) { status.textContent = "❌ Modification annulée."; status.style.color = "var(--muted)"; return; }
       try {
         const dupFilePath = decodeURIComponent(duplicate.file_url.split('/courses_files/')[1] || '');
-        if (dupFilePath) {
-          await supabaseClient.storage.from('courses_files').remove([dupFilePath]);
-        }
+        if (dupFilePath) await supabaseClient.storage.from('courses_files').remove([dupFilePath]);
       } catch (e) { console.warn('Erreur suppression PDF doublon:', e); }
       await supabaseClient.from('courses').delete().eq('id', duplicate.id);
     }
-  } catch (e) {
-    console.warn('Erreur vérif doublon:', e);
-    // On continue quand même : la contrainte n'est pas bloquante
-  }
+  } catch (e) { console.warn('Erreur vérif doublon:', e); }
 
-  // Gère le remplacement optionnel du PDF
   let finalFileUrl = course.file_url;
   let uploadedNewFilePath = null;
-
   const hasNewFile = newFileInput && newFileInput.files && newFileInput.files.length > 0;
-
   if (hasNewFile) {
     const file = newFileInput.files[0];
     if (file.size > 10 * 1024 * 1024) {
@@ -1933,38 +1737,22 @@ async function saveEditCourse() {
       status.style.color = "var(--red)";
       return;
     }
-
     saveBtn.disabled = true;
     saveBtn.textContent = '⏳ Upload...';
     status.textContent = "⏳ Upload du nouveau PDF...";
     status.style.color = "var(--muted)";
-
     try {
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.pdf`;
       const filePath = `${newLevel}/${fileName}`;
-      const { error: uploadError } = await supabaseClient.storage
-        .from('courses_files')
-        .upload(filePath, file, { cacheControl: '3600', upsert: false });
-
+      const { error: uploadError } = await supabaseClient.storage.from('courses_files').upload(filePath, file, { cacheControl: '3600', upsert: false });
       if (uploadError) throw new Error("Erreur upload : " + uploadError.message);
-
-      const { data: urlData } = supabaseClient.storage
-        .from('courses_files')
-        .getPublicUrl(filePath);
-
+      const { data: urlData } = supabaseClient.storage.from('courses_files').getPublicUrl(filePath);
       finalFileUrl = urlData.publicUrl;
       uploadedNewFilePath = filePath;
-
-      // Supprime l'ancien PDF (si présent)
       try {
         const oldFilePath = decodeURIComponent(course.file_url.split('/courses_files/')[1] || '');
-        if (oldFilePath) {
-          await supabaseClient.storage.from('courses_files').remove([oldFilePath]);
-        }
-      } catch (e) {
-        console.warn('Erreur suppression ancien PDF:', e);
-        // On continue quand même
-      }
+        if (oldFilePath) await supabaseClient.storage.from('courses_files').remove([oldFilePath]);
+      } catch (e) { console.warn('Erreur suppression ancien PDF:', e); }
     } catch (e) {
       status.textContent = "❌ " + e.message;
       status.style.color = "var(--red)";
@@ -1974,40 +1762,38 @@ async function saveEditCourse() {
     }
   }
 
-  // Update en base
   saveBtn.textContent = '⏳ Sauvegarde...';
   status.textContent = "⏳ Sauvegarde en base...";
   status.style.color = "var(--muted)";
 
+  const updatePayload = {
+    title: newTitle,
+    level: newLevel,
+    file_url: finalFileUrl,
+    video_url: newVideoUrl || null
+  };
+  console.log('✏️ saveEditCourse — Payload UPDATE :', updatePayload);
+
   try {
-    const { error: updateError } = await supabaseClient
-      .from('courses')
-      .update({
-        title: newTitle,
-        level: newLevel,
-        file_url: finalFileUrl,
-        video_url: newVideoUrl || null
-      })
-      .eq('id', editingCourseId);
-
+    const { data: updated, error: updateError } = await supabaseClient.from('courses').update(updatePayload).eq('id', editingCourseId).select();
     if (updateError) throw new Error("Erreur DB : " + updateError.message);
+    console.log('✏️ saveEditCourse — Réponse UPDATE :', updated);
 
-    status.textContent = "✅ Cours modifié avec succès !";
-    status.style.color = "var(--green)";
-
-    // Ferme la modale et recharge
-    setTimeout(async () => {
-      closeEditCourse();
-      await loadCourses();
-    }, 600);
+    // Vérification post-update
+    if (newVideoUrl && updated && updated[0] && !updated[0].video_url) {
+      status.textContent = "⚠️ Titre/niveau/PDF sauvegardés MAIS la vidéo n'a pas été enregistrée. Vérifie que la colonne video_url existe dans Supabase.";
+      status.style.color = "var(--red)";
+    } else {
+      status.textContent = "✅ Cours modifié avec succès !";
+      status.style.color = "var(--green)";
+      setTimeout(async () => {
+        closeEditCourse();
+        await loadCourses();
+      }, 600);
+    }
   } catch (e) {
-    // Si un nouveau PDF a été uploadé mais que l'update a échoué → nettoie pour éviter l'orphelin
     if (uploadedNewFilePath) {
-      try {
-        await supabaseClient.storage.from('courses_files').remove([uploadedNewFilePath]);
-      } catch (cleanupErr) {
-        console.warn('Erreur nettoyage nouveau PDF orphelin:', cleanupErr);
-      }
+      try { await supabaseClient.storage.from('courses_files').remove([uploadedNewFilePath]); } catch (cleanupErr) {}
     }
     status.textContent = "❌ " + e.message;
     status.style.color = "var(--red)";
@@ -2020,22 +1806,11 @@ window.saveEditCourse = saveEditCourse;
 
 document.addEventListener('DOMContentLoaded', () => {
   const courseSearchInput = $('courseSearch');
-  if (courseSearchInput) {
-    courseSearchInput.addEventListener('input', renderCourses);
-  }
-  
+  if (courseSearchInput) courseSearchInput.addEventListener('input', renderCourses);
   const quizSearchInput = $('quizSearch');
-  if (quizSearchInput) {
-    quizSearchInput.addEventListener('input', renderLibraryList);
-  }
-
-  // ← MODIF EDIT COURS : clic sur le fond de la modale d'édition = fermeture + Échap
+  if (quizSearchInput) quizSearchInput.addEventListener('input', renderLibraryList);
   const editCourseModal = $('editCourseModal');
-  if (editCourseModal) {
-    editCourseModal.addEventListener('click', (e) => {
-      if (e.target === editCourseModal) closeEditCourse();
-    });
-  }
+  if (editCourseModal) editCourseModal.addEventListener('click', (e) => { if (e.target === editCourseModal) closeEditCourse(); });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       const m = $('editCourseModal');
@@ -2049,9 +1824,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 function filterLibrary(level) {
   currentLibraryFilter = level;
-  document.querySelectorAll('.level-filter').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.level === level);
-  });
+  document.querySelectorAll('.level-filter').forEach(btn => btn.classList.toggle('active', btn.dataset.level === level));
   renderLibraryList();
 }
 window.filterLibrary = filterLibrary;
@@ -2062,28 +1835,16 @@ function renderLibraryList() {
     list.innerHTML = '<p style="color:var(--muted)">Aucun exercice dans la bibliothèque pour le moment.</p>';
     return;
   }
-  
   const searchQuery = $('quizSearch') ? $('quizSearch').value : '';
   const { keyword, level } = parseSearchQuery(searchQuery);
-  
   let filtered = libraryCache;
-  
-  if (currentLibraryFilter !== 'all') {
-    filtered = filtered.filter(q => q.level === currentLibraryFilter);
-  }
-  
-  if (level) {
-    filtered = filtered.filter(q => q.level === level);
-  }
-  if (keyword) {
-    filtered = filtered.filter(q => normalizeText(q.title).includes(keyword));
-  }
-  
+  if (currentLibraryFilter !== 'all') filtered = filtered.filter(q => q.level === currentLibraryFilter);
+  if (level) filtered = filtered.filter(q => q.level === level);
+  if (keyword) filtered = filtered.filter(q => normalizeText(q.title).includes(keyword));
   if (filtered.length === 0) {
     list.innerHTML = '<p style="color:var(--muted)">Aucun exercice ne correspond à votre recherche.</p>';
     return;
   }
-  
   list.innerHTML = filtered.map(q => {
     const idx = libraryCache.indexOf(q);
     const levelBadge = q.level ? `<span class="level-badge">${esc(q.level.replace('LICENCE ', 'L'))}</span>` : '';
@@ -2092,14 +1853,12 @@ function renderLibraryList() {
         ${isAdmin ? `<input type="checkbox" class="quiz-select-checkbox" data-id="${q.id}" onchange="toggleQuizSelection('${q.id}', this.checked)">` : ''}
         <div style="flex:1;cursor:pointer" onclick="startLibraryQuizByIndex(${idx})">
           <div style="font-weight:700">${esc(q.title)} ${levelBadge}</div>
-          <div style="font-size:12px;color:var(--muted)">
-            ${esc(q.subject || 'Général')} • ${q.questions.length} question(s) • ${new Date(q.created_at).toLocaleDateString('fr-FR')}
-          </div>
+          <div style="font-size:12px;color:var(--muted)">${esc(q.subject || 'Général')} • ${q.questions.length} question(s) • ${new Date(q.created_at).toLocaleDateString('fr-FR')}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="btn-icon" onclick="startLibraryQuizByIndex(${idx})" title="Commencer">▶️</button>
-          ${isAdmin ? `<button class="btn-icon" onclick="moveQuiz('${q.id}', '${esc(q.level || '')}')" title="Déplacer vers un autre niveau">➡️</button>` : ''}
-          ${isAdmin ? `<button class="btn-icon" onclick="openEditQuiz(${idx})" title="Modifier les corrections">✏️</button>` : ''}
+          ${isAdmin ? `<button class="btn-icon" onclick="moveQuiz('${q.id}', '${esc(q.level || '')}')" title="Déplacer">➡️</button>` : ''}
+          ${isAdmin ? `<button class="btn-icon" onclick="openEditQuiz(${idx})" title="Modifier">✏️</button>` : ''}
           ${isAdmin ? `<button class="btn-icon" onclick="deleteLibraryQuiz('${q.id}')" title="Supprimer">🗑️</button>` : ''}
         </div>
       </div>
@@ -2123,8 +1882,7 @@ async function loadLibrary() {
 }
 
 function toggleQuizSelection(id, isChecked) {
-  if (isChecked) selectedQuizIds.add(id);
-  else selectedQuizIds.delete(id);
+  if (isChecked) selectedQuizIds.add(id); else selectedQuizIds.delete(id);
   updateBulkActions();
 }
 window.toggleQuizSelection = toggleQuizSelection;
@@ -2141,12 +1899,8 @@ async function deleteSelectedQuizzes() {
   const ids = Array.from(selectedQuizIds);
   let successCount = 0;
   for (const id of ids) {
-    try {
-      await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE');
-      successCount++;
-    } catch (e) {
-      console.error(`Erreur suppression ${id}:`, e);
-    }
+    try { await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE'); successCount++; }
+    catch (e) { console.error(`Erreur suppression ${id}:`, e); }
   }
   alert(`✅ ${successCount} quiz supprimé(s).`);
   selectedQuizIds.clear();
@@ -2181,9 +1935,7 @@ window.openEditQuiz = (idx) => {
     if (isMulti) correctArr = Array.isArray(q.correct) ? q.correct : [];
     else if (q.type === 'mcq' || q.type === 'tf') correctArr = [q.correct];
     else if (q.type === 'short') correctArr = [];
-
     const typeLabel = { mcq: 'Choix unique', mcq_multi: 'QCM multi', tf: 'Vrai/Faux', short: 'Réponse courte' }[q.type] || 'Choix unique';
-
     let optsHtml = '';
     if (q.type === 'short') {
       optsHtml = `<input type="text" class="edit-short-input" data-q="${qi}" value="${esc(q.correct || '')}" placeholder="Réponse attendue" style="width:100%;padding:10px;border:1px solid #D1D5DB;border-radius:8px">`;
@@ -2192,34 +1944,22 @@ window.openEditQuiz = (idx) => {
         const checked = correctArr.includes(oi) ? 'checked' : '';
         const inputType = isMulti ? 'checkbox' : 'radio';
         const nameAttr = isMulti ? '' : `name="q_${qi}"`;
-        return `<div class="edit-opt ${checked ? 'is-correct' : ''}">
-          <input type="${inputType}" ${nameAttr} data-q="${qi}" data-opt="${oi}" ${checked}>
-          <label>${esc(opt)}</label>
-        </div>`;
+        return `<div class="edit-opt ${checked ? 'is-correct' : ''}"><input type="${inputType}" ${nameAttr} data-q="${qi}" data-opt="${oi}" ${checked}><label>${esc(opt)}</label></div>`;
       }).join('');
     }
-
-    return `<div class="edit-q-block">
-      <div class="edit-q-text">Q${qi + 1}. ${esc(q.text)} <span class="edit-q-type">${typeLabel}</span></div>
-      ${optsHtml}
-    </div>`;
+    return `<div class="edit-q-block"><div class="edit-q-text">Q${qi + 1}. ${esc(q.text)} <span class="edit-q-type">${typeLabel}</span></div>${optsHtml}</div>`;
   }).join('');
-
   body.querySelectorAll('.edit-opt input').forEach(inp => {
     inp.addEventListener('change', () => {
       const block = inp.closest('.edit-opt');
-      if (inp.type === 'checkbox') {
-        block.classList.toggle('is-correct', inp.checked);
-      } else {
+      if (inp.type === 'checkbox') { block.classList.toggle('is-correct', inp.checked); }
+      else {
         const name = inp.name;
-        body.querySelectorAll(`input[name="${name}"]`).forEach(other => {
-          other.closest('.edit-opt').classList.remove('is-correct');
-        });
+        body.querySelectorAll(`input[name="${name}"]`).forEach(other => other.closest('.edit-opt').classList.remove('is-correct'));
         block.classList.toggle('is-correct', inp.checked);
       }
     });
   });
-
   $('editQuizModal').classList.add('show');
 };
 
@@ -2239,16 +1979,13 @@ $('editSaveBtn').addEventListener('click', async () => {
     }
     return { ...q, correct: newCorrect };
   });
-
   try {
     await fetchWithAuth(`/api/quizzes/${editingQuizId}`, { questions: newQuestions }, 'PUT');
     const localQuiz = libraryCache.find(q => q.id === editingQuizId);
     if (localQuiz) localQuiz.questions = newQuestions;
     alert("✅ Corrections sauvegardées !");
     $('editQuizModal').classList.remove('show');
-  } catch (e) {
-    alert("❌ Erreur : " + e.message);
-  }
+  } catch (e) { alert("❌ Erreur : " + e.message); }
 });
 
 // ==========================================
@@ -2257,24 +1994,15 @@ $('editSaveBtn').addEventListener('click', async () => {
 function toggleCommunityPopup() {
   const popup = $('communityPopup');
   if (!popup) return;
-  if (popup.classList.contains('show')) {
-    popup.classList.remove('show');
-  } else {
-    popup.classList.add('show');
-    loadCommunity();
-    markRepliesAsRead();
-  }
+  if (popup.classList.contains('show')) popup.classList.remove('show');
+  else { popup.classList.add('show'); loadCommunity(); markRepliesAsRead(); }
 }
 window.toggleCommunityPopup = toggleCommunityPopup;
 
 function onAttachmentSelected(input) {
   if (!input.files || input.files.length === 0) return;
   const file = input.files[0];
-  if (file.size > 5 * 1024 * 1024) {
-    alert("Fichier trop volumineux (5 Mo maximum).");
-    input.value = '';
-    return;
-  }
+  if (file.size > 5 * 1024 * 1024) { alert("Fichier trop volumineux (5 Mo maximum)."); input.value = ''; return; }
   selectedAttachment = file;
   $('attachmentName').textContent = file.name;
   $('attachmentPreview').style.display = 'flex';
@@ -2294,13 +2022,9 @@ async function uploadAttachment(file) {
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
   const filePath = `${currentUser.id}/${fileName}`;
-  const { data, error } = await supabaseClient.storage
-    .from('community_attachments')
-    .upload(filePath, file, { cacheControl: '3600', upsert: false });
+  const { data, error } = await supabaseClient.storage.from('community_attachments').upload(filePath, file, { cacheControl: '3600', upsert: false });
   if (error) throw new Error("Erreur upload : " + error.message);
-  const { data: urlData } = supabaseClient.storage
-    .from('community_attachments')
-    .getPublicUrl(filePath);
+  const { data: urlData } = supabaseClient.storage.from('community_attachments').getPublicUrl(filePath);
   return urlData.publicUrl;
 }
 window.uploadAttachment = uploadAttachment;
@@ -2310,14 +2034,8 @@ async function loadCommunity() {
   const list = $('communityList');
   list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">Chargement...</p>';
   try {
-    const { data, error } = await supabaseClient
-      .from('community_posts')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) {
-      list.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Erreur : ${esc(error.message)}</p>`;
-      return;
-    }
+    const { data, error } = await supabaseClient.from('community_posts').select('*').order('created_at', { ascending: false });
+    if (error) { list.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Erreur : ${esc(error.message)}</p>`; return; }
     if (!data || data.length === 0) {
       list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">Aucun message pour le moment. Soyez le premier à publier !</p>';
       return;
@@ -2329,36 +2047,19 @@ async function loadCommunity() {
       let replyContext = '';
       if (post.reply_to_id) {
         const parentPost = data.find(p => p.id === post.reply_to_id);
-        if (parentPost) {
-          const parentAuthor = parentPost.author_name || 'Anonyme';
-          replyContext = `<div class="chat-reply-info">↩️ En réponse à <b>@${esc(parentAuthor)}</b></div>`;
-        }
+        if (parentPost) replyContext = `<div class="chat-reply-info">↩️ En réponse à <b>@${esc(parentPost.author_name || 'Anonyme')}</b></div>`;
       }
       let attachmentHtml = '';
       if (post.attachment_url) {
-        if (post.attachment_type === 'image') {
-          attachmentHtml = `<div class="chat-attachment"><img src="${esc(post.attachment_url)}" alt="Pièce jointe" onclick="window.open('${esc(post.attachment_url)}', '_blank')"></div>`;
-        } else {
-          attachmentHtml = `<div class="chat-attachment"><a href="${esc(post.attachment_url)}" target="_blank" rel="noopener"><i class='bx bx-file'></i> Télécharger le fichier</a></div>`;
-        }
+        if (post.attachment_type === 'image') attachmentHtml = `<div class="chat-attachment"><img src="${esc(post.attachment_url)}" alt="Pièce jointe" onclick="window.open('${esc(post.attachment_url)}', '_blank')"></div>`;
+        else attachmentHtml = `<div class="chat-attachment"><a href="${esc(post.attachment_url)}" target="_blank" rel="noopener"><i class='bx bx-file'></i> Télécharger le fichier</a></div>`;
       }
       const replyBtn = !isAuthor ? `<button onclick="startReply('${post.id}', '${post.user_id}', '${esc(post.author_name || 'Anonyme')}')">↩️ Répondre</button>` : '';
       const deleteBtn = canDelete ? `<button class="del" onclick="deleteCommunityPost('${post.id}')">🗑️</button>` : '';
-      return `
-        <div class="chat-msg ${isAuthor ? 'is-mine' : ''}">
-          <div class="chat-msg-header">
-            <span class="chat-msg-author">👤 ${esc(post.author_name || 'Anonyme')}</span>
-            <span class="chat-msg-date">${date}</span>
-          </div>
-          ${replyContext}
-          <div class="chat-msg-content">${esc(post.content)}</div>
-          ${attachmentHtml}
-          <div class="chat-msg-actions">
-            ${replyBtn}
-            ${deleteBtn}
-          </div>
-        </div>
-      `;
+      return `<div class="chat-msg ${isAuthor ? 'is-mine' : ''}">
+        <div class="chat-msg-header"><span class="chat-msg-author">👤 ${esc(post.author_name || 'Anonyme')}</span><span class="chat-msg-date">${date}</span></div>
+        ${replyContext}<div class="chat-msg-content">${esc(post.content)}</div>${attachmentHtml}
+        <div class="chat-msg-actions">${replyBtn}${deleteBtn}</div></div>`;
     }).join('');
   } catch (e) {
     list.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Erreur réseau : ${esc(e.message)}</p>`;
@@ -2372,8 +2073,7 @@ function startReply(postId, userId, authorName) {
   input.value = `@${authorName} `;
   input.focus();
   $('communityCharCount').textContent = input.value.length;
-  const replyBox = $('replyingTo');
-  replyBox.style.display = 'flex';
+  $('replyingTo').style.display = 'flex';
   $('replyingToText').innerHTML = `↩️ Répondre à <b>@${esc(authorName)}</b>`;
 }
 window.startReply = startReply;
@@ -2397,43 +2097,20 @@ async function postMessage() {
   btn.disabled = true;
   btn.textContent = '⏳...';
   try {
-    let attachmentUrl = null;
-    let attachmentType = null;
+    let attachmentUrl = null, attachmentType = null;
     if (selectedAttachment) {
       btn.textContent = '📎 Envoi...';
       attachmentUrl = await uploadAttachment(selectedAttachment);
       attachmentType = selectedAttachment.type.startsWith('image/') ? 'image' : 'file';
     }
     const authorName = currentUser.user_metadata?.full_name || (currentUser.email || '').split('@')[0];
-    const postData = {
-      user_id: currentUser.id,
-      author_name: authorName,
-      content: content || '(pièce jointe)',
-      attachment_url: attachmentUrl,
-      attachment_type: attachmentType
-    };
-    if (replyingTo) {
-      postData.reply_to_id = replyingTo.postId;
-      postData.recipient_id = replyingTo.userId;
-    }
-    const { error } = await supabaseClient
-      .from('community_posts')
-      .insert(postData);
-    if (error) {
-      alert("Erreur : " + error.message);
-    } else {
-      input.value = '';
-      $('communityCharCount').textContent = '0';
-      removeAttachment();
-      cancelReply();
-      await loadCommunity();
-    }
-  } catch (e) {
-    alert("Erreur : " + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
+    const postData = { user_id: currentUser.id, author_name: authorName, content: content || '(pièce jointe)', attachment_url: attachmentUrl, attachment_type: attachmentType };
+    if (replyingTo) { postData.reply_to_id = replyingTo.postId; postData.recipient_id = replyingTo.userId; }
+    const { error } = await supabaseClient.from('community_posts').insert(postData);
+    if (error) alert("Erreur : " + error.message);
+    else { input.value = ''; $('communityCharCount').textContent = '0'; removeAttachment(); cancelReply(); await loadCommunity(); }
+  } catch (e) { alert("Erreur : " + e.message); }
+  finally { btn.disabled = false; btn.textContent = originalText; }
 }
 window.postMessage = postMessage;
 
@@ -2441,18 +2118,10 @@ async function deleteCommunityPost(postId) {
   if (!supabaseClient || !currentUser) return;
   if (!confirm("Supprimer ce message ?")) return;
   try {
-    const { error } = await supabaseClient
-      .from('community_posts')
-      .delete()
-      .eq('id', postId);
-    if (error) {
-      alert("Erreur : " + error.message);
-    } else {
-      await loadCommunity();
-    }
-  } catch (e) {
-    alert("Erreur réseau : " + e.message);
-  }
+    const { error } = await supabaseClient.from('community_posts').delete().eq('id', postId);
+    if (error) alert("Erreur : " + error.message);
+    else await loadCommunity();
+  } catch (e) { alert("Erreur réseau : " + e.message); }
 }
 window.deleteCommunityPost = deleteCommunityPost;
 
@@ -2460,41 +2129,26 @@ async function checkUnreadReplies() {
   if (!supabaseClient || !currentUser) return;
   try {
     const readIds = JSON.parse(localStorage.getItem('comptest_read_community') || '[]');
-    const { data, error } = await supabaseClient
-      .from('community_posts')
-      .select('id')
-      .eq('recipient_id', currentUser.id);
-    if (error) {
-      console.error('Erreur checkUnreadReplies:', error);
-      return;
-    }
+    const { data, error } = await supabaseClient.from('community_posts').select('id').eq('recipient_id', currentUser.id);
+    if (error) return console.error('Erreur checkUnreadReplies:', error);
     const unread = (data || []).filter(post => !readIds.includes(post.id));
     unreadRepliesCount = unread.length;
     updateCommunityBadge(unreadRepliesCount);
-  } catch (e) {
-    console.error('Erreur réseau checkUnreadReplies:', e);
-  }
+  } catch (e) { console.error('Erreur réseau checkUnreadReplies:', e); }
 }
 window.checkUnreadReplies = checkUnreadReplies;
 
 function updateCommunityBadge(count) {
   const badge = $('communityWidgetBadge');
   if (!badge) return;
-  if (count > 0) {
-    badge.textContent = count > 99 ? '99+' : count;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
-  }
+  if (count > 0) { badge.textContent = count > 99 ? '99+' : count; badge.style.display = 'flex'; }
+  else badge.style.display = 'none';
 }
 
 async function markRepliesAsRead() {
   if (!supabaseClient || !currentUser) return;
   try {
-    const { data } = await supabaseClient
-      .from('community_posts')
-      .select('id')
-      .eq('recipient_id', currentUser.id);
+    const { data } = await supabaseClient.from('community_posts').select('id').eq('recipient_id', currentUser.id);
     if (data && data.length > 0) {
       const readIds = JSON.parse(localStorage.getItem('comptest_read_community') || '[]');
       const newReadIds = [...new Set([...readIds, ...data.map(p => p.id)])];
@@ -2502,19 +2156,14 @@ async function markRepliesAsRead() {
     }
     unreadRepliesCount = 0;
     updateCommunityBadge(0);
-  } catch (e) {
-    console.error('Erreur markRepliesAsRead:', e);
-  }
+  } catch (e) { console.error('Erreur markRepliesAsRead:', e); }
 }
 window.markRepliesAsRead = markRepliesAsRead;
 
 // ==========================================
 // 👑 ADMIN
 // ==========================================
-$('adminBtn').addEventListener('click', () => {
-  $('adminModal').classList.add('show');
-  loadAdminUsers();
-});
+$('adminBtn').addEventListener('click', () => { $('adminModal').classList.add('show'); loadAdminUsers(); });
 
 document.querySelectorAll('.admin-tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -2532,30 +2181,14 @@ async function loadAdminUsers() {
   try {
     const res = await fetch(API_BASE + '/api/admin/users', { headers: { 'Authorization': `Bearer ${session.access_token}` } });
     const data = await res.json();
-    if (!res.ok) {
-      $('adminUsersList').innerHTML = `<p style="color:var(--red)">Erreur : ${esc(data.error || 'inconnue')}</p>`;
-      return;
-    }
-    if (!data.users || data.users.length === 0) {
-      $('adminUsersList').innerHTML = '<p style="color:var(--muted)">Aucun compte.</p>';
-      return;
-    }
+    if (!res.ok) { $('adminUsersList').innerHTML = `<p style="color:var(--red)">Erreur : ${esc(data.error || 'inconnue')}</p>`; return; }
+    if (!data.users || data.users.length === 0) { $('adminUsersList').innerHTML = '<p style="color:var(--muted)">Aucun compte.</p>'; return; }
     const roleSelect = $('roleUserId');
-    roleSelect.innerHTML = `<option value="">-- Sélectionner un utilisateur --</option>` + data.users.map(u => 
-      `<option value="${u.id}">${esc(u.name)} (${esc(u.email)}) ${u.isAdmin ? '👑' : ''}</option>`
-    ).join('');
-
+    roleSelect.innerHTML = `<option value="">-- Sélectionner un utilisateur --</option>` + data.users.map(u => `<option value="${u.id}">${esc(u.name)} (${esc(u.email)}) ${u.isAdmin ? '👑' : ''}</option>`).join('');
     $('adminUsersList').innerHTML = `<table class="admin-table"><thead><tr><th>Nom</th><th>Email</th><th>Statut</th><th>Rôle</th></tr></thead><tbody>
-      ${data.users.map(u => `<tr>
-        <td><b>${esc(u.name)}</b></td>
-        <td>${esc(u.email)}</td>
-        <td>${u.banned ? '<span style="color:var(--red)">Désactivé</span>' : '<span style="color:var(--green)">Actif</span>'}</td>
-        <td>${u.isAdmin ? '<span class="badge-admin">ADMIN</span>' : 'Utilisateur'}</td>
-      </tr>`).join('')}
+      ${data.users.map(u => `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.banned ? '<span style="color:var(--red)">Désactivé</span>' : '<span style="color:var(--green)">Actif</span>'}</td><td>${u.isAdmin ? '<span class="badge-admin">ADMIN</span>' : 'Utilisateur'}</td></tr>`).join('')}
     </tbody></table>`;
-  } catch (err) {
-    $('adminUsersList').innerHTML = `<p style="color:var(--red)">Erreur réseau : ${esc(err.message)}</p>`;
-  }
+  } catch (err) { $('adminUsersList').innerHTML = `<p style="color:var(--red)">Erreur réseau : ${esc(err.message)}</p>`; }
 }
 
 $('adminCreateForm').addEventListener('submit', async (e) => {
@@ -2566,11 +2199,7 @@ $('adminCreateForm').addEventListener('submit', async (e) => {
   const emailInput = $('newEmail').value.trim();
   const niveau = $('newNiveau').value;
   const pwd = $('newPassword').value;
-  if (!lastName || !firstName) {
-    $('adminStatus').textContent = "❌ Nom et prénom requis.";
-    $('adminStatus').style.color = "var(--red)";
-    return;
-  }
+  if (!lastName || !firstName) { $('adminStatus').textContent = "❌ Nom et prénom requis."; $('adminStatus').style.color = "var(--red)"; return; }
   let email = emailInput;
   if (!email) {
     const slug = (firstName + '.' + lastName).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]/g, '');
@@ -2623,13 +2252,8 @@ async function adminSetRole(isAdmin) {
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
     body: JSON.stringify({ is_admin: isAdmin })
   });
-  if (res.ok) {
-    $('roleStatus').innerHTML = `<span style="color:var(--green)">✅ Rôle mis à jour !</span>`;
-    loadAdminUsers();
-  } else {
-    const d = await res.json();
-    $('roleStatus').innerHTML = `<span style="color:var(--red)">❌ ${d.error}</span>`;
-  }
+  if (res.ok) { $('roleStatus').innerHTML = `<span style="color:var(--green)">✅ Rôle mis à jour !</span>`; loadAdminUsers(); }
+  else { const d = await res.json(); $('roleStatus').innerHTML = `<span style="color:var(--red)">❌ ${d.error}</span>`; }
 }
 
 // ==========================================
@@ -2638,10 +2262,7 @@ async function adminSetRole(isAdmin) {
 async function loadCloudData() {
   if (!currentUser || !supabaseClient) return;
   const { data } = await supabaseClient.from('comptest_data').select('history').eq('user_id', currentUser.id).maybeSingle();
-  if (data && data.history) {
-    historyData = data.history;
-    localStorage.setItem('comptest_history', JSON.stringify(historyData));
-  }
+  if (data && data.history) { historyData = data.history; localStorage.setItem('comptest_history', JSON.stringify(historyData)); }
   renderHistory();
 }
 
@@ -2649,10 +2270,7 @@ async function saveHistory(entry) {
   historyData.push(entry);
   localStorage.setItem('comptest_history', JSON.stringify(historyData));
   renderHistory();
-  if (currentUser && supabaseClient) await supabaseClient.from('comptest_data').upsert(
-    { user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() },
-    { onConflict: 'user_id' }
-  );
+  if (currentUser && supabaseClient) await supabaseClient.from('comptest_data').upsert({ user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 }
 
 function renderHistory() {
@@ -2661,10 +2279,7 @@ function renderHistory() {
   list.innerHTML = [...historyData].reverse().map((h, revIdx) => {
     const realIdx = historyData.length - 1 - revIdx;
     return `<div class="history-item">
-      <div>
-        <div style="font-weight:700">${esc(h.title)}</div>
-        <div style="font-size:12px;color:var(--muted)">${new Date(h.date).toLocaleString('fr-FR')}</div>
-      </div>
+      <div><div style="font-weight:700">${esc(h.title)}</div><div style="font-size:12px;color:var(--muted)">${new Date(h.date).toLocaleString('fr-FR')}</div></div>
       <div style="display:flex;align-items:center;gap:10px">
         <div style="font-size:20px;font-weight:800;color:var(--green)">${h.score.toFixed(1)}/20</div>
         ${isAdmin ? `<button class="btn-icon" onclick="deleteHistoryItem(${realIdx})" title="Supprimer">🗑️</button>` : ''}
@@ -2678,10 +2293,7 @@ async function deleteHistoryItem(index) {
   historyData.splice(index, 1);
   localStorage.setItem('comptest_history', JSON.stringify(historyData));
   renderHistory();
-  if (currentUser && supabaseClient) await supabaseClient.from('comptest_data').upsert(
-    { user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() },
-    { onConflict: 'user_id' }
-  );
+  if (currentUser && supabaseClient) await supabaseClient.from('comptest_data').upsert({ user_id: currentUser.id, history: historyData, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 }
 
 async function clearAllHistory() {
@@ -2690,15 +2302,9 @@ async function clearAllHistory() {
   historyData = [];
   localStorage.setItem('comptest_history', JSON.stringify(historyData));
   renderHistory();
-  if (currentUser && supabaseClient) await supabaseClient.from('comptest_data').upsert(
-    { user_id: currentUser.id, history: [], updated_at: new Date().toISOString() },
-    { onConflict: 'user_id' }
-  );
+  if (currentUser && supabaseClient) await supabaseClient.from('comptest_data').upsert({ user_id: currentUser.id, history: [], updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
 }
 
-// ==========================================
-// 🔄 NAVIGATION ONGLETS
-// ==========================================
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -2706,20 +2312,14 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     const target = $('tab-' + tab.dataset.tab);
     if (target) target.classList.remove('hide');
-    
     if (tab.dataset.tab === 'library') loadLibrary();
     if (tab.dataset.tab === 'courses') loadCourses();
   });
 });
 
-// Compteur de caractères
 document.addEventListener('DOMContentLoaded', () => {
   const input = $('communityInput');
-  if (input) {
-    input.addEventListener('input', () => {
-      $('communityCharCount').textContent = input.value.length;
-    });
-  }
+  if (input) input.addEventListener('input', () => { $('communityCharCount').textContent = input.value.length; });
 });
 
 // ==========================================
@@ -2732,7 +2332,7 @@ $('pdfFile').addEventListener('change', async function() {
     const status = $('pdfStatus');
     status.textContent = 'Analyse du fichier...';
     try {
-      let text = ''; 
+      let text = '';
       const name = file.name.toLowerCase();
       if (file.type.startsWith('image/') || name.match(/\.(jpg|jpeg|png|webp|bmp)$/)) {
         status.textContent = '🖼️ Préparation de l\'image...';
@@ -2806,11 +2406,7 @@ async function fetchWithAuth(url, body, method = 'POST') {
 
 async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
   const level = $('quizLevel').value;
-  if (!level) {
-    alert("Veuillez sélectionner un niveau avant de générer ou extraire.");
-    return;
-  }
-  
+  if (!level) { alert("Veuillez sélectionner un niveau avant de générer ou extraire."); return; }
   let quizzesToStart = [];
   if (shouldSplit && questions.length > 50) {
     const chunks = [];
@@ -2843,12 +2439,8 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
 $('generatePostTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value.trim(); if(!text) return;
   const level = $('quizLevel').value;
-  if (!level) {
-    $('analysisStatus').className = 'notice err';
-    $('analysisStatus').textContent = '❌ Veuillez sélectionner un niveau avant de générer.';
-    return;
-  }
-  const btn = $('generatePostTestBtn'); 
+  if (!level) { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ Veuillez sélectionner un niveau avant de générer.'; return; }
+  const btn = $('generatePostTestBtn');
   const original = btn.innerHTML;
   btn.innerHTML = '⏳ Génération...'; btn.disabled = true;
   try {
@@ -2872,11 +2464,7 @@ $('generatePostTestBtn').addEventListener('click', async () => {
 $('extractTestBtn').addEventListener('click', async () => {
   const text = $('pdfText').value; if(!text) return;
   const level = $('quizLevel').value;
-  if (!level) {
-    $('analysisStatus').className = 'notice err';
-    $('analysisStatus').textContent = '❌ Veuillez sélectionner un niveau avant d\'extraire.';
-    return;
-  }
+  if (!level) { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ Veuillez sélectionner un niveau avant d\'extraire.'; return; }
   const btn = $('extractTestBtn');
   const original = btn.innerHTML;
   btn.innerHTML = '⏳ Extraction...'; btn.disabled = true;
@@ -2902,14 +2490,7 @@ $('extractTestBtn').addEventListener('click', async () => {
 // 📝 EXAMEN
 // ==========================================
 function startExam(quiz) {
-  examState = {
-    title: quiz.title,
-    questions: quiz.questions,
-    answers: new Array(quiz.questions.length).fill(null),
-    locked: new Array(quiz.questions.length).fill(false),
-    currentIndex: 0,
-    submitted: false
-  };
+  examState = { title: quiz.title, questions: quiz.questions, answers: new Array(quiz.questions.length).fill(null), locked: new Array(quiz.questions.length).fill(false), currentIndex: 0, submitted: false };
   $('examTitle').textContent = quiz.title;
   $('examMeta').textContent = `${quiz.questions.length} questions`;
   $('examView').style.display = 'block';
@@ -2941,26 +2522,13 @@ function renderExamQuestion() {
   const ua = examState.answers[i];
   const total = examState.questions.length;
   const isLocked = examState.locked[i] || examState.submitted;
-
   const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
   const isShort = q.type === 'short' || (!q.options || q.options.length === 0);
-
   $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
   $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
-  if (i === total - 1) {
-    $('examNextBtn').style.display = 'none';
-    $('examSubmitBtn').style.display = 'block';
-  } else {
-    $('examNextBtn').style.display = 'block';
-    $('examSubmitBtn').style.display = 'none';
-  }
-
-  let html = `<div class="exam-card">
-    <span class="exam-q-num">Q${i + 1}</span>
-    <span class="exam-type-tag">${typeLabel(q.type)}</span>
-    ${isLocked ? '<span class="instant-badge">🔒 Verrouillée</span>' : ''}
-    <h3>${esc(q.text)}</h3>`;
-
+  if (i === total - 1) { $('examNextBtn').style.display = 'none'; $('examSubmitBtn').style.display = 'block'; }
+  else { $('examNextBtn').style.display = 'block'; $('examSubmitBtn').style.display = 'none'; }
+  let html = `<div class="exam-card"><span class="exam-q-num">Q${i + 1}</span><span class="exam-type-tag">${typeLabel(q.type)}</span>${isLocked ? '<span class="instant-badge">🔒 Verrouillée</span>' : ''}<h3>${esc(q.text)}</h3>`;
   if (isShort) {
     html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${isLocked ? 'disabled' : ''} placeholder="Votre réponse...">`;
     if (!isLocked) html += `<button class="validate-btn" id="lockTextBtn">🔒 Valider ma réponse</button>`;
@@ -2969,47 +2537,29 @@ function renderExamQuestion() {
     q.options.forEach((opt, j) => {
       const isSelected = isMulti ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
       const isCorrectOption = isMulti ? (Array.isArray(q.correct) && q.correct.includes(j)) : (q.correct === j);
-
       let cls = 'exam-opt';
-      if (isLocked) {
-        cls += ' locked';
-        if (isCorrectOption) cls += ' correct';
-        else if (isSelected && !isCorrectOption) cls += ' wrong';
-      } else if (isSelected) {
-        cls += ' selected';
-      }
-
+      if (isLocked) { cls += ' locked'; if (isCorrectOption) cls += ' correct'; else if (isSelected && !isCorrectOption) cls += ' wrong'; }
+      else if (isSelected) cls += ' selected';
       const disabledAttr = isLocked ? 'disabled' : '';
-      html += `<label class="${cls}">
-        <input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${disabledAttr}>
-        <span>${esc(opt)}</span>
-      </label>`;
+      html += `<label class="${cls}"><input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${disabledAttr}><span>${esc(opt)}</span></label>`;
     });
     html += `</div>`;
     if (isMulti && !isLocked) html += `<button class="validate-btn" id="lockMultiBtn">🔒 Valider ma sélection</button>`;
   }
-
   if (!isLocked && q.explanation) {
     html += `<button class="hint-btn" onclick="document.getElementById('hintBox').classList.toggle('show')">💡 Voir un indice</button>`;
     html += `<div class="hint-box" id="hintBox"><b>Indice :</b> ${esc(q.explanation)}</div>`;
   }
-
   if (isLocked) {
     const isOk = checkAnswer(q, ua);
     let correctStr = '';
     if (isShort) correctStr = String(q.correct ?? '');
     else if (Array.isArray(q.correct)) correctStr = q.correct.map(k => q.options?.[k]).filter(Boolean).join(', ');
     else if (q.options && q.options[q.correct] !== undefined) correctStr = q.options[q.correct];
-    html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}">
-      <b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>
-      ${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}
-      ${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}
-    </div>`;
+    html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}"><b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}${q.explanation ? `<div class="exam-explain"><b>Explication :</b> ${esc(q.explanation)}</div>` : ''}</div>`;
   }
-
   html += `</div>`;
   $('examBody').innerHTML = html;
-
   if (!isLocked) {
     if (isShort) {
       const textInp = $('textInput');
@@ -3017,29 +2567,20 @@ function renderExamQuestion() {
       $('lockTextBtn').addEventListener('click', () => {
         const v = textInp.value.trim();
         if (!v) return alert("Saisis une réponse avant de valider.");
-        examState.answers[i] = v;
-        examState.locked[i] = true;
-        renderExamQuestion();
+        examState.answers[i] = v; examState.locked[i] = true; renderExamQuestion();
       });
     } else if (isMulti) {
       document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
-        inp.addEventListener('change', () => {
-          examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
-        });
+        inp.addEventListener('change', () => { examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value)); });
       });
       $('lockMultiBtn').addEventListener('click', () => {
         const sel = examState.answers[i];
         if (!Array.isArray(sel) || sel.length === 0) return alert("Coche au moins une réponse avant de valider.");
-        examState.locked[i] = true;
-        renderExamQuestion();
+        examState.locked[i] = true; renderExamQuestion();
       });
     } else {
       document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
-        inp.addEventListener('change', () => {
-          examState.answers[i] = parseInt(inp.value);
-          examState.locked[i] = true;
-          renderExamQuestion();
-        });
+        inp.addEventListener('change', () => { examState.answers[i] = parseInt(inp.value); examState.locked[i] = true; renderExamQuestion(); });
       });
     }
   }
@@ -3058,30 +2599,22 @@ function checkAnswer(q, ua) {
   return false;
 }
 
-$('examNextBtn').addEventListener('click', () => {
-  if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); }
-});
-$('examPrevBtn').addEventListener('click', () => {
-  if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); }
-});
+$('examNextBtn').addEventListener('click', () => { if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); } });
+$('examPrevBtn').addEventListener('click', () => { if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); } });
 
 $('examSubmitBtn').addEventListener('click', async () => {
   if(examState.submitted) return;
   if(!confirm('Soumettre la compo et voir le score ?')) return;
-
   examState.submitted = true;
   let correctCount = 0;
   examState.questions.forEach((q, i) => { if (checkAnswer(q, examState.answers[i])) correctCount++; });
   const total = examState.questions.length;
   const scoreSur20 = (correctCount / total * 20);
   const ratio = correctCount / total;
-
   await saveHistory({ title: examState.title, date: new Date().toISOString(), score: scoreSur20 });
-
   $('scoreCorrect').textContent = correctCount;
   $('scoreTotal').textContent = total;
   $('scoreSur20').textContent = `Note : ${scoreSur20.toFixed(1)} / 20`;
-
   let emoji = '🎉', title = 'Bravo !';
   let msg = 'Tu vas maintenant pouvoir consulter la correction question par question.';
   if (ratio >= 0.8) { emoji = '🏆'; title = 'Excellent !'; msg = 'Tu maîtrises ce sujet. Continue comme ça !'; }
@@ -3090,16 +2623,10 @@ $('examSubmitBtn').addEventListener('click', async () => {
   $('scoreEmoji').textContent = emoji;
   $('scoreTitle').textContent = title;
   $('scoreMessage').textContent = msg;
-
   $('scoreView').classList.add('show');
 });
 
-$('scoreCorrectionsBtn').addEventListener('click', () => {
-  $('scoreView').classList.remove('show');
-  examState.currentIndex = 0;
-  renderExamQuestion();
-});
-
+$('scoreCorrectionsBtn').addEventListener('click', () => { $('scoreView').classList.remove('show'); examState.currentIndex = 0; renderExamQuestion(); });
 $('scoreHomeBtn').addEventListener('click', () => closeExamView());
 </script>
 </body></html>
