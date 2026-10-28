@@ -95,23 +95,40 @@ button.danger:hover{background:#FEE2E2}
 .level-badge{display:inline-block;background:#D1FAE5;color:#065F46;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:8px;text-transform:uppercase}
 
 /* ==========================================
-   🆕 BARRE D'ACTIONS STICKY BIBLIOTHÈQUE
+   🔧 FIX STICKY : Ancêtres sans overflow
+   ========================================== */
+#tab-library,
+#tab-library .panel,
+#tab-library .tab-content,
+.tab-content,
+.wrap,
+#mainApp {
+  overflow: visible !important;
+}
+
+/* ==========================================
+   🆕 BARRE D'ACTIONS STICKY BIBLIOTHÈQUE (RENFORCÉE)
    ========================================== */
 #libraryActionBar{
-  display:none; /* masquée par défaut */
-  position:sticky;
-  top:0;
-  z-index:100;
+  display:none;
+  /* Fallback universel : -webkit- d'abord, puis standard */
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  /* Fond blanc OPAQUE pour bien masquer le contenu qui défile dessous */
+  background-color: #ffffff !important;
+  /* Ombre pour bien se détacher */
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06) !important;
+  /* Bordure jaune conservée pour l'identité visuelle */
+  border:1px solid #FCD34D;
+  border-radius:12px;
   align-items:center;
   justify-content:space-between;
   gap:10px;
   padding:10px 14px;
-  background:#FFFBEB;
-  border:1px solid #FCD34D;
-  border-radius:12px;
   margin-bottom:12px;
   flex-wrap:wrap;
-  box-shadow:0 4px 12px rgba(0,0,0,.08);
 }
 #libraryActionBar.visible{display:flex;}
 #libraryActionBar .selected-count{
@@ -142,6 +159,22 @@ button.danger:hover{background:#FEE2E2}
 #libraryActionBar .btn-move:hover:not(:disabled){background:#D1FAE5;}
 #libraryActionBar .btn-delete{background:#FEF2F2;color:var(--red);border-color:#FECACA;}
 #libraryActionBar .btn-delete:hover:not(:disabled){background:#FEE2E2;}
+
+/* 🔧 FALLBACK FIXED (si sticky est cassé sur WebView/Capacitor) */
+body.library-bar-fixed #libraryActionBar{
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 10px 14px;
+  z-index: 1000 !important;
+}
+body.library-bar-fixed #libraryList{
+  /* Compense la hauteur de la barre fixed */
+  margin-top: 60px !important;
+}
 
 /* Cases à cocher des cartes quiz */
 .library-item input[type="checkbox"].quiz-select-checkbox{
@@ -616,7 +649,7 @@ button.danger:hover{background:#FEE2E2}
         <button class="level-filter" data-level="LICENCE 3" onclick="filterLibrary('LICENCE 3')">LICENCE 3</button>
       </div>
 
-      <!-- 🆕 BARRE D'ACTIONS STICKY (visible seulement si sélection) -->
+      <!-- 🆕 BARRE D'ACTIONS STICKY -->
       <div id="libraryActionBar">
         <span class="selected-count" id="librarySelectedCount">0 sélectionné</span>
         <div class="toolbar-actions">
@@ -903,7 +936,6 @@ let selectedMode = 'training';
 let examTimer = null;
 let totalExamTimeSeconds = 0;
 
-/* ← FIX : Variable globale ROBUSTE contenant l'objet quiz à démarrer. */
 window.currentQuizToStart = null;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -939,6 +971,23 @@ function togglePasswordVisibility(inputId, btn) {
 }
 window.togglePasswordVisibility = togglePasswordVisibility;
 
+/* 🔧 FIX : Détection auto du besoin de fallback fixed (WebView/Capacitor) */
+function detectStickySupport() {
+  // Si sticky est supporté nativement (navigateur moderne), pas besoin de fallback
+  const supportsSticky = CSS.supports && (CSS.supports('position', 'sticky') || CSS.supports('position', '-webkit-sticky'));
+  // Détection WebView Android (Capacitor) → souvent problématique
+  const isAndroidWebView = /Android/.test(navigator.userAgent) && /wv/.test(navigator.userAgent);
+  // Safari iOS ancien bug sur sticky
+  const isOldIOS = /iP(hone|ad|od)/.test(navigator.userAgent) && parseFloat((navigator.userAgent.match(/OS (\d+)_/) || [0, 99])[1]) < 15;
+  
+  if (!supportsSticky || (isAndroidWebView && !isOldIOS)) {
+    document.body.classList.add('library-bar-fixed');
+    console.log('🔧 Sticky non fiable détecté → fallback fixed activé');
+    return false;
+  }
+  return true;
+}
+
 (async () => {
   const defaultConfig = { SUPABASE_URL: 'https://drumtgglrtmubdvkpwvl.supabase.co', SUPABASE_ANON_KEY: 'sb_publishable_u86DlAD9qU-Byb9tR59gMA_IlGAbcxu' };
   const cfg = window.COMPOSTEST_CONFIG || defaultConfig;
@@ -950,6 +999,7 @@ window.togglePasswordVisibility = togglePasswordVisibility;
   try {
     supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { storage: localStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false } });
     console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
+    detectStickySupport(); // 🔧
     await initAuth();
   } catch (e) {
     console.error('❌ Erreur init Supabase:', e);
@@ -1052,7 +1102,6 @@ function handleSession(session) {
     $('adminCourseForm').classList.add('hide');
     if (unreadCheckInterval) { clearInterval(unreadCheckInterval); unreadCheckInterval = null; }
     updateCommunityBadge(0);
-    // 🆕 Nettoyage de la sélection à la déconnexion
     selectedQuizIds.clear();
     updateLibraryActionBar();
   }
@@ -1603,7 +1652,6 @@ function filterLibrary(level) {
 }
 window.filterLibrary = filterLibrary;
 
-// 🆕 Met à jour la barre d'actions sticky
 function updateLibraryActionBar() {
   const bar = $('libraryActionBar');
   const countEl = $('librarySelectedCount');
@@ -1683,14 +1731,12 @@ async function loadLibrary() {
   }
 }
 
-// 🆕 Toggle de sélection d'un quiz (met à jour la barre)
 function toggleQuizSelection(id, isChecked) {
   if (isChecked) selectedQuizIds.add(id); else selectedQuizIds.delete(id);
   updateLibraryActionBar();
 }
 window.toggleQuizSelection = toggleQuizSelection;
 
-// 🆕 Suppression groupée (via Supabase directement, comme demandé)
 async function deleteSelectedQuizzes() {
   if (!isAdmin || !supabaseClient || selectedQuizIds.size === 0) return;
   const ids = Array.from(selectedQuizIds);
@@ -1708,7 +1754,6 @@ async function deleteSelectedQuizzes() {
 }
 window.deleteSelectedQuizzes = deleteSelectedQuizzes;
 
-// 🆕 Déplacement groupé (via Supabase directement)
 async function moveSelectedQuizzes() {
   if (!isAdmin || !supabaseClient || selectedQuizIds.size === 0) return;
   const ids = Array.from(selectedQuizIds);
@@ -1730,9 +1775,6 @@ async function moveSelectedQuizzes() {
 }
 window.moveSelectedQuizzes = moveSelectedQuizzes;
 
-// ============================================
-// FIX : Point d'entrée depuis la bibliothèque
-// ============================================
 window.openModeModalByIndex = (idx) => {
   const q = libraryCache[idx];
   if (!q) { alert("Exercice introuvable."); return; }
@@ -1823,7 +1865,6 @@ window.deleteLibraryQuiz = async (id) => {
   if (!confirm("Supprimer cet exercice de la bibliothèque ?")) return;
   try {
     await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE');
-    // retirer aussi de la sélection si présent
     selectedQuizIds.delete(id);
     updateLibraryActionBar();
     loadLibrary();
