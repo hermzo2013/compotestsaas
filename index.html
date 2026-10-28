@@ -36,7 +36,6 @@ body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:
 
 header{background:linear-gradient(120deg,#065F46,#10B981);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800}
-/* NOUVEAU : Logo agrandi */
 .brand img{height:50px;width:auto;border-radius:8px;background:#fff;object-fit:contain;padding:2px}
 .brand span{color:#fff}
 .header-actions{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
@@ -94,6 +93,65 @@ button.danger:hover{background:#FEE2E2}
 .level-filter:hover{background:#E5E7EB}
 .level-filter.active{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
 .level-badge{display:inline-block;background:#D1FAE5;color:#065F46;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:8px;text-transform:uppercase}
+
+/* ==========================================
+   🆕 BARRE D'ACTIONS STICKY BIBLIOTHÈQUE
+   ========================================== */
+#libraryActionBar{
+  display:none; /* masquée par défaut */
+  position:sticky;
+  top:0;
+  z-index:100;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 14px;
+  background:#FFFBEB;
+  border:1px solid #FCD34D;
+  border-radius:12px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+#libraryActionBar.visible{display:flex;}
+#libraryActionBar .selected-count{
+  font-size:13px;
+  font-weight:800;
+  color:#92400E;
+  flex-shrink:0;
+}
+#libraryActionBar .toolbar-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+#libraryActionBar button{
+  padding:7px 14px;
+  font-size:12px;
+  font-weight:700;
+  border-radius:8px;
+  border:1px solid;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  transition:opacity .2s, background .2s;
+}
+#libraryActionBar button:disabled{opacity:.4;cursor:not-allowed;}
+#libraryActionBar .btn-move{background:#ECFDF5;color:var(--navy);border-color:#A7F3D0;}
+#libraryActionBar .btn-move:hover:not(:disabled){background:#D1FAE5;}
+#libraryActionBar .btn-delete{background:#FEF2F2;color:var(--red);border-color:#FECACA;}
+#libraryActionBar .btn-delete:hover:not(:disabled){background:#FEE2E2;}
+
+/* Cases à cocher des cartes quiz */
+.library-item input[type="checkbox"].quiz-select-checkbox{
+  width:20px;
+  height:20px;
+  cursor:pointer;
+  accent-color:#10B981;
+  margin:0;
+  flex-shrink:0;
+}
 
 .course-accordion{margin-bottom:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;transition:box-shadow 0.2s;}
 .course-accordion:hover{box-shadow:0 2px 8px rgba(16,185,129,0.08);}
@@ -219,6 +277,8 @@ button.danger:hover{background:#FEE2E2}
   .course-item-actions button.btn-video{padding:6px 10px;font-size:11px;}
   .course-item-actions .btn-edit-course{padding:5px 8px;font-size:14px;}
   .brand img{height:40px;}
+  #libraryActionBar{padding:8px 10px;}
+  #libraryActionBar button{padding:6px 10px;font-size:11px;}
 }
 
 #adminModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.5);z-index:3000;align-items:center;justify-content:center;padding:20px}
@@ -356,7 +416,6 @@ button.danger:hover{background:#FEE2E2}
 .checkbox-group label{margin:0;cursor:pointer;font-size:14px;color:var(--ink)}
 
 .library-item{display:flex;align-items:center;gap:10px;}
-.library-item input[type="checkbox"]{width:20px;height:20px;cursor:pointer;accent-color:#10B981;margin:0;flex-shrink:0}
 .bulk-actions{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}
 
 @media(max-width:768px){
@@ -393,7 +452,6 @@ button.danger:hover{background:#FEE2E2}
 /* ← MODIF EXAMEN BLANC : Styles pour la modale de choix du mode */
 #modeModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.6);z-index:4800;align-items:center;justify-content:center;padding:20px}
 #modeModal.show{display:flex}
-/* ← FIX : max-height + overflow pour garantir que le bouton Démarrer reste accessible sur petits écrans */
 .mode-modal-content{background:#fff;border-radius:20px;width:100%;max-width:450px;max-height:90vh;overflow-y:auto;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;display:flex;flex-direction:column;}
 .mode-modal-content h2{margin-top:0;color:var(--exam-navy);font-size:22px;}
 .mode-modal-content p{color:var(--muted);font-size:14px;margin-bottom:25px;line-height:1.5;}
@@ -408,7 +466,6 @@ button.danger:hover{background:#FEE2E2}
 #examTimerContainer.warning{color:#fca5a5;background:rgba(239, 68, 68, 0.2);animation:pulseTimer 1s infinite;}
 @keyframes pulseTimer{0%,100%{opacity:1;}50%{opacity:0.6;}}
 
-/* ← FIX : Barre d'actions sticky en bas de la modale (toujours visible, peu importe le mode) */
 .mode-modal-actions{
   display:flex;
   gap:10px;
@@ -558,10 +615,17 @@ button.danger:hover{background:#FEE2E2}
         <button class="level-filter" data-level="LICENCE 2" onclick="filterLibrary('LICENCE 2')">LICENCE 2</button>
         <button class="level-filter" data-level="LICENCE 3" onclick="filterLibrary('LICENCE 3')">LICENCE 3</button>
       </div>
-      <div id="libraryList"><p style="color:var(--muted)">Chargement...</p></div>
-      <div class="bulk-actions" id="bulkActions" style="display:none">
-        <button class="danger" onclick="deleteSelectedQuizzes()">🗑️ Supprimer la sélection</button>
+
+      <!-- 🆕 BARRE D'ACTIONS STICKY (visible seulement si sélection) -->
+      <div id="libraryActionBar">
+        <span class="selected-count" id="librarySelectedCount">0 sélectionné</span>
+        <div class="toolbar-actions">
+          <button type="button" class="btn-move" id="libraryMoveBtn" onclick="moveSelectedQuizzes()" disabled>➡️ Déplacer</button>
+          <button type="button" class="btn-delete" id="libraryDeleteBtn" onclick="deleteSelectedQuizzes()" disabled>🗑️ Supprimer</button>
+        </div>
       </div>
+
+      <div id="libraryList"><p style="color:var(--muted)">Chargement...</p></div>
     </div>
   </div>
   <div id="tab-courses" class="tab-content hide">
@@ -649,7 +713,6 @@ button.danger:hover{background:#FEE2E2}
         </div>
         <div style="grid-column:1/-1"><label>Mot de passe</label>
           <div class="auth-input-group" style="margin:0">
-            <!-- ← FIX #1 : type="text" → type="password" pour masquer le mot de passe par défaut -->
             <input id="newPassword" type="password" required minlength="6" placeholder="6 caractères minimum">
             <button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('newPassword', this)"><i class='bx bx-show'></i></button>
           </div>
@@ -725,7 +788,7 @@ button.danger:hover{background:#FEE2E2}
   </div>
 </div>
 
-<!-- ← MODIF EXAMEN BLANC : Modale de choix du mode (FIX : bouton Démarrer toujours visible via .mode-modal-actions sticky) -->
+<!-- ← MODIF EXAMEN BLANC : Modale de choix du mode -->
 <div id="modeModal">
   <div class="mode-modal-content">
     <h2>Choisir le mode</h2>
@@ -747,14 +810,12 @@ button.danger:hover{background:#FEE2E2}
       </div>
     </div>
     
-    <!-- ← Bloc durée : visible UNIQUEMENT en mode Examen -->
     <div id="examConfigDiv" class="hide" style="margin-top:20px; text-align:left;">
       <label style="font-size:13px; margin-top:0;">Temps par question (en minutes) :</label>
       <input type="number" id="examTimeConfig" value="1" min="0.5" max="5" step="0.5" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line);">
       <div style="font-size:12px; color:var(--muted); margin-top:5px;">Temps total : <b id="totalTimeLabel">50 min</b></div>
     </div>
 
-    <!-- ← FIX : Bouton Démarrer TOUJOURS visible (sticky bottom) -->
     <div class="mode-modal-actions">
       <button class="ghost" type="button" onclick="closeModeModal()">Annuler</button>
       <button class="success" type="button" id="startQuizBtn" onclick="startQuizWithMode()">Démarrer</button>
@@ -768,7 +829,6 @@ button.danger:hover{background:#FEE2E2}
       <h2 id="examTitle">Test</h2>
       <div id="examMeta" style="font-size:12px;opacity:.8"></div>
     </div>
-    <!-- ← MODIF EXAMEN BLANC : Ajout du minuteur dans le header -->
     <div id="examTimerContainer">
       <i class='bx bx-time-five'></i> <span id="examTimerText">00:00</span>
     </div>
@@ -839,12 +899,11 @@ let editingCourseId = null;
 
 /* ← MODIF EXAMEN BLANC : Variables pour la modale de mode et le timer */
 let pendingQuiz = null;
-let selectedMode = 'training'; // 'training' | 'exam'
+let selectedMode = 'training';
 let examTimer = null;
 let totalExamTimeSeconds = 0;
 
-/* ← FIX BUG : Variable globale ROBUSTE contenant l'objet quiz à démarrer.
-   Elle n'est jamais écrasée par null lors de la fermeture de la modale. */
+/* ← FIX : Variable globale ROBUSTE contenant l'objet quiz à démarrer. */
 window.currentQuizToStart = null;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -993,6 +1052,9 @@ function handleSession(session) {
     $('adminCourseForm').classList.add('hide');
     if (unreadCheckInterval) { clearInterval(unreadCheckInterval); unreadCheckInterval = null; }
     updateCommunityBadge(0);
+    // 🆕 Nettoyage de la sélection à la déconnexion
+    selectedQuizIds.clear();
+    updateLibraryActionBar();
   }
 }
 
@@ -1541,10 +1603,34 @@ function filterLibrary(level) {
 }
 window.filterLibrary = filterLibrary;
 
+// 🆕 Met à jour la barre d'actions sticky
+function updateLibraryActionBar() {
+  const bar = $('libraryActionBar');
+  const countEl = $('librarySelectedCount');
+  const moveBtn = $('libraryMoveBtn');
+  const deleteBtn = $('libraryDeleteBtn');
+  if (!bar || !countEl || !moveBtn || !deleteBtn) return;
+
+  const n = selectedQuizIds.size;
+  if (isAdmin && n > 0) {
+    bar.classList.add('visible');
+    countEl.textContent = `${n} sélectionné${n > 1 ? 's' : ''}`;
+    moveBtn.disabled = false;
+    deleteBtn.disabled = false;
+  } else {
+    bar.classList.remove('visible');
+    countEl.textContent = '0 sélectionné';
+    moveBtn.disabled = true;
+    deleteBtn.disabled = true;
+  }
+}
+window.updateLibraryActionBar = updateLibraryActionBar;
+
 function renderLibraryList() {
   const list = $('libraryList');
   if (!libraryCache || libraryCache.length === 0) {
     list.innerHTML = '<p style="color:var(--muted)">Aucun exercice dans la bibliothèque pour le moment.</p>';
+    updateLibraryActionBar();
     return;
   }
   const searchQuery = $('quizSearch') ? $('quizSearch').value : '';
@@ -1555,27 +1641,30 @@ function renderLibraryList() {
   if (keyword) filtered = filtered.filter(q => normalizeText(q.title).includes(keyword));
   if (filtered.length === 0) {
     list.innerHTML = '<p style="color:var(--muted)">Aucun exercice ne correspond à votre recherche.</p>';
+    updateLibraryActionBar();
     return;
   }
   list.innerHTML = filtered.map(q => {
     const idx = libraryCache.indexOf(q);
     const levelBadge = q.level ? `<span class="level-badge">${esc(q.level.replace('LICENCE ', 'L'))}</span>` : '';
+    const isChecked = selectedQuizIds.has(q.id) ? 'checked' : '';
     return `
       <div class="history-item library-item">
-        ${isAdmin ? `<input type="checkbox" class="quiz-select-checkbox" data-id="${q.id}" onchange="toggleQuizSelection('${q.id}', this.checked)">` : ''}
+        ${isAdmin ? `<input type="checkbox" class="quiz-select-checkbox" data-quiz-id="${q.id}" ${isChecked} onchange="toggleQuizSelection('${q.id}', this.checked)">` : ''}
         <div style="flex:1;cursor:pointer" onclick="openModeModalByIndex(${idx})">
           <div style="font-weight:700">${esc(q.title)} ${levelBadge}</div>
           <div style="font-size:12px;color:var(--muted)">${esc(q.subject || 'Général')} • ${q.questions.length} question(s) • ${new Date(q.created_at).toLocaleDateString('fr-FR')}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn-icon" onclick="openModeModalByIndex(${idx})" title="Commencer">▶️</button>
-          ${isAdmin ? `<button class="btn-icon" onclick="moveQuiz('${q.id}', '${esc(q.level || '')}')" title="Déplacer">➡️</button>` : ''}
-          ${isAdmin ? `<button class="btn-icon" onclick="openEditQuiz(${idx})" title="Modifier">✏️</button>` : ''}
-          ${isAdmin ? `<button class="btn-icon" onclick="deleteLibraryQuiz('${q.id}')" title="Supprimer">🗑️</button>` : ''}
+          <button class="btn-icon" onclick="event.stopPropagation(); openModeModalByIndex(${idx})" title="Commencer">▶️</button>
+          ${isAdmin ? `<button class="btn-icon" onclick="event.stopPropagation(); moveQuiz('${q.id}', '${esc(q.level || '')}')" title="Déplacer">➡️</button>` : ''}
+          ${isAdmin ? `<button class="btn-icon" onclick="event.stopPropagation(); openEditQuiz(${idx})" title="Modifier">✏️</button>` : ''}
+          ${isAdmin ? `<button class="btn-icon" onclick="event.stopPropagation(); deleteLibraryQuiz('${q.id}')" title="Supprimer">🗑️</button>` : ''}
         </div>
       </div>
     `;
   }).join('');
+  updateLibraryActionBar();
 }
 window.renderLibraryList = renderLibraryList;
 
@@ -1583,43 +1672,63 @@ async function loadLibrary() {
   const list = $('libraryList');
   list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
   selectedQuizIds.clear();
-  updateBulkActions();
+  updateLibraryActionBar();
   try {
     const data = await fetchWithAuth('/api/quizzes', null, 'GET');
     libraryCache = data.quizzes || [];
     renderLibraryList();
   } catch (e) {
     list.innerHTML = `<p style="color:var(--red)">Erreur : ${esc(e.message)}</p>`;
+    updateLibraryActionBar();
   }
 }
 
+// 🆕 Toggle de sélection d'un quiz (met à jour la barre)
 function toggleQuizSelection(id, isChecked) {
   if (isChecked) selectedQuizIds.add(id); else selectedQuizIds.delete(id);
-  updateBulkActions();
+  updateLibraryActionBar();
 }
 window.toggleQuizSelection = toggleQuizSelection;
 
-function updateBulkActions() {
-  const bulk = $('bulkActions');
-  if (!bulk) return;
-  bulk.style.display = (isAdmin && selectedQuizIds.size > 0) ? 'flex' : 'none';
-}
-
+// 🆕 Suppression groupée (via Supabase directement, comme demandé)
 async function deleteSelectedQuizzes() {
-  if (!isAdmin || selectedQuizIds.size === 0) return;
-  if (!confirm(`Supprimer les ${selectedQuizIds.size} quiz sélectionnés ?`)) return;
+  if (!isAdmin || !supabaseClient || selectedQuizIds.size === 0) return;
   const ids = Array.from(selectedQuizIds);
-  let successCount = 0;
-  for (const id of ids) {
-    try { await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE'); successCount++; }
-    catch (e) { console.error(`Erreur suppression ${id}:`, e); }
+  if (!confirm(`Supprimer les ${ids.length} quiz sélectionnés ? Cette action est irréversible.`)) return;
+  try {
+    const { error } = await supabaseClient.from('quizzes').delete().in('id', ids);
+    if (error) throw new Error(error.message);
+    alert(`✅ ${ids.length} quiz supprimé(s).`);
+    selectedQuizIds.clear();
+    updateLibraryActionBar();
+    await loadLibrary();
+  } catch (e) {
+    alert("❌ Erreur lors de la suppression : " + e.message);
   }
-  alert(`✅ ${successCount} quiz supprimé(s).`);
-  selectedQuizIds.clear();
-  updateBulkActions();
-  loadLibrary();
 }
 window.deleteSelectedQuizzes = deleteSelectedQuizzes;
+
+// 🆕 Déplacement groupé (via Supabase directement)
+async function moveSelectedQuizzes() {
+  if (!isAdmin || !supabaseClient || selectedQuizIds.size === 0) return;
+  const ids = Array.from(selectedQuizIds);
+  const newLevel = prompt(`Déplacer ${ids.length} quiz vers quel niveau ?\n\nLICENCE 1 / LICENCE 2 / LICENCE 3`, 'LICENCE 1');
+  if (!newLevel) return;
+  const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
+  const normalized = newLevel.trim().toUpperCase();
+  if (!validLevels.includes(normalized)) { alert("❌ Niveau invalide. Utilise LICENCE 1, LICENCE 2 ou LICENCE 3."); return; }
+  try {
+    const { error } = await supabaseClient.from('quizzes').update({ level: normalized }).in('id', ids);
+    if (error) throw new Error(error.message);
+    alert(`✅ ${ids.length} quiz déplacé(s) vers ${normalized}.`);
+    selectedQuizIds.clear();
+    updateLibraryActionBar();
+    await loadLibrary();
+  } catch (e) {
+    alert("❌ Erreur lors du déplacement : " + e.message);
+  }
+}
+window.moveSelectedQuizzes = moveSelectedQuizzes;
 
 // ============================================
 // FIX : Point d'entrée depuis la bibliothèque
@@ -1630,7 +1739,6 @@ window.openModeModalByIndex = (idx) => {
   window.currentQuizToStart = { title: q.title, questions: q.questions };
   pendingQuiz = window.currentQuizToStart;
   
-  // Reset l'UI de la modale → Mode Entraînement par défaut
   selectedMode = 'training';
   $('btnModeTraining').classList.add('selected');
   $('btnModeExam').classList.remove('selected');
@@ -1640,15 +1748,11 @@ window.openModeModalByIndex = (idx) => {
   $('modeModal').classList.add('show');
 };
 
-// ============================================
-// FIX : Point d'entrée depuis la génération IA
-// ============================================
 window.openModeModalByObj = (quizObj) => {
   if (!quizObj || !quizObj.questions) { alert("Quiz invalide."); return; }
   window.currentQuizToStart = { title: quizObj.title, questions: quizObj.questions };
   pendingQuiz = window.currentQuizToStart;
   
-  // Reset l'UI de la modale → Mode Entraînement par défaut
   selectedMode = 'training';
   $('btnModeTraining').classList.add('selected');
   $('btnModeExam').classList.remove('selected');
@@ -1656,18 +1760,11 @@ window.openModeModalByObj = (quizObj) => {
   $('modeModal').classList.add('show');
 };
 
-// ============================================
-// FIX : Fermer la modale NE DÉTRUIT PAS currentQuizToStart
-// ============================================
 window.closeModeModal = () => {
   $('modeModal').classList.remove('show');
   pendingQuiz = null;
-  // ⚠️ On NE touche PAS à window.currentQuizToStart ici !
 };
 
-// ============================================
-// FIX : Sélectionner un mode (le bouton Démarrer reste TOUJOURS visible)
-// ============================================
 window.selectQuizMode = (mode) => {
   selectedMode = mode;
   if (mode === 'training') {
@@ -1680,12 +1777,8 @@ window.selectQuizMode = (mode) => {
     $('examConfigDiv').classList.remove('hide');
     updateExamTimeLabel();
   }
-  // ⚠️ Le bouton #startQuizBtn n'est JAMAIS caché — il reste visible et actif
 };
 
-// ============================================
-// FIX : Mettre à jour le temps total affiché
-// ============================================
 window.updateExamTimeLabel = () => {
   const quiz = window.currentQuizToStart || pendingQuiz;
   if (!quiz || !quiz.questions) {
@@ -1701,14 +1794,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (timeInput) timeInput.addEventListener('input', updateExamTimeLabel);
 });
 
-// ============================================
-// ✅ FIX PRINCIPAL : startQuizWithMode()
-// - Vérification de sécurité en tête
-// - Capture locale AVANT closeModeModal()
-// - Démarre IMMÉDIATEMENT le quiz (Entraînement ou Examen)
-// ============================================
 window.startQuizWithMode = () => {
-  // Vérification de sécurité : le quiz doit être chargé
   const quiz = window.currentQuizToStart || pendingQuiz;
   if (!quiz || !quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
     alert("Erreur : le quiz n'a pas pu être chargé. Réessaie.");
@@ -1718,18 +1804,14 @@ window.startQuizWithMode = () => {
   const mode = selectedMode;
   const timePerQ = mode === 'exam' ? (parseFloat($('examTimeConfig').value) || 1) : 0;
   
-  // IMPORTANT : On calcule totalSeconds AVANT de fermer la modale
-  // (car closeModeModal met pendingQuiz à null)
   let totalSeconds = 0;
   if (mode === 'exam') {
     totalSeconds = Math.ceil(quiz.questions.length * timePerQ * 60);
   }
   
-  // On garde une copie locale puis on ferme la modale
   const quizToStart = quiz;
   closeModeModal();
   
-  // Démarrage immédiat du quiz
   if (mode === 'exam') {
     startExam(quizToStart, { mode: 'exam', timeLimitSeconds: totalSeconds });
   } else {
@@ -1741,6 +1823,9 @@ window.deleteLibraryQuiz = async (id) => {
   if (!confirm("Supprimer cet exercice de la bibliothèque ?")) return;
   try {
     await fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE');
+    // retirer aussi de la sélection si présent
+    selectedQuizIds.delete(id);
+    updateLibraryActionBar();
     loadLibrary();
   } catch (e) { alert("Erreur : " + e.message); }
 };
@@ -2317,7 +2402,6 @@ function startExam(quiz, options = { mode: 'training' }) {
     timeLimitSeconds: options.timeLimitSeconds || 0
   };
   
-  // Gestion du minuteur
   $('examTimerContainer').style.display = 'none';
   if (examTimer) clearInterval(examTimer);
 
