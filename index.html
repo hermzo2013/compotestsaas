@@ -826,6 +826,10 @@ let selectedMode = 'training'; // 'training' | 'exam'
 let examTimer = null;
 let totalExamTimeSeconds = 0;
 
+/* ← FIX BUG : Variable globale ROBUSTE contenant l'objet quiz à démarrer.
+   Elle n'est jamais écrasée par null lors de la fermeture de la modale. */
+window.currentQuizToStart = null;
+
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 function normalizeText(str) {
@@ -1130,7 +1134,6 @@ async function loadCourses() {
       return;
     }
     coursesCache = data || [];
-    // ← FIX #2 : suppression du console.log de debug qui polluait la console en production
     selectedCourseIds.clear();
     renderCourses();
   } catch (e) {
@@ -1601,11 +1604,16 @@ async function deleteSelectedQuizzes() {
 }
 window.deleteSelectedQuizzes = deleteSelectedQuizzes;
 
-// ← MODIF EXAMEN BLANC : Nouveau point d'entrée depuis la bibliothèque
+// ============================================
+// FIX BUG : Point d'entrée depuis la bibliothèque
+// - Stocke l'objet complet dans window.currentQuizToStart ET pendingQuiz
+// ============================================
 window.openModeModalByIndex = (idx) => {
   const q = libraryCache[idx];
-  if (!q) return alert("Exercice introuvable.");
-  pendingQuiz = { title: q.title, questions: q.questions };
+  if (!q) { alert("Exercice introuvable."); return; }
+  // ✅ Stockage robuste de l'objet quiz complet
+  window.currentQuizToStart = { title: q.title, questions: q.questions };
+  pendingQuiz = window.currentQuizToStart;
   
   // Reset l'UI de la modale
   selectedMode = 'training';
@@ -1619,10 +1627,14 @@ window.openModeModalByIndex = (idx) => {
   $('modeModal').classList.add('show');
 };
 
-/* ← FIX : Fonction manquante pour lancer le mode par objet (utilisé après génération IA) */
+// ============================================
+// FIX BUG : Point d'entrée depuis la génération IA
+// ============================================
 window.openModeModalByObj = (quizObj) => {
-  if (!quizObj) return;
-  pendingQuiz = { title: quizObj.title, questions: quizObj.questions };
+  if (!quizObj || !quizObj.questions) { alert("Quiz invalide."); return; }
+  // ✅ Stockage robuste
+  window.currentQuizToStart = { title: quizObj.title, questions: quizObj.questions };
+  pendingQuiz = window.currentQuizToStart;
   
   // Reset l'UI de la modale
   selectedMode = 'training';
@@ -1632,13 +1644,19 @@ window.openModeModalByObj = (quizObj) => {
   $('modeModal').classList.add('show');
 };
 
-// ← MODIF EXAMEN BLANC : Fermer la modale
+// ============================================
+// FIX BUG : Fermer la modale NE DÉTRUIT PAS currentQuizToStart
+// (on ne vide que pendingQuiz pour compatibilité)
+// ============================================
 window.closeModeModal = () => {
   $('modeModal').classList.remove('show');
   pendingQuiz = null;
+  // ⚠️ On NE touche PAS à window.currentQuizToStart ici !
 };
 
-// ← MODIF EXAMEN BLANC : Sélectionner un mode
+// ============================================
+// Sélectionner un mode
+// ============================================
 window.selectQuizMode = (mode) => {
   selectedMode = mode;
   if (mode === 'training') {
@@ -1653,11 +1671,17 @@ window.selectQuizMode = (mode) => {
   }
 };
 
-// ← MODIF EXAMEN BLANC : Mettre à jour le temps total affiché
+// ============================================
+// Mettre à jour le temps total affiché
+// ============================================
 window.updateExamTimeLabel = () => {
-  if (!pendingQuiz) return;
+  const quiz = window.currentQuizToStart || pendingQuiz;
+  if (!quiz || !quiz.questions) {
+    $('totalTimeLabel').textContent = '0 min';
+    return;
+  }
   const minPerQ = parseFloat($('examTimeConfig').value) || 1;
-  const totalMinutes = Math.ceil(pendingQuiz.questions.length * minPerQ);
+  const totalMinutes = Math.ceil(quiz.questions.length * minPerQ);
   $('totalTimeLabel').textContent = `${totalMinutes} min`;
 };
 document.addEventListener('DOMContentLoaded', () => {
@@ -1665,22 +1689,38 @@ document.addEventListener('DOMContentLoaded', () => {
   if (timeInput) timeInput.addEventListener('input', updateExamTimeLabel);
 });
 
-// ← MODIF EXAMEN BLANC : Lancer le quiz
+// ============================================
+// ✅ FIX PRINCIPAL : startQuizWithMode()
+// - Vérification de sécurité en tête
+// - Capture locale AVANT closeModeModal()
+// - Utilise window.currentQuizToStart
+// ============================================
 window.startQuizWithMode = () => {
-  if (!pendingQuiz || !pendingQuiz.questions) {
+  // ✅ Vérification de sécurité demandée
+  const quiz = window.currentQuizToStart || pendingQuiz;
+  if (!quiz || !quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
     alert("Erreur : le quiz n'a pas pu être chargé. Réessaie.");
     return;
   }
-  const mode = selectedMode;
-  const timePerQ = mode === 'exam' ? parseFloat($('examTimeConfig').value) || 1 : 0;
   
+  const mode = selectedMode;
+  const timePerQ = mode === 'exam' ? (parseFloat($('examTimeConfig').value) || 1) : 0;
+  
+  // ✅ IMPORTANT : On calcule totalSeconds AVANT de fermer la modale
+  // (car closeModeModal met pendingQuiz à null)
+  let totalSeconds = 0;
+  if (mode === 'exam') {
+    totalSeconds = Math.ceil(quiz.questions.length * timePerQ * 60);
+  }
+  
+  // ✅ On garde une copie locale et on ferme la modale
+  const quizToStart = quiz;
   closeModeModal();
   
   if (mode === 'exam') {
-    const totalSeconds = Math.ceil(pendingQuiz.questions.length * timePerQ * 60);
-    startExam(pendingQuiz, { mode: 'exam', timeLimitSeconds: totalSeconds });
+    startExam(quizToStart, { mode: 'exam', timeLimitSeconds: totalSeconds });
   } else {
-    startExam(pendingQuiz, { mode: 'training' });
+    startExam(quizToStart, { mode: 'training' });
   }
 };
 
@@ -2253,7 +2293,6 @@ $('extractTestBtn').addEventListener('click', async () => {
 // ==========================================
 // 📝 EXAMEN
 // ==========================================
-/* ← MODIF EXAMEN BLANC : Fonction startExam mise à jour pour accepter le mode */
 function startExam(quiz, options = { mode: 'training' }) {
   examState = {
     title: quiz.title,
@@ -2301,7 +2340,6 @@ function startExam(quiz, options = { mode: 'training' }) {
   renderExamQuestion();
 }
 
-/* ← MODIF EXAMEN BLANC : Mettre à jour l'affichage du chrono */
 function updateTimerUI() {
   if (!examState) return;
   const mins = Math.floor(examState.timeLeft / 60);
