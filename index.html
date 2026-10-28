@@ -824,7 +824,6 @@ let editingCourseId = null;
 let pendingQuiz = null;
 let selectedMode = 'training'; // 'training' | 'exam'
 let examTimer = null;
-let examTimeLeft = 0;
 let totalExamTimeSeconds = 0;
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -1617,6 +1616,19 @@ window.openModeModalByIndex = (idx) => {
   // Mettre à jour le label de temps par défaut
   updateExamTimeLabel();
   
+  $('modeModal').classList.add('show');
+};
+
+/* ← FIX : Fonction manquante pour lancer le mode par objet (utilisé après génération IA) */
+window.openModeModalByObj = (quizObj) => {
+  if (!quizObj) return;
+  pendingQuiz = { title: quizObj.title, questions: quizObj.questions };
+  
+  // Reset l'UI de la modale
+  selectedMode = 'training';
+  $('btnModeTraining').classList.add('selected');
+  $('btnModeExam').classList.remove('selected');
+  $('examConfigDiv').classList.add('hide');
   $('modeModal').classList.add('show');
 };
 
