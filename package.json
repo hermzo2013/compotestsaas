@@ -1,15 +1,23 @@
 {
-  "name": "comptest-saas-v4",
-  "version": "4.0.0",
+  "name": "comptest",
+  "version": "1.0.0",
   "private": true,
-  "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "build": "echo 'no build step'",
+    "sync": "npx cap sync android",
+    "open": "npx cap open android",
+    "run:android": "npx cap run android"
   },
   "dependencies": {
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "openai": "^4.77.0"
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/filesystem": "^6.0.0",
+    "@capacitor/preferences": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0",
+    "@supabase/supabase-js": "^2.118.0",
+    "express-rate-limit": "^8.7.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
   }
 }
