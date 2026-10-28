@@ -799,7 +799,7 @@ button.danger:hover{background:#FEE2E2}
 'use strict';
 const $=id=>document.getElementById(id);
 
-const API_BASE = 'https://compotestsaas.onrender.com';
+const API_BASE = 'https://compotestsaas.onrender.com'; // ← Vérifié avec 'p'
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let examState = null;
@@ -1667,7 +1667,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ← MODIF EXAMEN BLANC : Lancer le quiz
 window.startQuizWithMode = () => {
-  if (!pendingQuiz) return;
+  if (!pendingQuiz || !pendingQuiz.questions) {
+    alert("Erreur : le quiz n'a pas pu être chargé. Réessaie.");
+    return;
+  }
   const mode = selectedMode;
   const timePerQ = mode === 'exam' ? parseFloat($('examTimeConfig').value) || 1 : 0;
   
