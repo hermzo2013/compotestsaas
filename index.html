@@ -555,7 +555,8 @@ button.danger:hover{background:#FEE2E2}
         </div>
         <div style="grid-column:1/-1"><label>Mot de passe</label>
           <div class="auth-input-group" style="margin:0">
-            <input id="newPassword" type="text" required minlength="6" placeholder="6 caractères minimum">
+            <!-- ← FIX #1 : type="text" → type="password" pour masquer le mot de passe par défaut -->
+            <input id="newPassword" type="password" required minlength="6" placeholder="6 caractères minimum">
             <button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('newPassword', this)"><i class='bx bx-show'></i></button>
           </div>
         </div>
@@ -999,8 +1000,7 @@ async function loadCourses() {
       return;
     }
     coursesCache = data || [];
-    // ← DEBUG TEMPORAIRE (à retirer plus tard)
-    console.log('📚 Cours chargés :', coursesCache.map(c => ({ id: c.id, title: c.title, video_url: c.video_url })));
+    // ← FIX #2 : suppression du console.log de debug qui polluait la console en production
     selectedCourseIds.clear();
     renderCourses();
   } catch (e) {
@@ -1148,7 +1148,7 @@ async function moveQuiz(quizId, currentLevel) {
 window.moveQuiz = moveQuiz;
 
 // ==========================================
-// ➕ AJOUT DE COURS (vérification stricte)
+// ➕ AJOUT DE COURS
 // ==========================================
 async function addCourse() {
   if (!isAdmin || !supabaseClient) return;
@@ -1191,7 +1191,6 @@ async function addCourse() {
     const insertPayload = { title, level, file_url: urlData.publicUrl, video_url: videoUrl || null };
     const { data: inserted, error: dbError } = await supabaseClient.from('courses').insert(insertPayload).select();
     if (dbError) throw new Error("Erreur DB : " + dbError.message);
-    // Vérification stricte : l'insert doit renvoyer 1 ligne
     if (!inserted || inserted.length === 0) {
       throw new Error("Le cours n'a pas pu être vérifié après l'INSERT (0 ligne retournée). Vérifie les policies RLS INSERT/SELECT sur la table courses.");
     }
@@ -1217,7 +1216,7 @@ async function addCourse() {
 window.addCourse = addCourse;
 
 // ==========================================
-// ✏️ ÉDITION DE COURS (vérification stricte)
+// ✏️ ÉDITION DE COURS
 // ==========================================
 function openEditCourse(courseId) {
   if (!isAdmin) return;
@@ -1333,7 +1332,6 @@ async function saveEditCourse() {
     const { data: updated, error: updateError } = await supabaseClient.from('courses').update(updatePayload).eq('id', editingCourseId).select();
     if (updateError) throw new Error("Erreur DB : " + updateError.message);
 
-    // ← VÉRIFICATION STRICTE : si 0 ligne retournée = policy RLS UPDATE manquante
     if (!updated || updated.length === 0) {
       throw new Error(
         "Aucune ligne modifiée. La mise à jour a été silencieusement rejetée.\n\n" +
