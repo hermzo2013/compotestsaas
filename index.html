@@ -393,7 +393,8 @@ button.danger:hover{background:#FEE2E2}
 /* ← MODIF EXAMEN BLANC : Styles pour la modale de choix du mode */
 #modeModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.6);z-index:4800;align-items:center;justify-content:center;padding:20px}
 #modeModal.show{display:flex}
-.mode-modal-content{background:#fff;border-radius:20px;width:100%;max-width:450px;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;}
+/* ← FIX : max-height + overflow pour garantir que le bouton Démarrer reste accessible sur petits écrans */
+.mode-modal-content{background:#fff;border-radius:20px;width:100%;max-width:450px;max-height:90vh;overflow-y:auto;padding:30px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;display:flex;flex-direction:column;}
 .mode-modal-content h2{margin-top:0;color:var(--exam-navy);font-size:22px;}
 .mode-modal-content p{color:var(--muted);font-size:14px;margin-bottom:25px;line-height:1.5;}
 .mode-btn-container{display:flex;flex-direction:column;gap:15px;}
@@ -406,6 +407,20 @@ button.danger:hover{background:#FEE2E2}
 #examTimerContainer{display:none;align-items:center;gap:5px;font-weight:800;font-size:16px;background:rgba(255,255,255,0.2);padding:4px 12px;border-radius:8px;color:#fff;}
 #examTimerContainer.warning{color:#fca5a5;background:rgba(239, 68, 68, 0.2);animation:pulseTimer 1s infinite;}
 @keyframes pulseTimer{0%,100%{opacity:1;}50%{opacity:0.6;}}
+
+/* ← FIX : Barre d'actions sticky en bas de la modale (toujours visible, peu importe le mode) */
+.mode-modal-actions{
+  display:flex;
+  gap:10px;
+  margin-top:25px;
+  padding-top:16px;
+  border-top:1px solid var(--line);
+  position:sticky;
+  bottom:0;
+  background:#fff;
+  padding-bottom:4px;
+}
+.mode-modal-actions button{flex:1;margin:0;}
 </style>
 </head><body>
 
@@ -710,7 +725,7 @@ button.danger:hover{background:#FEE2E2}
   </div>
 </div>
 
-<!-- ← MODIF EXAMEN BLANC : Modale de choix du mode -->
+<!-- ← MODIF EXAMEN BLANC : Modale de choix du mode (FIX : bouton Démarrer toujours visible via .mode-modal-actions sticky) -->
 <div id="modeModal">
   <div class="mode-modal-content">
     <h2>Choisir le mode</h2>
@@ -732,15 +747,17 @@ button.danger:hover{background:#FEE2E2}
       </div>
     </div>
     
+    <!-- ← Bloc durée : visible UNIQUEMENT en mode Examen -->
     <div id="examConfigDiv" class="hide" style="margin-top:20px; text-align:left;">
       <label style="font-size:13px; margin-top:0;">Temps par question (en minutes) :</label>
       <input type="number" id="examTimeConfig" value="1" min="0.5" max="5" step="0.5" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line);">
-      <div style="font-size:12px; color:var(--muted); margin-top:5px;">Temps total : <b id="totalTimeLabel">50 min</b></p>
+      <div style="font-size:12px; color:var(--muted); margin-top:5px;">Temps total : <b id="totalTimeLabel">50 min</b></div>
     </div>
 
-    <div style="display:flex; gap:10px; margin-top:25px;">
-      <button class="ghost" style="flex:1" onclick="closeModeModal()">Annuler</button>
-      <button class="success" style="flex:1" id="startQuizBtn" onclick="startQuizWithMode()">Démarrer</button>
+    <!-- ← FIX : Bouton Démarrer TOUJOURS visible (sticky bottom) -->
+    <div class="mode-modal-actions">
+      <button class="ghost" type="button" onclick="closeModeModal()">Annuler</button>
+      <button class="success" type="button" id="startQuizBtn" onclick="startQuizWithMode()">Démarrer</button>
     </div>
   </div>
 </div>
@@ -799,7 +816,7 @@ button.danger:hover{background:#FEE2E2}
 'use strict';
 const $=id=>document.getElementById(id);
 
-const API_BASE = 'https://compotestsaas.onrender.com'; // ← Vérifié avec 'p'
+const API_BASE = 'https://compotestsaas.onrender.com';
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 let examState = null;
@@ -1605,38 +1622,33 @@ async function deleteSelectedQuizzes() {
 window.deleteSelectedQuizzes = deleteSelectedQuizzes;
 
 // ============================================
-// FIX BUG : Point d'entrée depuis la bibliothèque
-// - Stocke l'objet complet dans window.currentQuizToStart ET pendingQuiz
+// FIX : Point d'entrée depuis la bibliothèque
 // ============================================
 window.openModeModalByIndex = (idx) => {
   const q = libraryCache[idx];
   if (!q) { alert("Exercice introuvable."); return; }
-  // ✅ Stockage robuste de l'objet quiz complet
   window.currentQuizToStart = { title: q.title, questions: q.questions };
   pendingQuiz = window.currentQuizToStart;
   
-  // Reset l'UI de la modale
+  // Reset l'UI de la modale → Mode Entraînement par défaut
   selectedMode = 'training';
   $('btnModeTraining').classList.add('selected');
   $('btnModeExam').classList.remove('selected');
   $('examConfigDiv').classList.add('hide');
   
-  // Mettre à jour le label de temps par défaut
   updateExamTimeLabel();
-  
   $('modeModal').classList.add('show');
 };
 
 // ============================================
-// FIX BUG : Point d'entrée depuis la génération IA
+// FIX : Point d'entrée depuis la génération IA
 // ============================================
 window.openModeModalByObj = (quizObj) => {
   if (!quizObj || !quizObj.questions) { alert("Quiz invalide."); return; }
-  // ✅ Stockage robuste
   window.currentQuizToStart = { title: quizObj.title, questions: quizObj.questions };
   pendingQuiz = window.currentQuizToStart;
   
-  // Reset l'UI de la modale
+  // Reset l'UI de la modale → Mode Entraînement par défaut
   selectedMode = 'training';
   $('btnModeTraining').classList.add('selected');
   $('btnModeExam').classList.remove('selected');
@@ -1645,8 +1657,7 @@ window.openModeModalByObj = (quizObj) => {
 };
 
 // ============================================
-// FIX BUG : Fermer la modale NE DÉTRUIT PAS currentQuizToStart
-// (on ne vide que pendingQuiz pour compatibilité)
+// FIX : Fermer la modale NE DÉTRUIT PAS currentQuizToStart
 // ============================================
 window.closeModeModal = () => {
   $('modeModal').classList.remove('show');
@@ -1655,7 +1666,7 @@ window.closeModeModal = () => {
 };
 
 // ============================================
-// Sélectionner un mode
+// FIX : Sélectionner un mode (le bouton Démarrer reste TOUJOURS visible)
 // ============================================
 window.selectQuizMode = (mode) => {
   selectedMode = mode;
@@ -1669,10 +1680,11 @@ window.selectQuizMode = (mode) => {
     $('examConfigDiv').classList.remove('hide');
     updateExamTimeLabel();
   }
+  // ⚠️ Le bouton #startQuizBtn n'est JAMAIS caché — il reste visible et actif
 };
 
 // ============================================
-// Mettre à jour le temps total affiché
+// FIX : Mettre à jour le temps total affiché
 // ============================================
 window.updateExamTimeLabel = () => {
   const quiz = window.currentQuizToStart || pendingQuiz;
@@ -1693,10 +1705,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // ✅ FIX PRINCIPAL : startQuizWithMode()
 // - Vérification de sécurité en tête
 // - Capture locale AVANT closeModeModal()
-// - Utilise window.currentQuizToStart
+// - Démarre IMMÉDIATEMENT le quiz (Entraînement ou Examen)
 // ============================================
 window.startQuizWithMode = () => {
-  // ✅ Vérification de sécurité demandée
+  // Vérification de sécurité : le quiz doit être chargé
   const quiz = window.currentQuizToStart || pendingQuiz;
   if (!quiz || !quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
     alert("Erreur : le quiz n'a pas pu être chargé. Réessaie.");
@@ -1706,17 +1718,18 @@ window.startQuizWithMode = () => {
   const mode = selectedMode;
   const timePerQ = mode === 'exam' ? (parseFloat($('examTimeConfig').value) || 1) : 0;
   
-  // ✅ IMPORTANT : On calcule totalSeconds AVANT de fermer la modale
+  // IMPORTANT : On calcule totalSeconds AVANT de fermer la modale
   // (car closeModeModal met pendingQuiz à null)
   let totalSeconds = 0;
   if (mode === 'exam') {
     totalSeconds = Math.ceil(quiz.questions.length * timePerQ * 60);
   }
   
-  // ✅ On garde une copie locale et on ferme la modale
+  // On garde une copie locale puis on ferme la modale
   const quizToStart = quiz;
   closeModeModal();
   
+  // Démarrage immédiat du quiz
   if (mode === 'exam') {
     startExam(quizToStart, { mode: 'exam', timeLimitSeconds: totalSeconds });
   } else {
@@ -2234,7 +2247,6 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
     }
   }
   if (quizzesToStart.length > 0) {
-    // ← MODIF EXAMEN BLANC : Passe par la modale de sélection du mode après création
     openModeModalByObj(quizzesToStart[0]);
     if (quizzesToStart.length > 1) alert(`Le fichier a été scindé en ${quizzesToStart.length} quiz. Le premier va commencer. Les autres sont disponibles dans la Bibliothèque !`);
   } else throw new Error("Aucun quiz n'a pu être sauvegardé.");
@@ -2301,7 +2313,7 @@ function startExam(quiz, options = { mode: 'training' }) {
     locked: new Array(quiz.questions.length).fill(false),
     currentIndex: 0,
     submitted: false,
-    mode: options.mode, // 'training' | 'exam'
+    mode: options.mode,
     timeLimitSeconds: options.timeLimitSeconds || 0
   };
   
@@ -2327,7 +2339,7 @@ function startExam(quiz, options = { mode: 'training' }) {
       if (examState.timeLeft <= 0) {
         clearInterval(examTimer);
         alert("⏰ Temps écoulé ! La copie va être soumise automatiquement.");
-        $('examSubmitBtn').click(); // Déclenche la soumission existante
+        $('examSubmitBtn').click();
       }
     }, 1000);
   }
@@ -2387,7 +2399,6 @@ function renderExamQuestion() {
   const ua = examState.answers[i];
   const total = examState.questions.length;
   
-  /* ← MODIF EXAMEN BLANC : On ne verrouille JAMAIS en mode examen */
   const isLocked = examState.mode === 'exam' ? examState.submitted : (examState.locked[i] || examState.submitted);
 
   const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
@@ -2411,13 +2422,11 @@ function renderExamQuestion() {
 
   if (isShort) {
     html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${isLocked ? 'disabled' : ''} placeholder="Votre réponse...">`;
-    /* En mode entraînement, bouton de validation manuelle */
     if (!isLocked && examState.mode === 'training') html += `<button class="validate-btn" id="lockTextBtn">🔒 Valider ma réponse</button>`;
   } else if (q.options && q.options.length > 0) {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
       const isSelected = isMulti ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
-      /* On ne montre le "correct" ou "wrong" que si on est verrouillé (fin d'examen ou mode entraînement) */
       const isCorrectOption = isMulti ? (Array.isArray(q.correct) && q.correct.includes(j)) : (q.correct === j);
 
       let cls = 'exam-opt';
@@ -2426,7 +2435,7 @@ function renderExamQuestion() {
         if (isCorrectOption) cls += ' correct';
         else if (isSelected && !isCorrectOption) cls += ' wrong';
       } else if (isSelected) {
-        cls += ' selected'; // Bleu. Utilisé en mode examen pour montrer la sélection sans verrouiller.
+        cls += ' selected';
       }
 
       const disabledAttr = isLocked ? 'disabled' : '';
@@ -2439,13 +2448,11 @@ function renderExamQuestion() {
     if (isMulti && !isLocked && examState.mode === 'training') html += `<button class="validate-btn" id="lockMultiBtn">🔒 Valider ma sélection</button>`;
   }
 
-  /* ← MODIF EXAMEN BLANC : Pas d'indice en mode Examen */
   if (!isLocked && q.explanation && examState.mode === 'training') {
     html += `<button class="hint-btn" onclick="document.getElementById('hintBox').classList.toggle('show')">💡 Voir un indice</button>`;
     html += `<div class="hint-box" id="hintBox"><b>Indice :</b> ${esc(q.explanation)}</div>`;
   }
 
-  /* ← MODIF EXAMEN BLANC : On n'affiche les corrections QUE si c'est soumis */
   if (isLocked) {
     const isOk = checkAnswer(q, ua);
     let correctStr = '';
@@ -2467,7 +2474,6 @@ function renderExamQuestion() {
       const textInp = $('textInput');
       textInp.addEventListener('input', (e) => { examState.answers[i] = e.target.value; });
       
-      /* ← MODIF EXAMEN BLANC : Le bouton de verrouillage n'apparaît qu'en mode entraînement */
       if (examState.mode === 'training') {
         $('lockTextBtn').addEventListener('click', () => {
           const v = textInp.value.trim();
@@ -2496,7 +2502,6 @@ function renderExamQuestion() {
       document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
         inp.addEventListener('change', () => {
           examState.answers[i] = parseInt(inp.value);
-          /* ← MODIF EXAMEN BLANC : On ne verrouille que si on est en mode entraînement */
           if (examState.mode === 'training') {
             examState.locked[i] = true;
             renderExamQuestion();
@@ -2532,8 +2537,8 @@ $('examSubmitBtn').addEventListener('click', async () => {
   if(!confirm('Soumettre la compo et voir le score ?')) return;
 
   examState.submitted = true;
-  if (examTimer) { clearInterval(examTimer); examTimer = null; } // ← Stop timer à la soumission
-  $('examTimerContainer').style.display = 'none'; // Cache le timer
+  if (examTimer) { clearInterval(examTimer); examTimer = null; }
+  $('examTimerContainer').style.display = 'none';
 
   let correctCount = 0;
   examState.questions.forEach((q, i) => { if (checkAnswer(q, examState.answers[i])) correctCount++; });
