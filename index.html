@@ -99,6 +99,8 @@ button.danger:hover{background:#FEE2E2}
    ========================================== */
 #tab-library,
 #tab-library .panel,
+#tab-courses,
+#tab-courses .panel,
 .tab-content,
 .wrap,
 #mainApp {
@@ -186,7 +188,7 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
   flex-shrink:0;
 }
 
-.course-accordion{margin-bottom:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;transition:box-shadow 0.2s;}
+.course-accordion{margin-bottom:12px;border:1px solid var(--line);border-radius:12px;overflow:visible;background:#fff;transition:box-shadow 0.2s;}
 .course-accordion:hover{box-shadow:0 2px 8px rgba(16,185,129,0.08);}
 .course-accordion summary{padding:14px 18px;background:#F9FAFB;cursor:pointer;font-weight:800;font-size:15px;color:var(--navy);display:flex;align-items:center;gap:10px;list-style:none;user-select:none;transition:background 0.2s;border-radius:12px;}
 .course-accordion summary::-webkit-details-marker{display:none;}
@@ -197,7 +199,10 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
 .course-accordion .course-count{margin-left:auto;background:#D1FAE5;color:var(--navy);font-size:11px;font-weight:800;padding:2px 10px;border-radius:99px;}
 .course-accordion-body{padding:8px 12px 12px;}
 
-.course-toolbar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:#FFFBEB;border-bottom:1px solid #FCD34D;flex-wrap:wrap;}
+.course-toolbar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:#FFFBEB;border-bottom:1px solid #FCD34D;flex-wrap:wrap;position:-webkit-sticky;position:sticky;top:0;z-index:1000;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);}
+/* Fallback fixed (mobile / WebView) : même logique que la bibliothèque */
+body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 !important;left:0 !important;right:0 !important;margin:0 !important;border-radius:0 !important;border-left:0 !important;border-right:0 !important;border-top:0 !important;padding-top:calc(10px + env(safe-area-inset-top)) !important;z-index:1000 !important;}
+.course-toolbar-ph{display:none;}
 .course-toolbar.visible{display:flex;}
 .course-toolbar .selected-count{font-size:12px;font-weight:700;color:#92400E;flex-shrink:0;}
 .course-toolbar .toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;}
@@ -331,7 +336,15 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
 .edit-q-type{display:inline-block;background:#D1FAE5;color:#065F46;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:6px;text-transform:uppercase}
 .edit-opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:#fff;border:1px solid var(--line);margin-bottom:6px;cursor:pointer}
 .edit-opt:hover{background:#F0FDF4;border-color:#A7F3D0}
-.edit-opt input{margin:0;width:18px;height:18px;flex-shrink:0;accent-color:#10B981}
+.edit-opt input[type="radio"],.edit-opt input[type="checkbox"]{margin:0;width:18px;height:18px;flex-shrink:0;accent-color:#10B981;cursor:pointer}
+.edit-opt{cursor:default}
+.edit-q-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;font-weight:800;color:#1E293B}
+.edit-q-input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #D1D5DB;border-radius:8px;font-size:14px;font-weight:600;font-family:inherit;resize:vertical;min-height:44px;margin-bottom:10px;background:#fff}
+.edit-opt-text{flex:1;min-width:0;width:auto;box-sizing:border-box;padding:8px 10px;border:1px solid #D1D5DB;border-radius:8px;font-size:14px;background:#fff}
+.edit-opt-del{flex-shrink:0;width:auto;background:#FEF2F2;color:var(--red);border:1px solid #FECACA;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:700;cursor:pointer}
+.edit-opt-del:hover{background:#FEE2E2}
+.edit-add-opt{width:auto;margin-top:4px;background:#ECFDF5;color:var(--navy);border:1px solid #A7F3D0;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.edit-add-opt:hover{background:#D1FAE5}
 .edit-opt label{margin:0;font-size:14px;font-weight:400;cursor:pointer;flex:1;color:#1E293B}
 .edit-opt.is-correct{background:#ECFDF5;border-color:var(--green)}
 .edit-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
@@ -1003,7 +1016,7 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
 <div id="editQuizModal">
   <div class="edit-modal-content">
     <div class="edit-modal-header"><h2 style="margin:0" id="editQuizTitle">✏️ Éditer le quiz</h2><button class="ghost" onclick="document.getElementById('editQuizModal').classList.remove('show')">✖ Fermer</button></div>
-    <p style="color:var(--muted);font-size:13px;margin-top:0">Cochez la ou les bonnes réponses pour chaque question. Pour les QCM multi, plusieurs réponses sont possibles.</p>
+    <p style="color:var(--muted);font-size:13px;margin-top:0">Modifiez le texte des questions et des options, cochez la ou les bonnes réponses, ajoutez ou supprimez des options. Pour les QCM multi, plusieurs réponses sont possibles.</p>
     <div id="editQuizBody"></div>
     <div class="edit-footer">
       <button class="ghost" onclick="document.getElementById('editQuizModal').classList.remove('show')">Annuler</button>
@@ -1132,6 +1145,101 @@ const $=id=>document.getElementById(id);
 
 const API_BASE = 'https://compotestsaas.onrender.com';
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+/* =====================================================================
+   RÉVISIO — Extraction du texte d'un PDF (navigateur, pdf.js 3.x)
+   - regroupe les morceaux de texte par ligne (comme avant)
+   - recolle les mots que pdf.js coupe en deux ("vra i", "cé réales") grâce à l'écart réel entre morceaux
+   - lit les BONNES RÉPONSES COLORÉES (rouge / vert) : un morceau coloré est précédé de "✓ "
+     (la couleur n'existe pas dans getTextContent : on rend la page sur un canvas hors écran
+      et on regarde les pixels sous chaque morceau de texte)
+   ===================================================================== */
+async function detectAnswerColorItems(pdfjsLib, page, items, createCanvas, scale, renderFn) {
+  scale = scale || 1.5;
+  const viewport = page.getViewport({ scale });
+  const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (renderFn) await renderFn(ctx, canvas, viewport);
+  else await page.render({ canvasContext: ctx, viewport }).promise;
+  const W = canvas.width, H = canvas.height;
+  const isRed = (r, g, b) => r >= 150 && g <= 100 && b <= 100 && r - g >= 70;
+  const isGreen = (r, g, b) => g >= 140 && r <= 170 && b <= 120 && g - r >= 30 && g - b >= 50;
+  const flags = items.map(it => {
+    if (!it.str || !it.str.trim()) return false;
+    const m = pdfjsLib.Util.transform(viewport.transform, it.transform);
+    const fontH = Math.max(6, Math.hypot(m[2], m[3]));
+    const x0 = Math.max(0, Math.floor(m[4])), x1 = Math.min(W, Math.ceil(m[4] + Math.max(2, it.width * scale)));
+    const y0 = Math.max(0, Math.floor(m[5] - fontH * 0.85)), y1 = Math.min(H, Math.ceil(m[5] + fontH * 0.2));
+    if (x1 - x0 < 2 || y1 - y0 < 2) return false;
+    const d = ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
+    let ink = 0, red = 0, green = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      if (r + g + b > 690) continue;            // quasi blanc
+      ink++;
+      if (isRed(r, g, b)) red++; else if (isGreen(r, g, b)) green++;
+    }
+    return ink >= 6 && ((red >= 4 && red / ink >= 0.45) || (green >= 4 && green / ink >= 0.45));
+  });
+  canvas.width = 0; canvas.height = 0;          // libère la mémoire
+  return flags;
+}
+
+/** Colle les morceaux d'une ligne : espace seulement s'il y a un vrai écart entre deux morceaux */
+function joinPdfLinePieces(pieces) {
+  let out = '';
+  for (let i = 0; i < pieces.length; i++) {
+    const cur = pieces[i], prev = pieces[i - 1];
+    if (i === 0) { out += cur.str; continue; }
+    const needSpace = /\s$/.test(out) || /^\s/.test(cur.str) || cur.str.startsWith('✓')
+      ? false
+      : (cur.x - (prev.x + prev.width) > Math.max(0.8, prev.size * 0.18)) || cur.x < prev.x;
+    const forced = cur.str.startsWith('✓');
+    out += (forced ? ' ' : (needSpace ? ' ' : '')) + cur.str;
+  }
+  return out;
+}
+
+async function extractPdfText(pdfjsLib, pdf, opts) {
+  opts = opts || {};
+  const createCanvas = opts.createCanvas || ((w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; });
+  const readColors = opts.readColors !== false && pdf.numPages <= (opts.maxColorPages || 40);
+  const pages = [];
+  let markedItems = 0;
+  for (let p = 1; p <= pdf.numPages; p++) {
+    if (opts.onProgress) opts.onProgress(p, pdf.numPages);
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const items = content.items.filter(i => typeof i.str === 'string').map(i => ({
+      str: i.str, x: i.transform[4], y: i.transform[5], width: i.width || 0,
+      size: Math.hypot(i.transform[2], i.transform[3]) || 10, transform: i.transform
+    }));
+    let flags = null;
+    if (readColors) {
+      try {
+        flags = await detectAnswerColorItems(pdfjsLib, page, items, createCanvas, 1.5, opts.renderPage ? (ctx, cv, vp) => opts.renderPage(page, p, ctx, cv, vp) : null);
+        const colored = flags.filter(Boolean).length, texty = items.filter(i => i.str.trim()).length || 1;
+        if (colored / texty > 0.35) flags = null;      // page presque entièrement colorée : ce n'est pas un marquage de réponses
+      } catch (e) { flags = null; }
+    }
+    const lines = [];
+    let currentY = null, current = [], prevColored = false;
+    items.forEach((it, idx) => {
+      const colored = !!(flags && flags[idx]);
+      const str = (colored && !prevColored && it.str.trim() ? '✓ ' : '') + it.str;
+      if (colored && it.str.trim()) markedItems++;
+      const piece = { str, x: it.x, width: it.width, size: it.size };
+      if (currentY === null || Math.abs(it.y - currentY) < 3) { current.push(piece); currentY = currentY === null ? it.y : currentY; }
+      else { lines.push(joinPdfLinePieces(current)); current = [piece]; currentY = it.y; prevColored = false; }
+      if (it.str.trim()) prevColored = colored;
+    });
+    if (current.length) lines.push(joinPdfLinePieces(current));
+    pages.push(lines.join('\n'));
+  }
+  return { text: pages.join('\n'), markedItems };
+}
+
+
 
 let examState = null;
 let supabaseClient = null;
@@ -1523,6 +1631,7 @@ function renderCourses() {
             <button class="btn-delete" onclick="event.stopPropagation(); deleteSelectedCourses('${levelName}');" ${!hasSelection ? 'disabled' : ''}>🗑️ Supprimer</button>
           </div>
         </div>
+        <div class="course-toolbar-ph"></div>
         <div class="course-accordion-body">
           ${levelCourses.map(c => `
             <div class="course-item">
@@ -1551,8 +1660,51 @@ function renderCourses() {
       </details>
     `;
   }).join('');
+  updateCourseToolbarsFixed();
 }
 window.renderCourses = renderCourses;
+
+// Barre d'actions des cours : même logique que la bibliothèque.
+// Sticky natif (CSS) ; en mode fallback (body.library-bar-fixed) on passe en position: fixed
+// uniquement pour l'accordéon visible à l'écran, avec un espace réservé pour éviter les sauts.
+function updateCourseToolbarsFixed() {
+  if (!document.body.classList.contains('library-bar-fixed')) return;
+  document.querySelectorAll('.course-accordion').forEach(acc => {
+    const tb = acc.querySelector('.course-toolbar');
+    const ph = acc.querySelector('.course-toolbar-ph');
+    if (!tb || !ph) return;
+    if (!acc.open || !tb.classList.contains('visible')) {
+      tb.classList.remove('is-fixed');
+      ph.style.display = 'none';
+      return;
+    }
+    const wasFixed = tb.classList.contains('is-fixed');
+    const h = wasFixed ? ph.offsetHeight : tb.offsetHeight;
+    const refTop = (wasFixed ? ph : tb).getBoundingClientRect().top;
+    const accBottom = acc.getBoundingClientRect().bottom;
+    const shouldFix = refTop < 0 && accBottom > h;
+    if (shouldFix && !wasFixed) {
+      ph.style.height = h + 'px';
+      ph.style.display = 'block';
+      tb.classList.add('is-fixed');
+    } else if (!shouldFix && wasFixed) {
+      tb.classList.remove('is-fixed');
+      ph.style.display = 'none';
+    }
+  });
+}
+window.updateCourseToolbarsFixed = updateCourseToolbarsFixed;
+(function () {
+  let ticking = false;
+  const schedule = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { ticking = false; updateCourseToolbarsFixed(); });
+  };
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule);
+  document.addEventListener('toggle', schedule, true);
+})();
 
 function toggleCourseSelection(id, isChecked, levelName) {
   if (isChecked) selectedCourseIds.add(id); else selectedCourseIds.delete(id);
@@ -1569,6 +1721,7 @@ function toggleCourseSelection(id, isChecked, levelName) {
       toolbar.querySelector('.btn-delete').disabled = !hasSelection;
     }
   }
+  updateCourseToolbarsFixed();
 }
 window.toggleCourseSelection = toggleCourseSelection;
 
@@ -1958,18 +2111,28 @@ function toggleQuizSelection(id, isChecked) {
 window.toggleQuizSelection = toggleQuizSelection;
 
 async function deleteSelectedQuizzes() {
-  if (!isAdmin || !supabaseClient || selectedQuizIds.size === 0) return;
+  if (!isAdmin || selectedQuizIds.size === 0) return;
   const ids = Array.from(selectedQuizIds);
   if (!confirm(`Supprimer les ${ids.length} quiz sélectionnés ? Cette action est irréversible.`)) return;
+  const deleteBtn = $('libraryDeleteBtn');
+  if (deleteBtn) deleteBtn.disabled = true;
   try {
-    const { error } = await supabaseClient.from('quizzes').delete().in('id', ids);
-    if (error) throw new Error(error.message);
-    alert(`✅ ${ids.length} quiz supprimé(s).`);
-    selectedQuizIds.clear();
-    updateLibraryActionBar();
-    await loadLibrary();
+    // Même route serveur que la suppression individuelle (clé service role, non bloquée par RLS).
+    // Un delete direct via supabaseClient peut "réussir" sans rien supprimer si une règle RLS l'interdit.
+    const results = await Promise.allSettled(ids.map(id => fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE')));
+    const failed = [];
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') selectedQuizIds.delete(ids[i]);
+      else failed.push(r.reason && r.reason.message ? r.reason.message : 'Erreur inconnue');
+    });
+    const okCount = ids.length - failed.length;
+    if (failed.length === 0) alert(`✅ ${okCount} quiz supprimé(s).`);
+    else alert(`⚠️ ${okCount} quiz supprimé(s), ${failed.length} échec(s) : ${failed[0]}`);
   } catch (e) {
     alert("❌ Erreur lors de la suppression : " + e.message);
+  } finally {
+    updateLibraryActionBar();
+    await loadLibrary();
   }
 }
 window.deleteSelectedQuizzes = deleteSelectedQuizzes;
@@ -2091,6 +2254,16 @@ window.deleteLibraryQuiz = async (id) => {
   } catch (e) { alert("Erreur : " + e.message); }
 };
 
+function editOptRowHtml(qi, isMulti, text, checked, canRemove) {
+  const inputType = isMulti ? 'checkbox' : 'radio';
+  const nameAttr = isMulti ? '' : `name="q_${qi}"`;
+  return `<div class="edit-opt ${checked ? 'is-correct' : ''}" data-q="${qi}">`
+    + `<input type="${inputType}" class="edit-opt-check" ${nameAttr} data-q="${qi}" ${checked ? 'checked' : ''} title="Bonne réponse">`
+    + `<input type="text" class="edit-opt-text" data-q="${qi}" value="${esc(text)}" placeholder="Texte de l'option">`
+    + (canRemove ? `<button type="button" class="edit-opt-del" data-q="${qi}" title="Supprimer cette option">✖</button>` : '')
+    + `</div>`;
+}
+
 window.openEditQuiz = (idx) => {
   const quiz = libraryCache[idx];
   if (!quiz) return alert("Quiz introuvable.");
@@ -2102,51 +2275,86 @@ window.openEditQuiz = (idx) => {
     let correctArr = [];
     if (isMulti) correctArr = Array.isArray(q.correct) ? q.correct : [];
     else if (q.type === 'mcq' || q.type === 'tf') correctArr = [q.correct];
-    else if (q.type === 'short') correctArr = [];
     const typeLabel = { mcq: 'Choix unique', mcq_multi: 'QCM multi', tf: 'Vrai/Faux', short: 'Réponse courte' }[q.type] || 'Choix unique';
+    const canEditOptions = q.type !== 'tf'; // Vrai/Faux : on garde 2 options fixes (texte modifiable)
     let optsHtml = '';
     if (q.type === 'short') {
       optsHtml = `<input type="text" class="edit-short-input" data-q="${qi}" value="${esc(q.correct || '')}" placeholder="Réponse attendue" style="width:100%;padding:10px;border:1px solid #D1D5DB;border-radius:8px">`;
     } else {
-      optsHtml = (q.options || []).map((opt, oi) => {
-        const checked = correctArr.includes(oi) ? 'checked' : '';
-        const inputType = isMulti ? 'checkbox' : 'radio';
-        const nameAttr = isMulti ? '' : `name="q_${qi}"`;
-        return `<div class="edit-opt ${checked ? 'is-correct' : ''}"><input type="${inputType}" ${nameAttr} data-q="${qi}" data-opt="${oi}" ${checked}><label>${esc(opt)}</label></div>`;
-      }).join('');
+      const rows = (q.options || []).map((opt, oi) => editOptRowHtml(qi, isMulti, opt, correctArr.includes(oi), canEditOptions)).join('');
+      optsHtml = `<div class="edit-opts" data-q="${qi}">${rows}</div>`
+        + (canEditOptions ? `<button type="button" class="edit-add-opt" data-q="${qi}" data-multi="${isMulti ? 1 : 0}">➕ Ajouter une option</button>` : '');
     }
-    return `<div class="edit-q-block"><div class="edit-q-text">Q${qi + 1}. ${esc(q.text)} <span class="edit-q-type">${typeLabel}</span></div>${optsHtml}</div>`;
+    return `<div class="edit-q-block" data-q="${qi}">`
+      + `<div class="edit-q-head">Q${qi + 1}. <span class="edit-q-type">${typeLabel}</span></div>`
+      + `<textarea class="edit-q-input" data-q="${qi}" rows="2" placeholder="Texte de la question">${esc(q.text)}</textarea>`
+      + optsHtml
+      + `</div>`;
   }).join('');
-  body.querySelectorAll('.edit-opt input').forEach(inp => {
-    inp.addEventListener('change', () => {
-      const block = inp.closest('.edit-opt');
-      if (inp.type === 'checkbox') { block.classList.toggle('is-correct', inp.checked); }
-      else {
-        const name = inp.name;
-        body.querySelectorAll(`input[name="${name}"]`).forEach(other => other.closest('.edit-opt').classList.remove('is-correct'));
-        block.classList.toggle('is-correct', inp.checked);
-      }
+
+  // Délégation d'événements (réassignée à chaque ouverture, donc sans empilement)
+  body.onchange = (e) => {
+    const inp = e.target;
+    if (!inp.classList || !inp.classList.contains('edit-opt-check')) return;
+    body.querySelectorAll(`.edit-opt[data-q="${inp.dataset.q}"]`).forEach(row => {
+      row.classList.toggle('is-correct', row.querySelector('.edit-opt-check').checked);
     });
-  });
+  };
+  body.onclick = (e) => {
+    const delBtn = e.target.closest('.edit-opt-del');
+    if (delBtn) {
+      const row = delBtn.closest('.edit-opt');
+      const container = row.parentElement;
+      if (container.querySelectorAll('.edit-opt').length <= 2) { alert("Une question doit garder au moins 2 options."); return; }
+      row.remove();
+      return;
+    }
+    const addBtn = e.target.closest('.edit-add-opt');
+    if (addBtn) {
+      const qi = addBtn.dataset.q;
+      const container = body.querySelector(`.edit-opts[data-q="${qi}"]`);
+      if (!container) return;
+      container.insertAdjacentHTML('beforeend', editOptRowHtml(qi, addBtn.dataset.multi === '1', '', false, true));
+      const last = container.lastElementChild.querySelector('.edit-opt-text');
+      if (last) last.focus();
+    }
+  };
   $('editQuizModal').classList.add('show');
 };
 
 $('editSaveBtn').addEventListener('click', async () => {
   const quiz = libraryCache.find(q => q.id === editingQuizId);
   if (!quiz) return alert("Quiz introuvable.");
+  let validationError = null;
   const newQuestions = quiz.questions.map((q, qi) => {
-    let newCorrect;
+    const qInp = document.querySelector(`#editQuizBody .edit-q-input[data-q="${qi}"]`);
+    const newText = qInp ? qInp.value.trim() : q.text;
+    if (!newText && !validationError) validationError = `La question ${qi + 1} ne peut pas être vide.`;
+
     if (q.type === 'short') {
-      const inp = document.querySelector(`.edit-short-input[data-q="${qi}"]`);
-      newCorrect = inp ? inp.value.trim() : (q.correct || '');
-    } else if (q.type === 'mcq_multi') {
-      newCorrect = [...document.querySelectorAll(`input[data-q="${qi}"]:checked`)].map(x => parseInt(x.dataset.opt));
-    } else {
-      const checked = document.querySelector(`input[data-q="${qi}"]:checked`);
-      newCorrect = checked ? parseInt(checked.dataset.opt) : 0;
+      const inp = document.querySelector(`#editQuizBody .edit-short-input[data-q="${qi}"]`);
+      const editedShort = { ...q, text: newText, correct: inp ? inp.value.trim() : (q.correct || '') }; delete editedShort.answer_known;
+      return editedShort;
     }
-    return { ...q, correct: newCorrect };
+
+    const rows = [...document.querySelectorAll(`#editQuizBody .edit-opt[data-q="${qi}"]`)];
+    if (rows.length === 0) return { ...q, text: newText }; // pas d'options affichées : on ne touche qu'au texte
+
+    // Les nouveaux index sont recalculés d'après l'ordre réel des lignes (gère ajouts / suppressions / options vides)
+    const options = [];
+    const correctIdx = [];
+    rows.forEach(row => {
+      const t = row.querySelector('.edit-opt-text').value.trim();
+      if (!t) return;
+      if (row.querySelector('.edit-opt-check').checked) correctIdx.push(options.length);
+      options.push(t);
+    });
+    if (options.length < 2 && !validationError) validationError = `La question ${qi + 1} doit avoir au moins 2 options non vides.`;
+    const newCorrect = q.type === 'mcq_multi' ? correctIdx : (correctIdx.length ? correctIdx[0] : 0);
+    const edited = { ...q, text: newText, options, correct: newCorrect }; delete edited.answer_known;
+    return edited;
   });
+  if (validationError) return alert("❌ " + validationError);
   try {
     await fetchWithAuth(`/api/quizzes/${editingQuizId}`, { questions: newQuestions }, 'PUT');
     const localQuiz = libraryCache.find(q => q.id === editingQuizId);
@@ -2720,21 +2928,9 @@ $('pdfFile').addEventListener('change', async function() {
       } else if (name.endsWith('.pdf')) {
         status.textContent = 'Extraction du PDF...';
         const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
-        let pages = [];
-        for (let p = 1; p <= pdf.numPages; p++) {
-          const page = await pdf.getPage(p);
-          const content = await page.getTextContent();
-          const items = content.items.map(i => ({ str: i.str, y: i.transform[5] }));
-          const lines = [];
-          let currentY = null, currentLine = [];
-          items.forEach(it => {
-            if (currentY === null || Math.abs(it.y - currentY) < 3) { currentLine.push(it.str); currentY = currentY === null ? it.y : currentY; }
-            else { lines.push(currentLine.join(' ')); currentLine = [it.str]; currentY = it.y; }
-          });
-          if (currentLine.length) lines.push(currentLine.join(' '));
-          pages.push(lines.join('\n'));
-        }
-        text = pages.join('\n');
+        // texte + bonnes réponses lues dans les couleurs (rouge/vert) ; les mots coupés par pdf.js sont recollés
+        const extracted = await extractPdfText(pdfjsLib, pdf, { onProgress: (p, n) => { status.textContent = `Extraction du PDF... page ${p}/${n}`; } });
+        text = extracted.text;
       } else if (name.endsWith('.docx')) {
         status.textContent = 'Extraction du DOCX (rapide)...';
         try {
@@ -2850,7 +3046,9 @@ $('extractTestBtn').addEventListener('click', async () => {
       $('analysisStatus').textContent = `✅ ${data.questions.length} questions extraites ! Sauvegarde dans la bibliothèque...`;
       const title = $('quizTitle').value.trim() || 'Exercice importé ' + new Date().toLocaleDateString('fr-FR');
       const subject = $('quizSubject').value.trim() || 'Général';
+      const unknownAnswers = data.questions.filter(q => q.answer_known === false).length;
       await saveAndStartQuiz(title, subject, data.questions, $('splitQuizCheckbox').checked);
+      if (unknownAnswers > 0) setTimeout(() => alert(`⚠️ ${unknownAnswers} question(s) sans bonne réponse trouvée dans le sujet (réglées sur la 1re option par défaut).\nVérifie-les dans la Bibliothèque avec ✏️ Éditer.`), 400);
     } else {
       $('analysisStatus').className = 'notice err';
       $('analysisStatus').textContent = '❌ ' + (data.message || 'Aucune question reconnue.');
