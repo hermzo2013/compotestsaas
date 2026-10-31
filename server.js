@@ -5,6 +5,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 // ← FIX #4 : import express-rate-limit
 import rateLimit from 'express-rate-limit';
+// Détection des consignes écrites dans les sujets (type de réponse, études de cas, QPQ, temps)
+import { detectAndParse, finalizeAiResult } from './instruction-detector.js';
+import { parseQuizText } from './quiz-parser.js';   // extracteur v2 (remplace l'ancienne fonction parseQuizText de ce fichier)
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -274,86 +277,21 @@ const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 // ==========================================
 // EXTRACTION
 // ==========================================
-function parseQuizText(rawText) {
-  if (!rawText || typeof rawText !== 'string') return [];
-  let text = rawText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ').replace(/\u00A0/g, ' ').replace(/\r\n?/g, '\n').replace(/[’‘`´]/g, "'").replace(/[“”]/g, '"').replace(/[ \t]+/g, ' ');
-  const answerKey = {};
-  const gridRegex = /Q(\d{1,3})\s+(VRAI|FAUX|[A-Ea-e](?:[\s\.\,][A-Ea-e])*)/gi;
-  let mGrid;
-  while ((mGrid = gridRegex.exec(rawText)) !== null) {
-    const qNum = parseInt(mGrid[1]);
-    const val = mGrid[2].toUpperCase();
-    if (val === 'VRAI') answerKey[qNum] = { type: 'tf', correct: 0 };
-    else if (val === 'FAUX') answerKey[qNum] = { type: 'tf', correct: 1 };
-    else {
-      const letters = val.match(/[A-E]/g);
-      if (letters) {
-        const indices = letters.map(l => l.charCodeAt(0) - 65);
-        answerKey[qNum] = { type: indices.length > 1 ? 'mcq_multi' : 'mcq', correct: indices.length > 1 ? indices : indices[0] };
-      }
-    }
-  }
-  const parts = text.split(/(?:^|\n)\s*(?:\*\s*)?(?:Q\s*)?(\d{1,3})\s*[\/\.\)\-\:]\s*\*?\s+/i);
-  const questions = [];
-  for (let i = 1; i < parts.length; i += 2) {
-    const num = parseInt(parts[i]);
-    let content = parts[i + 1] ? parts[i + 1].trim() : '';
-    if (!content || content.replace(/[^a-zA-Z]/g, '').length < 5) continue;
-    if (/^[A-Z]\.\s/.test(content)) continue;
-    let qText = content, options = [], type = 'mcq', correct = 0;
-    if (content.includes('\n-') || content.includes(' - ')) {
-      const firstDash = content.search(/(?:\n|\s)-\s/);
-      qText = content.substring(0, firstDash).trim();
-      const optionsText = content.substring(firstDash).trim();
-      const rawOptions = optionsText.split(/(?:\n|\s)-\s/).filter(o => o.trim().length > 0);
-      let correctIndices = [];
-      rawOptions.forEach((opt, idx) => {
-        if (opt.includes('✓')) correctIndices.push(idx);
-        let cleanOpt = opt.replace('✓', '').replace(/:\s*Non$/i, '').trim();
-        if (cleanOpt) options.push(cleanOpt);
-      });
-      if (correctIndices.length > 0) {
-        correct = correctIndices.length > 1 ? correctIndices : correctIndices[0];
-        type = correctIndices.length > 1 ? 'mcq_multi' : 'mcq';
-      } else type = options.length > 2 ? 'mcq_multi' : 'mcq';
-    } else if (/[\:\-]\s*\*?(Vrai|Faux)\*?\s*$/i.test(content)) {
-      const match = content.match(/(.*?)\s*[\:\-]\s*\*?(Vrai|Faux)\*?\s*$/i);
-      qText = match[1].trim();
-      type = 'tf'; options = ['Vrai', 'Faux']; correct = match[2].toLowerCase() === 'vrai' ? 0 : 1;
-    } else if (content.includes(':') && (content.includes('✓') || !content.includes('\n'))) {
-      const colonIndex = content.lastIndexOf(':');
-      if (colonIndex > 0) {
-        qText = content.substring(0, colonIndex).trim();
-        let answer = content.substring(colonIndex + 1).replace('✓', '').trim();
-        if (answer.length > 0 && answer.length < 100) { options = [answer]; type = 'mcq'; correct = 0; }
-      }
-    }
-    if (options.length === 0) {
-      const optionRegex = /(?:^|\s)([a-eA-E])\s*[\)\:\-\.]\s+/g;
-      const matches = [...content.matchAll(optionRegex)];
-      if (matches.length >= 2) {
-        qText = content.substring(0, matches[0].index).trim();
-        for (let j = 0; j < matches.length; j++) {
-          const start = matches[j].index + matches[j][0].length;
-          const end = (j + 1 < matches.length) ? matches[j + 1].index : content.length;
-          let optText = content.substring(start, end).trim().replace(/[;\.]+$/, '').trim();
-          if (optText) options.push(optText);
-        }
-      } else { type = 'tf'; options = ['Vrai', 'Faux']; }
-    }
-    if (answerKey[num]) { type = answerKey[num].type; correct = answerKey[num].correct; }
-    qText = qText.replace(/\*/g, '').replace(/\s+/g, ' ').trim();
-    if (qText.length > 5) questions.push({ number: num, text: qText, options: options.length > 0 ? options : ['Vrai', 'Faux'], correct, type });
-  }
-  const uniqueQuestions = []; const seenNumbers = new Set();
-  for (const q of questions) { if (!seenNumbers.has(q.number)) { seenNumbers.add(q.number); uniqueQuestions.push(q); } }
-  return uniqueQuestions;
-}
+// (l'ancienne fonction parseQuizText a été remplacée par quiz-parser.js)
 
 app.post('/api/parse-existing-quiz', (req, res) => {
   try {
-    const questions = parseQuizText(req.body?.text || '');
-    res.json({ questions: questions.length ? questions : [], message: questions.length ? undefined : 'Aucune question reconnue.' });
+    const text = req.body?.text || '';
+    let result;
+    try {
+      result = detectAndParse(text, parseQuizText);
+    } catch (err) {
+      // La détection des consignes ne doit JAMAIS empêcher l'import : retour à l'extraction d'origine
+      console.error('Détection des consignes ignorée :', err.message);
+      result = { questions: parseQuizText(text) };
+    }
+    const { questions, ...meta } = result;
+    res.json({ questions: questions.length ? questions : [], ...meta, message: questions.length ? undefined : 'Aucune question reconnue.' });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -379,6 +317,9 @@ RÈGLES STRICTES :
 - Si les réponses ne sont pas mentionnées, mets "correct": 0 par défaut (l'admin pourra les corriger).
 - Tu peux ajouter quelques questions supplémentaires de compréhension UNIQUEMENT si le texte contient aussi des passages de cours explicatifs.
 - Les questions d'origine doivent être présentes à 100%.
+- CONSIGNES DU SUJET : si le sujet précise le nombre de réponses attendues (ex : "QCM à réponse unique", "QCU", "QRU", "une seule réponse", "QCD" (Vrai/Faux ou A/B), "2 réponses maximum", "QRM", "QCM à réponses multiples", "une ou plusieurs réponses", "cochez la ou les bonnes réponses", "3 réponses au maximum"...), ajoute à chaque question concernée "max_select" (entier : 1 = réponse unique ou QCD (choix dichotomique Vrai/Faux ou A/B : 2 options, 1 réponse), n = n réponses maximum ; pour "plusieurs réponses" sans nombre, mets le nombre d'options). Une consigne s'applique aux questions qui suivent jusqu'à la prochaine consigne. SANS consigne dans le texte, n'ajoute PAS "max_select".
+- ÉTUDES DE CAS : si le sujet contient des cas ou dossiers (ex : "Étude de cas", "Cas clinique", "Dossier", "Dossier progressif", "Situation clinique", "Observation", "Les questions 4 à 6 se rapportent à ce cas"...), ne recopie PAS l'énoncé dans chaque question : ajoute à la racine un tableau "blocks":[{"id":"b1","title":"Étude de cas 1","case_block":"énoncé complet recopié tel quel"}] et mets "block_id":"b1" sur chaque question qui s'y rapporte. SANS cas dans le texte, n'ajoute ni "blocks" ni "block_id".
+- MODE ET TEMPS : si le sujet indique un fonctionnement question par question (ex : "pas de retour en arrière", "dossier progressif", "une question à la fois"), ajoute "display_mode":"QPQ" ; s'il indique un temps par question, ajoute "seconds_per_question" (en secondes).
 
 **CAS 2 : Si le texte est un COURS RÉDIGÉ (sans questions)**
 - Génère ${count} nouvelles questions en respectant cette répartition :
@@ -390,6 +331,7 @@ RÈGLES STRICTES :
 
 **FORMAT DE SORTIE OBLIGATOIRE (JSON valide) :**
 {"questions":[{"type":"mcq","text":"...","options":["A","B","C","D"],"correct":0,"explanation":"..."}]}
+(Champs optionnels, uniquement s'ils sont justifiés par le texte : "max_select" et "block_id" dans une question ; "blocks", "display_mode", "seconds_per_question" à la racine.)
 
 Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
         { role: 'user', content: String(text || '').slice(0, 15000) }
@@ -404,6 +346,8 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
         if (q.type === 'short' && !q.explanation) q.explanation = '';
         return q;
       });
+      // Validation des consignes / blocs fournis par l'IA + complément déterministe (sans jamais bloquer la génération)
+      try { finalizeAiResult(parsed, text); } catch (err) { console.error('finalizeAiResult ignoré :', err.message); }
     }
     res.json(parsed);
   } catch (e) {
@@ -415,9 +359,50 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
 // ==========================================
 // ROUTES QUIZ (CRÉATION, MODIFICATION, SUPPRESSION)
 // ==========================================
+// Champs optionnels des modes NORMAL / QPQ (colonnes ajoutées par quiz_qpq_schema.sql).
+// Ils ne sont transmis à Supabase QUE s'ils sont fournis : tant que le client ne les envoie pas, rien ne change.
+function pickQuizExtras(body) {
+  const out = {};
+  const { display_mode, blocks, seconds_per_question } = body || {};
+  if (display_mode !== undefined) {
+    if (!['NORMAL', 'QPQ'].includes(display_mode)) return { error: 'display_mode invalide (NORMAL ou QPQ).' };
+    out.display_mode = display_mode;
+  }
+  if (blocks !== undefined) {
+    if (!Array.isArray(blocks) || blocks.length > 100) return { error: 'blocks doit être un tableau (100 max).' };
+    out.blocks = blocks.map(b => ({
+      id: String(b && b.id),
+      title: String((b && b.title) || '').slice(0, 160),
+      case_block: b && b.case_block ? String(b.case_block).slice(0, 8000) : null
+    }));
+  }
+  if (body && body.time_limit_seconds !== undefined) {
+    const n = Number(body.time_limit_seconds);
+    if (!Number.isInteger(n) || n < 60 || n > 28800) return { error: 'time_limit_seconds doit être un entier entre 60 et 28800.' };
+    out.time_limit_seconds = n;
+  }
+  if (body && body.scoring !== undefined) {
+    const sc = body.scoring;
+    if (sc !== null && (typeof sc !== 'object' || Array.isArray(sc))) return { error: 'scoring doit être un objet.' };
+    if (sc) {
+      const clean = {};
+      for (const k of ['correct', 'wrong', 'blank']) if (sc[k] !== undefined) { const v = Number(sc[k]); if (!Number.isFinite(v) || Math.abs(v) > 100) return { error: `scoring.${k} invalide.` }; clean[k] = v; }
+      out.scoring = clean;
+    } else out.scoring = null;
+  }
+  if (seconds_per_question !== undefined) {
+    const n = Number(seconds_per_question);
+    if (!Number.isInteger(n) || n < 10 || n > 900) return { error: 'seconds_per_question doit être un entier entre 10 et 900.' };
+    out.seconds_per_question = n;
+  }
+  return { extras: out };
+}
+
 app.post('/api/quizzes', async (req, res) => {
   const { title, subject, level, questions } = req.body;
   if (!title || !questions || !Array.isArray(questions) || questions.length === 0) return res.status(400).json({ error: 'Titre et questions requis.' });
+  const ex = pickQuizExtras(req.body);
+  if (ex.error) return res.status(400).json({ error: ex.error });
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
     const response = await fetch(`${base}/rest/v1/quizzes`, {
@@ -428,6 +413,7 @@ app.post('/api/quizzes', async (req, res) => {
         subject: String(subject || 'Général').slice(0, 200),
         level: level || null,
         questions,
+        ...ex.extras,
         created_by: req.user.id
       })
     });
@@ -448,6 +434,9 @@ app.patch('/api/quizzes/:id', requireAdmin, async (req, res) => {
     if (!validLevels.includes(level)) return res.status(400).json({ error: 'Niveau invalide.' });
     updates.level = level;
   }
+  const ex = pickQuizExtras(req.body);
+  if (ex.error) return res.status(400).json({ error: ex.error });
+  Object.assign(updates, ex.extras);
   if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Aucune modification fournie.' });
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
@@ -473,6 +462,9 @@ app.put('/api/quizzes/:id', requireAdmin, async (req, res) => {
     if (!validLevels.includes(level)) return res.status(400).json({ error: 'Niveau invalide.' });
     updates.level = level;
   }
+  const ex = pickQuizExtras(req.body);
+  if (ex.error) return res.status(400).json({ error: ex.error });
+  Object.assign(updates, ex.extras);
   if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Aucune modification fournie.' });
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
