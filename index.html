@@ -437,6 +437,28 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 .instant-badge{display:inline-block;background:#E0F2FE;color:#075985;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:8px;vertical-align:middle}
 .validate-btn{background:#D1FAE5!important;color:#065F46!important;font-weight:800!important;padding:12px 20px!important;border-radius:10px!important;font-size:14px!important;margin-top:14px!important;cursor:pointer!important;transition:.15s!important}
 .validate-btn:hover{background:#A7F3D0!important}
+/* Badges de type (QuizCore.getTypeBadge) */
+.exam-type-tag.badge-qcd{background:#EDE9FE;color:#5B21B6}
+.exam-type-tag.badge-qcm-unique{background:#D1FAE5;color:#065F46}
+.exam-type-tag.badge-qcm-multiple{background:#FEF3C7;color:#92400E}
+.exam-type-tag.badge-short{background:#E5E7EB;color:#374151}
+.exam-hint-select{font-size:12px;color:var(--muted);margin:-10px 0 14px;font-weight:700}
+.exam-opt.disabled-full{opacity:.45!important;cursor:not-allowed!important}
+.exam-opt.disabled-full input{cursor:not-allowed!important}
+/* Étude de cas (QPQ / blocs) */
+.case-card{background:#E9ECEF;border:1px solid #CBD2D9;border-left:5px solid #6B7280;border-radius:12px;padding:20px 22px;margin-bottom:20px}
+.case-card-title{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#4B5563;margin-bottom:10px}
+.case-card-text{white-space:pre-wrap;line-height:1.6;font-size:15px;color:#1F2937;text-align:left}
+.case-card.compact .case-card-text{font-size:14px}
+/* Chronos QPQ dans l'en-tête */
+#qpqTimers{display:none;gap:8px;align-items:center}
+#qpqTimers.show{display:flex}
+.qpq-timer{background:rgba(255,255,255,.18);padding:4px 10px;border-radius:8px;color:#fff;text-align:center;line-height:1.15;min-width:64px}
+.qpq-timer small{display:block;font-size:9px;opacity:.85;text-transform:uppercase;letter-spacing:.04em}
+.qpq-timer b{font-size:16px;font-variant-numeric:tabular-nums}
+.qpq-timer.warning{background:rgba(239,68,68,.35);color:#fca5a5;animation:pulseTimer 1s infinite}
+.qpq-toast{position:fixed;top:78px;left:50%;transform:translateX(-50%);background:#1F2937;color:#fff;padding:10px 18px;border-radius:10px;z-index:3000;font-size:14px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.25);max-width:90vw;text-align:center}
+.qpq-notice{margin-top:18px;text-align:left;background:#EDE9FE;border:1px solid #C4B5FD;color:#4C1D95;border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.5}
 
 #scoreView{display:none;position:fixed;inset:0;background:rgba(6,95,70,.75);z-index:2500;align-items:center;justify-content:center;padding:20px}
 #scoreView.show{display:flex}
@@ -1060,7 +1082,7 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
   <div class="mode-modal-content">
     <h2>Choisir le mode</h2>
     <p>Comment souhaitez-vous réviser ?</p>
-    <div class="mode-btn-container">
+    <div class="mode-btn-container" id="modeBtnContainer">
       <div class="mode-btn selected" id="btnModeTraining" onclick="selectQuizMode('training')">
         <div class="mode-icon">📖</div>
         <div class="mode-text">
@@ -1077,6 +1099,8 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
       </div>
     </div>
     
+ <div id="qpqModeNotice" class="qpq-notice hide"></div>
+
     <div id="examConfigDiv" class="hide" style="margin-top:20px; text-align:left;">
       <label style="font-size:13px; margin-top:0;">Temps par question (en minutes) :</label>
       <input type="number" id="examTimeConfig" value="1" min="0.5" max="5" step="0.5" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--line);">
@@ -1095,6 +1119,10 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
     <div>
       <h2 id="examTitle">Test</h2>
       <div id="examMeta" style="font-size:12px;opacity:.8"></div>
+    </div>
+    <div id="qpqTimers">
+      <div class="qpq-timer" id="qpqBlockTimer"><small>Temps du bloc</small><b id="qpqBlockTimerText">00:00</b></div>
+      <div class="qpq-timer" id="qpqGlobalTimer"><small>Temps global</small><b id="qpqGlobalTimerText">00:00</b></div>
     </div>
     <div id="examTimerContainer">
       <i class='bx bx-time-five'></i> <span id="examTimerText">00:00</span>
@@ -1145,6 +1173,244 @@ const $=id=>document.getElementById(id);
 
 const API_BASE = 'https://compotestsaas.onrender.com';
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+/* =====================================================================
+   RÉVISIO — ÉTAPE 2 : fonctions PURES (aucun accès DOM, Supabase ni timer)
+   - Fonctionne dans le navigateur (window.QuizCore) ET dans Node (module.exports)
+   - Aucune fonction ne modifie ses arguments : elles renvoient de nouvelles valeurs
+   Convention : un "choix" est identifié par son INDEX dans question.options
+   (c'est déjà le cas de `correct` dans ton format actuel).
+   ===================================================================== */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.QuizCore = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // ---------------------------------------------------------------
+  // Types
+  // ---------------------------------------------------------------
+  const TYPES = Object.freeze({
+    QCD: 'QCD',                    // choix dichotomique : Vrai/Faux ou A/B (2 options, 1 réponse, radio)
+    QCM_UNIQUE: 'QCM_UNIQUE',      // 1 réponse (radio)
+    QCM_MULTIPLE: 'QCM_MULTIPLE'   // plusieurs réponses (checkbox)
+  });
+
+  const BADGES = Object.freeze({
+    QCD:          { label: 'QCD',          cssClass: 'badge-qcd' },
+    QCM_UNIQUE:   { label: 'QCM UNIQUE',   cssClass: 'badge-qcm-unique' },
+    QCM_MULTIPLE: { label: 'QCM MULTIPLE', cssClass: 'badge-qcm-multiple' },
+    SHORT:        { label: 'RÉPONSE COURTE', cssClass: 'badge-short' }
+  });
+
+  const isInt = (n) => typeof n === 'number' && Number.isInteger(n);
+
+  // ---------------------------------------------------------------
+  // Normalisation : ancien format -> nouveau format (sans migration de données)
+  //   tf         -> QCD (Vrai/Faux), max_select 1, correct [i]
+  //   mcq        -> QCD si exactement 2 options (A/B), sinon QCM_UNIQUE ; max_select 1, correct [i]
+  //   mcq_multi  -> QCM_MULTIPLE, max_select = nb d'options (pas de limite avant), correct [..]
+  //   short      -> inchangé (non géré par toggleReponse)
+  // Un nouveau format est complété (max_select / correct) mais jamais écrasé.
+  // ---------------------------------------------------------------
+  function normalizeQuestion(q) {
+    if (!q || typeof q !== 'object') return q;
+    const options = Array.isArray(q.options) ? q.options : [];
+    const asArray = (c) => Array.isArray(c) ? c.slice() : (isInt(c) ? [c] : []);
+
+    switch (q.type) {
+      case 'tf':
+        return { ...q, type: TYPES.QCD, max_select: 1, correct: asArray(q.correct), _legacyType: q.type };
+      case 'mcq':
+        return { ...q, type: options.length === 2 ? TYPES.QCD : TYPES.QCM_UNIQUE, max_select: 1, correct: asArray(q.correct), _legacyType: q.type };
+      case 'mcq_multi': {
+        // la limite fournie par le sujet ("3 réponses maximum") est conservée si elle est cohérente
+        const ms = (isInt(q.max_select) && q.max_select >= 2 && q.max_select <= options.length) ? q.max_select : Math.max(2, options.length);
+        return { ...q, type: TYPES.QCM_MULTIPLE, max_select: ms, correct: asArray(q.correct), _legacyType: q.type };
+      }
+      case TYPES.QCM_UNIQUE:
+        return { ...q, max_select: 1, correct: asArray(q.correct) };
+      case TYPES.QCD:
+        return { ...q, max_select: 1, correct: asArray(q.correct) };
+      case TYPES.QCM_MULTIPLE:
+        return { ...q, max_select: isInt(q.max_select) ? q.max_select : Math.max(2, options.length), correct: asArray(q.correct) };
+      default:
+        return { ...q }; // 'short' ou inconnu
+    }
+  }
+
+  function isChoiceQuestion(q) {
+    return !!q && (q.type === TYPES.QCD || q.type === TYPES.QCM_UNIQUE || q.type === TYPES.QCM_MULTIPLE);
+  }
+
+  /** 'radio' si max_select === 1, sinon 'checkbox' */
+  function getSelectionMode(question) {
+    return question && question.max_select === 1 ? 'radio' : 'checkbox';
+  }
+
+  // ---------------------------------------------------------------
+  // toggleReponse(reponses, question, idChoix)
+  //   reponses : tableau des index déjà cochés POUR CETTE QUESTION
+  //   Renvoie un NOUVEAU tableau (trié, sans doublon). Ne modifie jamais `reponses`.
+  //   - max_select === 1 : radio. Cliquer le choix déjà coché le décoche.
+  //                        Cliquer un autre choix remplace la sélection.
+  //   - max_select  > 1  : checkbox. Ajoute / retire. Si la limite est atteinte,
+  //                        l'ajout est IGNORÉ (le tableau est renvoyé tel quel) :
+  //                        utilise isSelectionFull() pour afficher "maximum atteint".
+  //   - idChoix invalide (hors options, non entier) : aucun changement.
+  // ---------------------------------------------------------------
+  function toggleReponse(reponses, question, idChoix) {
+    const current = Array.isArray(reponses) ? [...new Set(reponses.filter(isInt))] : [];
+    const sortedCopy = (arr) => arr.slice().sort((a, b) => a - b);
+
+    if (!question || !isInt(idChoix)) return sortedCopy(current);
+    const n = Array.isArray(question.options) ? question.options.length : 0;
+    if (idChoix < 0 || idChoix >= n) return sortedCopy(current);
+
+    const max = isInt(question.max_select) && question.max_select >= 1 ? question.max_select : 1;
+    const already = current.includes(idChoix);
+
+    if (max === 1) {
+      return already ? [] : [idChoix];
+    }
+    if (already) return sortedCopy(current.filter(x => x !== idChoix));
+    if (current.length >= max) return sortedCopy(current);   // limite atteinte : ignoré
+    return sortedCopy([...current, idChoix]);
+  }
+
+  function isSelectionFull(reponses, question) {
+    const max = question && isInt(question.max_select) ? question.max_select : 1;
+    return max > 1 && Array.isArray(reponses) && reponses.length >= max;
+  }
+
+  /** Un choix peut-il être (dé)coché ? Utile pour griser les cases quand le maximum est atteint. */
+  function isChoiceDisabled(reponses, question, idChoix) {
+    return !(reponses || []).includes(idChoix) && isSelectionFull(reponses, question);
+  }
+
+  // ---------------------------------------------------------------
+  // Correction : égalité exacte d'ensembles (comme ton QCM multi actuel)
+  // ---------------------------------------------------------------
+  function isReponseCorrecte(question, reponses) {
+    if (!isChoiceQuestion(question) || !Array.isArray(question.correct)) return false;
+    const a = [...new Set(reponses || [])].sort((x, y) => x - y);
+    const b = [...new Set(question.correct)].sort((x, y) => x - y);
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+  }
+
+  // ---------------------------------------------------------------
+  // Validation côté client (miroir de quiz_question_is_valid en SQL)
+  // Renvoie { valid: boolean, errors: string[] }
+  // ---------------------------------------------------------------
+  function validateQuestion(q) {
+    const errors = [];
+    if (!isChoiceQuestion(q)) return { valid: false, errors: ['Type inconnu ou non géré.'] };
+    if (typeof q.text !== 'string' || !q.text.trim()) errors.push('Le texte est vide.');
+    const opts = Array.isArray(q.options) ? q.options : [];
+    if (opts.length < 2 || opts.length > 10) errors.push('Il faut entre 2 et 10 options.');
+    if (q.type === TYPES.QCD && opts.length !== 2) errors.push('QCD exige exactement 2 options (Vrai/Faux ou A/B).');
+    if (opts.some(o => typeof o !== 'string' || !o.trim())) errors.push('Une option est vide.');
+    const ms = q.max_select;
+    if (!isInt(ms)) errors.push('max_select doit être un entier.');
+    else {
+      if (q.type === TYPES.QCM_UNIQUE && ms !== 1) errors.push('QCM_UNIQUE exige max_select = 1.');
+      if (q.type === TYPES.QCD && ms !== 1) errors.push('QCD exige max_select = 1.');
+      if (q.type === TYPES.QCM_MULTIPLE && (ms < 2 || ms > opts.length)) errors.push('QCM_MULTIPLE exige 2 <= max_select <= nombre d\'options.');
+    }
+    const c = q.correct;
+    if (!Array.isArray(c) || c.length < 1) errors.push('Au moins une bonne réponse est requise.');
+    else {
+      if (c.some(x => !isInt(x) || x < 0 || x >= opts.length)) errors.push('Une bonne réponse pointe hors des options.');
+      if (new Set(c).size !== c.length) errors.push('Bonnes réponses en double.');
+      if (isInt(ms) && c.length > ms) errors.push('Plus de bonnes réponses que max_select.');
+    }
+    return { valid: errors.length === 0, errors };
+  }
+
+  // ---------------------------------------------------------------
+  // Formatage
+  // ---------------------------------------------------------------
+  /** 75 -> "01:15" ; 3725 -> "1:02:05" ; valeurs négatives/invalides -> "00:00" */
+  function formatTime(totalSeconds) {
+    const s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+  }
+
+  /** Badge à afficher pour une question (accepte aussi l'ancien format). */
+  function getTypeBadge(question) {
+    const q = normalizeQuestion(question);
+    if (q && q.type === 'short') return BADGES.SHORT;
+    return (q && BADGES[q.type]) || BADGES.QCM_UNIQUE;
+  }
+
+  /** Consigne affichée sous la question. */
+  function formatSelectionHint(question) {
+    const ms = question && question.max_select;
+    const n = question && Array.isArray(question.options) ? question.options.length : 0;
+    if (ms === 1) return 'Une seule réponse';
+    if (isInt(ms) && ms > 1) return (n > 0 && ms >= n) ? 'Plusieurs réponses possibles' : `Jusqu'à ${ms} réponses`;
+    return '';
+  }
+
+  // ---------------------------------------------------------------
+  // Chronos & blocs (mode QPQ)
+  // ---------------------------------------------------------------
+  /** Durée d'un bloc = nb de questions x secondes par question. */
+  function computeBlockTimeSeconds(nbQuestions, secondsPerQuestion) {
+    const n = Math.max(0, Math.floor(Number(nbQuestions) || 0));
+    const spq = Math.max(0, Math.floor(Number(secondsPerQuestion) || 0));
+    return n * spq;
+  }
+
+  /**
+   * Regroupe les questions d'un quiz en blocs ordonnés.
+   *  - QPQ    : suit quiz.blocks ; chaque question est rattachée via block_id,
+   *             en conservant son ordre d'origine ; globalIndex = position dans quiz.questions.
+   *  - NORMAL : un seul bloc "Questions" contenant tout.
+   * Les questions sans block_id valide en mode QPQ sont ignorées du regroupement
+   * (la contrainte SQL les empêche, mais on reste défensif).
+   * Renvoie : [{ id, title, case_block, questions:[{...q, globalIndex}], timeSeconds }]
+   */
+  function groupQuestionsIntoBlocks(quiz) {
+    const questions = (quiz && Array.isArray(quiz.questions)) ? quiz.questions : [];
+    const spq = quiz && quiz.seconds_per_question;
+    const mode = quiz && quiz.display_mode === 'QPQ' ? 'QPQ' : 'NORMAL';
+
+    if (mode === 'NORMAL' || !Array.isArray(quiz.blocks) || quiz.blocks.length === 0) {
+      const qs = questions.map((q, i) => ({ ...q, globalIndex: i }));
+      return [{ id: 'all', title: 'Questions', case_block: null, questions: qs, timeSeconds: computeBlockTimeSeconds(qs.length, spq) }];
+    }
+    return quiz.blocks.map(b => {
+      const qs = [];
+      questions.forEach((q, i) => { if (String(q.block_id) === String(b.id)) qs.push({ ...q, globalIndex: i }); });
+      return {
+        id: String(b.id),
+        title: b.title || 'Bloc',
+        case_block: b.case_block || null,
+        questions: qs,
+        timeSeconds: computeBlockTimeSeconds(qs.length, spq)
+      };
+    }).filter(b => b.questions.length > 0);
+  }
+
+  function computeTotalTimeSeconds(blocks) {
+    return (blocks || []).reduce((sum, b) => sum + (b.timeSeconds || 0), 0);
+  }
+
+  return {
+    TYPES, BADGES,
+    normalizeQuestion, isChoiceQuestion, getSelectionMode,
+    toggleReponse, isSelectionFull, isChoiceDisabled, isReponseCorrecte,
+    validateQuestion,
+    formatTime, getTypeBadge, formatSelectionHint,
+    computeBlockTimeSeconds, groupQuestionsIntoBlocks, computeTotalTimeSeconds
+  };
+});
+
+
 /* =====================================================================
    RÉVISIO — Extraction du texte d'un PDF (navigateur, pdf.js 3.x)
    - regroupe les morceaux de texte par ligne (comme avant)
@@ -2067,7 +2333,7 @@ function renderLibraryList() {
   }
   list.innerHTML = filtered.map(q => {
     const idx = libraryCache.indexOf(q);
-    const levelBadge = q.level ? `<span class="level-badge">${esc(q.level.replace('LICENCE ', 'L'))}</span>` : '';
+    const levelBadge = (q.level ? `<span class="level-badge">${esc(q.level.replace('LICENCE ', 'L'))}</span>` : '') + (q.display_mode === 'QPQ' ? ' <span class="level-badge" style="background:#EDE9FE;color:#5B21B6" title="Question par question : un bloc à la fois, sans retour en arrière">QPQ</span>' : '');
     const isChecked = selectedQuizIds.has(q.id) ? 'checked' : '';
     return `
       <div class="history-item library-item">
@@ -2158,10 +2424,37 @@ async function moveSelectedQuizzes() {
 }
 window.moveSelectedQuizzes = moveSelectedQuizzes;
 
+// Données d'un quiz utiles à l'examen (questions + blocs + mode d'affichage + temps)
+function quizForExam(q) {
+  return {
+    title: q.title, questions: q.questions,
+    display_mode: q.display_mode || 'NORMAL',
+    blocks: Array.isArray(q.blocks) ? q.blocks : [],
+    seconds_per_question: q.seconds_per_question || null,
+    time_limit_seconds: q.time_limit_seconds || null,
+    scoring: q.scoring || null
+  };
+}
+function isQpqQuiz(quiz) {
+  return !!quiz && quiz.display_mode === 'QPQ' && Array.isArray(quiz.blocks) && quiz.blocks.length > 0;
+}
+// En mode QPQ le mode (entraînement / examen) et le temps par question ne se choisissent pas : un avis les remplace
+function applyModeModalForQuiz(quiz) {
+  const qpq = isQpqQuiz(quiz);
+  $('modeBtnContainer').classList.toggle('hide', qpq);
+  $('qpqModeNotice').classList.toggle('hide', !qpq);
+  if (!qpq) return;
+  selectedMode = 'exam';
+  $('examConfigDiv').classList.add('hide');
+  const groups = QuizCore.groupQuestionsIntoBlocks({ ...quiz, seconds_per_question: quiz.seconds_per_question || 60 });
+  const total = QuizCore.computeTotalTimeSeconds(groups);
+  $('qpqModeNotice').innerHTML = `<b>🧩 Mode question par question (QPQ)</b><br>${groups.length} bloc(s) · ${quiz.questions.length} questions. Un seul bloc est affiché à la fois, <b>sans retour en arrière</b>. Chaque bloc est chronométré (${quiz.seconds_per_question || 60} s par question) et passe automatiquement au suivant quand le temps est écoulé.<br>Temps total : <b>${QuizCore.formatTime(total)}</b>`;
+}
+
 window.openModeModalByIndex = (idx) => {
   const q = libraryCache[idx];
   if (!q) { alert("Exercice introuvable."); return; }
-  window.currentQuizToStart = { title: q.title, questions: q.questions };
+  window.currentQuizToStart = quizForExam(q);
   pendingQuiz = window.currentQuizToStart;
   
   selectedMode = 'training';
@@ -2170,18 +2463,20 @@ window.openModeModalByIndex = (idx) => {
   $('examConfigDiv').classList.add('hide');
   
   updateExamTimeLabel();
+  applyModeModalForQuiz(window.currentQuizToStart);
   $('modeModal').classList.add('show');
 };
 
 window.openModeModalByObj = (quizObj) => {
   if (!quizObj || !quizObj.questions) { alert("Quiz invalide."); return; }
-  window.currentQuizToStart = { title: quizObj.title, questions: quizObj.questions };
+  window.currentQuizToStart = quizForExam(quizObj);
   pendingQuiz = window.currentQuizToStart;
   
   selectedMode = 'training';
   $('btnModeTraining').classList.add('selected');
   $('btnModeExam').classList.remove('selected');
   $('examConfigDiv').classList.add('hide');
+  applyModeModalForQuiz(window.currentQuizToStart);
   $('modeModal').classList.add('show');
 };
 
@@ -2226,6 +2521,8 @@ window.startQuizWithMode = () => {
     return;
   }
   
+  if (isQpqQuiz(quiz)) { closeModeModal(); startExam(quiz, { mode: 'exam', qpq: true }); return; }
+
   const mode = selectedMode;
   const timePerQ = mode === 'exam' ? (parseFloat($('examTimeConfig').value) || 1) : 0;
   
@@ -2975,9 +3272,34 @@ async function fetchWithAuth(url, body, method = 'POST') {
   return data;
 }
 
-async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
+// Données "riches" renvoyées par le serveur (blocs d'étude de cas, mode QPQ, temps, barème)
+function extrasFromParse(data) {
+  const ex = {};
+  if (!data) return ex;
+  if (Array.isArray(data.blocks) && data.blocks.length) ex.blocks = data.blocks;
+  if (data.display_mode === 'QPQ' && ex.blocks) ex.display_mode = 'QPQ';
+  if (data.seconds_per_question) ex.seconds_per_question = data.seconds_per_question;
+  if (data.time_limit_seconds) ex.time_limit_seconds = data.time_limit_seconds;
+  if (data.scoring) ex.scoring = data.scoring;
+  return ex;
+}
+
+async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit, extras) {
+  extras = extras || {};
   const level = $('quizLevel').value;
   if (!level) { alert("Veuillez sélectionner un niveau avant de générer ou extraire."); return; }
+  // On ne coupe jamais un quiz à blocs (étude de cas) : un bloc ne doit pas être séparé de ses questions.
+  const hasBlocks = Array.isArray(extras.blocks) && extras.blocks.length > 0;
+  if (hasBlocks) shouldSplit = false;
+  let degraded = false;
+  // Si la base n'a pas encore les colonnes QPQ (quiz_qpq_schema.sql non exécuté), on enregistre quand même le quiz sans elles.
+  const postQuiz = async (payload, withExtras) => {
+    if (withExtras && Object.keys(extras).length) {
+      try { return await fetchWithAuth('/api/quizzes', { ...payload, ...extras }); }
+      catch (e) { degraded = true; console.warn('Enregistrement avec blocs/QPQ refusé, nouvel essai sans :', e.message); }
+    }
+    return await fetchWithAuth('/api/quizzes', payload);
+  };
   let quizzesToStart = [];
   if (shouldSplit && questions.length > 50) {
     const chunks = [];
@@ -2993,9 +3315,12 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit) {
     $('analysisStatus').textContent += ` ✅ ${chunks.length} quiz publiés !`;
   } else {
     try {
-      await fetchWithAuth('/api/quizzes', { title: baseTitle, subject, level, questions });
-      quizzesToStart.push({ title: baseTitle, questions });
-      $('analysisStatus').textContent += ' ✅ Publié !';
+      await postQuiz({ title: baseTitle, subject, level, questions }, true);
+      quizzesToStart.push({ title: baseTitle, questions, ...(degraded ? {} : extras) });
+      $('analysisStatus').textContent += degraded
+        ? ' ✅ Publié (sans les blocs QPQ : exécute quiz_qpq_schema.sql dans Supabase pour les conserver).'
+        : ' ✅ Publié !';
+      if (degraded) quizzesToStart[0] = { title: baseTitle, questions, ...extras };   // utilisable maintenant, mais non enregistré avec les blocs
     } catch (e) {
       console.error('Erreur publication:', e);
       $('analysisStatus').textContent += ' ⚠️ Erreur de publication : ' + e.message;
@@ -3021,7 +3346,7 @@ $('generatePostTestBtn').addEventListener('click', async () => {
       $('analysisStatus').textContent = `✅ ${data.questions.length} questions générées ! Sauvegarde dans la bibliothèque...`;
       const title = $('quizTitle').value.trim() || 'Quiz IA ' + new Date().toLocaleDateString('fr-FR');
       const subject = $('quizSubject').value.trim() || 'Généré par IA';
-      await saveAndStartQuiz(title, subject, data.questions, $('splitQuizCheckbox').checked);
+      await saveAndStartQuiz(title, subject, data.questions, $('splitQuizCheckbox').checked, extrasFromParse(data));
     } else {
       $('analysisStatus').className = 'notice err';
       $('analysisStatus').textContent = '❌ Aucune question générée.';
@@ -3047,7 +3372,7 @@ $('extractTestBtn').addEventListener('click', async () => {
       const title = $('quizTitle').value.trim() || 'Exercice importé ' + new Date().toLocaleDateString('fr-FR');
       const subject = $('quizSubject').value.trim() || 'Général';
       const unknownAnswers = data.questions.filter(q => q.answer_known === false).length;
-      await saveAndStartQuiz(title, subject, data.questions, $('splitQuizCheckbox').checked);
+      await saveAndStartQuiz(title, subject, data.questions, $('splitQuizCheckbox').checked, extrasFromParse(data));
       if (unknownAnswers > 0) setTimeout(() => alert(`⚠️ ${unknownAnswers} question(s) sans bonne réponse trouvée dans le sujet (réglées sur la 1re option par défaut).\nVérifie-les dans la Bibliothèque avec ✏️ Éditer.`), 400);
     } else {
       $('analysisStatus').className = 'notice err';
@@ -3063,21 +3388,47 @@ $('extractTestBtn').addEventListener('click', async () => {
 // 📝 EXAMEN
 // ==========================================
 function startExam(quiz, options = { mode: 'training' }) {
+  // Toutes les questions sont ramenées au format commun de QuizCore (QCD / QCM_UNIQUE / QCM_MULTIPLE / short)
+  const questions = (quiz.questions || []).map(q => QuizCore.normalizeQuestion(q));
+
+  // Mode QPQ : regroupement des questions en blocs (étude de cas + questions). Si les blocs sont incohérents, on retombe en mode normal.
+  let blocks = null;
+  if (options.qpq !== false && quiz.display_mode === 'QPQ') {
+    const grouped = QuizCore.groupQuestionsIntoBlocks({ ...quiz, questions, seconds_per_question: quiz.seconds_per_question || 60 });
+    const count = grouped.reduce((n, b) => n + b.questions.length, 0);
+    if (grouped.length > 0 && count === questions.length) blocks = grouped;
+    else console.warn('Mode QPQ ignoré : les blocs ne couvrent pas toutes les questions.');
+  }
+  const isQpq = !!blocks;
+
   examState = {
     title: quiz.title,
-    questions: quiz.questions,
-    answers: new Array(quiz.questions.length).fill(null),
-    locked: new Array(quiz.questions.length).fill(false),
+    questions,
+    answers: new Array(questions.length).fill(null),
+    locked: new Array(questions.length).fill(false),
     currentIndex: 0,
     submitted: false,
-    mode: options.mode,
-    timeLimitSeconds: options.timeLimitSeconds || 0
+    mode: isQpq ? 'exam' : options.mode,
+    timeLimitSeconds: options.timeLimitSeconds || 0,
+    qpq: isQpq,
+    blocks: blocks || [],
+    blockIndex: 0,
+    blockTimeLeft: 0,
+    globalTimeLeft: 0,
+    caseBlocks: Array.isArray(quiz.blocks) ? quiz.blocks : []
   };
-  
+
   $('examTimerContainer').style.display = 'none';
+  $('qpqTimers').classList.remove('show');
   if (examTimer) clearInterval(examTimer);
 
-  if (examState.mode === 'exam') {
+  if (isQpq) {
+    examState.globalTimeLeft = QuizCore.computeTotalTimeSeconds(blocks);
+    examState.blockTimeLeft = blocks[0].timeSeconds;
+    totalExamTimeSeconds = examState.globalTimeLeft;
+    $('qpqTimers').classList.add('show');
+    examTimer = setInterval(qpqTick, 1000);
+  } else if (examState.mode === 'exam') {
     examState.timeLeft = examState.timeLimitSeconds;
     totalExamTimeSeconds = examState.timeLimitSeconds;
     
@@ -3101,7 +3452,9 @@ function startExam(quiz, options = { mode: 'training' }) {
   }
 
   $('examTitle').textContent = quiz.title;
-  $('examMeta').textContent = `${quiz.questions.length} questions`;
+  $('examMeta').textContent = isQpq
+    ? `${blocks.length} bloc(s) · ${questions.length} questions · sans retour en arrière`
+    : `${questions.length} questions`;
   $('examView').style.display = 'block';
   document.body.style.overflow = 'hidden';
   buildWatermark();
@@ -3122,12 +3475,54 @@ function updateTimerUI() {
   }
 }
 
+// ---------- QPQ : chronos (bloc + global), passage automatique au bloc suivant ----------
+function updateQpqTimersUI() {
+  if (!examState || !examState.qpq) return;
+  $('qpqBlockTimerText').textContent = QuizCore.formatTime(examState.blockTimeLeft);
+  $('qpqGlobalTimerText').textContent = QuizCore.formatTime(examState.globalTimeLeft);
+  $('qpqBlockTimer').classList.toggle('warning', examState.blockTimeLeft <= 10);
+  $('qpqGlobalTimer').classList.toggle('warning', examState.globalTimeLeft <= 60);
+}
+
+function qpqToast(msg) {
+  const old = document.getElementById('qpqToast'); if (old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'qpqToast'; el.className = 'qpq-toast'; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 3500);
+}
+
+function qpqTick() {
+  if (!examState || !examState.qpq || examState.submitted) { if (examTimer) clearInterval(examTimer); return; }
+  examState.blockTimeLeft--;
+  examState.globalTimeLeft = Math.max(0, examState.globalTimeLeft - 1);
+  updateQpqTimersUI();
+  if (examState.blockTimeLeft <= 0) qpqAdvance(true);
+}
+
+// Valide le bloc courant (définitivement) et passe au suivant ; après le dernier bloc, la copie est soumise.
+function qpqAdvance(auto) {
+  if (!examState || !examState.qpq || examState.submitted) return;
+  const isLast = examState.blockIndex >= examState.blocks.length - 1;
+  if (isLast) {
+    if (auto) qpqToast('⏰ Temps écoulé : fin du quiz.');
+    finishExam();
+    return;
+  }
+  examState.blockIndex++;
+  examState.blockTimeLeft = examState.blocks[examState.blockIndex].timeSeconds;
+  if (auto) qpqToast('⏰ Temps écoulé : passage au bloc suivant.');
+  renderQpqBlock();
+}
+
 $('examQuitBtn').addEventListener('click', () => {
   if(!examState) return;
   
   let confirmMsg = 'Quitter ? Les réponses seront perdues.';
   if (examState.mode === 'exam') {
-    confirmMsg = "⚠️ Attention, votre temps s'écoulera toujours. Voulez-vous vraiment quitter l'examen ?";
+    confirmMsg = examState.qpq
+      ? "⚠️ Mode QPQ : les blocs déjà validés ne pourront pas être repris. Voulez-vous vraiment quitter ?"
+      : "⚠️ Attention, votre temps s'écoulera toujours. Voulez-vous vraiment quitter l'examen ?";
   }
   
   if(!examState.submitted && !confirm(confirmMsg)) return;
@@ -3141,49 +3536,59 @@ function closeExamView() {
   
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
   $('examTimerContainer').style.display = 'none';
+  $('qpqTimers').classList.remove('show');
+  $('examPrevBtn').textContent = 'Précédent';
+  $('examNextBtn').textContent = 'Suivant →';
   
   examState = null;
 }
 
+// ---------- présentation ----------
 function typeLabel(t) {
-  return { mcq: 'CHOIX UNIQUE', mcq_multi: 'QCM MULTI', tf: 'VRAI / FAUX', short: 'RÉPONSE COURTE' }[t] || 'CHOIX UNIQUE';
+  return QuizCore.getTypeBadge({ type: t, options: [] }).label;
+}
+function badgeHtml(q) {
+  const b = QuizCore.getTypeBadge(q);
+  return `<span class="exam-type-tag ${b.cssClass}">${esc(b.label)}</span>`;
+}
+function selectionHintHtml(q) {
+  const h = QuizCore.formatSelectionHint(q);
+  return h ? `<div class="exam-hint-select">${esc(h)}</div>` : '';
+}
+function isShortQ(q) { return q.type === 'short' || !q.options || q.options.length === 0; }
+function isQuestionLocked(i) {
+  return examState.mode === 'exam' ? examState.submitted : (examState.locked[i] || examState.submitted);
+}
+function caseCardHtml(title, text, compact) {
+  if (!text) return '';
+  return `<div class="case-card ${compact ? 'compact' : ''}"><div class="case-card-title">📄 ${esc(title || 'Étude de cas')}</div><div class="case-card-text">${esc(text)}</div></div>`;
 }
 
-function renderExamQuestion() {
-  const i = examState.currentIndex;
+// Carte d'une question (identique en mode normal et en mode QPQ)
+function questionCardHtml(i) {
   const q = examState.questions[i];
   const ua = examState.answers[i];
-  const total = examState.questions.length;
-  
-  const isLocked = examState.mode === 'exam' ? examState.submitted : (examState.locked[i] || examState.submitted);
+  const isLocked = isQuestionLocked(i);
+  const isShort = isShortQ(q);
+  const mode = isShort ? null : QuizCore.getSelectionMode(q);       // 'radio' (max_select = 1) ou 'checkbox' (max_select > 1)
+  const sel = Array.isArray(ua) ? ua : [];
 
-  const isMulti = q.type === 'mcq_multi' || (Array.isArray(q.correct) && q.correct.length > 1);
-  const isShort = q.type === 'short' || (!q.options || q.options.length === 0);
-
-  $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
-  $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
-  if (i === total - 1) {
-    $('examNextBtn').style.display = 'none';
-    $('examSubmitBtn').style.display = 'block';
-  } else {
-    $('examNextBtn').style.display = 'block';
-    $('examSubmitBtn').style.display = 'none';
-  }
-
-  let html = `<div class="exam-card">
+  let html = `<div class="exam-card" data-qi="${i}">
     <span class="exam-q-num">Q${i + 1}</span>
-    <span class="exam-type-tag">${typeLabel(q.type)}</span>
+    ${badgeHtml(q)}
     ${isLocked && examState.mode === 'training' ? '<span class="instant-badge">🔒 Verrouillée</span>' : ''}
-    <h3>${esc(q.text)}</h3>`;
+    <h3>${esc(q.text)}</h3>
+    ${isShort ? '' : selectionHintHtml(q)}`;
 
   if (isShort) {
-    html += `<input type="text" class="exam-input" id="textInput" value="${esc(ua || '')}" ${isLocked ? 'disabled' : ''} placeholder="Votre réponse...">`;
-    if (!isLocked && examState.mode === 'training') html += `<button class="validate-btn" id="lockTextBtn">🔒 Valider ma réponse</button>`;
-  } else if (q.options && q.options.length > 0) {
+    html += `<input type="text" class="exam-input" value="${esc(ua || '')}" ${isLocked ? 'disabled' : ''} placeholder="Votre réponse...">`;
+    if (!isLocked && examState.mode === 'training') html += `<button class="validate-btn lock-text" type="button">🔒 Valider ma réponse</button>`;
+  } else {
     html += `<div class="exam-options">`;
     q.options.forEach((opt, j) => {
-      const isSelected = isMulti ? (Array.isArray(ua) && ua.includes(j)) : (ua === j);
-      const isCorrectOption = isMulti ? (Array.isArray(q.correct) && q.correct.includes(j)) : (q.correct === j);
+      const isSelected = sel.includes(j);
+      const isCorrectOption = Array.isArray(q.correct) && q.correct.includes(j);
+      const full = !isLocked && QuizCore.isChoiceDisabled(sel, q, j);     // maximum de cases atteint
 
       let cls = 'exam-opt';
       if (isLocked) {
@@ -3193,20 +3598,20 @@ function renderExamQuestion() {
       } else if (isSelected) {
         cls += ' selected';
       }
+      if (full) cls += ' disabled-full';
 
-      const disabledAttr = isLocked ? 'disabled' : '';
       html += `<label class="${cls}">
-        <input type="${isMulti ? 'checkbox' : 'radio'}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${disabledAttr}>
+        <input type="${mode}" name="q${i}" value="${j}" ${isSelected ? 'checked' : ''} ${(isLocked || full) ? 'disabled' : ''}>
         <span>${esc(opt)}</span>
       </label>`;
     });
     html += `</div>`;
-    if (isMulti && !isLocked && examState.mode === 'training') html += `<button class="validate-btn" id="lockMultiBtn">🔒 Valider ma sélection</button>`;
+    if (mode === 'checkbox' && !isLocked && examState.mode === 'training') html += `<button class="validate-btn lock-multi" type="button">🔒 Valider ma sélection</button>`;
   }
 
   if (!isLocked && q.explanation && examState.mode === 'training') {
-    html += `<button class="hint-btn" onclick="document.getElementById('hintBox').classList.toggle('show')">💡 Voir un indice</button>`;
-    html += `<div class="hint-box" id="hintBox"><b>Indice :</b> ${esc(q.explanation)}</div>`;
+    html += `<button class="hint-btn" type="button" onclick="this.nextElementSibling.classList.toggle('show')">💡 Voir un indice</button>`;
+    html += `<div class="hint-box"><b>Indice :</b> ${esc(q.explanation)}</div>`;
   }
 
   if (isLocked) {
@@ -3214,7 +3619,6 @@ function renderExamQuestion() {
     let correctStr = '';
     if (isShort) correctStr = String(q.correct ?? '');
     else if (Array.isArray(q.correct)) correctStr = q.correct.map(k => q.options?.[k]).filter(Boolean).join(', ');
-    else if (q.options && q.options[q.correct] !== undefined) correctStr = q.options[q.correct];
     html += `<div class="exam-result-box ${isOk ? '' : 'wrong'}">
       <b>${isOk ? '✅ Correct' : '❌ Incorrect'}</b>
       ${correctStr ? `<br><b>Bonne réponse :</b> ${esc(correctStr)}` : ''}
@@ -3223,76 +3627,175 @@ function renderExamQuestion() {
   }
 
   html += `</div>`;
-  $('examBody').innerHTML = html;
+  return html;
+}
 
-  if (!isLocked) {
-    if (isShort) {
-      const textInp = $('textInput');
-      textInp.addEventListener('input', (e) => { examState.answers[i] = e.target.value; });
-      
-      if (examState.mode === 'training') {
-        $('lockTextBtn').addEventListener('click', () => {
-          const v = textInp.value.trim();
-          if (!v) return alert("Saisis une réponse avant de valider.");
-          examState.answers[i] = v;
-          examState.locked[i] = true;
-          renderExamQuestion();
-        });
-      }
-    } else if (isMulti) {
-      document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
-        inp.addEventListener('change', () => {
-          examState.answers[i] = [...document.querySelectorAll(`input[name="q${i}"]:checked`)].map(x => parseInt(x.value));
-        });
-      });
-      
-      if (examState.mode === 'training') {
-        $('lockMultiBtn').addEventListener('click', () => {
-          const sel = examState.answers[i];
-          if (!Array.isArray(sel) || sel.length === 0) return alert("Coche au moins une réponse avant de valider.");
-          examState.locked[i] = true;
-          renderExamQuestion();
-        });
-      }
-    } else {
-      document.querySelectorAll(`input[name="q${i}"]`).forEach(inp => {
-        inp.addEventListener('change', () => {
-          examState.answers[i] = parseInt(inp.value);
-          if (examState.mode === 'training') {
-            examState.locked[i] = true;
-            renderExamQuestion();
-          }
-        });
-      });
-    }
+// Met à jour les cases d'une question sans tout redessiner (garde la position de défilement)
+function paintChoices(i) {
+  const q = examState.questions[i];
+  const sel = Array.isArray(examState.answers[i]) ? examState.answers[i] : [];
+  const card = document.querySelector(`.exam-card[data-qi="${i}"]`);
+  if (!card) return;
+  card.querySelectorAll('label.exam-opt').forEach(lab => {
+    const inp = lab.querySelector('input');
+    const j = parseInt(inp.value);
+    const isSel = sel.includes(j);
+    const full = QuizCore.isChoiceDisabled(sel, q, j);
+    inp.checked = isSel;
+    inp.disabled = full;
+    lab.classList.toggle('selected', isSel);
+    lab.classList.toggle('disabled-full', full);
+  });
+}
+
+function bindQuestionCard(i) {
+  if (isQuestionLocked(i)) return;
+  const q = examState.questions[i];
+  const card = document.querySelector(`.exam-card[data-qi="${i}"]`);
+  if (!card) return;
+
+  if (isShortQ(q)) {
+    const textInp = card.querySelector('.exam-input');
+    textInp.addEventListener('input', (e) => { examState.answers[i] = e.target.value; });
+    const lockBtn = card.querySelector('.lock-text');
+    if (lockBtn) lockBtn.addEventListener('click', () => {
+      const v = textInp.value.trim();
+      if (!v) return alert("Saisis une réponse avant de valider.");
+      examState.answers[i] = v;
+      examState.locked[i] = true;
+      renderExamQuestion();
+    });
+    return;
   }
+
+  const mode = QuizCore.getSelectionMode(q);
+  card.querySelectorAll('input[name="q' + i + '"]').forEach(inp => {
+    // "click" (et non "change") : un bouton radio déjà coché ne déclenche pas "change", alors qu'on veut pouvoir le décocher
+    inp.addEventListener('click', () => {
+      examState.answers[i] = QuizCore.toggleReponse(examState.answers[i], q, parseInt(inp.value));
+      if (examState.mode === 'training' && mode === 'radio' && examState.answers[i].length > 0) {
+        examState.locked[i] = true;           // entraînement : un choix unique est corrigé tout de suite
+        renderExamQuestion();
+      } else {
+        paintChoices(i);
+      }
+    });
+  });
+  const lockMulti = card.querySelector('.lock-multi');
+  if (lockMulti) lockMulti.addEventListener('click', () => {
+    const sel = examState.answers[i];
+    if (!Array.isArray(sel) || sel.length === 0) return alert("Coche au moins une réponse avant de valider.");
+    examState.locked[i] = true;
+    renderExamQuestion();
+  });
+}
+
+// ---------- affichage ----------
+function renderExamQuestion() {
+  if (examState.qpq) return renderQpqBlock();
+  const i = examState.currentIndex;
+  const q = examState.questions[i];
+  const total = examState.questions.length;
+
+  $('examProgressText').textContent = `Question ${i + 1} / ${total}`;
+  $('examPrevBtn').textContent = 'Précédent';
+  $('examNextBtn').textContent = 'Suivant →';
+  $('examPrevBtn').style.display = i > 0 ? 'block' : 'none';
+  if (i === total - 1) {
+    $('examNextBtn').style.display = 'none';
+    $('examSubmitBtn').style.display = 'block';
+  } else {
+    $('examNextBtn').style.display = 'block';
+    $('examSubmitBtn').style.display = 'none';
+  }
+
+  // Quiz à blocs affiché en mode normal : l'étude de cas reste visible au-dessus de sa question
+  let caseHtml = '';
+  if (q.block_id !== undefined && q.block_id !== null && examState.caseBlocks.length) {
+    const b = examState.caseBlocks.find(x => String(x.id) === String(q.block_id));
+    if (b && b.case_block) caseHtml = caseCardHtml(b.title, b.case_block, true);
+  }
+  $('examBody').innerHTML = caseHtml + questionCardHtml(i);
+  bindQuestionCard(i);
+}
+
+// Mode QPQ : un seul bloc à l'écran, étude de cas en haut (une seule fois), puis ses questions. Jamais de "Précédent" pendant l'épreuve.
+function renderQpqBlock() {
+  const bi = examState.blockIndex;
+  const nb = examState.blocks.length;
+  const b = examState.blocks[bi];
+  const reviewing = examState.submitted;       // après la soumission : correction, navigation libre entre les blocs
+  const isLast = bi === nb - 1;
+
+  $('examMeta').textContent = `Bloc ${bi + 1}/${nb} : ${b.title}`;
+  $('examProgressText').textContent = reviewing
+    ? `Correction · bloc ${bi + 1} / ${nb}`
+    : `Bloc ${bi + 1} / ${nb} · ${b.questions.length} question(s)`;
+
+  $('examPrevBtn').textContent = 'Bloc précédent';
+  $('examPrevBtn').style.display = (reviewing && bi > 0) ? 'block' : 'none';
+  if (reviewing) {
+    $('examNextBtn').textContent = 'Bloc suivant →';
+    $('examNextBtn').style.display = isLast ? 'none' : 'block';
+    $('examSubmitBtn').style.display = 'none';
+    $('qpqTimers').classList.remove('show');
+  } else if (isLast) {
+    $('examNextBtn').style.display = 'none';
+    $('examSubmitBtn').style.display = 'block';
+  } else {
+    $('examNextBtn').textContent = 'Valider ce bloc →';
+    $('examNextBtn').style.display = 'block';
+    $('examSubmitBtn').style.display = 'none';
+  }
+
+  let html = caseCardHtml(b.title, b.case_block, false);
+  b.questions.forEach(bq => { html += questionCardHtml(bq.globalIndex); });
+  $('examBody').innerHTML = html;
+  b.questions.forEach(bq => bindQuestionCard(bq.globalIndex));
+  $('examView').scrollTop = 0;
+  updateQpqTimersUI();
 }
 
 function checkAnswer(q, ua) {
   if (ua === null || ua === undefined) return false;
   if (q.type === 'short') return String(ua).toLowerCase().trim() === String(q.correct).toLowerCase().trim();
-  if (q.type === 'mcq' || q.type === 'tf') return ua === q.correct;
-  if (q.type === 'mcq_multi') {
-    if(!Array.isArray(ua) || ua.length === 0) return false;
-    if(!Array.isArray(q.correct)) return false;
-    const a = [...ua].sort((x,y)=>x-y); const b = [...q.correct].sort((x,y)=>x-y);
-    return a.length === b.length && a.every((v,k) => v === b[k]);
-  }
-  return false;
+  const sel = Array.isArray(ua) ? ua : [ua];
+  if (sel.length === 0) return false;
+  return QuizCore.isReponseCorrecte(q, sel);
 }
 
 $('examNextBtn').addEventListener('click', () => {
+  if (!examState) return;
+  if (examState.qpq) {
+    if (examState.submitted) {                       // correction : navigation libre
+      if (examState.blockIndex < examState.blocks.length - 1) { examState.blockIndex++; renderQpqBlock(); }
+      return;
+    }
+    if (!confirm('Valider ce bloc ? Tu ne pourras plus y revenir.')) return;
+    qpqAdvance(false);
+    return;
+  }
   if(examState.currentIndex < examState.questions.length - 1) { examState.currentIndex++; renderExamQuestion(); }
 });
 $('examPrevBtn').addEventListener('click', () => {
+  if (!examState) return;
+  if (examState.qpq) {
+    if (examState.submitted && examState.blockIndex > 0) { examState.blockIndex--; renderQpqBlock(); }   // jamais pendant l'épreuve
+    return;
+  }
   if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); }
 });
 
 $('examSubmitBtn').addEventListener('click', async () => {
-  if(examState.submitted) return;
-  if(!confirm('Soumettre la compo et voir le score ?')) return;
+  if(!examState || examState.submitted) return;
+  if(!confirm(examState.qpq ? 'Terminer le quiz et voir le score ? Ce dernier bloc sera validé.' : 'Soumettre la compo et voir le score ?')) return;
+  await finishExam();
+});
 
+async function finishExam() {
+  if (!examState || examState.submitted) return;
   examState.submitted = true;
+  $('qpqTimers').classList.remove('show');
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
   $('examTimerContainer').style.display = 'none';
 
@@ -3318,11 +3821,12 @@ $('examSubmitBtn').addEventListener('click', async () => {
   $('scoreMessage').textContent = msg;
 
   $('scoreView').classList.add('show');
-});
+}
 
 $('scoreCorrectionsBtn').addEventListener('click', () => {
   $('scoreView').classList.remove('show');
   examState.currentIndex = 0;
+  examState.blockIndex = 0;
   renderExamQuestion();
 });
 
