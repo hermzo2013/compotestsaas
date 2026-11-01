@@ -47,8 +47,11 @@
         return { ...q, type: TYPES.QCD, max_select: 1, correct: asArray(q.correct), _legacyType: q.type };
       case 'mcq':
         return { ...q, type: options.length === 2 ? TYPES.QCD : TYPES.QCM_UNIQUE, max_select: 1, correct: asArray(q.correct), _legacyType: q.type };
-      case 'mcq_multi':
-        return { ...q, type: TYPES.QCM_MULTIPLE, max_select: Math.max(2, options.length), correct: asArray(q.correct), _legacyType: q.type };
+      case 'mcq_multi': {
+        // la limite fournie par le sujet ("3 réponses maximum") est conservée si elle est cohérente
+        const ms = (isInt(q.max_select) && q.max_select >= 2 && q.max_select <= options.length) ? q.max_select : Math.max(2, options.length);
+        return { ...q, type: TYPES.QCM_MULTIPLE, max_select: ms, correct: asArray(q.correct), _legacyType: q.type };
+      }
       case TYPES.QCM_UNIQUE:
         return { ...q, max_select: 1, correct: asArray(q.correct) };
       case TYPES.QCD:
@@ -171,8 +174,9 @@
   /** Consigne affichée sous la question. */
   function formatSelectionHint(question) {
     const ms = question && question.max_select;
+    const n = question && Array.isArray(question.options) ? question.options.length : 0;
     if (ms === 1) return 'Une seule réponse';
-    if (isInt(ms) && ms > 1) return `Jusqu'à ${ms} réponses`;
+    if (isInt(ms) && ms > 1) return (n > 0 && ms >= n) ? 'Plusieurs réponses possibles' : `Jusqu'à ${ms} réponses`;
     return '';
   }
 
