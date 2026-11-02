@@ -106,7 +106,34 @@ app.get('/api/health', (req, res) => {
 // ==========================================
 // FICHIERS STATIQUES
 // ==========================================
-app.use(express.static(__dirname, { maxAge: '1d' }));
+// ==========================================
+// PWA : service worker et manifeste (en-têtes dédiés)
+// ==========================================
+// Le service worker ne doit jamais être mis en cache longtemps, sinon une mise à jour de l'app n'arrive pas.
+app.get('/sw.js', (_req, res) => {
+  res.set({ 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' });
+  res.type('application/javascript').sendFile(path.join(__dirname, 'sw.js'));
+});
+app.get('/manifest.json', (_req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.type('application/manifest+json').sendFile(path.join(__dirname, 'manifest.json'));
+});
+
+// Sécurité : express.static(__dirname) publie tout le dossier. On bloque au moins le code serveur et les scripts de build.
+app.use((req, res, next) => {
+  if (/^\/(server\.js|package(-lock)?\.json|node_modules\/|generate-icons\.js|optimize-images\.js)/i.test(req.path)) return res.sendStatus(404);
+  next();
+});
+
+// index:false -> '/' est servi par la route plus bas (sans cache). setHeaders -> index.html et config.js ne sont jamais mis en cache
+// (avant, express.static répondait en premier avec 1 jour de cache et les routes « no-cache » ci-dessous n'étaient jamais atteintes).
+app.use(express.static(__dirname, {
+  maxAge: '1d',
+  index: false,
+  setHeaders: (res, filePath) => {
+    if (/[\\/](index\.html|config\.js)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+}));
 
 // ← FIX #3 : Cache-Control no-cache sur index.html (force le rechargement après déploiement)
 const noCacheHeaders = {

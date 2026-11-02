@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#064E3B">
+<title>Révisio — Hors ligne</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<style>
+  :root {
+    --blue: #10B981;
+    --navy: #065F46;
+    --bg: #F2F9F5;
+    --ink: #1F2937;
+    --muted: #6B7280;
+    --line: #E5E7EB;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100vh; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px 28px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 10px 40px rgba(6,95,70,.12);
+    text-align: center;
+    border: 1px solid var(--line);
+  }
+  .logo {
+    height: 64px;
+    margin-bottom: 20px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .emoji { font-size: 64px; line-height: 1; margin-bottom: 12px; }
+  h1 {
+    font-size: 22px;
+    color: var(--navy);
+    margin: 0 0 12px;
+    font-weight: 800;
+  }
+  p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0 0 24px;
+  }
+  button {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    border: 0;
+    border-radius: 12px;
+    background: var(--blue);
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .2s, transform .1s;
+  }
+  button:hover { background: #059669; }
+  button:active { transform: scale(0.98); }
+  .hint {
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #FEF3C7;
+    color: #92400E;
+    padding: 6px 12px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .status .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #F59E0B;
+  }
+  .status.online {
+    background: #ECFDF5; color: #065F46;
+  }
+  .status.online .dot { background: #10B981; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <img src="/site.png" alt="Révisio" class="logo" onerror="this.style.display='none'">
+  <div class="emoji">📡</div>
+  <div id="status" class="status">
+    <span class="dot"></span>
+    <span id="statusText">Hors ligne</span>
+  </div>
+  <h1>Pas de connexion</h1>
+  <p>
+    Révisio a besoin d'internet pour charger tes quiz, tes cours et ta progression.
+    Vérifie ta connexion Wi-Fi ou tes données mobiles, puis réessaie.
+  </p>
+  <button onclick="retry()">🔄 Réessayer</button>
+  <div class="hint">
+    Astuce : une fois reconnecté, l'app fonctionnera à nouveau normalement.
+  </div>
+</div>
+
+<script>
+  function updateStatus() {
+    const el = document.getElementById('status');
+    const txt = document.getElementById('statusText');
+    if (navigator.onLine) {
+      el.classList.add('online');
+      txt.textContent = 'Connexion rétablie';
+      setTimeout(() => { location.href = '/'; }, 800);
+    } else {
+      el.classList.remove('online');
+      txt.textContent = 'Hors ligne';
+    }
+  }
+  function retry() {
+    if (navigator.onLine) location.href = '/';
+    else {
+      const btn = event.target;
+      btn.textContent = '⏳ Toujours hors ligne…';
+      setTimeout(() => { btn.textContent = '🔄 Réessayer'; }, 1500);
+    }
+  }
+  window.addEventListener('online', updateStatus);
+  window.addEventListener('offline', updateStatus);
+  updateStatus();
+</script>
+
+</body>
+</html>
