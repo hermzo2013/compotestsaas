@@ -3,16 +3,22 @@ import express from 'express';
 import OpenAI from 'openai';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-// ← FIX #4 : import express-rate-limit
 import rateLimit from 'express-rate-limit';
-// Détection des consignes écrites dans les sujets (type de réponse, études de cas, QPQ, temps)
 import { detectAndParse, finalizeAiResult } from './instruction-detector.js';
-import { parseQuizText } from './quiz-parser.js';   // extracteur v2 (remplace l'ancienne fonction parseQuizText de ce fichier)
+import { parseQuizText } from './quiz-parser.js';
 import { createPush } from './push.js';
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
+
+// ==========================================
+// 🛠️ FIX : Configuration PROXY pour Render
+// ==========================================
+// Render utilise un proxy inverse. Sans cette ligne, express-rate-limit
+// plante car il ne peut pas identifier l'IP réelle du client.
+app.set('trust proxy', 1);
+
 app.disable('x-powered-by');
 app.use(express.json({ limit: '10mb' }));
 
@@ -57,41 +63,32 @@ app.use((req, res, next) => {
 });
 
 // ==========================================
-// 🛡️ FIX #4 : RATE LIMITING
+// 🛡️ RATE LIMITING
 // ==========================================
-// Limiteur global sur /api/* (sauf /api/health qui doit toujours répondre pour UptimeRobot)
 const globalApiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 60,             // 60 requêtes par IP par minute
+  windowMs: 60 * 1000,
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path === '/api/health', // ← exclut /api/health
+  skip: (req) => req.path === '/api/health',
   message: { error: 'Trop de requêtes, réessaie dans une minute.' }
 });
 
-// Limiteur strict sur les routes IA (consomme des tokens Groq)
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,             // 10 requêtes IA par IP par minute
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes IA, réessaie dans une minute.' }
 });
 
-// Application des limiteurs (ordre : global, puis strict pour les routes IA)
 app.use('/api', globalApiLimiter);
 app.use('/api/generate-post-test', aiLimiter);
 app.use('/api/parse-existing-quiz', aiLimiter);
 
 // ==========================================
-// 🛡️ ROUTE HEALTH CHECK (pour UptimeRobot)
+// 🛡️ ROUTE HEALTH CHECK
 // ==========================================
-// ⏰ FIX #5 : Documentation UptimeRobot / cron-job.org :
-//   - URL à pinger : GET https://compotestsaas.onrender.com/api/health
-//   - Intervalle : toutes les 14 minutes
-//   - Fenêtre active : 04h00 → 23h59 GMT (le serveur est en veille 00h-04h)
-//   - Timeout : 30 s
-//   - Alertes si statut ≠ 200
 app.get('/api/health', (req, res) => {
   const now = new Date();
   const hourUTC = now.getUTCHours();
@@ -107,10 +104,6 @@ app.get('/api/health', (req, res) => {
 // ==========================================
 // FICHIERS STATIQUES
 // ==========================================
-// ==========================================
-// PWA : service worker et manifeste (en-têtes dédiés)
-// ==========================================
-// Le service worker ne doit jamais être mis en cache longtemps, sinon une mise à jour de l'app n'arrive pas.
 app.get('/sw.js', (_req, res) => {
   res.set({ 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' });
   res.type('application/javascript').sendFile(path.join(__dirname, 'sw.js'));
@@ -120,14 +113,11 @@ app.get('/manifest.json', (_req, res) => {
   res.type('application/manifest+json').sendFile(path.join(__dirname, 'manifest.json'));
 });
 
-// Sécurité : express.static(__dirname) publie tout le dossier. On bloque au moins le code serveur et les scripts de build.
 app.use((req, res, next) => {
   if (/^\/(server\.js|package(-lock)?\.json|node_modules\/|generate-icons\.js|optimize-images\.js)/i.test(req.path)) return res.sendStatus(404);
   next();
 });
 
-// index:false -> '/' est servi par la route plus bas (sans cache). setHeaders -> index.html et config.js ne sont jamais mis en cache
-// (avant, express.static répondait en premier avec 1 jour de cache et les routes « no-cache » ci-dessous n'étaient jamais atteintes).
 app.use(express.static(__dirname, {
   maxAge: '1d',
   index: false,
@@ -136,7 +126,6 @@ app.use(express.static(__dirname, {
   }
 }));
 
-// ← FIX #3 : Cache-Control no-cache sur index.html (force le rechargement après déploiement)
 const noCacheHeaders = {
   'Cache-Control': 'no-cache, no-store, must-revalidate',
   'Pragma': 'no-cache',
@@ -176,7 +165,7 @@ function requireAdmin(req, res, next) {
 }
 
 // ==========================================
-// ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
+// ROUTES PUBLIQUES
 // ==========================================
 app.get('/api/quizzes', async (req, res) => {
   try {
@@ -194,9 +183,8 @@ app.get('/api/quizzes', async (req, res) => {
 });
 
 // ==========================================
-// MIDDLEWARE D'AUTHENTIFICATION POUR LE RESTE DE /api
+// PUSH NOTIFICATIONS
 // ==========================================
-// Notifications push : routeur autonome (authentification Supabase intégrée), monté avant le middleware global
 const push = createPush();
 app.use('/api', push.router);
 
@@ -306,11 +294,6 @@ function aiClient() {
 }
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
-// ==========================================
-// EXTRACTION
-// ==========================================
-// (l'ancienne fonction parseQuizText a été remplacée par quiz-parser.js)
-
 app.post('/api/parse-existing-quiz', (req, res) => {
   try {
     const text = req.body?.text || '';
@@ -318,7 +301,6 @@ app.post('/api/parse-existing-quiz', (req, res) => {
     try {
       result = detectAndParse(text, parseQuizText);
     } catch (err) {
-      // La détection des consignes ne doit JAMAIS empêcher l'import : retour à l'extraction d'origine
       console.error('Détection des consignes ignorée :', err.message);
       result = { questions: parseQuizText(text) };
     }
@@ -378,7 +360,6 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
         if (q.type === 'short' && !q.explanation) q.explanation = '';
         return q;
       });
-      // Validation des consignes / blocs fournis par l'IA + complément déterministe (sans jamais bloquer la génération)
       try { finalizeAiResult(parsed, text); } catch (err) { console.error('finalizeAiResult ignoré :', err.message); }
     }
     res.json(parsed);
@@ -389,10 +370,8 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
 });
 
 // ==========================================
-// ROUTES QUIZ (CRÉATION, MODIFICATION, SUPPRESSION)
+// ROUTES QUIZ
 // ==========================================
-// Champs optionnels des modes NORMAL / QPQ (colonnes ajoutées par quiz_qpq_schema.sql).
-// Ils ne sont transmis à Supabase QUE s'ils sont fournis : tant que le client ne les envoie pas, rien ne change.
 function pickQuizExtras(body) {
   const out = {};
   const { display_mode, blocks, seconds_per_question } = body || {};
@@ -528,4 +507,10 @@ app.delete('/api/quizzes/:id', requireAdmin, async (req, res) => {
 app.listen(port, '0.0.0.0', () => {
   console.log(`✅ Serveur démarré sur le port ${port}`);
   console.log(`🌐 Environnement: ${process.env.NODE_ENV || 'development'}`);
+  
+  // 🛠️ DIAGNOSTIC : Vérification des variables VAPID au démarrage
+  console.log(`🔍 DIAGNOSTIC VAPID :`);
+  console.log(`   - VAPID_PUBLIC_KEY : ${process.env.VAPID_PUBLIC_KEY ? '✅ Chargée' : '❌ MANQUANTE'}`);
+  console.log(`   - VAPID_PRIVATE_KEY : ${process.env.VAPID_PRIVATE_KEY ? '✅ Chargée' : '❌ MANQUANTE'}`);
+  console.log(`   - VAPID_SUBJECT : ${process.env.VAPID_SUBJECT ? '✅ Chargée' : '❌ MANQUANTE'}`);
 });
