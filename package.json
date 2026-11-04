@@ -16,12 +16,13 @@
     "@capacitor/filesystem": "^6.0.0",
     "@capacitor/preferences": "^6.0.0",
     "@capacitor/splash-screen": "^6.0.0",
-    "@supabase/supabase-js": "^2.118.0",
+    "@supabase/supabase-js": "^2.119.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^8.7.1",
     "firebase-admin": "^14.5.0",
-    "openai": "^4.52.7"
+    "openai": "^4.52.7",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.0.0",
