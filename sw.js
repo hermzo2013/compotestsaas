@@ -8,7 +8,7 @@
    - Ne touche JAMAIS aux appels /api/*, à Supabase, ni aux requêtes non-GET
    ===================================================================== */
 
-const APP_VERSION = 'revisio-v2';          // ← à incrémenter pour forcer la purge des anciens caches
+const APP_VERSION = 'revisio-v3';          // ← à incrémenter pour forcer la purge des anciens caches
 const SHELL_CACHE = `${APP_VERSION}-shell`;
 const CDN_CACHE   = `${APP_VERSION}-cdn`;
 
@@ -120,6 +120,42 @@ async function staleWhileRevalidate(req, cacheName) {
     .catch(() => null);
   return cached || (await refresh) || new Response('', { status: 504 });
 }
+
+// ---------------- PUSH : affichage des notifications et clic
+function safeUrl(u) {
+  return (typeof u === 'string' && /^\/(?!\/)\S{0,299}$/.test(u)) ? u : '/';
+}
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; }
+  catch (e) { data = { body: event.data ? event.data.text() : '' }; }
+  const options = {
+    body: String(data.body || '').slice(0, 300),
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    lang: 'fr',
+    data: { url: safeUrl(data.url) }
+  };
+  if (data.tag) { options.tag = String(data.tag).slice(0, 64); options.renotify = true; }
+  event.waitUntil(self.registration.showNotification(String(data.title || 'Révisio').slice(0, 100), options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL(safeUrl(event.notification.data && event.notification.data.url), self.location.origin).href;
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) {
+      if (new URL(c.url).origin === self.location.origin && 'focus' in c) {
+        await c.focus();
+        if ('navigate' in c) { try { await c.navigate(target); } catch (e) {} }
+        return;
+      }
+    }
+    await self.clients.openWindow(target);
+  })());
+});
 
 // ---------------- MESSAGE : forcer la mise à jour depuis la page
 self.addEventListener('message', (event) => {

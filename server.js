@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 // Détection des consignes écrites dans les sujets (type de réponse, études de cas, QPQ, temps)
 import { detectAndParse, finalizeAiResult } from './instruction-detector.js';
 import { parseQuizText } from './quiz-parser.js';   // extracteur v2 (remplace l'ancienne fonction parseQuizText de ce fichier)
+import { createPush } from './push.js';
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -195,6 +196,10 @@ app.get('/api/quizzes', async (req, res) => {
 // ==========================================
 // MIDDLEWARE D'AUTHENTIFICATION POUR LE RESTE DE /api
 // ==========================================
+// Notifications push : routeur autonome (authentification Supabase intégrée), monté avant le middleware global
+const push = createPush();
+app.use('/api', push.router);
+
 app.use('/api', authenticate);
 
 // ==========================================
@@ -445,7 +450,7 @@ app.post('/api/quizzes', async (req, res) => {
       })
     });
     if (!response.ok) { const err = await response.text(); throw new Error(`Erreur Supabase POST: ${err}`); }
-    const data = await response.json(); res.json({ quiz: data[0] });
+    const data = await response.json(); push.notifyNewQuiz(data[0], req.user.id); res.json({ quiz: data[0] });
   } catch (e) { console.error('Erreur POST quizzes:', e.message); res.status(500).json({ error: e.message }); }
 });
 

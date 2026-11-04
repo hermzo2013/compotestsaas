@@ -266,4 +266,11 @@
   };
 
   bind();
+
+  // Le script est chargé avec « defer » : si la session a été rétablie avant lui, on s'initialise ici aussi.
+  if (typeof supabaseClient !== 'undefined' && supabaseClient.auth) {
+    supabaseClient.auth.getSession().then(function (s) {
+      if (s && s.data && s.data.session) window.PushUI.afterLogin();
+    }).catch(function () {});
+  }
 })();

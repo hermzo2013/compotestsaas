@@ -744,6 +744,7 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
   <div class="header-actions">
     <span id="userLabel">Non connecté</span>
     <button id="adminBtn" class="btn-admin" style="display:none">⚙️ Admin</button>
+    <button id="pushBtn" style="display:none">🔔 Activer les notifications</button>
     <button id="pwdBtn" style="display:none">🔑 Mot de passe</button>
     <button id="logoutBtn" style="display:none">Déconnexion</button>
   </div>
@@ -977,6 +978,7 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
       <button class="admin-tab-btn" data-atab="password">🔑 Modifier MDP</button>
       <button class="admin-tab-btn" data-atab="role">👑 Attribuer un rôle</button>
       <button class="admin-tab-btn" data-atab="messages">📩 Messages d'aide</button>
+      <button class="admin-tab-btn" data-atab="push">📢 Notifications</button>
     </div>
     <div id="atab-create" class="atab-content">
       <form id="adminCreateForm" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1034,6 +1036,34 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
       <div id="adminMessagesList">
         <p style="color:var(--muted);font-size:13px;">Chargement...</p>
       </div>
+    </div>
+
+    <!-- 🔔 ONGLET NOTIFICATIONS -->
+    <div id="atab-push" class="atab-content hide">
+      <p style="color:var(--muted);font-size:13px;margin-top:0;">Écris un message : il sera envoyé en notification aux utilisateurs qui ont activé les notifications. Les nouveaux quiz sont notifiés automatiquement.</p>
+      <label style="font-weight:700;font-size:13px;">Titre <span id="pushTitleCount" style="color:var(--muted);font-weight:400">0/80</span></label>
+      <input id="pushTitle" maxlength="80" placeholder="Ex. Nouveau cours disponible" style="width:100%;margin:4px 0 12px;">
+      <label style="font-weight:700;font-size:13px;">Message <span id="pushBodyCount" style="color:var(--muted);font-weight:400">0/300</span></label>
+      <textarea id="pushBody" maxlength="300" rows="3" placeholder="Ton message…" style="width:100%;margin:4px 0 12px;"></textarea>
+      <label style="font-weight:700;font-size:13px;">Page ouverte au clic</label>
+      <select id="pushUrl" style="width:100%;margin:4px 0 12px;">
+        <option value="/">Accueil</option>
+        <option value="/?tab=library">Bibliothèque</option>
+        <option value="/?tab=courses">Mes cours</option>
+        <option value="/?tab=create">Créer un test</option>
+      </select>
+      <div style="border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;background:#F9FAFB;margin-bottom:12px;">
+        <div style="font-size:11px;color:var(--muted)">Aperçu</div>
+        <div id="pushPreviewTitle" style="font-weight:800"></div>
+        <div id="pushPreviewBody" style="font-size:13px"></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button id="pushSendBtn" type="button">📣 Envoyer</button>
+        <span id="pushSubCount" style="font-size:12px;color:var(--muted);font-weight:700"></span>
+      </div>
+      <div id="pushResult" style="margin-top:10px;font-size:13px;font-weight:700"></div>
+      <h4 style="margin:20px 0 8px">Derniers envois</h4>
+      <div id="pushHistory" style="font-size:13px"></div>
     </div>
 
     <h3 style="margin-top:30px">Comptes existants</h3>
@@ -1686,6 +1716,7 @@ function handleSession(session) {
     if(isAdmin) loadAdminUsers();
     loadCloudData();
     checkUnreadReplies();
+    if (window.PushUI) { try { window.PushUI.afterLogin(); } catch (e) { console.warn('PushUI:', e); } }
     if (unreadCheckInterval) clearInterval(unreadCheckInterval);
     unreadCheckInterval = setInterval(checkUnreadReplies, 30000);
   } else {
@@ -1696,6 +1727,7 @@ function handleSession(session) {
     $('logoutBtn').style.display = 'none';
     $('userLabel').textContent = 'Non connecté';
     $('adminBtn').style.display = 'none';
+    if (window.PushUI) { try { window.PushUI.afterLogout(); } catch (e) {} }
     $('clearHistoryBtn').style.display = 'none';
     $('communityWidget').style.display = 'none';
     $('communityPopup').classList.remove('show');
@@ -2845,6 +2877,7 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
     btn.classList.add('active');
     $('atab-' + btn.dataset.atab).classList.remove('hide');
     if (btn.dataset.atab === 'messages') loadAdminMessages();
+    if (btn.dataset.atab === 'push' && window.PushUI) window.PushUI.adminLoad();
   });
 });
 
@@ -3891,4 +3924,5 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
   }
 })();
 </script>
+<script src="/push-client.js" defer></script>
 </body></html>

@@ -1,133 +1,202 @@
-import { Router } from 'express';
-import webpush from 'web-push';
+import express, { Router } from 'express';
 
 const MAX_TITLE = 80;
 const MAX_BODY = 300;
-const QUIZ_BATCH_DELAY = 60_000;
-const QUIZ_MIN_GAP = 5 * 60_000;
-const ADMIN_COOLDOWN = 3_000;
+const QUIZ_BATCH_DELAY = 60_000;      // regroupe les quiz créés dans la minute
+const QUIZ_MIN_GAP = 5 * 60_000;      // au plus une alerte « nouveau quiz » toutes les 5 minutes
+const ADMIN_COOLDOWN = 3_000;         // anti double-clic sur « Envoyer »
 const DEAD_FCM = new Set(['messaging/registration-token-not-registered', 'messaging/invalid-registration-token']);
-const TARGETS = {
-  web: { table: 'push_subscriptions', col: 'endpoint' },
-  android: { table: 'push_fcm_tokens', col: 'token' }
-};
 
 const clean = (v, max) => String(v ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 const safeUrl = (u) => (typeof u === 'string' && /^\/(?!\/)\S{0,299}$/.test(u) ? u : '/');
-const add = (a, b) => ({ recipients: a.recipients + b.recipients, delivered: a.delivered + b.delivered, failed: a.failed + b.failed });
 const ZERO = { recipients: 0, delivered: 0, failed: 0 };
+const add = (a, b) => ({ recipients: a.recipients + b.recipients, delivered: a.delivered + b.delivered, failed: a.failed + b.failed });
+const must = (res) => { if (res.error) throw new Error(res.error.message || String(res.error)); return res; };
 
-export function createPush({ requireAdmin, env = process.env, http = fetch, sender = webpush, fcm = null, clock = Date.now } = {}) {
+export function createPush({ env = process.env, clock = Date.now, supabase: injectedSupabase = null, messaging: injectedMessaging = null, webpush: injectedWebpush = null } = {}) {
   const router = Router();
+  router.use(express.json({ limit: '20kb' }));
 
-  // ---------- Web Push (navigateurs, PWA) ----------
-  let enabled = Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY);
-  if (enabled) {
-    try {
-      sender.setVapidDetails(env.VAPID_SUBJECT || 'mailto:admin@example.com', env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
-    } catch (e) {
-      console.error('[push] clés VAPID invalides, notifications web désactivées :', e.message);
-      enabled = false;
-    }
-  } else {
-    console.warn('[push] VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY absentes : notifications web désactivées.');
-  }
+  const st = { sb: null, wp: null, msg: null, webOk: false, fcmOk: false };
 
-  // ---------- Firebase Cloud Messaging (application Android) ----------
-  let fcmOk = Boolean(fcm || env.FIREBASE_SERVICE_ACCOUNT);
-  const fcmReady = (async () => {
-    if (fcm) return fcm;
-    if (!env.FIREBASE_SERVICE_ACCOUNT) return null;
+  // Initialisation : chaque brique est facultative, un échec ne fait jamais tomber le serveur.
+  const ready = (async () => {
     try {
-      let raw = String(env.FIREBASE_SERVICE_ACCOUNT).trim();
-      if (!raw.startsWith('{')) raw = Buffer.from(raw, 'base64').toString('utf8');
-      const { initializeApp, cert, getApps } = await import('firebase-admin/app');
-      const { getMessaging } = await import('firebase-admin/messaging');
-      const app = getApps().length ? getApps()[0] : initializeApp({ credential: cert(JSON.parse(raw)) });
-      return getMessaging(app);
-    } catch (e) {
-      console.error('[push] Firebase désactivé (FIREBASE_SERVICE_ACCOUNT / firebase-admin) :', e.message);
-      fcmOk = false;
-      return null;
-    }
+      if (injectedSupabase) st.sb = injectedSupabase;
+      else if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+        const { createClient } = await import('@supabase/supabase-js');
+        st.sb = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+      } else console.warn('[push] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY absentes : notifications désactivées.');
+    } catch (e) { console.error('[push] Supabase indisponible :', e.message); }
+
+    if (injectedWebpush || (env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY)) {
+      try {
+        const wp = injectedWebpush || (await import('web-push')).default;
+        wp.setVapidDetails(env.VAPID_SUBJECT || 'mailto:admin@example.com', env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
+        st.wp = wp; st.webOk = true;
+      } catch (e) { console.error('[push] Web Push désactivé (clés VAPID / web-push) :', e.message); }
+    } else console.warn('[push] VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY absentes : notifications web désactivées.');
+
+    if (injectedMessaging) { st.msg = injectedMessaging; st.fcmOk = true; }
+    else if (env.FIREBASE_SERVICE_ACCOUNT) {
+      try {
+        let raw = String(env.FIREBASE_SERVICE_ACCOUNT).trim();
+        if (!raw.startsWith('{')) raw = Buffer.from(raw, 'base64').toString('utf8');
+        const { initializeApp, cert, getApps } = await import('firebase-admin/app');
+        const { getMessaging } = await import('firebase-admin/messaging');
+        st.msg = getMessaging(getApps().length ? getApps()[0] : initializeApp({ credential: cert(JSON.parse(raw)) }));
+        st.fcmOk = true;
+      } catch (e) { console.error('[push] Firebase désactivé (FIREBASE_SERVICE_ACCOUNT / firebase-admin) :', e.message); }
+    } else console.warn('[push] FIREBASE_SERVICE_ACCOUNT absent : notifications Android désactivées.');
   })();
-  if (!fcmOk) console.warn('[push] FIREBASE_SERVICE_ACCOUNT absent : notifications Android désactivées.');
 
-  const base = () => String(env.SUPABASE_URL || '').replace(/\/$/, '');
-
-  async function db(pathAndQuery, { method = 'GET', body, prefer, withCount = false } = {}) {
-    const key = env.SUPABASE_SERVICE_ROLE_KEY;
-    const res = await http(`${base()}/rest/v1/${pathAndQuery}`, {
-      method,
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-        ...(prefer ? { Prefer: prefer } : {})
-      },
-      body: body === undefined ? undefined : JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error(`Supabase ${method} ${pathAndQuery.split('?')[0]} : ${res.status} ${await res.text()}`);
-    const text = await res.text();
-    const data = text ? JSON.parse(text) : null;
-    if (!withCount) return data;
-    const range = res.headers.get('content-range') || '';
-    return { data, count: Number(range.split('/')[1]) || 0 };
-  }
-
-  async function listRows(table, select, filter) {
-    const out = [];
-    for (let offset = 0; ; offset += 1000) {
-      const rows = await db(`${table}?select=${select}&${filter}&order=id&limit=1000&offset=${offset}`);
-      out.push(...rows);
-      if (rows.length < 1000) return out;
+  // ---------- Authentification ----------
+  async function authUser(req, res, next) {
+    await ready;
+    if (!st.sb) return res.status(503).json({ error: 'Notifications non configurées sur le serveur.' });
+    const h = String(req.headers.authorization || '');
+    const token = h.startsWith('Bearer ') ? h.slice(7).trim() : '';
+    if (!token) return res.status(401).json({ error: 'Authentification requise.' });
+    try {
+      const { data, error } = await st.sb.auth.getUser(token);
+      if (error || !data || !data.user) return res.status(401).json({ error: 'Session invalide ou expirée.' });
+      req.pushUser = data.user;
+      next();
+    } catch (e) {
+      console.error('[push] vérification du jeton :', e.message);
+      res.status(503).json({ error: 'Service d\'authentification indisponible.' });
     }
   }
-  const listSubs = (filter) => (enabled ? listRows('push_subscriptions', 'id,endpoint,p256dh,auth,user_id', filter) : Promise.resolve([]));
-  const listTokens = (filter) => (fcmOk
-    ? listRows('push_fcm_tokens', 'id,token,user_id', filter).catch((e) => { console.warn('[push] jetons Android illisibles :', e.message); return []; })
-    : Promise.resolve([]));
 
-  const removeIds = async (table, ids) => {
+  function authAdmin(req, res, next) {
+    authUser(req, res, () => {
+      const u = req.pushUser;
+      const adminEmail = String(env.ADMIN_EMAIL || '').trim().toLowerCase();
+      const isAdmin = u.app_metadata?.is_admin === true || u.app_metadata?.role === 'admin' || Boolean(adminEmail && String(u.email || '').toLowerCase() === adminEmail);
+      if (!isAdmin) return res.status(403).json({ error: 'Réservé aux administrateurs.' });
+      next();
+    });
+  }
+
+  const run = (fn) => async (req, res) => {
+    if (!st.webOk && !st.fcmOk) return res.status(503).json({ error: 'Notifications non configurées sur le serveur.' });
+    try { await fn(req, res); } catch (e) { console.error('[push]', e.message); res.status(500).json({ error: 'Erreur serveur notifications.' }); }
+  };
+
+  const prefsOf = (b) => {
+    const p = {};
+    if (typeof b.notify_quiz === 'boolean') p.notify_quiz = b.notify_quiz;
+    if (typeof b.notify_messages === 'boolean') p.notify_messages = b.notify_messages;
+    return p;
+  };
+  // Un appareil est identifié par son jeton FCM (Android) ou par l'endpoint de son abonnement (navigateur).
+  const idOf = (b) => (typeof b.fcm_token === 'string' && b.fcm_token ? { col: 'fcm_token', val: b.fcm_token }
+    : (typeof b.endpoint === 'string' && b.endpoint ? { col: 'endpoint', val: b.endpoint } : null));
+
+  // ---------- Utilisateur ----------
+  router.get('/push/key', async (_req, res) => {
+    await ready;
+    res.json({ enabled: st.webOk, publicKey: st.webOk ? env.VAPID_PUBLIC_KEY : null, fcm: st.fcmOk });
+  });
+
+  router.post('/push/subscribe', authUser, run(async (req, res) => {
+    const b = req.body || {};
+    const uid = req.pushUser.id;
+    if (typeof b.fcm_token === 'string' && b.fcm_token) {
+      if (!st.fcmOk) return res.status(503).json({ error: 'Notifications Android non configurées sur le serveur.' });
+      if (!/^[A-Za-z0-9_:.\-]{20,4096}$/.test(b.fcm_token)) return res.status(400).json({ error: 'Jeton invalide.' });
+      must(await st.sb.from('push_subscriptions').upsert(
+        { user_id: uid, fcm_token: b.fcm_token, platform: 'android', ...prefsOf(b) }, { onConflict: 'fcm_token' }));
+      return res.json({ ok: true });
+    }
+    if (!st.webOk) return res.status(503).json({ error: 'Notifications web non configurées sur le serveur.' });
+    const sub = b.subscription || {};
+    const endpoint = String(sub.endpoint || '');
+    const p256dh = String(sub.keys?.p256dh || '');
+    const auth = String(sub.keys?.auth || '');
+    if (!/^https:\/\/\S{10,2000}$/.test(endpoint) || !/^[A-Za-z0-9_-]{80,100}$/.test(p256dh) || !/^[A-Za-z0-9_-]{20,30}$/.test(auth)) {
+      return res.status(400).json({ error: 'Abonnement invalide.' });
+    }
+    must(await st.sb.from('push_subscriptions').upsert(
+      { user_id: uid, endpoint, p256dh, auth, platform: 'web', ...prefsOf(b) }, { onConflict: 'endpoint' }));
+    res.json({ ok: true });
+  }));
+
+  router.post('/push/unsubscribe', authUser, run(async (req, res) => {
+    const id = idOf(req.body || {});
+    if (!id) return res.status(400).json({ error: 'Abonnement manquant.' });
+    must(await st.sb.from('push_subscriptions').delete().eq('user_id', req.pushUser.id).eq(id.col, id.val));
+    res.json({ ok: true });
+  }));
+
+  router.post('/push/preferences', authUser, run(async (req, res) => {
+    const id = idOf(req.body || {});
+    const patch = prefsOf(req.body || {});
+    if (!id || !Object.keys(patch).length) return res.status(400).json({ error: 'Préférences invalides.' });
+    must(await st.sb.from('push_subscriptions').update(patch).eq('user_id', req.pushUser.id).eq(id.col, id.val));
+    res.json({ ok: true });
+  }));
+
+  router.post('/push/status', authUser, run(async (req, res) => {
+    const id = idOf(req.body || {});
+    if (!id) return res.json({ subscribed: false });
+    const { data } = must(await st.sb.from('push_subscriptions').select('notify_quiz,notify_messages')
+      .eq('user_id', req.pushUser.id).eq(id.col, id.val).limit(1));
+    res.json(data && data[0] ? { subscribed: true, notify_quiz: data[0].notify_quiz, notify_messages: data[0].notify_messages } : { subscribed: false });
+  }));
+
+  // ---------- Envoi ----------
+  async function listTargets(prefCol, excludeUsers = new Set()) {
+    const rows = [];
+    for (let from = 0; ; from += 1000) {
+      const { data } = must(await st.sb.from('push_subscriptions').select('id,user_id,endpoint,p256dh,auth,fcm_token')
+        .eq(prefCol, true).order('id').range(from, from + 999));
+      rows.push(...data);
+      if (data.length < 1000) break;
+    }
+    const keep = rows.filter((r) => !excludeUsers.has(r.user_id));
+    return {
+      web: st.webOk ? keep.filter((r) => r.endpoint && r.p256dh && r.auth && !r.fcm_token) : [],
+      android: st.fcmOk ? keep.filter((r) => r.fcm_token) : []
+    };
+  }
+
+  const removeDead = async (ids) => {
     for (let i = 0; i < ids.length; i += 50) {
-      await db(`${table}?id=in.(${ids.slice(i, i + 50).join(',')})`, { method: 'DELETE' }).catch(() => {});
+      await st.sb.from('push_subscriptions').delete().in('id', ids.slice(i, i + 50)).then(() => {}, () => {});
     }
   };
 
-  async function deliverWeb(subs, payload) {
-    if (!subs.length) return ZERO;
+  async function sendWeb(rows, payload) {
+    if (!rows.length) return ZERO;
     const body = JSON.stringify(payload);
-    let delivered = 0;
-    let failed = 0;
+    let delivered = 0, failed = 0;
     const dead = [];
-    for (let i = 0; i < subs.length; i += 25) {
-      await Promise.all(subs.slice(i, i + 25).map(async (s) => {
+    for (let i = 0; i < rows.length; i += 25) {
+      await Promise.all(rows.slice(i, i + 25).map(async (r) => {
         try {
-          await sender.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, body, { TTL: 86400, timeout: 10000 });
+          await st.wp.sendNotification({ endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } }, body, { TTL: 86400, timeout: 10000 });
           delivered++;
         } catch (e) {
           failed++;
-          if (e.statusCode === 404 || e.statusCode === 410) dead.push(s.id);
+          if (e.statusCode === 404 || e.statusCode === 410) dead.push(r.id);
           else console.warn('[push] échec d\'envoi web :', e.statusCode || e.message);
         }
       }));
     }
-    await removeIds('push_subscriptions', dead);
-    return { recipients: subs.length, delivered, failed };
+    await removeDead(dead);
+    return { recipients: rows.length, delivered, failed };
   }
 
-  async function deliverFcm(tokens, payload) {
-    if (!tokens.length) return ZERO;
-    const messaging = await fcmReady;
-    if (!messaging) return { recipients: tokens.length, delivered: 0, failed: tokens.length };
-    let delivered = 0;
-    let failed = 0;
+  async function sendFcm(rows, payload) {
+    if (!rows.length) return ZERO;
+    let delivered = 0, failed = 0;
     const dead = [];
-    for (let i = 0; i < tokens.length; i += 500) {
-      const chunk = tokens.slice(i, i + 500);
+    for (let i = 0; i < rows.length; i += 500) {
+      const chunk = rows.slice(i, i + 500);
       try {
-        const res = await messaging.sendEachForMulticast({
-          tokens: chunk.map((t) => t.token),
+        const res = await st.msg.sendEachForMulticast({
+          tokens: chunk.map((r) => r.fcm_token),
           notification: { title: payload.title, body: payload.body },
           data: { url: String(payload.url || '/'), kind: String(payload.kind || ''), tag: String(payload.tag || '') },
           android: {
@@ -150,115 +219,44 @@ export function createPush({ requireAdmin, env = process.env, http = fetch, send
         console.error('[push] FCM indisponible :', e.message);
       }
     }
-    await removeIds('push_fcm_tokens', dead);
-    return { recipients: tokens.length, delivered, failed };
+    await removeDead(dead);
+    return { recipients: rows.length, delivered, failed };
   }
 
-  async function broadcast(filter, payload, excludeUsers = new Set()) {
-    const subs = (await listSubs(filter)).filter((s) => !excludeUsers.has(s.user_id));
-    const tokens = (await listTokens(filter)).filter((t) => !excludeUsers.has(t.user_id));
-    return add(await deliverWeb(subs, payload), await deliverFcm(tokens, payload));
+  async function broadcast(prefCol, payload, excludeUsers) {
+    const t = await listTargets(prefCol, excludeUsers);
+    return add(await sendWeb(t.web, payload), await sendFcm(t.android, payload));
   }
 
   async function logMessage(kind, p, createdBy, r) {
-    await db('push_messages', {
-      method: 'POST',
-      prefer: 'return=minimal',
-      body: { kind, title: p.title, body: p.body, url: p.url, created_by: createdBy || null, recipients: r.recipients, delivered: r.delivered, failed: r.failed }
-    }).catch((e) => console.warn('[push] journal non enregistré :', e.message));
+    const { error } = await st.sb.from('push_messages').insert({
+      kind, title: p.title, body: p.body, url: p.url, created_by: createdBy || null,
+      recipients: r.recipients, delivered: r.delivered, failed: r.failed
+    });
+    if (error) console.warn('[push] journal non enregistré :', error.message);
   }
 
-  const guard = (fn) => async (req, res) => {
-    if (!enabled && !fcmOk) return res.status(503).json({ error: 'Notifications non configurées sur le serveur.' });
-    try { await fn(req, res); } catch (e) { console.error('[push]', e.message); res.status(500).json({ error: 'Erreur serveur notifications.' }); }
-  };
-
-  // Cible d'une requête : appareil Android (jeton FCM) ou navigateur (abonnement web)
-  const target = (req) => {
-    const b = req.body || {};
-    return typeof b.fcm_token === 'string' && b.fcm_token
-      ? { ...TARGETS.android, value: b.fcm_token }
-      : { ...TARGETS.web, value: String(b.endpoint || '') };
-  };
-  const prefsOf = (b) => {
-    const p = {};
-    if (typeof b.notify_quiz === 'boolean') p.notify_quiz = b.notify_quiz;
-    if (typeof b.notify_messages === 'boolean') p.notify_messages = b.notify_messages;
-    return p;
-  };
-  const filterOf = (t, userId) => `${t.table}?${t.col}=eq.${encodeURIComponent(t.value)}&user_id=eq.${encodeURIComponent(userId)}`;
-
-  // ---------- Utilisateur ----------
-  router.get('/push/key', async (_req, res) => { await fcmReady; res.json({ enabled, fcm: fcmOk, publicKey: enabled ? env.VAPID_PUBLIC_KEY : null }); });
-
-  router.post('/push/subscribe', guard(async (req, res) => {
-    const b = req.body || {};
-    const ua = clean(req.headers['user-agent'], 200);
-    if (typeof b.fcm_token === 'string' && b.fcm_token) {
-      if (!fcmOk) return res.status(503).json({ error: 'Notifications Android non configurées sur le serveur.' });
-      if (!/^[A-Za-z0-9_:.\-]{20,4096}$/.test(b.fcm_token)) return res.status(400).json({ error: 'Jeton invalide.' });
-      await db('push_fcm_tokens?on_conflict=token', {
-        method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal',
-        body: { user_id: req.user.id, token: b.fcm_token, user_agent: ua, ...prefsOf(b) }
-      });
-      return res.json({ ok: true });
-    }
-    if (!enabled) return res.status(503).json({ error: 'Notifications web non configurées sur le serveur.' });
-    const sub = b.subscription || {};
-    const endpoint = String(sub.endpoint || '');
-    const p256dh = String(sub.keys?.p256dh || '');
-    const auth = String(sub.keys?.auth || '');
-    if (!/^https:\/\/\S{10,2000}$/.test(endpoint) || !/^[A-Za-z0-9_-]{80,100}$/.test(p256dh) || !/^[A-Za-z0-9_-]{20,30}$/.test(auth)) {
-      return res.status(400).json({ error: 'Abonnement invalide.' });
-    }
-    await db('push_subscriptions?on_conflict=endpoint', {
-      method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal',
-      body: { user_id: req.user.id, endpoint, p256dh, auth, user_agent: ua, ...prefsOf(b) }
-    });
-    res.json({ ok: true });
-  }));
-
-  router.post('/push/status', guard(async (req, res) => {
-    const t = target(req);
-    if (!t.value) return res.json({ subscribed: false });
-    const rows = await db(`${filterOf(t, req.user.id)}&select=notify_quiz,notify_messages`);
-    res.json(rows[0] ? { subscribed: true, ...rows[0] } : { subscribed: false });
-  }));
-
-  router.post('/push/preferences', guard(async (req, res) => {
-    const t = target(req);
-    const patch = prefsOf(req.body || {});
-    if (!t.value || !Object.keys(patch).length) return res.status(400).json({ error: 'Préférences invalides.' });
-    await db(filterOf(t, req.user.id), { method: 'PATCH', prefer: 'return=minimal', body: patch });
-    res.json({ ok: true });
-  }));
-
-  router.post('/push/unsubscribe', guard(async (req, res) => {
-    const t = target(req);
-    if (!t.value) return res.status(400).json({ error: 'Abonnement manquant.' });
-    await db(filterOf(t, req.user.id), { method: 'DELETE' });
-    res.json({ ok: true });
-  }));
-
-  // ---------- Administrateur ----------
+  // ---------- Administrateur (le rôle est vérifié AVANT toute opération en base) ----------
   let lastAdminSend = 0;
 
-  router.post('/admin/push/send', requireAdmin, guard(async (req, res) => {
+  router.post('/admin/push/send', authAdmin, run(async (req, res) => {
     const title = clean(req.body?.title, MAX_TITLE);
     const body = clean(req.body?.body, MAX_BODY);
     if (!title || !body) return res.status(400).json({ error: 'Titre et message obligatoires.' });
     if (clock() - lastAdminSend < ADMIN_COOLDOWN) return res.status(429).json({ error: 'Patiente quelques secondes avant un nouvel envoi.' });
     lastAdminSend = clock();
     const payload = { title, body, url: safeUrl(req.body?.url), tag: `msg-${clock()}`, kind: 'message' };
-    const result = await broadcast('notify_messages=eq.true', payload);
-    await logMessage('message', payload, req.user.id, result);
+    const result = await broadcast('notify_messages', payload);
+    await logMessage('message', payload, req.pushUser.id, result);
     res.json({ ok: true, ...result });
   }));
 
-  router.get('/admin/push/history', requireAdmin, guard(async (_req, res) => {
-    const history = await db('push_messages?select=id,kind,title,body,url,recipients,delivered,failed,created_at&order=created_at.desc&limit=20');
-    const web = enabled ? (await db('push_subscriptions?select=id&limit=1', { prefer: 'count=exact', withCount: true })).count : 0;
-    const android = fcmOk ? (await db('push_fcm_tokens?select=id&limit=1', { prefer: 'count=exact', withCount: true }).catch(() => ({ count: 0 }))).count : 0;
+  router.get('/admin/push/history', authAdmin, run(async (_req, res) => {
+    const { data: history } = must(await st.sb.from('push_messages')
+      .select('id,kind,title,body,url,recipients,delivered,failed,created_at').order('created_at', { ascending: false }).limit(20));
+    const count = async (platform) => must(await st.sb.from('push_subscriptions').select('id', { count: 'exact', head: true }).eq('platform', platform)).count || 0;
+    const web = await count('web');
+    const android = await count('android');
     res.json({ subscribers: web + android, web, android, history });
   }));
 
@@ -272,6 +270,8 @@ export function createPush({ requireAdmin, env = process.env, http = fetch, send
     const batch = pending;
     pending = [];
     if (!batch.length) return;
+    await ready;
+    if (!st.sb || (!st.webOk && !st.fcmOk)) return;
     lastQuizSend = clock();
     const authors = new Set(batch.map((q) => q.by).filter(Boolean));
     const payload = batch.length === 1
@@ -281,12 +281,12 @@ export function createPush({ requireAdmin, env = process.env, http = fetch, send
           body: batch.slice(0, 2).map((q) => q.title).join(' · ') + (batch.length > 2 ? '…' : ''),
           url: '/?tab=library', tag: 'new-quiz', kind: 'quiz'
         };
-    const result = await broadcast('notify_quiz=eq.true', payload, authors);
+    const result = await broadcast('notify_quiz', payload, authors);
     await logMessage('quiz', payload, null, result);
   }
 
   function notifyNewQuiz(quiz, creatorId) {
-    if ((!enabled && !fcmOk) || !quiz || !quiz.title) return;
+    if (!quiz || !quiz.title) return;
     pending.push({ title: clean(quiz.title, MAX_TITLE), by: creatorId });
     if (timer) return;
     const delay = Math.max(QUIZ_BATCH_DELAY, lastQuizSend + QUIZ_MIN_GAP - clock());
@@ -294,5 +294,5 @@ export function createPush({ requireAdmin, env = process.env, http = fetch, send
     timer.unref?.();
   }
 
-  return { router, notifyNewQuiz, flushQuizzes };
+  return { router, notifyNewQuiz, flushQuizzes, ready };
 }
