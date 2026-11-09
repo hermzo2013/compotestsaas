@@ -10,6 +10,12 @@
                     ("Q1 B", "1 B 11 B 21 A…", "1-B", "1. Vrai"), texte en gras **...**
      - Mise en page : en-têtes/pieds de page répétés, titres de parties, énoncés sur plusieurs lignes,
                     options collées ("?A :"), options sur une même ligne, lettres en double
+
+   AJOUTS (formats supplémentaires reconnus) :
+     - "Question 31 : texte" (PDF "Questions 31 a 60")
+     - "Réponse 31 : texte" / "Reponse 31 : texte" (idem)
+     - "- 31 : texte" → stocké dans explanation quand la réponse n'est pas convertible en option
+     - "## Réponses, tout en bas" sans paires derrière → simple titre, pas un corrigé
    ===================================================================== */
 import { norm, detectTypeInstruction, isSectionHeader } from './instruction-detector.js';
 
@@ -42,8 +48,8 @@ function stripPageNoise(lines) {
   const phrases = [];
   for (const [k, c] of counts) {
     if (c < 3 || k.length > 120) continue;
-    if (/^(?:[a-h]\s*[\.\)\:\-–—]|[#]+\s*[\.\)\-:–—]|[-•*▪○●])/.test(k)) continue;   // lignes d'options / de questions
-    if (HAS_CHECK_RE.test(k) || /[?;:.,]$/.test(k)) continue;                           // vraies lignes de contenu
+    if (/^(?:[a-h]\s*[\.\)\:\-–—]|[#]+\s*[\.\)\-:–—]|[-•*▪○●])/.test(k)) continue;
+    if (HAS_CHECK_RE.test(k) || /[?;:.,]$/.test(k)) continue;
     if (/^(?:vrai|faux|oui|non|v|f)\b/.test(k) || /\bvrai\b.*\bfaux\b/.test(k)) continue;
     phrases.push(k);
   }
@@ -127,6 +133,17 @@ function matchQStart(line) {
   }
   m = line.match(QSTART_RES[1]);
   if (m && /^[A-Za-zÀ-ÿ"«'(\[*]/.test(m[2].trim())) return { num: parseInt(m[1], 10), rest: m[2].trim(), group: '', label: '' };
+
+  // AJOUT : "Question 31 : texte" / "Question 31. texte" / "Q 31 : texte" (PDF 2)
+  const m2 = line.match(/^\s*(?:question|quest\.?|q)\s*(?:n\s*[°º]\s*|n[°º]\s*|no\.?\s*)?(\d{1,3})\s*[:\.\)\-–—]\s*(.+)$/i);
+  if (m2) {
+    const num = parseInt(m2[1], 10);
+    if (num >= 1 && num <= 400) {
+      const rest = m2[2].trim();
+      if (rest.length > 0) return { num, rest, group: '', label: 'question' };
+    }
+  }
+
   return null;
 }
 
@@ -138,6 +155,8 @@ function selectQuestionStarts(cands, boundaryBefore) {
   for (let i = 0; i < cands.length; i++) {
     const c = cands[i];
     if (expected === null) {
+      // AJOUT : accepte un premier numéro > 1 s'il est suivi du numéro consécutif (ex. "Question 31", "Question 32"...)
+      if (hasSoon(i, c.num + 1)) { accepted.push(c); expected = c.num + 1; continue; }
       if (c.num <= 10 && (hasSoon(i, c.num + 1) || cands.length === 1)) { accepted.push(c); expected = c.num + 1; }
       continue;
     }
@@ -155,8 +174,8 @@ const ANSWER_LINE_RE = new RegExp(`^\\s*(?:[${CHECK}]\\s*)?(?:(?:la\\s+|les\\s+)
 const EXPLAIN_RE = /^\s*(?:explication|justification|commentaire|explanation|rationale|rappel|pour\s+aller\s+plus\s+loin)\s*[:\-–]\s*(.*)$/i;
 
 function matchAnswerLine(line) {
-  line = line.replace(/^\s*[\(\[]\s*(.*?)\s*[\)\]]\s*$/, (m, inner) => /^(?:r[eé]p|bonne|correct|solution|answer|ans|corrig)/i.test(inner) ? inner : m);   // "(Réponse : C)"
-  const t = norm(line);                       // norm() conserve la longueur : les indices valent aussi pour la ligne d'origine
+  line = line.replace(/^\s*[\(\[]\s*(.*?)\s*[\)\]]\s*$/, (m, inner) => /^(?:r[eé]p|bonne|correct|solution|answer|ans|corrig)/i.test(inner) ? inner : m);
+  const t = norm(line);
   const m = t.match(ANSWER_LINE_RE);
   if (!m) return null;
   const val = line.slice(t.length - m[1].length).trim();
@@ -166,7 +185,6 @@ function matchAnswerLine(line) {
 function matchVfLine(line) {
   let t = norm(line).replace(new RegExp(`[${CHECK}]`, 'g'), ' ✓ ').replace(/[☐□☒]/g, ' ');
   t = t.replace(/\b[ab]\s*[:.)\-]/g, ' ').replace(/[\/,;\-]|\bou\b/g, ' ').replace(/✓(\s*✓)+/g, '✓').replace(/\s+/g, ' ').trim();
-  // [mot isolé] [✓] vrai [✓] faux [✓]   —   un ✓ désigne le mot qui le SUIT ; en fin de ligne, le mot qui le précède
   const m = t.match(/^(?:(vrai|faux)\s+)?(✓\s*)?(vrai|v)\s*(✓\s*)?(faux|f)\s*(✓)?$/);
   if (!m) return null;
   let answer = null;
@@ -192,7 +210,6 @@ function findLetterMarkers(content) {
     found.push({ index: m.index, end: m.index + m[0].length, letter: m[1], check: false, glued: true });
   }
   found.sort((a, b) => a.index - b.index);
-  // suite A, B, C... (une lettre en double est tolérée : "A, B, B, C")
   const seq = [];
   for (const f of found) {
     const L = LETTERS.indexOf(f.letter.toUpperCase());
@@ -212,10 +229,8 @@ function cleanOptionText(t) {
   return t.replace(/\u0001/g, ' ').replace(CHECK_RE, ' ').replace(/\*\*/g, ' ').replace(/\s+/g, ' ').replace(/^[\s*\-–—•:]+/, '').replace(/[;,\s]+$/, '').replace(/\.+$/, '').replace(/:\s*Non$/i, '').trim();
 }
 
-/** -> { stem, options:[{text, correct}], style } */
 function extractOptions(content) {
   const marked = content.replace(new RegExp(`[${CHECK}][ \\t]*(?=[A-Ha-h]\\s*[\\.\\)\\:\\-–—]\\s|[\\(\\[][A-Ha-h][\\)\\]]\\s)`, 'g'), '\u0001');
-  // a) options lettrées
   const seq = findLetterMarkers(marked);
   if (seq.length >= 2) {
     const stem = marked.slice(0, seq[0].index);
@@ -230,7 +245,6 @@ function extractOptions(content) {
     if (nBold > 0 && nBold < options.length) options.forEach(o => { if (o.bold) o.correct = true; });
     if (options.length >= 2) return { stem, options, style: 'letter' };
   }
-  // b) puces / cases à cocher en début de ligne
   const lines = marked.split('\n');
   const bulletIdx = lines.map((l, i) => BULLET_RE.test(l) ? i : -1).filter(i => i >= 0);
   if (bulletIdx.length >= 2) {
@@ -247,7 +261,6 @@ function extractOptions(content) {
     const cleaned = options.map(o => ({ text: cleanOptionText(o.text), correct: o.correct || HAS_CHECK_RE.test(o.text) })).filter(o => o.text);
     if (cleaned.length >= 2) return { stem, options: cleaned, style: 'bullet' };
   }
-  // c) ancien format en ligne : "énoncé - a - b - c"
   const dashParts = marked.split(/(?:\n|\s)[-–]\s+/);
   if (dashParts.length >= 4) {
     const options = dashParts.slice(1).map(p => ({ text: cleanOptionText(p), correct: HAS_CHECK_RE.test(p) })).filter(o => o.text);
@@ -273,10 +286,14 @@ function buildQuestion(number, firstText, bodyLines) {
     if (em) { explanation = em[1].trim(); inExplanation = true; continue; }
     const av = matchAnswerLine(l);
     if (av !== null) { answerVal = av; inExplanation = false; continue; }
+
+    // AJOUT : format "Réponse N : …" / "Reponse N : …" (PDF "Questions 31 a 60")
+    const av2 = l.match(/^\s*(?:r[ée]ponse|reponse|rep\.?|r)\s*(?:n\s*[°º]\s*|n[°º]\s*|no\.?\s*)?\d{1,3}\s*[:=\-–]\s*(.+)$/i);
+    if (av2) { answerVal = av2[1].trim(); inExplanation = false; continue; }
+
     if (inExplanation && !BULLET_RE.test(l) && !/^\s*[A-Ha-h]\s*[\.\)\:\-]\s/.test(l)) { explanation += ' ' + l.trim(); continue; }
     contentLines.push(l);
   }
-  // ligne "A : vrai  B : faux" (avec ou sans mot "Vrai"/"Faux" isolé, ✓ ou case cochée)
   let vf = null;
   for (let i = 0; i < contentLines.length; i++) {
     const r = matchVfLine(contentLines[i]);
@@ -297,12 +314,10 @@ function buildQuestion(number, firstText, bodyLines) {
     ex.options.forEach((o, i) => { if (o.correct) correctIdx.push(i); });
     if (correctIdx.length) answerKnown = true;
 
-    // options "vrai / faux" -> question Vrai/Faux
     const low = options.map(o => o.toLowerCase().replace(/[.\s]+$/, ''));
     if (options.length === 2 && ((low[0] === 'vrai' && low[1] === 'faux') || (low[0] === 'v' && low[1] === 'f') || (low[0] === 'true' && low[1] === 'false'))) {
       type = 'tf'; options = ['Vrai', 'Faux'];
     }
-    // ancien format : "énoncé : Vrai" / "énoncé - Faux" en fin de ligne
     if (!options.length) {
       const tm = stem.replace(/\n/g, ' ').match(/^(.*?)\s*(?:[:\-–]\s*\*?|[\(\[]\s*)(vrai|faux|v|f)\s*\*?[\)\]]?\s*$/i);
       if (tm && tm[1].trim().length > 3) {
@@ -313,7 +328,6 @@ function buildQuestion(number, firstText, bodyLines) {
     }
   }
 
-  // réponse portée par une ligne "Réponse : ..."
   if (answerVal !== null) {
     const parsed = parseAnswerValue(answerVal, options.length || 0);
     if (parsed && parsed.tf !== undefined) {
@@ -322,17 +336,14 @@ function buildQuestion(number, firstText, bodyLines) {
     } else if (parsed && parsed.letters && options.length) {
       correctIdx = parsed.letters; answerKnown = true;
     } else if (!options.length) {
-      // pas d'options : question à réponse courte
       return { number, text: cleanStem(stem), options: [], correct: cleanStem(answerVal), type: 'short', ...(explanation ? { explanation: explanation.trim() } : {}) };
     }
   }
 
-  // sans options ni réponse : énoncé Vrai/Faux dont la réponse est inconnue (comportement historique)
   if (!options.length) { options = ['Vrai', 'Faux']; type = 'tf'; }
 
   const text = cleanStem(stem);
 
-  // type multiple : plusieurs bonnes réponses, ou indice dans l'énoncé quand la réponse est inconnue
   let correct;
   if (type === 'tf') {
     correct = correctIdx.length ? correctIdx[0] : 0;
@@ -341,7 +352,7 @@ function buildQuestion(number, firstText, bodyLines) {
   } else {
     const hint = detectTypeInstruction(text);
     if (hint && hint.declared_type === 'QCM_MULTIPLE' && !answerKnown) { type = 'mcq_multi'; correct = [0]; }
-    else if (!answerKnown && options.length > 2 && contentLines.some(l => /^\s*[-–—•]\s/.test(l)) && !hint) { type = 'mcq_multi'; correct = [0]; legacyMulti = true; } // ancien comportement (options en tirets sans réponse)
+    else if (!answerKnown && options.length > 2 && contentLines.some(l => /^\s*[-–—•]\s/.test(l)) && !hint) { type = 'mcq_multi'; correct = [0]; legacyMulti = true; }
     else { correct = correctIdx.length ? correctIdx[0] : 0; }
   }
 
@@ -362,7 +373,6 @@ export function parseQuiz(rawText) {
   let lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
   lines = stripPageNoise(lines);
 
-  // ---- candidats de questions (hors lignes de grille) ----
   const cands = [];
   lines.forEach((l, i) => { const m = matchQStart(l); if (m) cands.push({ line: i, ...m }); });
 
@@ -370,19 +380,25 @@ export function parseQuiz(rawText) {
   let accepted = selectQuestionStarts(cands, isBoundary);
   if (!accepted.length) return { questions: [], warnings, stats: { found: 0 } };
 
-  // ---- début du corrigé : titre "Corrigé / Grille / Réponses" (ou lignes de paires) après la dernière question ----
   const lastQ = accepted[accepted.length - 1].line;
   let keyStart = lines.length;
   for (let i = lastQ + 1; i < lines.length; i++) {
     const head = KEY_HEAD_RE.test(norm(lines[i])) && lines[i].length <= 90;
+    // AJOUT : "Réponses, tout en bas" sans paires derrière = simple titre, pas un corrigé
+    if (head) {
+      let hasPairs = false;
+      for (let k = i + 1; k < Math.min(lines.length, i + 10); k++) {
+        if (pairsInLine(lines[k]).length) { hasPairs = true; break; }
+      }
+      if (!hasPairs) continue;
+    }
     if (!head && !isKeyLine(lines[i])) continue;
     let pairs = pairsInLine(lines[i]).length;
     for (let k = i + 1; k < Math.min(lines.length, i + 14); k++) if (isKeyLine(lines[k])) pairs += pairsInLine(lines[k]).length;
-    if (pairs >= (head ? 1 : 2)) { keyStart = i; break; }   // titre explicite : 1 paire suffit ; sans titre : au moins 2 lignes/paires
+    if (pairs >= (head ? 1 : 2)) { keyStart = i; break; }
   }
   accepted = accepted.filter(a => a.line < keyStart);
 
-  // ---- grille de réponses ----
   const answerKey = {};
   for (let i = keyStart; i < lines.length; i++) {
     for (const p of pairsInLine(lines[i])) {
@@ -390,7 +406,6 @@ export function parseQuiz(rawText) {
     }
   }
 
-  // ---- blocs de questions ----
   const questions = [];
   for (let k = 0; k < accepted.length; k++) {
     const a = accepted[k];
@@ -404,7 +419,6 @@ export function parseQuiz(rawText) {
     questions.push(q);
   }
 
-  // ---- application de la grille (ne remplace jamais une réponse déjà marquée dans le sujet) ----
   for (const q of questions) {
     const raw = answerKey[q.number];
     if (raw === undefined) continue;
@@ -419,6 +433,18 @@ export function parseQuiz(rawText) {
       else q.correct = parsed.letters[0];
       delete q.answer_known;
     }
+  }
+
+  // AJOUT : réponses libres "31 : Les bactéries…" → explanation (pas de correction automatique possible)
+  const freeAnswers = {};
+  for (let i = keyStart; i < lines.length; i++) {
+    const m = lines[i].match(/^\s*[-–—•]?\s*(\d{1,3})\s*[:=\-–]\s*(.+)$/);
+    if (m) freeAnswers[parseInt(m[1], 10)] = m[2].trim();
+  }
+  for (const q of questions) {
+    if (q.answer_known !== false) continue;
+    const txt = freeAnswers[q.number];
+    if (txt && txt.length > 3) { q.explanation = (q.explanation ? q.explanation + ' — ' : '') + 'Réponse du sujet : ' + txt; }
   }
 
   const unknown = questions.filter(q => q.answer_known === false).length;
