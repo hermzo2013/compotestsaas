@@ -1,4 +1,5 @@
-/* Révisio — notifications push : navigateur/PWA (Web Push) et application Android (Firebase) + panneau d'envoi admin */
+/* Révisio — notifications push : navigateur/PWA (Web Push), application Android (Firebase), réglages, invitation,
+   boîte « Mes notifications », suivi des ouvertures, et panneau d'envoi admin. */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
@@ -7,9 +8,17 @@
   var native = !!PN;
   var webSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   var supported = native || webSupported;
-  var TOKEN_KEY = 'revisio_fcm_token';
+
+  var K = {
+    token: 'revisio_fcm_token', prefs: 'revisio_push_prefs', sync: 'revisio_push_last_sync',
+    promptAt: 'revisio_push_prompt_dismissed_at', visits: 'revisio_visits', quizzes: 'revisio_quizzes_done', seen: 'revisio_inbox_seen'
+  };
+  var DAY = 86400000, SYNC_EVERY = 12 * 3600000, PROMPT_PAUSE = 7 * DAY;
 
   function apiBase() { return (typeof API_BASE !== 'undefined') ? API_BASE : ''; }
+  function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function safePath(u) { return (typeof u === 'string' && /^\/(?!\/)\S{0,299}$/.test(u)) ? u : null; }
 
   async function api(path, method, body) {
     var s = await supabaseClient.auth.getSession();
@@ -25,19 +34,36 @@
     return data;
   }
 
-  function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
-  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  function safePath(u) { return (typeof u === 'string' && /^\/(?!\/)\S{0,299}$/.test(u)) ? u : null; }
+  // ---------- Thème : suit la préférence système (mode sombre) ----------
+  function isDark() { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
+  function pal() {
+    return isDark()
+      ? { bg: '#1F2937', fg: '#F3F4F6', mut: '#9CA3AF', line: '#374151', card: '#111827', ok: '#34D399', err: '#F87171', accent: '#10B981', ghost: '#374151', shadow: 'rgba(0,0,0,.6)' }
+      : { bg: '#FFFFFF', fg: '#1F2937', mut: '#6B7280', line: '#E5E7EB', card: '#F9FAFB', ok: '#047857', err: '#B91C1C', accent: '#10B981', ghost: '#F3F4F6', shadow: 'rgba(0,0,0,.25)' };
+  }
+  function btnStyle(c, ghost) {
+    return 'cursor:pointer;border-radius:10px;padding:9px 14px;font:700 14px system-ui,sans-serif;border:1px solid ' + (ghost ? c.line : c.accent) +
+      ';background:' + (ghost ? c.ghost : c.accent) + ';color:' + (ghost ? c.fg : '#fff');
+  }
+  function fieldStyle(c) { return 'width:100%;box-sizing:border-box;margin:4px 0 8px;padding:8px 10px;border-radius:8px;border:1px solid ' + c.line + ';background:' + c.card + ';color:' + c.fg + ';font:14px system-ui,sans-serif'; }
 
   function toast(title, body) {
-    var t = document.createElement('div');
+    var c = pal(), t = document.createElement('div');
     t.setAttribute('role', 'status');
-    t.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:10001;background:#064E3B;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 30px rgba(0,0,0,.3);font:14px/1.4 system-ui,sans-serif';
+    t.style.cssText = 'position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:10001;background:#064E3B;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 30px ' + c.shadow + ';font:14px/1.4 system-ui,sans-serif';
     var a = document.createElement('div'); a.style.fontWeight = '800'; a.textContent = title || 'Révisio';
     var b = document.createElement('div'); b.textContent = body || '';
     t.append(a, b); document.body.appendChild(t);
     setTimeout(function () { t.remove(); }, 6000);
   }
+
+  // ---------- Compteurs (visites, quiz terminés) ----------
+  try {
+    if (!sessionStorage.getItem('revisio_visit_counted')) {
+      sessionStorage.setItem('revisio_visit_counted', '1');
+      store(K.visits, String(Number(load(K.visits) || 0) + 1));
+    }
+  } catch (e) {}
 
   // ---------- Android (Firebase via Capacitor) ----------
   var pendingReg = null, nativeReady = false;
@@ -47,8 +73,8 @@
     PN.addListener('registration', function (t) {
       var token = t && t.value; if (!token) return;
       if (pendingReg) { var p = pendingReg; pendingReg = null; p.resolve(token); return; }
-      store(TOKEN_KEY, token);                                   // renouvellement automatique du jeton
-      api('/api/push/subscribe', 'POST', { fcm_token: token }).catch(function () {});
+      store(K.token, token);                                    // renouvellement automatique du jeton
+      api('/api/push/subscribe', 'POST', { fcm_token: token }).then(function () { store(K.sync, String(Date.now())); }).catch(function () {});
     });
     PN.addListener('registrationError', function (e) {
       if (pendingReg) { var p = pendingReg; pendingReg = null; p.reject(new Error('Enregistrement impossible : ' + ((e && e.error) || 'erreur inconnue'))); }
@@ -77,7 +103,7 @@
       PN.register();
     });
     await api('/api/push/subscribe', 'POST', Object.assign({ fcm_token: token }, prefs || {}));
-    store(TOKEN_KEY, token);
+    store(K.token, token); store(K.sync, String(Date.now()));
     return { id: { fcm_token: token } };
   }
 
@@ -89,11 +115,7 @@
     for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
     return out;
   }
-
-  async function webSub() {
-    var reg = await navigator.serviceWorker.ready;
-    return reg.pushManager.getSubscription();
-  }
+  async function webSub() { var reg = await navigator.serviceWorker.ready; return reg.pushManager.getSubscription(); }
 
   async function webEnable(prefs) {
     var perm = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission;
@@ -112,20 +134,19 @@
       }
     }
     await api('/api/push/subscribe', 'POST', Object.assign({ subscription: sub.toJSON() }, prefs || {}));
+    store(K.sync, String(Date.now()));
     return { id: { endpoint: sub.endpoint } };
   }
 
-  // ---------- Interface commune ----------
-  async function permission() {
-    if (native) return nativePermission();
-    return Notification.permission;
-  }
+  // ---------- Fonctions communes ----------
+  async function permission() { return native ? nativePermission() : Notification.permission; }
 
   async function currentId() {
-    if (native) { var t = load(TOKEN_KEY); return (t && (await nativePermission()) === 'granted') ? { fcm_token: t } : null; }
+    if (native) { var t = load(K.token); return (t && (await nativePermission()) === 'granted') ? { fcm_token: t } : null; }
     var s = await webSub().catch(function () { return null; });
     return s ? { endpoint: s.endpoint } : null;
   }
+  var idValue = function (id) { return id ? (id.fcm_token || id.endpoint) : ''; };
 
   async function enable(prefs) { return native ? nativeEnable(prefs) : webEnable(prefs); }
 
@@ -133,8 +154,57 @@
     var id = await currentId();
     if (!id) return;
     try { await api('/api/push/unsubscribe', 'POST', id); } catch (e) {}
-    if (native) { try { await PN.unregister(); } catch (e) {} store(TOKEN_KEY, null); }
+    if (native) { try { await PN.unregister(); } catch (e) {} store(K.token, null); }
     else { var s = await webSub().catch(function () { return null; }); if (s) await s.unsubscribe(); }
+    store(K.prefs, null);
+  }
+
+  // Préférences mises en cache : /api/push/status n'est appelé que si le cache est vide
+  function cachedPrefs(id) {
+    try { var p = JSON.parse(load(K.prefs) || 'null'); return p && p.id === idValue(id) ? p : null; } catch (e) { return null; }
+  }
+  function cachePrefs(id, p) {
+    store(K.prefs, JSON.stringify({ id: idValue(id), notify_quiz: p.notify_quiz !== false, notify_messages: p.notify_messages !== false,
+      preferred_subjects: p.preferred_subjects || [], preferred_level: p.preferred_level || null, language: p.language || 'fr' }));
+  }
+
+  async function userLanguage() {
+    var c = null; try { c = JSON.parse(load(K.prefs) || 'null'); } catch (e) {}
+    if (c && c.language) return c.language;
+    try {
+      var s = await supabaseClient.auth.getSession();
+      var l = s && s.data && s.data.session && s.data.session.user && s.data.session.user.user_metadata && s.data.session.user.user_metadata.language;
+      if (l === 'fr' || l === 'en') return l;
+    } catch (e) {}
+    var n = (navigator.language || 'fr').slice(0, 2).toLowerCase();
+    return n === 'en' ? 'en' : 'fr';
+  }
+
+  // Vide les notifications déjà affichées quand l'utilisateur ouvre l'application
+  async function clearDelivered() {
+    try {
+      if (native) { await PN.removeAllDeliveredNotifications(); return; }
+      if (!webSupported) return;
+      var reg = await navigator.serviceWorker.ready;
+      var list = await reg.getNotifications();
+      list.forEach(function (n) { n.close(); });
+    } catch (e) {}
+  }
+
+  // Suivi des ouvertures : ?from=push&mid=<id> dans l'adresse → un ping puis nettoyage de l'adresse
+  async function trackOpen() {
+    try {
+      var q = new URLSearchParams(location.search);
+      if (q.get('from') !== 'push') return;
+      var mid = q.get('mid');
+      if (!sessionStorage.getItem('revisio_click_' + mid) && /^[0-9a-f-]{36}$/i.test(mid || '')) {
+        sessionStorage.setItem('revisio_click_' + mid, '1');
+        await api('/api/push/click', 'POST', { mid: mid });
+      }
+      q.delete('from'); q.delete('mid');
+      var qs = q.toString();
+      history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+    } catch (e) {}
   }
 
   async function refreshButton() {
@@ -144,7 +214,14 @@
     btn.textContent = on ? '🔔 Notifications activées' : '🔔 Activer les notifications';
   }
 
+  // ---------- Fenêtre de réglages ----------
   function closeDialog() { var d = $('pushDialog'); if (d) d.remove(); }
+  var optionsCache = null;
+  async function loadOptions() {
+    if (optionsCache) return optionsCache;
+    try { optionsCache = await api('/api/push/options'); } catch (e) { optionsCache = { subjects: [], levels: ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'] }; }
+    return optionsCache;
+  }
 
   async function openDialog() {
     if (!supported) {
@@ -158,39 +235,70 @@
       return;
     }
     closeDialog();
+    var c = pal();
     var id = await currentId();
-    var st = { notify_quiz: true, notify_messages: true };
+    var st = { notify_quiz: true, notify_messages: true, preferred_subjects: [], preferred_level: null, language: await userLanguage() };
     if (id) {
-      try { var r = await api('/api/push/status', 'POST', id); if (r.subscribed) st = r; } catch (e) {}
-      if (st.notify_quiz === undefined) st.notify_quiz = true;
-      if (st.notify_messages === undefined) st.notify_messages = true;
+      var cached = cachedPrefs(id);
+      if (cached) st = cached;                                  // pas d'appel réseau si les préférences sont en cache
+      else {
+        try { var r = await api('/api/push/status', 'POST', id); if (r.subscribed) { st = Object.assign(st, r); cachePrefs(id, st); } } catch (e) {}
+      }
     }
+    var opts = await loadOptions();
 
     var ov = document.createElement('div'); ov.id = 'pushDialog';
-    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
     var box = document.createElement('div');
-    box.style.cssText = 'background:#fff;color:#1F2937;border-radius:16px;padding:20px;max-width:380px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);font-family:inherit';
-    var h = document.createElement('h3'); h.style.margin = '0 0 12px'; h.textContent = '🔔 Notifications';
+    box.setAttribute('role', 'dialog');
+    box.style.cssText = 'background:' + c.bg + ';color:' + c.fg + ';border:1px solid ' + c.line + ';border-radius:16px;padding:20px;max-width:400px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 10px 40px ' + c.shadow + ';font-family:system-ui,sans-serif';
+    var h = document.createElement('h3'); h.style.cssText = 'margin:0 0 12px;color:' + c.fg; h.textContent = '🔔 Notifications';
     box.appendChild(h);
-    function row(label, checked) {
-      var l = document.createElement('label'); l.style.cssText = 'display:flex;gap:10px;align-items:center;margin:10px 0;font-size:14px;cursor:pointer';
-      var c = document.createElement('input'); c.type = 'checkbox'; c.checked = checked; c.style.cssText = 'width:auto;margin:0';
-      l.append(c, document.createTextNode(label)); box.appendChild(l); return c;
+    function check(label, checked) {
+      var l = document.createElement('label'); l.style.cssText = 'display:flex;gap:10px;align-items:center;margin:8px 0;font-size:14px;cursor:pointer;color:' + c.fg;
+      var i = document.createElement('input'); i.type = 'checkbox'; i.checked = checked; i.style.cssText = 'width:auto;margin:0';
+      l.append(i, document.createTextNode(label)); return { el: l, input: i };
     }
-    var cq = row('Nouveaux quiz', st.notify_quiz);
-    var cm = row("Messages de l'équipe", st.notify_messages);
-    var msg = document.createElement('div'); msg.style.cssText = 'font-size:13px;font-weight:700;min-height:18px;margin:8px 0'; box.appendChild(msg);
+    var cq = check('Nouveaux quiz', st.notify_quiz), cm = check("Messages de l'équipe", st.notify_messages);
+    box.append(cq.el, cm.el);
+
+    function label(text) { var l = document.createElement('div'); l.style.cssText = 'font-size:12px;font-weight:700;color:' + c.mut + ';margin:12px 0 2px'; l.textContent = text; return l; }
+    box.appendChild(label('Niveau (facultatif)'));
+    var lvl = document.createElement('select'); lvl.style.cssText = fieldStyle(c);
+    [['', 'Tous les niveaux']].concat((opts.levels || []).map(function (l) { return [l, l]; })).forEach(function (p) { var o = document.createElement('option'); o.value = p[0]; o.textContent = p[1]; lvl.appendChild(o); });
+    lvl.value = st.preferred_level || ''; box.appendChild(lvl);
+
+    box.appendChild(label('Matières (aucune cochée = toutes)'));
+    var subjBox = document.createElement('div'); subjBox.style.cssText = 'max-height:130px;overflow:auto;border:1px solid ' + c.line + ';border-radius:8px;padding:4px 8px;background:' + c.card;
+    var subjChecks = [];
+    var all = Array.from(new Set((opts.subjects || []).concat(st.preferred_subjects || [])));
+    if (!all.length) { var none = document.createElement('div'); none.style.cssText = 'font-size:13px;color:' + c.mut + ';padding:6px 0'; none.textContent = 'Aucune matière pour le moment.'; subjBox.appendChild(none); }
+    all.forEach(function (s) { var k = check(s, (st.preferred_subjects || []).indexOf(s) !== -1); k.input.value = s; subjChecks.push(k.input); subjBox.appendChild(k.el); });
+    box.appendChild(subjBox);
+
+    box.appendChild(label('Langue des notifications'));
+    var lang = document.createElement('select'); lang.style.cssText = fieldStyle(c);
+    [['fr', 'Français'], ['en', 'English']].forEach(function (p) { var o = document.createElement('option'); o.value = p[0]; o.textContent = p[1]; lang.appendChild(o); });
+    lang.value = st.language || 'fr'; box.appendChild(lang);
+
+    var msg = document.createElement('div'); msg.style.cssText = 'font-size:13px;font-weight:700;min-height:18px;margin:8px 0;color:' + c.fg; box.appendChild(msg);
     var bar = document.createElement('div'); bar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-top:6px'; box.appendChild(bar);
     function btn(text, fn, ghost) {
-      var b = document.createElement('button'); b.type = 'button'; b.textContent = text; if (ghost) b.className = 'ghost';
-      b.onclick = async function () { b.disabled = true; try { await fn(); } catch (e) { msg.style.color = '#B91C1C'; msg.textContent = e.message; } b.disabled = false; };
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = text; b.style.cssText = btnStyle(c, ghost);
+      b.onclick = async function () { b.disabled = true; try { await fn(); } catch (e) { msg.style.color = c.err; msg.textContent = e.message; } b.disabled = false; };
       bar.appendChild(b);
     }
     btn(id ? 'Enregistrer' : 'Activer', async function () {
-      var prefs = { notify_quiz: cq.checked, notify_messages: cm.checked };
+      var prefs = {
+        notify_quiz: cq.input.checked, notify_messages: cm.input.checked, language: lang.value,
+        preferred_level: lvl.value || null,
+        preferred_subjects: subjChecks.filter(function (i) { return i.checked; }).map(function (i) { return i.value; })
+      };
       if (id) await api('/api/push/preferences', 'POST', Object.assign({}, id, prefs));
       else { var r = await enable(prefs); id = r.id; }
-      msg.style.color = '#047857'; msg.textContent = 'Enregistré ✓'; refreshButton();
+      cachePrefs(id, prefs);
+      try { await supabaseClient.auth.updateUser({ data: { language: prefs.language } }); } catch (e) {}   // langue mémorisée dans user_metadata
+      msg.style.color = c.ok; msg.textContent = 'Enregistré ✓'; refreshButton();
     });
     if (id) btn('Désactiver', async function () { await disable(); closeDialog(); refreshButton(); }, true);
     btn('Fermer', closeDialog, true);
@@ -198,9 +306,84 @@
     document.body.appendChild(ov);
   }
 
-  // ---------- panneau admin ----------
+  // ---------- Invitation à activer (après le 1er quiz ou 3 visites ; pause de 7 jours si fermée) ----------
+  function dismissPrompt() { store(K.promptAt, String(Date.now())); var b = $('pushPromptBanner'); if (b) b.remove(); }
+
+  var prompting = false;
+  async function maybePrompt() {
+    if (prompting) return;            // évite deux bandeaux si l'initialisation est déclenchée deux fois
+    prompting = true;
+    try {
+      if (!supported || $('pushPromptBanner')) return;
+      var pb = $('pushBtn'); if (!pb || pb.style.display === 'none') return;                 // pas connecté
+      if (Date.now() - Number(load(K.promptAt) || 0) < PROMPT_PAUSE) return;
+      if ((await permission()) !== 'default') return;                                      // déjà accordé ou refusé
+      if (await currentId()) return;
+      if (!(Number(load(K.quizzes) || 0) >= 1 || Number(load(K.visits) || 0) >= 3)) return;
+      var c = pal(), b = document.createElement('div');
+      b.id = 'pushPromptBanner'; b.setAttribute('role', 'region'); b.setAttribute('aria-label', 'Activer les notifications');
+      var lift = $('pwaInstallBanner') ? 84 : 12;
+      b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(' + lift + 'px + env(safe-area-inset-bottom,0px));z-index:9998;max-width:460px;margin:0 auto;background:' + c.bg + ';color:' + c.fg + ';border:1px solid ' + c.line + ';border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 8px 30px ' + c.shadow + ';font:14px/1.4 system-ui,sans-serif';
+      var t = document.createElement('span'); t.style.flex = '1'; t.textContent = '🔔 Sois prévenu des nouveaux quiz et des messages de l’équipe.';
+      var ok = document.createElement('button'); ok.type = 'button'; ok.textContent = 'Activer'; ok.style.cssText = btnStyle(c, false);
+      ok.onclick = function () { dismissPrompt(); openDialog(); };
+      var no = document.createElement('button'); no.type = 'button'; no.textContent = '✕'; no.setAttribute('aria-label', 'Plus tard'); no.style.cssText = 'background:transparent;border:0;color:' + c.mut + ';font-size:18px;cursor:pointer;padding:4px 6px';
+      no.onclick = dismissPrompt;
+      b.append(t, ok, no); document.body.appendChild(b);
+    } catch (e) {} finally { prompting = false; }
+  }
+
+  // ---------- Mes notifications (cloche) ----------
+  function closeInbox() { var d = $('pushInbox'); if (d) d.remove(); }
   function fmtDate(iso) { try { return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }); } catch (e) { return ''; } }
 
+  async function fetchInbox() {
+    var l = await userLanguage();
+    return (await api('/api/push/inbox?lang=' + l)).notifications || [];
+  }
+  async function refreshBell() {
+    var b = $('bellBtn'); if (!b) return;
+    try {
+      var list = await fetchInbox();
+      var seen = Number(load(K.seen) || 0);
+      var n = list.filter(function (x) { return new Date(x.created_at).getTime() > seen; }).length;
+      var badge = $('bellBadge');
+      if (badge) { badge.textContent = n > 9 ? '9+' : String(n); badge.style.display = n ? 'inline-block' : 'none'; }
+    } catch (e) {}
+  }
+  async function openInbox() {
+    closeInbox();
+    var c = pal();
+    var ov = document.createElement('div'); ov.id = 'pushInbox';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+    var box = document.createElement('div'); box.setAttribute('role', 'dialog');
+    box.style.cssText = 'background:' + c.bg + ';color:' + c.fg + ';border:1px solid ' + c.line + ';border-radius:16px;padding:18px;max-width:440px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 10px 40px ' + c.shadow + ';font-family:system-ui,sans-serif';
+    var h = document.createElement('h3'); h.style.cssText = 'margin:0 0 10px;color:' + c.fg; h.textContent = '🔔 Mes notifications';
+    var list = document.createElement('div'); list.textContent = 'Chargement…'; list.style.color = c.mut;
+    var close = document.createElement('button'); close.type = 'button'; close.textContent = 'Fermer'; close.style.cssText = btnStyle(c, true) + ';margin-top:12px'; close.onclick = closeInbox;
+    box.append(h, list, close); ov.appendChild(box); ov.addEventListener('click', function (e) { if (e.target === ov) closeInbox(); });
+    document.body.appendChild(ov);
+    try {
+      var items = await fetchInbox();
+      list.textContent = ''; list.style.color = c.fg;
+      if (!items.length) { list.textContent = 'Aucune notification pour le moment.'; list.style.color = c.mut; }
+      var seen = Number(load(K.seen) || 0);
+      items.forEach(function (n) {
+        var isNew = new Date(n.created_at).getTime() > seen;
+        var row = document.createElement('div'); row.style.cssText = 'padding:10px 0;border-bottom:1px solid ' + c.line + ';cursor:pointer';
+        var t = document.createElement('div'); t.style.cssText = 'font-weight:700'; t.textContent = (n.kind === 'quiz' ? '🆕 ' : '📣 ') + n.title + (isNew ? '  •' : '');
+        var b = document.createElement('div'); b.style.cssText = 'font-size:14px'; b.textContent = n.body;
+        var m = document.createElement('div'); m.style.cssText = 'font-size:11px;color:' + c.mut; m.textContent = fmtDate(n.created_at);
+        row.append(t, b, m);
+        row.onclick = function () { var u = safePath(n.url); closeInbox(); if (u) location.href = u; };
+        list.appendChild(row);
+      });
+      if (items.length) store(K.seen, String(new Date(items[0].created_at).getTime()));
+      refreshBell();
+    } catch (e) { list.textContent = e.message; list.style.color = c.err; }
+  }
+
+  // ---------- Panneau admin ----------
   function updatePreview() {
     if (!$('pushTitle')) return;
     $('pushTitleCount').textContent = $('pushTitle').value.length + '/80';
@@ -209,20 +392,32 @@
     $('pushPreviewBody').textContent = $('pushBody').value || 'Ton message apparaîtra ici.';
   }
 
+  async function adminDelete(path, question) {
+    if (!confirm(question)) return;
+    try { await api(path, 'DELETE'); await adminLoad(); }
+    catch (e) { var r = $('pushResult'); if (r) { r.style.color = '#B91C1C'; r.textContent = e.message; } }
+  }
+
   async function adminLoad() {
     var list = $('pushHistory'); if (!list) return;
     try {
       var d = await api('/api/admin/push/history');
       $('pushSubCount').textContent = d.subscribers + ' appareil(s) abonné(s)' + (d.android !== undefined ? ' (' + d.web + ' web · ' + d.android + ' Android)' : '');
       list.textContent = '';
+      var clear = $('pushClearBtn'); if (clear) clear.style.display = d.history.length ? 'inline-block' : 'none';
       if (!d.history.length) { list.textContent = 'Aucun envoi pour le moment.'; return; }
       d.history.forEach(function (m) {
-        var item = document.createElement('div'); item.style.cssText = 'border-bottom:1px solid #E5E7EB;padding:8px 0';
+        var item = document.createElement('div'); item.style.cssText = 'border-bottom:1px solid #E5E7EB;padding:8px 0;display:flex;gap:8px;align-items:flex-start';
+        var txt = document.createElement('div'); txt.style.flex = '1';
         var t = document.createElement('div'); t.style.fontWeight = '700'; t.textContent = (m.kind === 'quiz' ? '🆕 ' : '📣 ') + m.title;
         var b = document.createElement('div'); b.textContent = m.body;
         var meta = document.createElement('div'); meta.style.cssText = 'font-size:11px;color:#6B7280';
-        meta.textContent = fmtDate(m.created_at) + ' · ' + m.delivered + '/' + m.recipients + ' reçu(s)' + (m.failed ? ' · ' + m.failed + ' échec(s)' : '');
-        item.append(t, b, meta); list.appendChild(item);
+        meta.textContent = fmtDate(m.created_at) + ' · ' + m.delivered + '/' + m.recipients + ' reçu(s)' + (m.failed ? ' · ' + m.failed + ' échec(s)' : '') + (m.click_count !== undefined ? ' · 👆 ' + m.click_count + ' ouverture(s)' : '');
+        txt.append(t, b, meta);
+        var del = document.createElement('button'); del.type = 'button'; del.textContent = '🗑️'; del.title = 'Supprimer cette notification de l’historique'; del.setAttribute('aria-label', 'Supprimer');
+        del.style.cssText = 'background:transparent;border:0;cursor:pointer;font-size:16px;padding:2px 4px';
+        del.onclick = function () { adminDelete('/api/admin/push/history/' + encodeURIComponent(m.id), 'Supprimer cette notification de l’historique ?'); };
+        item.append(txt, del); list.appendChild(item);
       });
     } catch (e) { list.textContent = e.message; }
   }
@@ -231,38 +426,64 @@
     var title = $('pushTitle').value.trim(), body = $('pushBody').value.trim(), res = $('pushResult'), btn = $('pushSendBtn');
     res.style.color = '#B91C1C';
     if (!title || !body) { res.textContent = 'Titre et message obligatoires.'; return; }
-    if (!confirm('Envoyer cette notification à tous les abonnés ?\n\n' + title + '\n' + body)) return;
+    if (!confirm('Envoyer cette notification aux abonnés ?\n\n' + title + '\n' + body)) return;
+    var payload = { title: title, body: body, url: $('pushUrl').value };
+    var subj = $('pushSubject') && $('pushSubject').value.trim(); if (subj) payload.subject = subj;
+    var lv = $('pushLevel') && $('pushLevel').value; if (lv) payload.level = lv;
+    var te = $('pushTitleEn') && $('pushTitleEn').value.trim(), be = $('pushBodyEn') && $('pushBodyEn').value.trim();
+    if (te || be) payload.translations = { en: { title: te || title, body: be || body } };
     btn.disabled = true; res.style.color = '#6B7280'; res.textContent = 'Envoi en cours…';
     try {
-      var r = await api('/api/admin/push/send', 'POST', { title: title, body: body, url: $('pushUrl').value });
+      var r = await api('/api/admin/push/send', 'POST', payload);
       res.style.color = '#047857';
-      res.textContent = r.recipients ? ('Envoyé : ' + r.delivered + ' reçu(s) sur ' + r.recipients + (r.failed ? ' (' + r.failed + ' échec(s))' : '') + '.') : "Aucun appareil abonné pour l'instant.";
-      $('pushTitle').value = ''; $('pushBody').value = ''; updatePreview(); adminLoad();
+      res.textContent = r.recipients ? ('Envoyé : ' + r.delivered + ' reçu(s) sur ' + r.recipients + (r.failed ? ' (' + r.failed + ' échec(s))' : '') + '.') : "Aucun appareil abonné ne correspond pour l'instant.";
+      ['pushTitle', 'pushBody', 'pushSubject', 'pushTitleEn', 'pushBodyEn'].forEach(function (i) { if ($(i)) $(i).value = ''; });
+      updatePreview(); adminLoad();
     } catch (e) { res.style.color = '#B91C1C'; res.textContent = e.message; }
     btn.disabled = false;
   }
 
   function bind() {
     var b = $('pushBtn'); if (b) b.addEventListener('click', openDialog);
+    var bell = $('bellBtn'); if (bell) bell.addEventListener('click', openInbox);
     if ($('pushTitle')) { $('pushTitle').addEventListener('input', updatePreview); $('pushBody').addEventListener('input', updatePreview); updatePreview(); }
     if ($('pushSendBtn')) $('pushSendBtn').addEventListener('click', adminSend);
+    if ($('pushClearBtn')) $('pushClearBtn').addEventListener('click', function () { adminDelete('/api/admin/push/history', 'Supprimer TOUT l’historique des notifications ? Cette action est définitive.'); });
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && $('pushBtn') && $('pushBtn').style.display !== 'none') clearDelivered(); });
+  }
+
+  // Réenregistrement discret de l'appareil (rattache le jeton au compte connecté, maintient updated_at) : au plus toutes les 12 h
+  var syncing = false;
+  async function resync() {
+    if (syncing || Date.now() - Number(load(K.sync) || 0) < SYNC_EVERY) return;
+    syncing = true;
+    try {
+      if (native) { nativeInit(); if ((await nativePermission()) === 'granted') PN.register(); }
+      else if (webSupported && Notification.permission === 'granted') {
+        var sub = await webSub();
+        if (sub) { await api('/api/push/subscribe', 'POST', { subscription: sub.toJSON() }); store(K.sync, String(Date.now())); }
+      }
+    } catch (e) {} finally { syncing = false; }
   }
 
   window.PushUI = {
     adminLoad: adminLoad,
+    openInbox: openInbox,
+    onQuizCompleted: function () {
+      store(K.quizzes, String(Number(load(K.quizzes) || 0) + 1));
+      setTimeout(maybePrompt, 1500);
+    },
     afterLogin: function () {
       var b = $('pushBtn'); if (b) b.style.display = 'block';
-      refreshButton();
-      if (native) {
-        nativeInit();
-        nativePermission().then(function (p) { if (p === 'granted') PN.register(); }).catch(function () {});     // rattache l'appareil au compte connecté
-      } else if (webSupported && Notification.permission === 'granted') {
-        webSub().then(function (sub) {
-          if (sub) api('/api/push/subscribe', 'POST', { subscription: sub.toJSON() }).catch(function () {});
-        }).catch(function () {});
-      }
+      var bell = $('bellBtn'); if (bell) bell.style.display = 'inline-flex';
+      refreshButton(); refreshBell(); clearDelivered(); trackOpen(); resync();
+      setTimeout(maybePrompt, 2500);
     },
-    afterLogout: function () { var b = $('pushBtn'); if (b) b.style.display = 'none'; closeDialog(); }
+    afterLogout: function () {
+      var b = $('pushBtn'); if (b) b.style.display = 'none';
+      var bell = $('bellBtn'); if (bell) bell.style.display = 'none';
+      closeDialog(); closeInbox(); var p = $('pushPromptBanner'); if (p) p.remove();
+    }
   };
 
   bind();

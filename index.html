@@ -744,6 +744,7 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
   <div class="header-actions">
     <span id="userLabel">Non connecté</span>
     <button id="adminBtn" class="btn-admin" style="display:none">⚙️ Admin</button>
+    <button id="bellBtn" style="display:none;align-items:center" aria-label="Mes notifications" title="Mes notifications">📬 Mes notifications <span id="bellBadge" style="display:none;background:#EF4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:6px;font-weight:800">0</span></button>
     <button id="pushBtn" style="display:none">🔔 Activer les notifications</button>
     <button id="pwdBtn" style="display:none">🔑 Mot de passe</button>
     <button id="logoutBtn" style="display:none">Déconnexion</button>
@@ -974,13 +975,32 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
   <div class="admin-modal-content">
     <div class="admin-header"><h2 style="margin:0">⚙️ Panneau d'Administration</h2><button class="ghost" onclick="document.getElementById('adminModal').classList.remove('show')">✖ Fermer</button></div>
     <div class="admin-tabs">
-      <button class="admin-tab-btn active" data-atab="create">➕ Créer un compte</button>
+      <button class="admin-tab-btn active" data-atab="stats">📊 Accueil</button>
+      <button class="admin-tab-btn" data-atab="create">➕ Créer un compte</button>
       <button class="admin-tab-btn" data-atab="password">🔑 Modifier MDP</button>
       <button class="admin-tab-btn" data-atab="role">👑 Attribuer un rôle</button>
       <button class="admin-tab-btn" data-atab="messages">📩 Messages d'aide</button>
       <button class="admin-tab-btn" data-atab="push">📢 Notifications</button>
     </div>
-    <div id="atab-create" class="atab-content">
+    <div id="atab-stats" class="atab-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <h3 style="margin:0">📊 Vue d'ensemble</h3>
+        <div><span id="statUpdated" style="font-size:12px;color:var(--muted)"></span> <button type="button" id="statRefreshBtn" class="ghost">🔄 Actualiser</button></div>
+      </div>
+      <div id="statError" style="color:var(--red);font-size:13px;margin-top:6px"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px">
+        <div style="border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:12px"><div id="statUsers" style="font-size:26px;font-weight:800">…</div><div style="font-size:12px;color:var(--muted)">Utilisateurs</div></div>
+        <div style="border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:12px"><div id="statBanned" style="font-size:26px;font-weight:800">…</div><div style="font-size:12px;color:var(--muted)">Comptes désactivés</div></div>
+        <div style="border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:12px"><div id="statQuizTotal" style="font-size:26px;font-weight:800">…</div><div style="font-size:12px;color:var(--muted)">Quiz au total</div></div>
+        <div style="border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:12px"><div id="statQuizWeek" style="font-size:26px;font-weight:800">…</div><div style="font-size:12px;color:var(--muted)">Quiz créés cette semaine</div></div>
+        <div style="border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:12px"><div id="statSubscribers" style="font-size:26px;font-weight:800">…</div><div style="font-size:12px;color:var(--muted)">Appareils abonnés</div></div>
+        <div style="border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:12px"><div id="statNotifSent" style="font-size:26px;font-weight:800">…</div><div style="font-size:12px;color:var(--muted)">Notifications envoyées</div></div>
+        <div style="border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:12px"><div id="statNotifWeek" style="font-size:26px;font-weight:800">…</div><div style="font-size:12px;color:var(--muted)">…dont cette semaine</div></div>
+        <div style="border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:12px"><div id="statNotifDelivered" style="font-size:26px;font-weight:800">…</div><div style="font-size:12px;color:var(--muted)">Notifications reçues</div></div>
+        <div style="border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:12px"><div id="statNotifClicks" style="font-size:26px;font-weight:800">…</div><div style="font-size:12px;color:var(--muted)">Ouvertures</div></div>
+      </div>
+    </div>
+    <div id="atab-create" class="atab-content hide">
       <form id="adminCreateForm" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label>Nom</label><input id="newLastName" required placeholder="Dupont"></div>
         <div><label>Prénom</label><input id="newFirstName" required placeholder="Jean"></div>
@@ -1052,6 +1072,17 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
         <option value="/?tab=courses">Mes cours</option>
         <option value="/?tab=create">Créer un test</option>
       </select>
+      <details style="margin-bottom:12px">
+        <summary style="cursor:pointer;font-weight:700;font-size:13px">Options avancées (ciblage, traduction)</summary>
+        <label style="font-weight:700;font-size:13px;display:block;margin-top:8px">Matière ciblée (facultatif)</label>
+        <input id="pushSubject" maxlength="80" placeholder="Ex. Anatomie (vide = tous les abonnés)" style="width:100%;margin:4px 0 10px;">
+        <label style="font-weight:700;font-size:13px;display:block">Niveau ciblé (facultatif)</label>
+        <select id="pushLevel" style="width:100%;margin:4px 0 10px;"><option value="">Tous les niveaux</option><option>LICENCE 1</option><option>LICENCE 2</option><option>LICENCE 3</option></select>
+        <label style="font-weight:700;font-size:13px;display:block">Titre en anglais (facultatif)</label>
+        <input id="pushTitleEn" maxlength="80" placeholder="Reçu par les abonnés qui ont choisi English" style="width:100%;margin:4px 0 10px;">
+        <label style="font-weight:700;font-size:13px;display:block">Message en anglais (facultatif)</label>
+        <textarea id="pushBodyEn" maxlength="300" rows="2" style="width:100%;margin:4px 0 6px;"></textarea>
+      </details>
       <div style="border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;background:#F9FAFB;margin-bottom:12px;">
         <div style="font-size:11px;color:var(--muted)">Aperçu</div>
         <div id="pushPreviewTitle" style="font-weight:800"></div>
@@ -1062,11 +1093,16 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
         <span id="pushSubCount" style="font-size:12px;color:var(--muted);font-weight:700"></span>
       </div>
       <div id="pushResult" style="margin-top:10px;font-size:13px;font-weight:700"></div>
-      <h4 style="margin:20px 0 8px">Derniers envois</h4>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:20px 0 8px"><h4 style="margin:0">Derniers envois</h4><button id="pushClearBtn" type="button" class="ghost" style="display:none">🗑️ Supprimer l'historique</button></div>
       <div id="pushHistory" style="font-size:13px"></div>
     </div>
 
     <h3 style="margin-top:30px">Comptes existants</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0">
+      <input id="adminUserSearch" type="search" placeholder="Rechercher par nom ou e-mail…" style="flex:1;min-width:200px" aria-label="Rechercher un compte">
+      <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="adminUserBannedOnly" style="width:auto"> Afficher seulement les bannis</label>
+      <span id="adminUserCount" style="font-size:12px;color:var(--muted)"></span>
+    </div>
     <div id="adminUsersList">Chargement...</div>
   </div>
 </div>
@@ -1886,7 +1922,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadCourses() {
   if (!supabaseClient) return;
   const list = $('coursesList');
-  list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
+  list.innerHTML = window.Skeleton ? Skeleton.list(4) : '<p style="color:var(--muted)">Chargement...</p>';
   try {
     const { data, error } = await supabaseClient.from('courses').select('*').order('created_at', { ascending: false });
     if (error) {
@@ -2360,12 +2396,17 @@ function renderLibraryList() {
   }
   const searchQuery = $('quizSearch') ? $('quizSearch').value : '';
   const { keyword, level } = parseSearchQuery(searchQuery);
+  const hasFilter = currentLibraryFilter !== 'all' || !!level || !!keyword;
+  // Une recherche ou un filtre porte sur tous les quiz : on charge alors les pages restantes
+  if (hasFilter && libraryState.hasMore && !libraryState.loadingMore && !libraryState.autoFailed) loadMoreLibrary(true);
+  const moreHtml = (!hasFilter && libraryState.hasMore)
+    ? `<div style="text-align:center;padding:12px"><button id="libraryMoreBtn" class="ghost" onclick="loadMoreLibrary()">Charger plus (${Math.max(0, libraryState.total - libraryCache.length)} restants)</button></div>` : '';
   let filtered = libraryCache;
   if (currentLibraryFilter !== 'all') filtered = filtered.filter(q => q.level === currentLibraryFilter);
   if (level) filtered = filtered.filter(q => q.level === level);
   if (keyword) filtered = filtered.filter(q => normalizeText(q.title).includes(keyword));
   if (filtered.length === 0) {
-    list.innerHTML = '<p style="color:var(--muted)">Aucun exercice ne correspond à votre recherche.</p>';
+    list.innerHTML = libraryState.loadingMore ? (window.Skeleton ? Skeleton.list(3) : '<p style="color:var(--muted)">Recherche dans tous les quiz...</p>') : '<p style="color:var(--muted)">Aucun exercice ne correspond à votre recherche.</p>';
     updateLibraryActionBar();
     return;
   }
@@ -2388,19 +2429,57 @@ function renderLibraryList() {
         </div>
       </div>
     `;
-  }).join('');
+  }).join('') + moreHtml;
   updateLibraryActionBar();
 }
 window.renderLibraryList = renderLibraryList;
 
+// Bibliothèque paginée : 20 quiz par page ; le serveur répond avec { quizzes, page, total, hasMore } (ancien format accepté)
+const LIBRARY_PAGE_SIZE = 20;
+let libraryState = { page: 1, hasMore: false, total: 0, loadingMore: false, autoFailed: false };
+
+async function fetchLibraryPage(page) {
+  const bust = window.__quizzesDirty ? `&_=${Date.now()}` : '';
+  const data = await fetchWithAuth(`/api/quizzes?page=${page}&limit=${LIBRARY_PAGE_SIZE}${bust}`, null, 'GET');
+  window.__quizzesDirty = false;
+  return data;
+}
+
+async function loadMoreLibrary(all = false) {
+  if (libraryState.loadingMore || !libraryState.hasMore) return;
+  libraryState.loadingMore = true;
+  const btn = $('libraryMoreBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Chargement...'; }
+  try {
+    do {
+      const data = await fetchLibraryPage(libraryState.page + 1);
+      const known = new Set(libraryCache.map(q => q.id));
+      libraryCache = libraryCache.concat((data.quizzes || []).filter(q => !known.has(q.id)));
+      libraryState.page = data.page || libraryState.page + 1;
+      libraryState.hasMore = !!data.hasMore;
+      libraryState.total = data.total || libraryCache.length;
+    } while (all && libraryState.hasMore);
+  } catch (e) {
+    libraryState.autoFailed = true;                       // évite de réessayer en boucle
+    console.warn('Chargement de la suite de la bibliothèque impossible :', e.message);
+  } finally {
+    libraryState.loadingMore = false;
+    renderLibraryList();
+  }
+}
+window.loadMoreLibrary = loadMoreLibrary;
+
 async function loadLibrary() {
   const list = $('libraryList');
-  list.innerHTML = '<p style="color:var(--muted)">Chargement...</p>';
+  list.innerHTML = window.Skeleton ? Skeleton.list(5) : '<p style="color:var(--muted)">Chargement...</p>';
   selectedQuizIds.clear();
   updateLibraryActionBar();
+  libraryState = { page: 1, hasMore: false, total: 0, loadingMore: false, autoFailed: false };
   try {
-    const data = await fetchWithAuth('/api/quizzes', null, 'GET');
+    const data = await fetchLibraryPage(1);
     libraryCache = data.quizzes || [];
+    libraryState.hasMore = !!data.hasMore;
+    libraryState.total = data.total || libraryCache.length;
     renderLibraryList();
   } catch (e) {
     list.innerHTML = `<p style="color:var(--red)">Erreur : ${esc(e.message)}</p>`;
@@ -2743,7 +2822,7 @@ window.uploadAttachment = uploadAttachment;
 async function loadCommunity() {
   if (!supabaseClient) return;
   const list = $('communityList');
-  list.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px;">Chargement...</p>';
+  list.innerHTML = window.Skeleton ? Skeleton.list(4) : '<p style="color:var(--muted);text-align:center;padding:20px;">Chargement...</p>';
   try {
     const { data, error } = await supabaseClient.from('community_posts').select('*').order('created_at', { ascending: false });
     if (error) { list.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Erreur : ${esc(error.message)}</p>`; return; }
@@ -2869,7 +2948,7 @@ window.markRepliesAsRead = markRepliesAsRead;
 // ==========================================
 // 👑 ADMIN
 // ==========================================
-$('adminBtn').addEventListener('click', () => { $('adminModal').classList.add('show'); loadAdminUsers(); });
+$('adminBtn').addEventListener('click', () => { $('adminModal').classList.add('show'); loadAdminUsers(); if (window.AdminExtras) window.AdminExtras.loadStats(); });
 document.querySelectorAll('.admin-tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
@@ -2878,6 +2957,7 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
     $('atab-' + btn.dataset.atab).classList.remove('hide');
     if (btn.dataset.atab === 'messages') loadAdminMessages();
     if (btn.dataset.atab === 'push' && window.PushUI) window.PushUI.adminLoad();
+    if (btn.dataset.atab === 'stats' && window.AdminExtras) window.AdminExtras.loadStats();
   });
 });
 
@@ -2893,8 +2973,9 @@ async function loadAdminUsers() {
     const roleSelect = $('roleUserId');
     roleSelect.innerHTML = `<option value="">-- Sélectionner un utilisateur --</option>` + data.users.map(u => `<option value="${u.id}">${esc(u.name)} (${esc(u.email)}) ${u.isAdmin ? '👑' : ''}</option>`).join('');
     $('adminUsersList').innerHTML = `<table class="admin-table"><thead><tr><th>Nom</th><th>Email</th><th>Statut</th><th>Rôle</th></tr></thead><tbody>
-      ${data.users.map(u => `<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.banned ? '<span style="color:var(--red)">Désactivé</span>' : '<span style="color:var(--green)">Actif</span>'}</td><td>${u.isAdmin ? '<span class="badge-admin">ADMIN</span>' : 'Utilisateur'}</td></tr>`).join('')}
+      ${data.users.map(u => `<tr data-search="${esc((u.name + ' ' + u.email).toLowerCase())}" data-banned="${u.banned ? 1 : 0}"><td><b>${esc(u.name)}</b></td><td>${esc(u.email)}</td><td>${u.banned ? '<span style="color:var(--red)">Désactivé</span>' : '<span style="color:var(--green)">Actif</span>'}</td><td>${u.isAdmin ? '<span class="badge-admin">ADMIN</span>' : 'Utilisateur'}</td></tr>`).join('')}
     </tbody></table>`;
+    if (window.AdminExtras) window.AdminExtras.applyUserFilter();
     loadAdminMessages();
   } catch (err) { $('adminUsersList').innerHTML = `<p style="color:var(--red)">Erreur réseau : ${esc(err.message)}</p>`; }
 }
@@ -3308,6 +3389,7 @@ async function fetchWithAuth(url, body, method = 'POST') {
   const res = await fetch(API_BASE + url, options);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || data.message || `Erreur serveur (${res.status})`);
+  if (method !== 'GET' && /^\/api\/quizzes/.test(url)) window.__quizzesDirty = true;   // le cache du navigateur est ignoré au prochain chargement
   return data;
 }
 
@@ -3378,6 +3460,7 @@ $('generatePostTestBtn').addEventListener('click', async () => {
   const btn = $('generatePostTestBtn');
   const original = btn.innerHTML;
   btn.innerHTML = '⏳ Génération...'; btn.disabled = true;
+  const aiSkeleton = window.Skeleton ? Skeleton.show($('analysisStatus'), 3) : null;
   try {
     const data = await fetchWithAuth('/api/generate-post-test', { text });
     if(data.questions && data.questions.length > 0) {
@@ -3393,7 +3476,7 @@ $('generatePostTestBtn').addEventListener('click', async () => {
   } catch (err) {
     if (/Session expirée/i.test(err.message)) { $('sessionWarning').classList.remove('hide'); setTimeout(() => supabaseClient.auth.signOut(), 1500); }
     else { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ ' + err.message; }
-  } finally { btn.innerHTML = original; btn.disabled = false; }
+  } finally { btn.innerHTML = original; btn.disabled = false; if (aiSkeleton) aiSkeleton.remove(); }
 });
 
 $('extractTestBtn').addEventListener('click', async () => {
@@ -3845,6 +3928,7 @@ async function finishExam() {
   const ratio = correctCount / total;
 
   await saveHistory({ title: examState.title, date: new Date().toISOString(), score: scoreSur20 });
+  try { if (window.PushUI) window.PushUI.onQuizCompleted(); } catch (e) {}
 
   $('scoreCorrect').textContent = correctCount;
   $('scoreTotal').textContent = total;
@@ -3924,5 +4008,7 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
   }
 })();
 </script>
+<script src="/ui-extras.js" defer></script>
+<script src="/admin-extras.js" defer></script>
 <script src="/push-client.js" defer></script>
 </body></html>

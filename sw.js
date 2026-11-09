@@ -8,9 +8,11 @@
    - Ne touche JAMAIS aux appels /api/*, à Supabase, ni aux requêtes non-GET
    ===================================================================== */
 
-const APP_VERSION = 'revisio-v3';          // ← à incrémenter pour forcer la purge des anciens caches
+const APP_VERSION = 'revisio-v4';          // ← à incrémenter pour forcer la purge des anciens caches
 const SHELL_CACHE = `${APP_VERSION}-shell`;
 const CDN_CACHE   = `${APP_VERSION}-cdn`;
+const DATA_CACHE  = `${APP_VERSION}-data`;   // dernières listes de quiz (consultables hors ligne)
+const MAX_DATA_ENTRIES = 10;
 
 const SHELL_ASSETS = [
   '/',
@@ -56,6 +58,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
 
   if (req.method !== 'GET') return;
+  // Liste publique des quiz : réseau d'abord, puis dernière copie en cache si le téléphone est hors ligne
+  if (url.origin === self.location.origin && url.pathname === '/api/quizzes') {
+    event.respondWith(quizzesNetworkFirst(req));
+    return;
+  }
   if (url.pathname.startsWith('/api/')) return;
   if (url.pathname.startsWith('/auth/')) return;
   if (url.hostname.endsWith('.supabase.co')) return;
@@ -77,6 +84,35 @@ self.addEventListener('fetch', (event) => {
 });
 
 // ---------------- STRATÉGIES
+function dataKey(href) {
+  const u = new URL(href);
+  u.searchParams.delete('_');            // paramètre anti-cache de l'application : ignoré pour la clé
+  u.searchParams.sort();
+  return u.origin + u.pathname + u.search;
+}
+
+async function quizzesNetworkFirst(req) {
+  const cache = await caches.open(DATA_CACHE);
+  const key = dataKey(req.url);
+  try {
+    const fresh = await fetch(req);
+    if (fresh && fresh.ok) {
+      await cache.put(key, fresh.clone());
+      const keys = await cache.keys();
+      if (keys.length > MAX_DATA_ENTRIES) await cache.delete(keys[0]);
+    }
+    return fresh;
+  } catch (err) {
+    const hit = await cache.match(key);
+    if (hit) {
+      const headers = new Headers(hit.headers);
+      headers.set('X-From-Cache', '1');
+      return new Response(await hit.blob(), { status: 200, headers });
+    }
+    return new Response(JSON.stringify({ error: 'Hors ligne', offline: true }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+  }
+}
+
 async function networkFirstNavigation(req) {
   const cache = await caches.open(SHELL_CACHE);
   try {

@@ -22,6 +22,8 @@
     background: var(--bg);
     color: var(--ink);
     display: flex;
+    flex-direction: column;
+    gap: 16px;
     align-items: center;
     justify-content: center;
     padding: 20px;
@@ -99,6 +101,25 @@
     background: #ECFDF5; color: #065F46;
   }
   .status.online .dot { background: #10B981; }
+  #cached { text-align: left; }
+  #cached h2 { font-size: 17px; color: var(--navy); margin: 0 0 4px; }
+  #cached .small { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+  #cached input[type=search] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; margin-bottom: 10px; }
+  #cached details { border: 1px solid var(--line); border-radius: 10px; margin: 8px 0; padding: 8px 12px; }
+  #cached summary { cursor: pointer; font-weight: 700; font-size: 14px; color: var(--ink); }
+  #cached summary small { display: block; font-weight: 400; color: var(--muted); }
+  .qa { margin: 12px 0; font-size: 14px; }
+  .qa .q { font-weight: 700; margin-bottom: 4px; }
+  .qa ul { margin: 0; padding-left: 0; list-style: none; }
+  .qa li { padding: 4px 8px; border-radius: 8px; margin: 2px 0; color: var(--ink); }
+  .qa li.ok { background: #ECFDF5; color: #065F46; font-weight: 700; }
+  .qa .ex { font-size: 12px; color: var(--muted); margin-top: 4px; font-style: italic; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #111827; --ink: #F3F4F6; --muted: #9CA3AF; --line: #374151; --navy: #6EE7B7; }
+    .card { background: #1F2937; }
+    #cached input[type=search] { background: #111827; color: var(--ink); }
+    .qa li.ok { background: #064E3B; color: #D1FAE5; }
+  }
 </style>
 </head>
 <body>
@@ -145,6 +166,79 @@
   window.addEventListener('online', updateStatus);
   window.addEventListener('offline', updateStatus);
   updateStatus();
+</script>
+
+<section class="card" id="cached" hidden>
+  <h2>📚 Quiz disponibles hors ligne</h2>
+  <p class="small" id="cachedAt"></p>
+  <input type="search" id="cachedSearch" placeholder="Rechercher un quiz…" aria-label="Rechercher un quiz">
+  <div id="cachedList"></div>
+</section>
+
+<script>
+  // Affiche les dernières listes de quiz mises en cache par le service worker (lecture seule, avec corrections)
+  (async function () {
+    try {
+      var names = await caches.keys();
+      var dataName = names.filter(function (n) { return /-data$/.test(n); }).sort().pop();
+      if (!dataName) return;
+      var cache = await caches.open(dataName), reqs = await cache.keys(), byId = {}, newest = 0;
+      for (var i = 0; i < reqs.length; i++) {
+        var res = await cache.match(reqs[i]); if (!res) continue;
+        var d = await res.clone().json().catch(function () { return null; });
+        var when = Date.parse(res.headers.get('date') || '') || 0; if (when > newest) newest = when;
+        ((d && d.quizzes) || []).forEach(function (q) { byId[q.id] = q; });
+      }
+      var quizzes = Object.keys(byId).map(function (k) { return byId[k]; });
+      if (!quizzes.length) return;
+      quizzes.sort(function (a, b) { return String(b.created_at || '').localeCompare(String(a.created_at || '')); });
+      document.getElementById('cached').hidden = false;
+      if (newest) document.getElementById('cachedAt').textContent = 'Copie du ' + new Date(newest).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) + ' — ' + quizzes.length + ' quiz';
+      var list = document.getElementById('cachedList');
+
+      function correctIdx(q) {
+        if (Array.isArray(q.correct)) return q.correct;
+        if (typeof q.correct === 'number') return [q.correct];
+        if (typeof q.correct === 'boolean') return [q.correct ? 0 : 1];
+        return [];
+      }
+      function renderQuestions(box, q) {
+        (q.questions || []).forEach(function (it, n) {
+          var qa = document.createElement('div'); qa.className = 'qa';
+          var t = document.createElement('div'); t.className = 'q'; t.textContent = (n + 1) + '. ' + (it.text || it.question || '');
+          qa.appendChild(t);
+          var opts = Array.isArray(it.options) ? it.options : (typeof it.correct === 'boolean' ? ['Vrai', 'Faux'] : []);
+          var ok = correctIdx(it);
+          if (opts.length) {
+            var ul = document.createElement('ul');
+            opts.forEach(function (o, k) {
+              var li = document.createElement('li'); if (ok.indexOf(k) !== -1) li.className = 'ok';
+              li.textContent = (ok.indexOf(k) !== -1 ? '✓ ' : '') + String(o); ul.appendChild(li);
+            });
+            qa.appendChild(ul);
+          } else if (it.answer || typeof it.correct === 'string') {
+            var a = document.createElement('div'); a.textContent = 'Réponse : ' + (it.answer || it.correct); qa.appendChild(a);
+          }
+          var ex = it.explanation || it.explication;
+          if (ex) { var e = document.createElement('div'); e.className = 'ex'; e.textContent = String(ex); qa.appendChild(e); }
+          box.appendChild(qa);
+        });
+      }
+      function render(filter) {
+        list.textContent = '';
+        quizzes.filter(function (q) { return !filter || (String(q.title) + ' ' + String(q.subject)).toLowerCase().indexOf(filter) !== -1; }).slice(0, 60).forEach(function (q) {
+          var det = document.createElement('details'), sum = document.createElement('summary');
+          sum.textContent = q.title || 'Quiz';
+          var meta = document.createElement('small'); meta.textContent = [q.subject, q.level, (q.questions || []).length + ' question(s)'].filter(Boolean).join(' · ');
+          sum.appendChild(meta); det.appendChild(sum);
+          det.addEventListener('toggle', function () { if (det.open && det.children.length === 1) renderQuestions(det, q); });
+          list.appendChild(det);
+        });
+      }
+      render('');
+      document.getElementById('cachedSearch').addEventListener('input', function (e) { render(e.target.value.trim().toLowerCase()); });
+    } catch (e) { /* pas de cache disponible */ }
+  })();
 </script>
 
 </body>

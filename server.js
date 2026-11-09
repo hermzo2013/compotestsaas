@@ -3,30 +3,36 @@ import express from 'express';
 import OpenAI from 'openai';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// ← FIX #4 : import express-rate-limit
 import rateLimit from 'express-rate-limit';
+// Détection des consignes écrites dans les sujets (type de réponse, études de cas, QPQ, temps)
 import { detectAndParse, finalizeAiResult } from './instruction-detector.js';
-import { parseQuizText } from './quiz-parser.js';
+import { parseQuizText } from './quiz-parser.js';   // extracteur v2 (remplace l'ancienne fonction parseQuizText de ce fichier)
 import { createPush } from './push.js';
+import { logger } from './logger.js';
+import {
+  validate, createQuizSchema, updateQuizSchema, quizIdParam, userIdParam, quizzesQuerySchema, extrasOf,
+  adminCreateUserSchema, adminPasswordSchema, adminStatusSchema, adminRoleSchema, generateSchema, parseExistingSchema
+} from './schemas.js';
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
-
-// ==========================================
-// 🛠️ FIX : Configuration PROXY pour Render
-// ==========================================
-// Render utilise un proxy inverse. Sans cette ligne, express-rate-limit
-// plante car il ne peut pas identifier l'IP réelle du client.
-app.set('trust proxy', 1);
-
 app.disable('x-powered-by');
+app.set('trust proxy', 1);   // Render place un proxy devant l'application : sans cela, tous les visiteurs partagent la même « IP » pour les limiteurs
 app.use(express.json({ limit: '10mb' }));
 
 // ==========================================
-// 🔍 LOG DE TOUTES LES REQUÊTES
+// 🔍 JOURNAL DES REQUÊTES (JSON structuré, une ligne par requête API)
 // ==========================================
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} | Origin: ${req.headers.origin || 'no origin'}`);
+  const started = process.hrtime.bigint();
+  res.on('finish', () => {
+    const url = req.originalUrl.split('?')[0];
+    if (!url.startsWith('/api') && res.statusCode < 500) return;   // pas de ligne pour chaque fichier statique
+    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : (url === '/api/health' ? 'debug' : 'info');
+    logger[level]({ method: req.method, path: url, status: res.statusCode, ms: Math.round(Number(process.hrtime.bigint() - started) / 1e6), origin: req.headers.origin || null, ip: req.ip }, 'requête');
+  });
   next();
 });
 
@@ -65,45 +71,53 @@ app.use((req, res, next) => {
 // ==========================================
 // 🛡️ RATE LIMITING
 // ==========================================
-const globalApiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 60,
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => req.path === '/api/health',
-  message: { error: 'Trop de requêtes, réessaie dans une minute.' }
-});
+const limiter = (opts) => rateLimit({ windowMs: 60 * 1000, standardHeaders: true, legacyHeaders: false, ...opts });
+const tooMany = (what) => ({ error: `Trop de requêtes${what ? ` ${what}` : ''}, réessaie dans quelques instants.` });
 
-const aiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Trop de requêtes IA, réessaie dans une minute.' }
-});
+// Limiteur global sur /api/* (sauf /api/health qui doit toujours répondre pour UptimeRobot)
+const globalApiLimiter = limiter({ max: Number(process.env.API_RATE_PER_MIN || 60), skip: (req) => req.originalUrl.split('?')[0] === '/api/health', message: { error: 'Trop de requêtes, réessaie dans une minute.' } });
+// Extraction de questions (sans IA) : inchangé
+const aiLimiter = limiter({ max: 10, message: { error: 'Trop de requêtes IA, réessaie dans une minute.' } });
+// Génération par IA (consomme des tokens) : plus strict, par IP puis par utilisateur
+const generateLimiter = limiter({ max: Number(process.env.AI_RATE_PER_MIN || 5), message: tooMany('IA') });
+const generateUserLimiter = limiter({ windowMs: 60 * 60 * 1000, max: Number(process.env.AI_RATE_PER_HOUR || 30), keyGenerator: (req) => req.user?.id || req.ip, message: { error: 'Limite horaire de génération IA atteinte, réessaie plus tard.' } });
+// Comptes (création, mot de passe, bannissement…) : lecture 30/min, écriture 10/min, par administrateur
+const adminUsersLimiter = limiter({ max: 30, keyGenerator: (req) => req.user?.id || req.ip, message: tooMany('(administration)') });
+const adminUsersWriteLimiter = limiter({ max: 10, skip: (req) => req.method === 'GET', keyGenerator: (req) => `w:${req.user?.id || req.ip}`, message: tooMany('(administration)') });
+// Enregistrement d'appareil pour les notifications : 5 par minute et par IP (réglable : PUSH_SUBSCRIBE_LIMIT)
+const pushSubscribeLimiter = limiter({ max: Number(process.env.PUSH_SUBSCRIBE_LIMIT || 5), message: { error: 'Trop de tentatives d\'activation, réessaie dans une minute.' } });
 
 app.use('/api', globalApiLimiter);
-app.use('/api/generate-post-test', aiLimiter);
+app.use('/api/generate-post-test', generateLimiter);
 app.use('/api/parse-existing-quiz', aiLimiter);
 
 // ==========================================
-// 🛡️ ROUTE HEALTH CHECK
+// 🛡️ ROUTE HEALTH CHECK (pour UptimeRobot)
 // ==========================================
+// ⏰ FIX #5 : Documentation UptimeRobot / cron-job.org :
+//   - URL à pinger : GET https://compotestsaas.onrender.com/api/health
+//   - Intervalle : toutes les 14 minutes
+//   - Fenêtre active : 04h00 → 23h59 GMT (le serveur est en veille 00h-04h)
+//   - Timeout : 30 s
+//   - Alertes si statut ≠ 200
 app.get('/api/health', (req, res) => {
   const now = new Date();
   const hourUTC = now.getUTCHours();
   const isSleeping = hourUTC >= 0 && hourUTC < 4;
   if (isSleeping) {
-    console.log(`[${new Date().toISOString()}] 😴 Health check ignoré (veille programmée, ${hourUTC}h UTC)`);
+    logger.debug({ hourUTC }, 'health check ignoré (veille programmée)');
     return res.status(503).send('Service en veille programmée (00h-04h GMT)');
   }
-  console.log(`[${new Date().toISOString()}] ✅ Health check OK (${hourUTC}h UTC)`);
   res.status(200).send('OK');
 });
 
 // ==========================================
 // FICHIERS STATIQUES
 // ==========================================
+// ==========================================
+// PWA : service worker et manifeste (en-têtes dédiés)
+// ==========================================
+// Le service worker ne doit jamais être mis en cache longtemps, sinon une mise à jour de l'app n'arrive pas.
 app.get('/sw.js', (_req, res) => {
   res.set({ 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' });
   res.type('application/javascript').sendFile(path.join(__dirname, 'sw.js'));
@@ -113,11 +127,14 @@ app.get('/manifest.json', (_req, res) => {
   res.type('application/manifest+json').sendFile(path.join(__dirname, 'manifest.json'));
 });
 
+// Sécurité : express.static(__dirname) publie tout le dossier. On bloque au moins le code serveur et les scripts de build.
 app.use((req, res, next) => {
   if (/^\/(server\.js|package(-lock)?\.json|node_modules\/|generate-icons\.js|optimize-images\.js)/i.test(req.path)) return res.sendStatus(404);
   next();
 });
 
+// index:false -> '/' est servi par la route plus bas (sans cache). setHeaders -> index.html et config.js ne sont jamais mis en cache
+// (avant, express.static répondait en premier avec 1 jour de cache et les routes « no-cache » ci-dessous n'étaient jamais atteintes).
 app.use(express.static(__dirname, {
   maxAge: '1d',
   index: false,
@@ -126,6 +143,7 @@ app.use(express.static(__dirname, {
   }
 }));
 
+// ← FIX #3 : Cache-Control no-cache sur index.html (force le rechargement après déploiement)
 const noCacheHeaders = {
   'Cache-Control': 'no-cache, no-store, must-revalidate',
   'Pragma': 'no-cache',
@@ -154,7 +172,7 @@ async function authenticate(req, res, next) {
     req.user = { id: user.id, email: user.email, isAdmin };
     next();
   } catch (e) {
-    console.error('Auth error:', e);
+    logger.error({ err: e.message }, 'erreur de vérification du jeton');
     return res.status(503).json({ error: 'Vérification indisponible.' });
   }
 }
@@ -165,30 +183,64 @@ function requireAdmin(req, res, next) {
 }
 
 // ==========================================
-// ROUTES PUBLIQUES
+// ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
 // ==========================================
-app.get('/api/quizzes', async (req, res) => {
+// Cache serveur (5 min) : évite d'interroger Supabase à chaque affichage de la bibliothèque. Vidé à chaque création/modification/suppression.
+const QUIZ_CACHE_TTL = 5 * 60 * 1000;
+const quizCache = new Map();
+const invalidateQuizCache = () => quizCache.clear();
+
+async function fetchQuizzes({ page, limit }) {
+  const key = limit ? `${page}:${limit}` : 'all';
+  const hit = quizCache.get(key);
+  if (hit && Date.now() - hit.at < QUIZ_CACHE_TTL) return hit.body;
+  const base = process.env.SUPABASE_URL.replace(/\/$/, '');
+  const paginated = Boolean(limit);
+  const qs = 'select=*&order=created_at.desc' + (paginated ? `&limit=${limit}&offset=${(page - 1) * limit}` : '');
+  const response = await fetch(`${base}/rest/v1/quizzes?${qs}`, {
+    headers: {
+      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      ...(paginated ? { Prefer: 'count=exact' } : {})
+    }
+  });
+  if (!response.ok) throw new Error('Erreur Supabase GET');
+  const data = await response.json();
+  let body = { quizzes: data };                       // sans ?page / ?limit : format historique, inchangé
+  if (paginated) {
+    const total = Number((response.headers.get('content-range') || '').split('/')[1]);
+    const t = Number.isFinite(total) ? total : (page - 1) * limit + data.length;
+    body = { quizzes: data, page, limit, total: t, hasMore: page * limit < t };
+  }
+  quizCache.set(key, { at: Date.now(), body });
+  if (quizCache.size > 200) quizCache.delete(quizCache.keys().next().value);
+  return body;
+}
+
+app.get('/api/quizzes', validate(quizzesQuerySchema, 'query', 'Paramètres de pagination invalides (page ≥ 1, limit de 1 à 100).'), async (req, res) => {
   try {
-    const base = process.env.SUPABASE_URL.replace(/\/$/, '');
-    const response = await fetch(`${base}/rest/v1/quizzes?select=*&order=created_at.desc`, {
-      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` }
-    });
-    if (!response.ok) throw new Error('Erreur Supabase GET');
-    const data = await response.json();
-    res.json({ quizzes: data });
+    const { page, limit } = req.query;
+    const paginated = page !== undefined || limit !== undefined;
+    const body = await fetchQuizzes(paginated ? { page: page || 1, limit: limit || 20 } : {});
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');   // le navigateur garde la liste 5 min
+    res.json(body);
   } catch (e) {
-    console.error('Erreur GET quizzes:', e.message);
+    logger.error({ err: e.message }, 'GET /api/quizzes');
     res.status(500).json({ error: e.message });
   }
 });
 
 // ==========================================
-// PUSH NOTIFICATIONS
+// MIDDLEWARE D'AUTHENTIFICATION POUR LE RESTE DE /api
 // ==========================================
+// Notifications push : routeur autonome (authentification Supabase intégrée), monté avant le middleware global
 const push = createPush();
+app.use('/api/push/subscribe', pushSubscribeLimiter);
 app.use('/api', push.router);
 
 app.use('/api', authenticate);
+app.use('/api/generate-post-test', generateUserLimiter);
+app.use('/api/admin/users', adminUsersLimiter, adminUsersWriteLimiter);
 
 // ==========================================
 // ROUTES ADMIN
@@ -212,7 +264,7 @@ async function supabaseAdmin(pathname, options = {}) {
 
 app.get('/api/admin/users', requireAdmin, async (_req, res) => {
   try {
-    const data = await supabaseAdmin('users?page=1&per_page=100');
+    const data = await supabaseAdmin('users?page=1&per_page=1000');
     const users = (data.users || []).map(u => ({
       id: u.id, email: u.email, created_at: u.created_at,
       banned: u.banned_until && new Date(u.banned_until) > new Date(),
@@ -223,19 +275,14 @@ app.get('/api/admin/users', requireAdmin, async (_req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/admin/users', requireAdmin, async (req, res) => {
-  const firstName = String(req.body?.firstName || '').trim();
-  const lastName = String(req.body?.lastName || '').trim();
-  let email = String(req.body?.email || '').trim().toLowerCase();
-  const password = String(req.body?.password || '');
-  const niveau = String(req.body?.niveau || '').trim();
-  if (!firstName || !lastName) return res.status(400).json({ error: 'Nom et prénom requis.' });
+app.post('/api/admin/users', requireAdmin, validate(adminCreateUserSchema), async (req, res) => {
+  const { firstName, lastName, password, niveau } = req.body;
+  let email = req.body.email;
   if (!email) {
     const slug = `${firstName}.${lastName}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]/g, '');
     email = `${slug}@comptest.local`;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Email invalide.' });
-  if (password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (6 min).' });
   try {
     const user = await supabaseAdmin('users', {
       method: 'POST',
@@ -249,16 +296,14 @@ app.post('/api/admin/users', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.patch('/api/admin/users/:id/password', requireAdmin, async (req, res) => {
+app.patch('/api/admin/users/:id/password', requireAdmin, validate(userIdParam, 'params'), validate(adminPasswordSchema), async (req, res) => {
   try {
-    const pwd = String(req.body?.password || '');
-    if (pwd.length < 6) return res.status(400).json({ error: 'Mot de passe trop court.' });
-    await supabaseAdmin(`users/${req.params.id}`, { method: 'PUT', body: JSON.stringify({ password: pwd }) });
+    await supabaseAdmin(`users/${req.params.id}`, { method: 'PUT', body: JSON.stringify({ password: req.body.password }) });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.patch('/api/admin/users/:id/status', requireAdmin, async (req, res) => {
+app.patch('/api/admin/users/:id/status', requireAdmin, validate(userIdParam, 'params'), validate(adminStatusSchema), async (req, res) => {
   try {
     await supabaseAdmin(`users/${req.params.id}`, {
       method: 'PUT',
@@ -268,9 +313,9 @@ app.patch('/api/admin/users/:id/status', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.patch('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
+app.patch('/api/admin/users/:id/role', requireAdmin, validate(userIdParam, 'params'), validate(adminRoleSchema), async (req, res) => {
   try {
-    const isAdmin = req.body.is_admin === true;
+    const isAdmin = req.body.is_admin;
     const current = await supabaseAdmin(`users/${req.params.id}`);
     const app_metadata = { ...(current.app_metadata || {}), is_admin: isAdmin };
     await supabaseAdmin(`users/${req.params.id}`, { method: 'PUT', body: JSON.stringify({ app_metadata }) });
@@ -278,11 +323,44 @@ app.patch('/api/admin/users/:id/role', requireAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.delete('/api/admin/users/:id', requireAdmin, async (req, res) => {
+app.delete('/api/admin/users/:id', requireAdmin, validate(userIdParam, 'params'), async (req, res) => {
   try {
     await supabaseAdmin(`users/${req.params.id}`, { method: 'DELETE' });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Tableau de bord admin : utilisateurs, quiz de la semaine, notifications envoyées (mis en cache 60 s)
+async function restCount(query) {
+  const base = process.env.SUPABASE_URL.replace(/\/$/, '');
+  const response = await fetch(`${base}/rest/v1/${query}`, {
+    headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, Prefer: 'count=exact' }
+  });
+  if (!response.ok) throw new Error('Erreur Supabase (comptage)');
+  return Number((response.headers.get('content-range') || '').split('/')[1]) || 0;
+}
+let statsCache = null;
+app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
+  try {
+    if (!statsCache || Date.now() - statsCache.at > 60_000) {
+      let total = 0, banned = 0;
+      for (let page = 1; page <= 20; page++) {            // jusqu'à 20 000 comptes
+        const data = await supabaseAdmin(`users?page=${page}&per_page=1000`);
+        const list = data.users || [];
+        total += list.length;
+        banned += list.filter(u => u.banned_until && new Date(u.banned_until) > new Date()).length;
+        if (list.length < 1000) break;
+      }
+      const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
+      const [quizTotal, quizWeek] = await Promise.all([
+        restCount('quizzes?select=id&limit=1'),
+        restCount(`quizzes?select=id&limit=1&created_at=gte.${encodeURIComponent(weekAgo)}`)
+      ]);
+      const notifications = await push.getStats().catch((e) => { logger.warn({ err: e.message }, 'statistiques notifications indisponibles'); return { messages: 0, delivered: 0, last7days: 0, clicks: 0, subscribers: 0 }; });
+      statsCache = { at: Date.now(), body: { users: { total, banned }, quizzes: { total: quizTotal, thisWeek: quizWeek }, notifications, generatedAt: new Date().toISOString() } };
+    }
+    res.json(statsCache.body);
+  } catch (e) { logger.error({ err: e.message }, 'GET /api/admin/stats'); res.status(500).json({ error: e.message }); }
 });
 
 // ==========================================
@@ -294,14 +372,20 @@ function aiClient() {
 }
 const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 
-app.post('/api/parse-existing-quiz', (req, res) => {
+// ==========================================
+// EXTRACTION
+// ==========================================
+// (l'ancienne fonction parseQuizText a été remplacée par quiz-parser.js)
+
+app.post('/api/parse-existing-quiz', validate(parseExistingSchema), (req, res) => {
   try {
     const text = req.body?.text || '';
     let result;
     try {
       result = detectAndParse(text, parseQuizText);
     } catch (err) {
-      console.error('Détection des consignes ignorée :', err.message);
+      // La détection des consignes ne doit JAMAIS empêcher l'import : retour à l'extraction d'origine
+      logger.warn({ err: err.message }, 'détection des consignes ignorée');
       result = { questions: parseQuizText(text) };
     }
     const { questions, ...meta } = result;
@@ -309,7 +393,7 @@ app.post('/api/parse-existing-quiz', (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/generate-post-test', async (req, res) => {
+app.post('/api/generate-post-test', validate(generateSchema), async (req, res) => {
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée.' });
   const { text, count = 50 } = req.body;
@@ -360,157 +444,108 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
         if (q.type === 'short' && !q.explanation) q.explanation = '';
         return q;
       });
-      try { finalizeAiResult(parsed, text); } catch (err) { console.error('finalizeAiResult ignoré :', err.message); }
+      // Validation des consignes / blocs fournis par l'IA + complément déterministe (sans jamais bloquer la génération)
+      try { finalizeAiResult(parsed, text); } catch (err) { logger.warn({ err: err.message }, 'finalizeAiResult ignoré'); }
     }
     res.json(parsed);
   } catch (e) {
-    console.error('Erreur API IA :', e.message);
+    logger.error({ err: e.message }, 'erreur API IA');
     res.status(502).json({ error: e.message });
   }
 });
 
 // ==========================================
-// ROUTES QUIZ
+// ROUTES QUIZ (CRÉATION, MODIFICATION, SUPPRESSION) — validation par schémas Zod (schemas.js)
 // ==========================================
-function pickQuizExtras(body) {
-  const out = {};
-  const { display_mode, blocks, seconds_per_question } = body || {};
-  if (display_mode !== undefined) {
-    if (!['NORMAL', 'QPQ'].includes(display_mode)) return { error: 'display_mode invalide (NORMAL ou QPQ).' };
-    out.display_mode = display_mode;
-  }
-  if (blocks !== undefined) {
-    if (!Array.isArray(blocks) || blocks.length > 100) return { error: 'blocks doit être un tableau (100 max).' };
-    out.blocks = blocks.map(b => ({
-      id: String(b && b.id),
-      title: String((b && b.title) || '').slice(0, 160),
-      case_block: b && b.case_block ? String(b.case_block).slice(0, 8000) : null
-    }));
-  }
-  if (body && body.time_limit_seconds !== undefined) {
-    const n = Number(body.time_limit_seconds);
-    if (!Number.isInteger(n) || n < 60 || n > 28800) return { error: 'time_limit_seconds doit être un entier entre 60 et 28800.' };
-    out.time_limit_seconds = n;
-  }
-  if (body && body.scoring !== undefined) {
-    const sc = body.scoring;
-    if (sc !== null && (typeof sc !== 'object' || Array.isArray(sc))) return { error: 'scoring doit être un objet.' };
-    if (sc) {
-      const clean = {};
-      for (const k of ['correct', 'wrong', 'blank']) if (sc[k] !== undefined) { const v = Number(sc[k]); if (!Number.isFinite(v) || Math.abs(v) > 100) return { error: `scoring.${k} invalide.` }; clean[k] = v; }
-      out.scoring = clean;
-    } else out.scoring = null;
-  }
-  if (seconds_per_question !== undefined) {
-    const n = Number(seconds_per_question);
-    if (!Number.isInteger(n) || n < 10 || n > 900) return { error: 'seconds_per_question doit être un entier entre 10 et 900.' };
-    out.seconds_per_question = n;
-  }
-  return { extras: out };
-}
+const sbHeaders = (extra = {}) => ({ apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, ...extra });
 
-app.post('/api/quizzes', async (req, res) => {
+app.post('/api/quizzes', validate(createQuizSchema), async (req, res) => {
   const { title, subject, level, questions } = req.body;
-  if (!title || !questions || !Array.isArray(questions) || questions.length === 0) return res.status(400).json({ error: 'Titre et questions requis.' });
-  const ex = pickQuizExtras(req.body);
-  if (ex.error) return res.status(400).json({ error: ex.error });
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
     const response = await fetch(`${base}/rest/v1/quizzes`, {
       method: 'POST',
-      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      headers: sbHeaders({ 'Content-Type': 'application/json', Prefer: 'return=representation' }),
       body: JSON.stringify({
         title: String(title).slice(0, 200),
         subject: String(subject || 'Général').slice(0, 200),
         level: level || null,
         questions,
-        ...ex.extras,
+        ...extrasOf(req.body),
         created_by: req.user.id
       })
     });
     if (!response.ok) { const err = await response.text(); throw new Error(`Erreur Supabase POST: ${err}`); }
-    const data = await response.json(); push.notifyNewQuiz(data[0], req.user.id); res.json({ quiz: data[0] });
-  } catch (e) { console.error('Erreur POST quizzes:', e.message); res.status(500).json({ error: e.message }); }
+    const data = await response.json();
+    invalidateQuizCache();
+    push.notifyNewQuiz(data[0], req.user.id);
+    res.json({ quiz: data[0] });
+  } catch (e) { logger.error({ err: e.message }, 'POST /api/quizzes'); res.status(500).json({ error: e.message }); }
 });
 
-app.patch('/api/quizzes/:id', requireAdmin, async (req, res) => {
+async function updateQuiz(req, res, label) {
   const { questions, level } = req.body;
   const updates = {};
-  if (questions !== undefined) {
-    if (!Array.isArray(questions) || questions.length === 0) return res.status(400).json({ error: 'Tableau de questions requis.' });
-    updates.questions = questions;
-  }
-  if (level !== undefined) {
-    const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
-    if (!validLevels.includes(level)) return res.status(400).json({ error: 'Niveau invalide.' });
-    updates.level = level;
-  }
-  const ex = pickQuizExtras(req.body);
-  if (ex.error) return res.status(400).json({ error: ex.error });
-  Object.assign(updates, ex.extras);
-  if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Aucune modification fournie.' });
+  if (questions !== undefined) updates.questions = questions;
+  if (level !== undefined) updates.level = level;
+  Object.assign(updates, extrasOf(req.body));
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
     const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, {
       method: 'PATCH',
-      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      headers: sbHeaders({ 'Content-Type': 'application/json', Prefer: 'return=representation' }),
       body: JSON.stringify(updates)
     });
     if (!response.ok) { const err = await response.text(); throw new Error(`Erreur Supabase PATCH: ${err}`); }
-    const data = await response.json(); res.json({ quiz: data[0] });
-  } catch (e) { console.error('Erreur PATCH quizzes:', e.message); res.status(500).json({ error: e.message }); }
-});
+    const data = await response.json();
+    invalidateQuizCache();
+    res.json({ quiz: data[0] });
+  } catch (e) { logger.error({ err: e.message }, `${label} /api/quizzes/:id`); res.status(500).json({ error: e.message }); }
+}
+app.patch('/api/quizzes/:id', requireAdmin, validate(quizIdParam, 'params'), validate(updateQuizSchema), (req, res) => updateQuiz(req, res, 'PATCH'));
+app.put('/api/quizzes/:id', requireAdmin, validate(quizIdParam, 'params'), validate(updateQuizSchema), (req, res) => updateQuiz(req, res, 'PUT'));
 
-app.put('/api/quizzes/:id', requireAdmin, async (req, res) => {
-  const { questions, level } = req.body;
-  const updates = {};
-  if (questions !== undefined) {
-    if (!Array.isArray(questions) || questions.length === 0) return res.status(400).json({ error: 'Tableau de questions requis.' });
-    updates.questions = questions;
-  }
-  if (level !== undefined) {
-    const validLevels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
-    if (!validLevels.includes(level)) return res.status(400).json({ error: 'Niveau invalide.' });
-    updates.level = level;
-  }
-  const ex = pickQuizExtras(req.body);
-  if (ex.error) return res.status(400).json({ error: ex.error });
-  Object.assign(updates, ex.extras);
-  if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'Aucune modification fournie.' });
+app.delete('/api/quizzes/:id', requireAdmin, validate(quizIdParam, 'params'), async (req, res) => {
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
-    const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, {
-      method: 'PATCH',
-      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify(updates)
-    });
-    if (!response.ok) { const err = await response.text(); throw new Error(`Erreur Supabase PATCH: ${err}`); }
-    const data = await response.json(); res.json({ quiz: data[0] });
-  } catch (e) { console.error('Erreur PUT quizzes:', e.message); res.status(500).json({ error: e.message }); }
-});
-
-app.delete('/api/quizzes/:id', requireAdmin, async (req, res) => {
-  try {
-    const base = process.env.SUPABASE_URL.replace(/\/$/, '');
-    const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, {
-      method: 'DELETE',
-      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` }
-    });
+    const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, { method: 'DELETE', headers: sbHeaders() });
     if (!response.ok) throw new Error('Erreur Supabase DELETE');
+    invalidateQuizCache();
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ==========================================
+// 🧯 ERREURS : 404 JSON pour /api, puis gestionnaire global (aucune erreur ne doit faire planter le serveur)
+// ==========================================
+app.use('/api', (_req, res) => res.status(404).json({ error: 'Route introuvable.' }));
+
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  if (err && err.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON invalide.' });
+  if (err && err.type === 'entity.too.large') return res.status(413).json({ error: 'Requête trop volumineuse.' });
+  const status = Number(err && err.status);
+  if (status >= 400 && status < 500) return res.status(status).json({ error: 'Requête invalide.' });
+  logger.error({ err: { message: err && err.message, stack: err && err.stack }, method: req.method, path: req.originalUrl.split('?')[0] }, 'erreur non gérée');
+  res.status(500).json({ error: 'Une erreur interne est survenue' });
+});
+
+if (process.env.NODE_ENV !== 'test') {
+  process.on('unhandledRejection', (reason) => logger.error({ err: reason && reason.message ? reason.message : String(reason) }, 'promesse rejetée non gérée'));
+  process.on('uncaughtException', (err) => {            // état imprévisible : on journalise puis on laisse Render relancer proprement
+    logger.fatal({ err: err.message, stack: err.stack }, 'exception non interceptée');
+    setTimeout(() => process.exit(1), 500).unref();
+  });
+}
+
+// ==========================================
 // 🚀 DÉMARRAGE
 // ==========================================
-app.listen(port, '0.0.0.0', () => {
-  console.log(`✅ Serveur démarré sur le port ${port}`);
-  console.log(`🌐 Environnement: ${process.env.NODE_ENV || 'development'}`);
-  
-  // 🛠️ DIAGNOSTIC : Vérification des variables VAPID au démarrage
-  console.log(`🔍 DIAGNOSTIC VAPID :`);
-  console.log(`   - VAPID_PUBLIC_KEY : ${process.env.VAPID_PUBLIC_KEY ? '✅ Chargée' : '❌ MANQUANTE'}`);
-  console.log(`   - VAPID_PRIVATE_KEY : ${process.env.VAPID_PRIVATE_KEY ? '✅ Chargée' : '❌ MANQUANTE'}`);
-  console.log(`   - VAPID_SUBJECT : ${process.env.VAPID_SUBJECT ? '✅ Chargée' : '❌ MANQUANTE'}`);
-});
+export { app, push };
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, '0.0.0.0', () => {
+    logger.info({ port, env: process.env.NODE_ENV || 'development' }, 'Serveur démarré');
+  });
+}
