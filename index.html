@@ -1060,6 +1060,14 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 
     <!-- 🔔 ONGLET NOTIFICATIONS -->
     <div id="atab-push" class="atab-content hide">
+      <div style="border:1px solid #E5E7EB;border-radius:12px;padding:12px 14px;background:#FFFBEB;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;cursor:pointer;margin:0;">
+          <input type="checkbox" id="globalNotificationsToggle" style="width:20px;height:20px;accent-color:#10B981;cursor:pointer;">
+          Activer les notifications pour tous les utilisateurs
+        </label>
+        <span id="globalNotificationsStatus" style="font-size:12px;color:var(--muted);font-weight:700;"></span>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin-top:0;">Écris un message : il sera envoyé en notification aux utilisateurs qui ont activé les notifications. Les nouveaux quiz sont notifiés automatiquement.</p>
       <p style="color:var(--muted);font-size:13px;margin-top:0;">Écris un message : il sera envoyé en notification aux utilisateurs qui ont activé les notifications. Les nouveaux quiz sont notifiés automatiquement.</p>
       <label style="font-weight:700;font-size:13px;">Titre <span id="pushTitleCount" style="color:var(--muted);font-weight:400">0/80</span></label>
       <input id="pushTitle" maxlength="80" placeholder="Ex. Nouveau cours disponible" style="width:100%;margin:4px 0 12px;">
@@ -1756,7 +1764,7 @@ function handleSession(session) {
     if (unreadCheckInterval) clearInterval(unreadCheckInterval);
     unreadCheckInterval = setInterval(checkUnreadReplies, 30000);
   } else {
-    currentUser = null; isAdmin = false;
+    currentUser = null; isAdmin = false; window.__isAdmin = false;
     $('authGate').classList.add('show');
     $('mainApp').style.display = 'none';
     $('pwdBtn').style.display = 'none';
@@ -2957,6 +2965,7 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
     $('atab-' + btn.dataset.atab).classList.remove('hide');
     if (btn.dataset.atab === 'messages') loadAdminMessages();
     if (btn.dataset.atab === 'push' && window.PushUI) window.PushUI.adminLoad();
+    if (btn.dataset.atab === 'push' && window.AdminExtras) window.AdminExtras.loadGlobalNotifications();
     if (btn.dataset.atab === 'stats' && window.AdminExtras) window.AdminExtras.loadStats();
   });
 });
