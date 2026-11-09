@@ -1,5 +1,5 @@
-/* Révisio — notifications push : navigateur/PWA (Web Push), application Android (Firebase), réglages, invitation,
-   boîte « Mes notifications », suivi des ouvertures, et panneau d'envoi admin. */
+/* Révisio — notifications push : navigateur/PWA, Android, réglages, invitation,
+   boîte « Mes notifications », suivi des ouvertures, panneau admin. */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
@@ -11,7 +11,8 @@
 
   var K = {
     token: 'revisio_fcm_token', prefs: 'revisio_push_prefs', sync: 'revisio_push_last_sync',
-    promptAt: 'revisio_push_prompt_dismissed_at', visits: 'revisio_visits', quizzes: 'revisio_quizzes_done', seen: 'revisio_inbox_seen'
+    promptAt: 'revisio_push_prompt_dismissed_at', visits: 'revisio_visits', quizzes: 'revisio_quizzes_done', seen: 'revisio_inbox_seen',
+    settings: 'revisio_settings_cache'
   };
   var DAY = 86400000, SYNC_EVERY = 12 * 3600000, PROMPT_PAUSE = 7 * DAY;
 
@@ -34,7 +35,26 @@
     return data;
   }
 
-  // ---------- Thème : suit la préférence système (mode sombre) ----------
+  // ---------- Réglage global des notifications (lecture publique) ----------
+  // Cache 60 s côté navigateur. Si l'appel échoue, on considère que les notifications sont désactivées
+  // (dégradation sûre : on ne montre pas le bouton si on ne sait pas).
+  function cachedSettings() {
+    try { var o = JSON.parse(load(K.settings) || 'null'); return o && (Date.now() - o.at < 60000) ? o : null; } catch (e) { return null; }
+  }
+  async function fetchSettings() {
+    var c = cachedSettings(); if (c) return c;
+    try {
+      var res = await fetch(apiBase() + '/api/settings');
+      var data = await res.json();
+      var o = { at: Date.now(), notifications_enabled: !!data.notifications_enabled };
+      store(K.settings, JSON.stringify(o));
+      return o;
+    } catch (e) {
+      return { at: Date.now(), notifications_enabled: false };
+    }
+  }
+
+  // ---------- Thème ----------
   function isDark() { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
   function pal() {
     return isDark()
@@ -57,7 +77,7 @@
     setTimeout(function () { t.remove(); }, 6000);
   }
 
-  // ---------- Compteurs (visites, quiz terminés) ----------
+  // ---------- Compteurs ----------
   try {
     if (!sessionStorage.getItem('revisio_visit_counted')) {
       sessionStorage.setItem('revisio_visit_counted', '1');
@@ -65,7 +85,7 @@
     }
   } catch (e) {}
 
-  // ---------- Android (Firebase via Capacitor) ----------
+  // ---------- Android ----------
   var pendingReg = null, nativeReady = false;
 
   function nativeInit() {
@@ -73,7 +93,7 @@
     PN.addListener('registration', function (t) {
       var token = t && t.value; if (!token) return;
       if (pendingReg) { var p = pendingReg; pendingReg = null; p.resolve(token); return; }
-      store(K.token, token);                                    // renouvellement automatique du jeton
+      store(K.token, token);
       api('/api/push/subscribe', 'POST', { fcm_token: token }).then(function () { store(K.sync, String(Date.now())); }).catch(function () {});
     });
     PN.addListener('registrationError', function (e) {
@@ -107,7 +127,7 @@
     return { id: { fcm_token: token } };
   }
 
-  // ---------- Navigateur / PWA (Web Push) ----------
+  // ---------- Navigateur ----------
   function b64ToBytes(b64) {
     var pad = '='.repeat((4 - b64.length % 4) % 4);
     var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
@@ -138,7 +158,7 @@
     return { id: { endpoint: sub.endpoint } };
   }
 
-  // ---------- Fonctions communes ----------
+  // ---------- Commun ----------
   async function permission() { return native ? nativePermission() : Notification.permission; }
 
   async function currentId() {
@@ -159,7 +179,6 @@
     store(K.prefs, null);
   }
 
-  // Préférences mises en cache : /api/push/status n'est appelé que si le cache est vide
   function cachedPrefs(id) {
     try { var p = JSON.parse(load(K.prefs) || 'null'); return p && p.id === idValue(id) ? p : null; } catch (e) { return null; }
   }
@@ -180,7 +199,6 @@
     return n === 'en' ? 'en' : 'fr';
   }
 
-  // Vide les notifications déjà affichées quand l'utilisateur ouvre l'application
   async function clearDelivered() {
     try {
       if (native) { await PN.removeAllDeliveredNotifications(); return; }
@@ -191,7 +209,6 @@
     } catch (e) {}
   }
 
-  // Suivi des ouvertures : ?from=push&mid=<id> dans l'adresse → un ping puis nettoyage de l'adresse
   async function trackOpen() {
     try {
       var q = new URLSearchParams(location.search);
@@ -207,8 +224,14 @@
     } catch (e) {}
   }
 
+  // Met à jour l'état du bouton "Activer les notifications" en tenant compte du réglage global
+  // et du rôle : un utilisateur normal ne voit jamais ce bouton (il reçoit l'invitation, gérée à part).
   async function refreshButton() {
     var btn = $('pushBtn'); if (!btn) return;
+    var s = await fetchSettings();
+    var show = s.notifications_enabled && window.__isAdmin === true;
+    btn.style.display = show ? 'block' : 'none';
+    if (!show) return;
     var on = false;
     if (supported && (await permission().catch(function () { return 'default'; })) === 'granted') on = !!(await currentId());
     btn.textContent = on ? '🔔 Notifications activées' : '🔔 Activer les notifications';
@@ -224,6 +247,8 @@
   }
 
   async function openDialog() {
+    var s = await fetchSettings();
+    if (!s.notifications_enabled) { alert("Les notifications ne sont pas activées par l'administrateur."); return; }
     if (!supported) {
       alert("Les notifications ne sont pas disponibles ici. Utilise Chrome sur Android, ou sur iPhone ajoute d'abord Révisio à l'écran d'accueil (Safari → Partager).");
       return;
@@ -240,7 +265,7 @@
     var st = { notify_quiz: true, notify_messages: true, preferred_subjects: [], preferred_level: null, language: await userLanguage() };
     if (id) {
       var cached = cachedPrefs(id);
-      if (cached) st = cached;                                  // pas d'appel réseau si les préférences sont en cache
+      if (cached) st = cached;
       else {
         try { var r = await api('/api/push/status', 'POST', id); if (r.subscribed) { st = Object.assign(st, r); cachePrefs(id, st); } } catch (e) {}
       }
@@ -297,7 +322,7 @@
       if (id) await api('/api/push/preferences', 'POST', Object.assign({}, id, prefs));
       else { var r = await enable(prefs); id = r.id; }
       cachePrefs(id, prefs);
-      try { await supabaseClient.auth.updateUser({ data: { language: prefs.language } }); } catch (e) {}   // langue mémorisée dans user_metadata
+      try { await supabaseClient.auth.updateUser({ data: { language: prefs.language } }); } catch (e) {}
       msg.style.color = c.ok; msg.textContent = 'Enregistré ✓'; refreshButton();
     });
     if (id) btn('Désactiver', async function () { await disable(); closeDialog(); refreshButton(); }, true);
@@ -306,18 +331,20 @@
     document.body.appendChild(ov);
   }
 
-  // ---------- Invitation à activer (après le 1er quiz ou 3 visites ; pause de 7 jours si fermée) ----------
+  // ---------- Invitation ----------
   function dismissPrompt() { store(K.promptAt, String(Date.now())); var b = $('pushPromptBanner'); if (b) b.remove(); }
 
   var prompting = false;
   async function maybePrompt() {
-    if (prompting) return;            // évite deux bandeaux si l'initialisation est déclenchée deux fois
+    if (prompting) return;
     prompting = true;
     try {
       if (!supported || $('pushPromptBanner')) return;
-      var pb = $('pushBtn'); if (!pb || pb.style.display === 'none') return;                 // pas connecté
+      var s = await fetchSettings();
+      if (!s.notifications_enabled) return;                       // réglage global désactivé : aucune invitation
+      var pb = $('pushBtn'); if (!pb || pb.style.display === 'none') return;
       if (Date.now() - Number(load(K.promptAt) || 0) < PROMPT_PAUSE) return;
-      if ((await permission()) !== 'default') return;                                      // déjà accordé ou refusé
+      if ((await permission()) !== 'default') return;
       if (await currentId()) return;
       if (!(Number(load(K.quizzes) || 0) >= 1 || Number(load(K.visits) || 0) >= 3)) return;
       var c = pal(), b = document.createElement('div');
@@ -333,7 +360,7 @@
     } catch (e) {} finally { prompting = false; }
   }
 
-  // ---------- Mes notifications (cloche) ----------
+  // ---------- Mes notifications ----------
   function closeInbox() { var d = $('pushInbox'); if (d) d.remove(); }
   function fmtDate(iso) { try { return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }); } catch (e) { return ''; } }
 
@@ -452,7 +479,6 @@
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && $('pushBtn') && $('pushBtn').style.display !== 'none') clearDelivered(); });
   }
 
-  // Réenregistrement discret de l'appareil (rattache le jeton au compte connecté, maintient updated_at) : au plus toutes les 12 h
   var syncing = false;
   async function resync() {
     if (syncing || Date.now() - Number(load(K.sync) || 0) < SYNC_EVERY) return;
@@ -469,12 +495,16 @@
   window.PushUI = {
     adminLoad: adminLoad,
     openInbox: openInbox,
+    reloadSettings: function () {
+      try { localStorage.removeItem(K.settings); } catch (e) {}
+      refreshButton();
+    },
     onQuizCompleted: function () {
       store(K.quizzes, String(Number(load(K.quizzes) || 0) + 1));
       setTimeout(maybePrompt, 1500);
     },
     afterLogin: function () {
-      var b = $('pushBtn'); if (b) b.style.display = 'block';
+      var b = $('pushBtn');
       var bell = $('bellBtn'); if (bell) bell.style.display = 'inline-flex';
       refreshButton(); refreshBell(); clearDelivered(); trackOpen(); resync();
       setTimeout(maybePrompt, 2500);
@@ -488,7 +518,6 @@
 
   bind();
 
-  // Le script est chargé avec « defer » : si la session a été rétablie avant lui, on s'initialise ici aussi.
   if (typeof supabaseClient !== 'undefined' && supabaseClient.auth) {
     supabaseClient.auth.getSession().then(function (s) {
       if (s && s.data && s.data.session) window.PushUI.afterLogin();
