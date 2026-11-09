@@ -12,7 +12,8 @@ import { createPush } from './push.js';
 import { logger } from './logger.js';
 import {
   validate, createQuizSchema, updateQuizSchema, quizIdParam, userIdParam, quizzesQuerySchema, extrasOf,
-  adminCreateUserSchema, adminPasswordSchema, adminStatusSchema, adminRoleSchema, generateSchema, parseExistingSchema
+  adminCreateUserSchema, adminPasswordSchema, adminStatusSchema, adminRoleSchema, generateSchema, parseExistingSchema,
+  adminSettingsSchema
 } from './schemas.js';
 
 const app = express();
@@ -94,12 +95,6 @@ app.use('/api/parse-existing-quiz', aiLimiter);
 // ==========================================
 // 🛡️ ROUTE HEALTH CHECK (pour UptimeRobot)
 // ==========================================
-// ⏰ FIX #5 : Documentation UptimeRobot / cron-job.org :
-//   - URL à pinger : GET https://compotestsaas.onrender.com/api/health
-//   - Intervalle : toutes les 14 minutes
-//   - Fenêtre active : 04h00 → 23h59 GMT (le serveur est en veille 00h-04h)
-//   - Timeout : 30 s
-//   - Alertes si statut ≠ 200
 app.get('/api/health', (req, res) => {
   const now = new Date();
   const hourUTC = now.getUTCHours();
@@ -114,10 +109,6 @@ app.get('/api/health', (req, res) => {
 // ==========================================
 // FICHIERS STATIQUES
 // ==========================================
-// ==========================================
-// PWA : service worker et manifeste (en-têtes dédiés)
-// ==========================================
-// Le service worker ne doit jamais être mis en cache longtemps, sinon une mise à jour de l'app n'arrive pas.
 app.get('/sw.js', (_req, res) => {
   res.set({ 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' });
   res.type('application/javascript').sendFile(path.join(__dirname, 'sw.js'));
@@ -127,14 +118,11 @@ app.get('/manifest.json', (_req, res) => {
   res.type('application/manifest+json').sendFile(path.join(__dirname, 'manifest.json'));
 });
 
-// Sécurité : express.static(__dirname) publie tout le dossier. On bloque au moins le code serveur et les scripts de build.
 app.use((req, res, next) => {
   if (/^\/(server\.js|package(-lock)?\.json|node_modules\/|generate-icons\.js|optimize-images\.js)/i.test(req.path)) return res.sendStatus(404);
   next();
 });
 
-// index:false -> '/' est servi par la route plus bas (sans cache). setHeaders -> index.html et config.js ne sont jamais mis en cache
-// (avant, express.static répondait en premier avec 1 jour de cache et les routes « no-cache » ci-dessous n'étaient jamais atteintes).
 app.use(express.static(__dirname, {
   maxAge: '1d',
   index: false,
@@ -143,7 +131,6 @@ app.use(express.static(__dirname, {
   }
 }));
 
-// ← FIX #3 : Cache-Control no-cache sur index.html (force le rechargement après déploiement)
 const noCacheHeaders = {
   'Cache-Control': 'no-cache, no-store, must-revalidate',
   'Pragma': 'no-cache',
@@ -185,7 +172,6 @@ function requireAdmin(req, res, next) {
 // ==========================================
 // ROUTES PUBLIQUES (SANS AUTHENTIFICATION)
 // ==========================================
-// Cache serveur (5 min) : évite d'interroger Supabase à chaque affichage de la bibliothèque. Vidé à chaque création/modification/suppression.
 const QUIZ_CACHE_TTL = 5 * 60 * 1000;
 const quizCache = new Map();
 const invalidateQuizCache = () => quizCache.clear();
@@ -206,7 +192,7 @@ async function fetchQuizzes({ page, limit }) {
   });
   if (!response.ok) throw new Error('Erreur Supabase GET');
   const data = await response.json();
-  let body = { quizzes: data };                       // sans ?page / ?limit : format historique, inchangé
+  let body = { quizzes: data };
   if (paginated) {
     const total = Number((response.headers.get('content-range') || '').split('/')[1]);
     const t = Number.isFinite(total) ? total : (page - 1) * limit + data.length;
@@ -222,7 +208,7 @@ app.get('/api/quizzes', validate(quizzesQuerySchema, 'query', 'Paramètres de pa
     const { page, limit } = req.query;
     const paginated = page !== undefined || limit !== undefined;
     const body = await fetchQuizzes(paginated ? { page: page || 1, limit: limit || 20 } : {});
-    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');   // le navigateur garde la liste 5 min
+    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
     res.json(body);
   } catch (e) {
     logger.error({ err: e.message }, 'GET /api/quizzes');
@@ -231,9 +217,30 @@ app.get('/api/quizzes', validate(quizzesQuerySchema, 'query', 'Paramètres de pa
 });
 
 // ==========================================
+// RÉGLAGE GLOBAL DES NOTIFICATIONS (PUBLIC EN LECTURE)
+// ==========================================
+// Lisible sans authentification : push-client.js et index.html doivent savoir si les
+// notifications sont activées pour tous (l'admin bascule via /api/admin/settings/notifications).
+// Si la table app_settings n'existe pas encore, on renvoie false (dégradation douce).
+app.get('/api/settings', async (_req, res) => {
+  try {
+    const base = process.env.SUPABASE_URL.replace(/\/$/, '');
+    const r = await fetch(`${base}/rest/v1/app_settings?select=notifications_enabled&id=eq.1`, {
+      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` }
+    });
+    if (!r.ok) throw new Error('Erreur Supabase GET app_settings');
+    const rows = await r.json();
+    res.set('Cache-Control', 'no-store');
+    res.json({ notifications_enabled: !!(rows[0] && rows[0].notifications_enabled) });
+  } catch (e) {
+    logger.warn({ err: e.message }, 'GET /api/settings');
+    res.json({ notifications_enabled: false });
+  }
+});
+
+// ==========================================
 // MIDDLEWARE D'AUTHENTIFICATION POUR LE RESTE DE /api
 // ==========================================
-// Notifications push : routeur autonome (authentification Supabase intégrée), monté avant le middleware global
 const push = createPush();
 app.use('/api/push/subscribe', pushSubscribeLimiter);
 app.use('/api', push.router);
@@ -330,7 +337,6 @@ app.delete('/api/admin/users/:id', requireAdmin, validate(userIdParam, 'params')
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Tableau de bord admin : utilisateurs, quiz de la semaine, notifications envoyées (mis en cache 60 s)
 async function restCount(query) {
   const base = process.env.SUPABASE_URL.replace(/\/$/, '');
   const response = await fetch(`${base}/rest/v1/${query}`, {
@@ -344,7 +350,7 @@ app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
   try {
     if (!statsCache || Date.now() - statsCache.at > 60_000) {
       let total = 0, banned = 0;
-      for (let page = 1; page <= 20; page++) {            // jusqu'à 20 000 comptes
+      for (let page = 1; page <= 20; page++) {
         const data = await supabaseAdmin(`users?page=${page}&per_page=1000`);
         const list = data.users || [];
         total += list.length;
@@ -363,6 +369,30 @@ app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
   } catch (e) { logger.error({ err: e.message }, 'GET /api/admin/stats'); res.status(500).json({ error: e.message }); }
 });
 
+// Bascule du réglage global des notifications (admin uniquement)
+app.post('/api/admin/settings/notifications', requireAdmin, validate(adminSettingsSchema), async (req, res) => {
+  try {
+    const base = process.env.SUPABASE_URL.replace(/\/$/, '');
+    const r = await fetch(`${base}/rest/v1/app_settings?id=eq.1`, {
+      method: 'PATCH',
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify({ notifications_enabled: req.body.enabled, updated_at: new Date().toISOString() })
+    });
+    if (!r.ok) throw new Error('Erreur Supabase PATCH app_settings');
+    push.invalidateSettings?.();
+    statsCache = null;
+    res.json({ notifications_enabled: req.body.enabled });
+  } catch (e) {
+    logger.error({ err: e.message }, 'POST /api/admin/settings/notifications');
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ==========================================
 // IA
 // ==========================================
@@ -375,8 +405,6 @@ const modelName = () => process.env.AI_MODEL || 'openai/gpt-oss-20b';
 // ==========================================
 // EXTRACTION
 // ==========================================
-// (l'ancienne fonction parseQuizText a été remplacée par quiz-parser.js)
-
 app.post('/api/parse-existing-quiz', validate(parseExistingSchema), (req, res) => {
   try {
     const text = req.body?.text || '';
@@ -384,7 +412,6 @@ app.post('/api/parse-existing-quiz', validate(parseExistingSchema), (req, res) =
     try {
       result = detectAndParse(text, parseQuizText);
     } catch (err) {
-      // La détection des consignes ne doit JAMAIS empêcher l'import : retour à l'extraction d'origine
       logger.warn({ err: err.message }, 'détection des consignes ignorée');
       result = { questions: parseQuizText(text) };
     }
@@ -444,7 +471,6 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
         if (q.type === 'short' && !q.explanation) q.explanation = '';
         return q;
       });
-      // Validation des consignes / blocs fournis par l'IA + complément déterministe (sans jamais bloquer la génération)
       try { finalizeAiResult(parsed, text); } catch (err) { logger.warn({ err: err.message }, 'finalizeAiResult ignoré'); }
     }
     res.json(parsed);
@@ -455,7 +481,7 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
 });
 
 // ==========================================
-// ROUTES QUIZ (CRÉATION, MODIFICATION, SUPPRESSION) — validation par schémas Zod (schemas.js)
+// ROUTES QUIZ (CRÉATION, MODIFICATION, SUPPRESSION)
 // ==========================================
 const sbHeaders = (extra = {}) => ({ apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, ...extra });
 
@@ -516,7 +542,7 @@ app.delete('/api/quizzes/:id', requireAdmin, validate(quizIdParam, 'params'), as
 });
 
 // ==========================================
-// 🧯 ERREURS : 404 JSON pour /api, puis gestionnaire global (aucune erreur ne doit faire planter le serveur)
+// 🧯 ERREURS
 // ==========================================
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Route introuvable.' }));
 
@@ -533,15 +559,12 @@ app.use((err, req, res, next) => {
 
 if (process.env.NODE_ENV !== 'test') {
   process.on('unhandledRejection', (reason) => logger.error({ err: reason && reason.message ? reason.message : String(reason) }, 'promesse rejetée non gérée'));
-  process.on('uncaughtException', (err) => {            // état imprévisible : on journalise puis on laisse Render relancer proprement
+  process.on('uncaughtException', (err) => {
     logger.fatal({ err: err.message, stack: err.stack }, 'exception non interceptée');
     setTimeout(() => process.exit(1), 500).unref();
   });
 }
 
-// ==========================================
-// 🚀 DÉMARRAGE
-// ==========================================
 export { app, push };
 
 if (process.env.NODE_ENV !== 'test') {
