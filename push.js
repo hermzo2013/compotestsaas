@@ -10,9 +10,9 @@ const log = childLogger('push');
 
 const MAX_TITLE = 80;
 const MAX_BODY = 300;
-const QUIZ_BATCH_DELAY = 60_000;      // regroupe les quiz créés dans la minute
-const QUIZ_MIN_GAP = 5 * 60_000;      // au plus une alerte « nouveau quiz » toutes les 5 minutes
-const ADMIN_COOLDOWN = 3_000;         // anti double-clic sur « Envoyer »
+const QUIZ_BATCH_DELAY = 60_000;
+const QUIZ_MIN_GAP = 5 * 60_000;
+const ADMIN_COOLDOWN = 3_000;
 const OPTIONS_TTL = 5 * 60_000;
 const LEVELS = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
 const DEAD_FCM = new Set(['messaging/registration-token-not-registered', 'messaging/invalid-registration-token']);
@@ -23,7 +23,6 @@ const norm = (s) => String(s || '').trim().toLowerCase();
 const ZERO = { recipients: 0, delivered: 0, failed: 0 };
 const add = (a, b) => ({ recipients: a.recipients + b.recipients, delivered: a.delivered + b.delivered, failed: a.failed + b.failed });
 const must = (res) => { if (res.error) throw new Error(res.error.message || String(res.error)); return res; };
-// Ajoute ?from=push&mid=<id> (suivi des ouvertures) à un lien interne
 const track = (url, mid) => (mid ? `${url}${url.includes('?') ? '&' : '?'}from=push&mid=${mid}` : url);
 
 export function createPush({ env = process.env, clock = Date.now, supabase: injectedSupabase = null, messaging: injectedMessaging = null, webpush: injectedWebpush = null } = {}) {
@@ -32,7 +31,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
 
   const st = { sb: null, wp: null, msg: null, webOk: false, fcmOk: false, v2: null, v2At: 0 };
 
-  // Initialisation : chaque brique est facultative, un échec ne fait jamais tomber le serveur.
   const ready = (async () => {
     try {
       if (injectedSupabase) st.sb = injectedSupabase;
@@ -63,8 +61,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     } else log.warn('FIREBASE_SERVICE_ACCOUNT absent : notifications Android désactivées.');
   })();
 
-  // Les nouvelles colonnes (langue, matières, clics…) arrivent avec supabase-improvements.sql.
-  // Tant qu'il n'est pas exécuté, tout continue de fonctionner comme avant (mode « v1 »).
   async function schema() {
     if (st.v2 && st.v2.subs && st.v2.msgs) return st.v2;
     if (st.v2 && clock() - st.v2At < 5 * 60_000) return st.v2;
@@ -74,6 +70,24 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     if (!st.v2.subs || !st.v2.msgs) log.warn(st.v2, 'Colonnes manquantes : exécutez supabase-improvements.sql (fonctionnement réduit en attendant)');
     return st.v2;
   }
+
+  // ---------- Réglage global des notifications (app_settings) ----------
+  // Cache 30 s pour éviter un aller-retour Supabase à chaque envoi.
+  // Si la table n'existe pas (SQL pas encore lancé), on considère les notifications comme activées
+  // pour ne pas casser le comportement existant.
+  let settingsCache = { at: 0, enabled: true };
+  async function notificationsEnabled() {
+    if (clock() - settingsCache.at < 30_000) return settingsCache.enabled;
+    try {
+      const { data } = must(await st.sb.from('app_settings').select('notifications_enabled').eq('id', 1).limit(1));
+      settingsCache = { at: clock(), enabled: !!(data && data[0] && data[0].notifications_enabled) };
+    } catch (e) {
+      log.warn({ err: e.message }, 'app_settings illisible : notifications considérées comme activées');
+      settingsCache = { at: clock(), enabled: true };
+    }
+    return settingsCache.enabled;
+  }
+  const invalidateSettings = () => { settingsCache = { at: 0, enabled: true }; };
 
   // ---------- Authentification ----------
   async function authUser(req, res, next) {
@@ -119,7 +133,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     }
     return p;
   };
-  // Un appareil est identifié par son jeton FCM (Android) ou par l'endpoint de son abonnement (navigateur).
   const idOf = (b) => (b.fcm_token ? { col: 'fcm_token', val: b.fcm_token } : (b.endpoint ? { col: 'endpoint', val: b.endpoint } : null));
 
   // ---------- Utilisateur ----------
@@ -168,7 +181,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     res.json(data && data[0] ? { subscribed: true, ...data[0] } : { subscribed: false });
   }, { needChannel: false }));
 
-  // Matières et niveaux proposés dans les réglages (tirés des quiz existants)
   let optionsCache = null;
   router.get('/push/options', authUser, run(async (_req, res) => {
     if (!optionsCache || clock() - optionsCache.at > OPTIONS_TTL) {
@@ -179,7 +191,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     res.json(optionsCache.body);
   }, { needChannel: false }));
 
-  // Les 10 dernières notifications envoyées (page « Mes notifications »)
   router.get('/push/inbox', authUser, run(async (req, res) => {
     const lang = normLang(req.query.lang);
     const sch = await schema();
@@ -194,7 +205,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     });
   }, { needChannel: false }));
 
-  // Suivi des ouvertures de notification
   router.post('/push/click', authUser, validate(pushClickSchema), run(async (req, res) => {
     const sch = await schema();
     if (sch.msgs) must(await st.sb.rpc('increment_push_click', { p_id: req.body.mid }));
@@ -214,7 +224,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     return rows.filter((r) => (r.fcm_token ? st.fcmOk : (st.webOk && r.endpoint && r.p256dh && r.auth)));
   }
 
-  // L'abonné accepte-t-il cette matière / ce niveau ? (aucune préférence = tout)
   function accepts(row, { subject, level }) {
     const subs = Array.isArray(row.preferred_subjects) ? row.preferred_subjects : [];
     if (subject && subs.length && !subs.some((s) => norm(s) === norm(subject))) return false;
@@ -284,7 +293,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     return { recipients: rows.length, delivered, failed };
   }
 
-  // Regroupe les destinataires par contenu identique (langue, quiz concernés) puis envoie un lot par groupe
   async function sendGrouped(rows, build) {
     const groups = new Map();
     for (const r of rows) {
@@ -299,7 +307,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     return total;
   }
 
-  // Journal : la ligne est créée AVANT l'envoi pour pouvoir suivre les clics (mid), puis complétée
   async function openLog(kind, p, createdBy, translations) {
     const sch = await schema();
     const row = { kind, title: p.title, body: p.body, url: p.url, created_by: createdBy || null, ...(sch.msgs && translations ? { translations } : {}) };
@@ -313,10 +320,13 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     if (error) log.warn({ err: error.message }, 'journal non complété');
   }
 
-  // ---------- Administrateur (le rôle est vérifié AVANT toute opération en base) ----------
+  // ---------- Administrateur ----------
   let lastAdminSend = 0;
 
   router.post('/admin/push/send', authAdmin, validate(pushSendSchema), run(async (req, res) => {
+    if (!(await notificationsEnabled())) {
+      return res.status(409).json({ error: 'Notifications désactivées globalement. Activez-les depuis l’onglet Notifications.' });
+    }
     const title = clean(req.body.title, MAX_TITLE);
     const body = clean(req.body.body, MAX_BODY);
     if (!title || !body) return res.status(400).json({ error: 'Titre et message obligatoires.' });
@@ -349,7 +359,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     res.json({ subscribers: web + android, web, android, history });
   }, { needChannel: false }));
 
-  // Suppression de l'historique (tout, ou une seule notification)
   router.delete('/admin/push/history', authAdmin, run(async (_req, res) => {
     const { count } = must(await st.sb.from('push_messages').delete({ count: 'exact' }).not('id', 'is', null));
     log.info({ deleted: count }, 'historique des notifications supprimé');
@@ -361,7 +370,6 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     res.json({ ok: true });
   }, { needChannel: false }));
 
-  // Statistiques pour le tableau de bord admin
   async function getStats() {
     await ready;
     if (!st.sb) return { messages: 0, delivered: 0, last7days: 0, clicks: 0, subscribers: 0 };
@@ -379,7 +387,7 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     };
   }
 
-  // ---------- Nouveaux quiz (regroupés pour éviter le spam) ----------
+  // ---------- Nouveaux quiz ----------
   let pending = [];
   let timer = null;
   let lastQuizSend = 0;
@@ -391,12 +399,13 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     if (!batch.length) return;
     await ready;
     if (!st.sb || (!st.webOk && !st.fcmOk)) return;
+    if (!(await notificationsEnabled())) return;      // réglage global désactivé
     lastQuizSend = clock();
     const first = { title: t('fr', batch.length === 1 ? 'quiz.one.title' : 'quiz.many.title', { n: batch.length }), body: batch.slice(0, 2).map((q) => q.title).join(' · ') + (batch.length > 2 ? '…' : ''), url: '/?tab=library' };
     const mid = await openLog('quiz', first, null, null);
     const rows = await listTargets('notify_quiz');
     const result = await sendGrouped(rows, (r) => {
-      const mine = batch.filter((q) => q.by !== r.user_id && accepts(r, q));      // l'auteur n'est pas notifié de son propre quiz
+      const mine = batch.filter((q) => q.by !== r.user_id && accepts(r, q));
       if (!mine.length) return null;
       const lang = normLang(r.language);
       return {
@@ -417,5 +426,5 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     timer.unref?.();
   }
 
-  return { router, notifyNewQuiz, flushQuizzes, getStats, ready };
+  return { router, notifyNewQuiz, flushQuizzes, getStats, ready, invalidateSettings };
 }
