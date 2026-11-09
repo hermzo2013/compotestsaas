@@ -161,3 +161,7 @@ export const pushSendSchema = z.object({
 export const pushClickSchema = z.object({ mid: z.string().uuid('Identifiant invalide.') });
 export const pushInboxQuery = z.object({ lang: z.string().max(10).optional() }).passthrough();
 export const pushHistoryIdParam = z.object({ id: z.string().uuid('Identifiant invalide.') });
+// ---------- Réglages globaux ----------
+export const adminSettingsSchema = z.object({
+  enabled: z.any().transform((v) => v === true)
+});
