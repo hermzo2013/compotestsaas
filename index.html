@@ -730,6 +730,86 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
   .admin-msg-actions a{font-size:10px;padding:4px 6px;}
   .help-modal-content{padding:22px 18px;}
 }
+
+/* ==========================================
+   🤖 ONGLET ADMIN : INTELLIGENCE ARTIFICIELLE
+   ========================================== */
+.ai-provider-card{
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px 16px;
+  margin-bottom:12px;
+  background:#fff;
+  transition:box-shadow .2s,border-color .2s;
+}
+.ai-provider-card:hover{box-shadow:0 2px 8px rgba(16,185,129,.08);}
+.ai-provider-card.is-connected{border-color:#10B981;background:#F0FDF4;}
+.ai-provider-card.is-error{border-color:#EF4444;background:#FEF2F2;}
+.ai-provider-card.is-disabled{opacity:.7;background:#F9FAFB;}
+.ai-provider-header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.ai-provider-name{font-weight:800;font-size:15px;color:var(--exam-navy);display:flex;align-items:center;gap:8px;}
+.ai-provider-status{display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.03em;}
+.ai-provider-status.status-not_configured{background:#E5E7EB;color:#374151;}
+.ai-provider-status.status-configured{background:#FEF3C7;color:#92400E;}
+.ai-provider-status.status-connected{background:#D1FAE5;color:#065F46;}
+.ai-provider-status.status-auth_error{background:#FEE2E2;color:#991B1B;}
+.ai-provider-status.status-quota_exceeded{background:#FED7AA;color:#9A3412;}
+.ai-provider-status.status-disabled{background:#E5E7EB;color:#6B7280;}
+.ai-provider-meta{font-size:12px;color:var(--muted);margin:4px 0;line-height:1.4;}
+.ai-provider-meta b{color:var(--ink);}
+.ai-provider-meta code{background:#F3F4F6;padding:1px 5px;border-radius:4px;font-size:11px;font-family:ui-monospace,monospace;}
+.ai-provider-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.ai-provider-actions button{padding:6px 12px;font-size:12px;font-weight:700;border-radius:8px;border:1px solid;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:opacity .2s,background .2s;}
+.ai-provider-actions button:disabled{opacity:.5;cursor:not-allowed;}
+.ai-provider-actions .btn-configure{background:#ECFDF5;color:var(--navy);border-color:#A7F3D0;}
+.ai-provider-actions .btn-configure:hover:not(:disabled){background:#D1FAE5;}
+.ai-provider-actions .btn-test{background:#E0F2FE;color:#075985;border-color:#BAE6FD;}
+.ai-provider-actions .btn-test:hover:not(:disabled){background:#BAE6FD;}
+.ai-provider-actions .btn-toggle-on{background:#FEF3C7;color:#92400E;border-color:#FCD34D;}
+.ai-provider-actions .btn-toggle-off{background:#ECFDF5;color:#065F46;border-color:#A7F3D0;}
+.ai-provider-actions .btn-primary{background:#FEF3C7;color:#92400E;border-color:#F59E0B;}
+.ai-provider-actions .btn-primary.is-active{background:#F59E0B;color:#fff;border-color:#F59E0B;font-weight:800;}
+.ai-provider-actions .btn-danger{background:#FEF2F2;color:var(--red);border-color:#FECACA;}
+.ai-provider-actions .btn-danger:hover:not(:disabled){background:#FEE2E2;}
+
+.ai-key-form{margin-top:10px;padding:12px;background:#F9FAFB;border-radius:10px;border:1px dashed #D1D5DB;}
+.ai-key-form label{display:block;font-size:12px;font-weight:700;margin:8px 0 4px;color:var(--ink);}
+.ai-key-form input,.ai-key-form select{width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:8px;font-size:13px;font-family:inherit;}
+.ai-key-form .ai-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap;}
+.ai-key-form .ai-form-actions button{padding:7px 14px;font-size:12px;font-weight:700;border-radius:8px;border:1px solid;cursor:pointer;}
+.ai-key-form .ai-form-actions .btn-save{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn);}
+.ai-key-form .ai-form-actions .btn-save:hover{background:var(--blue-btn-hover);}
+.ai-key-form .ai-form-actions .btn-cancel{background:#F3F4F6;color:#374151;border-color:#D1D5DB;}
+
+.ai-routing-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
+.ai-routing-table th,.ai-routing-table td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;}
+.ai-routing-table th{background:#F9FAFB;color:var(--muted);font-weight:700;font-size:12px;}
+.ai-routing-table select{padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;background:#fff;min-width:120px;}
+.ai-routing-table input[type="text"]{padding:5px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:12px;width:100%;}
+.ai-routing-table .btn-save-routing{background:#ECFDF5;color:var(--navy);border:1px solid #A7F3D0;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;}
+.ai-routing-table .btn-save-routing:hover{background:#D1FAE5;}
+
+.ai-quota-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:10px;}
+.ai-quota-card{border:1px solid var(--line);border-radius:10px;padding:12px;background:#F9FAFB;}
+.ai-quota-card b{display:block;font-size:13px;color:var(--exam-navy);margin-bottom:6px;}
+.ai-quota-card .q-row{font-size:12px;color:var(--muted);margin:3px 0;display:flex;justify-content:space-between;}
+.ai-quota-card .q-row b{color:var(--ink);display:inline;font-size:12px;margin:0;}
+.ai-quota-card .q-warn{color:#B91C1C;font-weight:700;}
+.ai-quota-card button{margin-top:8px;width:100%;padding:5px 10px;font-size:11px;font-weight:700;background:#FEF2F2;color:var(--red);border:1px solid #FECACA;border-radius:6px;cursor:pointer;}
+.ai-quota-card button:hover{background:#FEE2E2;}
+
+.ai-settings-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);}
+.ai-settings-row:last-child{border-bottom:0;}
+.ai-settings-row label{flex:1;font-size:13px;font-weight:600;margin:0;color:var(--ink);}
+.ai-settings-row input[type="number"]{width:100px;padding:6px 8px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;}
+.ai-settings-row input[type="checkbox"]{width:20px;height:20px;accent-color:#10B981;cursor:pointer;}
+
+@media(max-width:600px){
+  .ai-provider-actions button{flex:1;justify-content:center;}
+  .ai-routing-table th,.ai-routing-table td{padding:6px 4px;font-size:11px;}
+  .ai-routing-table select{min-width:80px;font-size:11px;}
+}
+
 </style>
 </head><body>
 
@@ -981,6 +1061,7 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
       <button class="admin-tab-btn" data-atab="role">👑 Attribuer un rôle</button>
       <button class="admin-tab-btn" data-atab="messages">📩 Messages d'aide</button>
       <button class="admin-tab-btn" data-atab="push">📢 Notifications</button>
+      <button class="admin-tab-btn" data-atab="ai">🤖 Intelligence Artificielle</button>
     </div>
     <div id="atab-stats" class="atab-content">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
@@ -1103,6 +1184,105 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
       <div id="pushResult" style="margin-top:10px;font-size:13px;font-weight:700"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:20px 0 8px"><h4 style="margin:0">Derniers envois</h4><button id="pushClearBtn" type="button" class="ghost" style="display:none">🗑️ Supprimer l'historique</button></div>
       <div id="pushHistory" style="font-size:13px"></div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 🤖 ONGLET INTELLIGENCE ARTIFICIELLE        -->
+    <!-- ========================================== -->
+    <div id="atab-ai" class="atab-content hide">
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;border-bottom:2px solid var(--line);padding-bottom:8px;">
+        <button class="ai-subtab-btn active" data-aitab="providers" style="padding:8px 14px;border-radius:8px;background:var(--active-bg);color:var(--active-text);font-weight:700;border:0;cursor:pointer;font-size:13px;">🔌 Fournisseurs</button>
+        <button class="ai-subtab-btn" data-aitab="routing" style="padding:8px 14px;border-radius:8px;background:transparent;color:var(--muted);font-weight:700;border:0;cursor:pointer;font-size:13px;">🎯 Routage des tâches</button>
+        <button class="ai-subtab-btn" data-aitab="quotas" style="padding:8px 14px;border-radius:8px;background:transparent;color:var(--muted);font-weight:700;border:0;cursor:pointer;font-size:13px;">📊 Quotas</button>
+        <button class="ai-subtab-btn" data-aitab="settings" style="padding:8px 14px;border-radius:8px;background:transparent;color:var(--muted);font-weight:700;border:0;cursor:pointer;font-size:13px;">⚙️ Réglages</button>
+      </div>
+
+      <div id="aitab-providers" class="aitab-content">
+        <p style="color:var(--muted);font-size:13px;margin-top:0;">
+          Configure les clés API des fournisseurs d'intelligence artificielle. Les clés sont chiffrées côté serveur et ne sont jamais exposées au navigateur.
+        </p>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+          <span id="aiProvidersSummary" style="font-size:12px;color:var(--muted);font-weight:700;"></span>
+          <button type="button" class="ghost" onclick="AIAdmin.loadProviders()" style="padding:6px 12px;font-size:12px;">🔄 Rafraîchir</button>
+        </div>
+        <div id="aiProvidersList">
+          <p style="color:var(--muted);font-size:13px;">Chargement...</p>
+        </div>
+      </div>
+
+      <div id="aitab-routing" class="aitab-content hide">
+        <p style="color:var(--muted);font-size:13px;margin-top:0;">
+          Choisis quel fournisseur réalise chaque tâche. Le fournisseur "secondaire" est utilisé automatiquement en cas d'échec du primaire.
+        </p>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+          <span id="aiRoutingSummary" style="font-size:12px;color:var(--muted);font-weight:700;"></span>
+          <button type="button" class="ghost" onclick="AIAdmin.loadRouting()" style="padding:6px 12px;font-size:12px;">🔄 Rafraîchir</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="ai-routing-table">
+            <thead>
+              <tr>
+                <th>Tâche</th>
+                <th>Fournisseur primaire</th>
+                <th>Fournisseur secondaire</th>
+                <th>Modèle (optionnel)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="aiRoutingBody">
+              <tr><td colspan="5" style="color:var(--muted);font-size:13px;padding:12px;">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="aitab-quotas" class="aitab-content hide">
+        <p style="color:var(--muted);font-size:13px;margin-top:0;">
+          Consommation actuelle par fournisseur. Les compteurs sont réinitialisés automatiquement chaque heure/jour. Un fournisseur peut être suspendu en cas d'erreur de quota côté API.
+        </p>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+          <span id="aiQuotasSummary" style="font-size:12px;color:var(--muted);font-weight:700;"></span>
+          <button type="button" class="ghost" onclick="AIAdmin.loadQuotas()" style="padding:6px 12px;font-size:12px;">🔄 Rafraîchir</button>
+        </div>
+        <div id="aiQuotasList">
+          <p style="color:var(--muted);font-size:13px;">Chargement...</p>
+        </div>
+      </div>
+
+      <div id="aitab-settings" class="aitab-content hide">
+        <p style="color:var(--muted);font-size:13px;margin-top:0;">
+          Réglages globaux du moteur IA. Le mode FREE_ONLY empêche toute dépense non autorisée.
+        </p>
+        <div id="aiSettingsForm" style="background:#F9FAFB;border:1px solid var(--line);border-radius:12px;padding:16px;">
+          <div class="ai-settings-row">
+            <label for="aiSettingFreeOnly">🔒 Mode FREE_ONLY (privilégier les modèles gratuits)</label>
+            <input type="checkbox" id="aiSettingFreeOnly">
+          </div>
+          <div class="ai-settings-row">
+            <label for="aiSettingGlobalLimit">Limite globale quotidienne (toutes requêtes)</label>
+            <input type="number" id="aiSettingGlobalLimit" min="1" max="100000">
+          </div>
+          <div class="ai-settings-row">
+            <label for="aiSettingUserLimit">Limite quotidienne par utilisateur</label>
+            <input type="number" id="aiSettingUserLimit" min="1" max="10000">
+          </div>
+          <div class="ai-settings-row">
+            <label for="aiSettingFallback">Tentatives de fallback max</label>
+            <input type="number" id="aiSettingFallback" min="1" max="10">
+          </div>
+          <div class="ai-settings-row">
+            <label for="aiSettingCacheTtl">Durée du cache (secondes)</label>
+            <input type="number" id="aiSettingCacheTtl" min="0" max="86400">
+          </div>
+          <div style="display:flex;gap:10px;justify-content:space-between;margin-top:16px;flex-wrap:wrap;">
+            <button type="button" class="danger" onclick="AIAdmin.purgeCache()" style="padding:8px 14px;font-size:12px;border-radius:8px;">🗑️ Purger tout le cache IA</button>
+            <button type="button" class="success" onclick="AIAdmin.saveSettings()" style="padding:8px 16px;font-size:13px;border-radius:8px;">💾 Enregistrer</button>
+          </div>
+          <div id="aiSettingsStatus" style="font-size:13px;font-weight:700;margin-top:10px;min-height:18px;"></div>
+        </div>
+      </div>
+
     </div>
 
     <h3 style="margin-top:30px">Comptes existants</h3>
@@ -4014,6 +4194,451 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
     setTimeout(function () {
       banner('Pour installer : touche « Partager » puis « Sur l’écran d’accueil ».', 'OK', function () { try { localStorage.setItem(KEY, '1'); } catch (e) {} remove(); });
     }, 4000);
+  }
+})();
+</script>
+<script>
+/* ==========================================
+   🤖 ADMIN : INTELLIGENCE ARTIFICIELLE
+   ========================================== */
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+
+  async function api(path, method, body) {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) throw new Error('Supabase non configuré.');
+    var s = await supabaseClient.auth.getSession();
+    var token = s && s.data && s.data.session && s.data.session.access_token;
+    if (!token) throw new Error('Session expirée. Reconnecte-toi.');
+    var base = (typeof API_BASE !== 'undefined') ? API_BASE : '';
+    var res = await fetch(base + path, {
+      method: method || 'GET',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: body === undefined ? undefined : JSON.stringify(body)
+    });
+    var data = await res.json().catch(function () { return {}; });
+    if (!res.ok) throw new Error(data.error || ('Erreur ' + res.status));
+    return data;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  var PROVIDER_LABELS = {
+    gemini: 'Google Gemini',
+    groq: 'Groq',
+    openrouter: 'OpenRouter',
+    cloudflare: 'Cloudflare Workers AI'
+  };
+  var PROVIDER_ICONS = { gemini: '🟢', groq: '⚡', openrouter: '🔀', cloudflare: '☁️' };
+  var STATUS_LABELS = {
+    not_configured: 'Non configuré',
+    configured: 'Configuré',
+    connected: 'Connecté',
+    auth_error: "Erreur d'authentification",
+    quota_exceeded: 'Quota atteint',
+    disabled: 'Désactivé'
+  };
+  var TASK_LABELS = {
+    quiz_generation: 'Génération de questionnaires',
+    document_analysis: 'Lecture de documents',
+    image_analysis: "Lecture d'images",
+    pedagogical_assistant: 'Assistant pédagogique',
+    answer_explanation: 'Explication des corrections',
+    course_summary: 'Résumé de cours',
+    content_classification: 'Classification de contenu',
+    student_analysis: 'Analyse de progression'
+  };
+
+  var state = { providers: [], routing: [], settings: null, openForms: {} };
+
+  function bindSubtabs() {
+    document.querySelectorAll('.ai-subtab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.ai-subtab-btn').forEach(function (b) {
+          b.classList.remove('active');
+          b.style.background = 'transparent';
+          b.style.color = 'var(--muted)';
+        });
+        btn.classList.add('active');
+        btn.style.background = 'var(--active-bg)';
+        btn.style.color = 'var(--active-text)';
+        document.querySelectorAll('.aitab-content').forEach(function (c) { c.classList.add('hide'); });
+        var target = $('aitab-' + btn.dataset.aitab);
+        if (target) target.classList.remove('hide');
+        if (btn.dataset.aitab === 'providers') AIAdmin.loadProviders();
+        if (btn.dataset.aitab === 'routing') AIAdmin.loadRouting();
+        if (btn.dataset.aitab === 'quotas') AIAdmin.loadQuotas();
+        if (btn.dataset.aitab === 'settings') AIAdmin.loadSettings();
+      });
+    });
+  }
+
+  async function loadProviders() {
+    var list = $('aiProvidersList');
+    var summary = $('aiProvidersSummary');
+    if (!list) return;
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;">Chargement...</p>';
+    if (summary) summary.textContent = '';
+    try {
+      var data = await api('/api/admin/ai/providers');
+      state.providers = data.providers || [];
+      var configured = state.providers.filter(function (p) { return p.has_api_key; }).length;
+      var connected = state.providers.filter(function (p) { return p.status === 'connected'; }).length;
+      if (summary) summary.textContent = configured + '/' + state.providers.length + ' configuré(s) · ' + connected + ' connecté(s)';
+      renderProviders();
+    } catch (e) {
+      list.innerHTML = '<p style="color:var(--red);font-size:13px;">❌ ' + esc(e.message) + '</p>';
+    }
+  }
+
+  function renderProviders() {
+    var list = $('aiProvidersList');
+    if (!list) return;
+    if (!state.providers.length) {
+      list.innerHTML = '<p style="color:var(--muted);font-size:13px;">Aucun fournisseur chargé.</p>';
+      return;
+    }
+    list.innerHTML = state.providers.map(function (p) {
+      var cls = 'ai-provider-card';
+      if (p.status === 'connected') cls += ' is-connected';
+      else if (p.status === 'auth_error' || p.status === 'quota_exceeded') cls += ' is-error';
+      else if (p.status === 'disabled') cls += ' is-disabled';
+
+      var isFormOpen = !!state.openForms[p.provider_name];
+      var primaryBadge = p.is_primary ? ' <span style="background:#F59E0B;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">⭐ PRIMAIRE</span>' : '';
+      var secondaryBadge = p.is_secondary ? ' <span style="background:#3B82F6;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">SECONDAIRE</span>' : '';
+
+      var html = '<div class="' + cls + '">'
+        + '<div class="ai-provider-header">'
+        + '<div class="ai-provider-name">' + (PROVIDER_ICONS[p.provider_name] || '🤖') + ' ' + esc(PROVIDER_LABELS[p.provider_name] || p.provider_name) + primaryBadge + secondaryBadge + '</div>'
+        + '<span class="ai-provider-status status-' + esc(p.status) + '">' + esc(STATUS_LABELS[p.status] || p.status) + '</span>'
+        + '</div>'
+        + '<div class="ai-provider-meta"><b>Modèle :</b> <code>' + esc(p.model || '—') + '</code></div>'
+        + (p.has_api_key
+            ? '<div class="ai-provider-meta"><b>Clé API :</b> •••••••• (configurée)</div>'
+            : '<div class="ai-provider-meta"><b>Clé API :</b> <span style="color:var(--red);">non configurée</span></div>')
+        + (p.account_id ? '<div class="ai-provider-meta"><b>Account ID :</b> <code>' + esc(p.account_id) + '</code></div>' : '')
+        + (p.last_error ? '<div class="ai-provider-meta" style="color:var(--red);"><b>Dernière erreur :</b> ' + esc(p.last_error.slice(0, 160)) + '</div>' : '')
+        + (p.last_check_at ? '<div class="ai-provider-meta" style="font-size:11px;">Dernière vérification : ' + new Date(p.last_check_at).toLocaleString('fr-FR') + '</div>' : '')
+        + '<div class="ai-provider-actions">'
+        + '<button type="button" class="btn-configure" data-action="toggle-form" data-provider="' + esc(p.provider_name) + '">' + (p.has_api_key ? '🔄 Remplacer la clé' : '🔑 Configurer') + '</button>'
+        + (p.has_api_key ? '<button type="button" class="btn-test" data-action="test" data-provider="' + esc(p.provider_name) + '">🧪 Tester</button>' : '')
+        + '<button type="button" class="' + (p.enabled ? 'btn-toggle-on' : 'btn-toggle-off') + '" data-action="toggle" data-provider="' + esc(p.provider_name) + '" data-enabled="' + (p.enabled ? '1' : '0') + '">' + (p.enabled ? '⏸️ Désactiver' : '▶️ Activer') + '</button>'
+        + (p.has_api_key && p.enabled ? '<button type="button" class="btn-primary' + (p.is_primary ? ' is-active' : '') + '" data-action="set-primary" data-provider="' + esc(p.provider_name) + '" data-role="' + (p.is_primary ? 'none' : 'primary') + '">' + (p.is_primary ? '⭐ Primaire' : 'Définir primaire') + '</button>' : '')
+        + (p.has_api_key && p.enabled ? '<button type="button" class="btn-primary' + (p.is_secondary ? ' is-active' : '') + '" data-action="set-primary" data-provider="' + esc(p.provider_name) + '" data-role="' + (p.is_secondary ? 'none' : 'secondary') + '">' + (p.is_secondary ? '🔵 Secondaire' : 'Définir secondaire') + '</button>' : '')
+        + '</div>'
+        + (isFormOpen ? renderKeyForm(p) : '')
+        + '</div>';
+      return html;
+    }).join('');
+
+    list.querySelectorAll('[data-action]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var action = btn.dataset.action;
+        var provider = btn.dataset.provider;
+        if (action === 'toggle-form') {
+          state.openForms[provider] = !state.openForms[provider];
+          renderProviders();
+        } else if (action === 'test') {
+          testProvider(provider, btn);
+        } else if (action === 'toggle') {
+          toggleProvider(provider, btn.dataset.enabled === '1', btn);
+        } else if (action === 'set-primary') {
+          setPrimary(provider, btn.dataset.role, btn);
+        }
+      });
+    });
+
+    list.querySelectorAll('[data-form]').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        saveKey(form);
+      });
+      form.querySelector('[data-cancel]').addEventListener('click', function () {
+        state.openForms[form.dataset.form] = false;
+        renderProviders();
+      });
+    });
+  }
+
+  function renderKeyForm(p) {
+    var needAccount = p.provider_name === 'cloudflare';
+    return '<form class="ai-key-form" data-form="' + esc(p.provider_name) + '">'
+      + '<label>Clé API *</label>'
+      + '<input type="password" name="apiKey" required placeholder="Colle la clé API du fournisseur" autocomplete="new-password">'
+      + (needAccount ? '<label>Account ID (Cloudflare) *</label><input type="text" name="accountId" required placeholder="Ex. abc123def456..." value="' + esc(p.account_id || '') + '">' : '')
+      + '<label>Modèle (optionnel, laisse vide pour le défaut)</label>'
+      + '<input type="text" name="model" placeholder="Ex. gemini-2.0-flash" value="' + esc(p.model || '') + '">'
+      + '<label>URL de base (optionnel)</label>'
+      + '<input type="text" name="baseUrl" placeholder="Ex. https://api.groq.com/openai/v1" value="' + esc(p.base_url || '') + '">'
+      + '<div class="ai-form-actions">'
+      + '<button type="button" class="btn-cancel" data-cancel="1">Annuler</button>'
+      + '<button type="submit" class="btn-save">💾 Enregistrer et tester</button>'
+      + '</div>'
+      + '<div class="ai-key-form-status" style="font-size:12px;margin-top:8px;min-height:16px;"></div>'
+      + '</form>';
+  }
+
+  async function saveKey(form) {
+    var provider = form.dataset.form;
+    var fd = new FormData(form);
+    var payload = {
+      provider: provider,
+      apiKey: fd.get('apiKey'),
+      accountId: fd.get('accountId') || null,
+      model: fd.get('model') || null,
+      baseUrl: fd.get('baseUrl') || null
+    };
+    var statusEl = form.querySelector('.ai-key-form-status');
+    var saveBtn = form.querySelector('.btn-save');
+    statusEl.textContent = 'Enregistrement et test en cours...';
+    statusEl.style.color = 'var(--muted)';
+    saveBtn.disabled = true;
+    try {
+      await api('/api/admin/ai/providers/key', 'POST', payload);
+      statusEl.textContent = '✅ Connexion réussie ! Clé enregistrée.';
+      statusEl.style.color = 'var(--green)';
+      state.openForms[provider] = false;
+      setTimeout(function () { AIAdmin.loadProviders(); }, 600);
+    } catch (e) {
+      statusEl.textContent = '❌ ' + e.message;
+      statusEl.style.color = 'var(--red)';
+    } finally {
+      saveBtn.disabled = false;
+    }
+  }
+
+  async function testProvider(provider, btn) {
+    var original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Test...';
+    try {
+      var res = await api('/api/admin/ai/providers/test', 'POST', { provider: provider });
+      if (res.ok) {
+        alert('✅ ' + PROVIDER_LABELS[provider] + ' : connexion réussie.\nModèle : ' + (res.model || 'défaut'));
+      } else {
+        alert('❌ ' + PROVIDER_LABELS[provider] + ' : ' + (res.error || 'échec du test.'));
+      }
+      AIAdmin.loadProviders();
+    } catch (e) {
+      alert('❌ ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = original;
+    }
+  }
+
+  async function toggleProvider(provider, currentlyEnabled, btn) {
+    btn.disabled = true;
+    try {
+      await api('/api/admin/ai/providers/toggle', 'POST', { provider: provider, enabled: !currentlyEnabled });
+      AIAdmin.loadProviders();
+    } catch (e) {
+      alert('❌ ' + e.message);
+      btn.disabled = false;
+    }
+  }
+
+  async function setPrimary(provider, role, btn) {
+    btn.disabled = true;
+    try {
+      await api('/api/admin/ai/providers/set-primary', 'POST', { provider: provider, role: role });
+      AIAdmin.loadProviders();
+    } catch (e) {
+      alert('❌ ' + e.message);
+      btn.disabled = false;
+    }
+  }
+
+  async function loadRouting() {
+    var tbody = $('aiRoutingBody');
+    var summary = $('aiRoutingSummary');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);font-size:13px;padding:12px;">Chargement...</td></tr>';
+    try {
+      var data = await api('/api/admin/ai/routing');
+      state.routing = data.routing || [];
+      if (summary) summary.textContent = state.routing.length + ' tâche(s) configurée(s)';
+      renderRouting();
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--red);font-size:13px;padding:12px;">❌ ' + esc(e.message) + '</td></tr>';
+    }
+  }
+
+  function renderRouting() {
+    var tbody = $('aiRoutingBody');
+    if (!tbody) return;
+    if (!state.routing.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);font-size:13px;padding:12px;">Aucune tâche configurée.</td></tr>';
+      return;
+    }
+    var providerOptions = state.providers.map(function (p) { return p.provider_name; });
+    if (!providerOptions.length) providerOptions = ['gemini', 'groq', 'openrouter', 'cloudflare'];
+
+    tbody.innerHTML = state.routing.map(function (r) {
+      var opts = function (selected) {
+        return '<option value="">— Aucun —</option>' + providerOptions.map(function (p) {
+          return '<option value="' + esc(p) + '"' + (selected === p ? ' selected' : '') + '>' + esc(PROVIDER_LABELS[p] || p) + '</option>';
+        }).join('');
+      };
+      return '<tr data-task="' + esc(r.task_name) + '">'
+        + '<td><b>' + esc(TASK_LABELS[r.task_name] || r.task_name) + '</b><br><code style="font-size:10px;color:var(--muted);">' + esc(r.task_name) + '</code></td>'
+        + '<td><select data-field="primary">' + opts(r.primary_provider) + '</select></td>'
+        + '<td><select data-field="secondary">' + opts(r.secondary_provider) + '</select></td>'
+        + '<td><input type="text" data-field="model_override" value="' + esc(r.model_override || '') + '" placeholder="(défaut)"></td>'
+        + '<td><button type="button" class="btn-save-routing" data-save-task="' + esc(r.task_name) + '">💾</button></td>'
+        + '</tr>';
+    }).join('');
+
+    tbody.querySelectorAll('[data-save-task]').forEach(function (btn) {
+      btn.addEventListener('click', function () { saveRouting(btn.dataset.saveTask, btn); });
+    });
+  }
+
+  async function saveRouting(taskName, btn) {
+    var row = btn.closest('tr');
+    var payload = {
+      task: taskName,
+      primary_provider: row.querySelector('[data-field="primary"]').value || null,
+      secondary_provider: row.querySelector('[data-field="secondary"]').value || null,
+      model_override: row.querySelector('[data-field="model_override"]').value.trim() || null
+    };
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    try {
+      await api('/api/admin/ai/routing', 'POST', payload);
+      btn.textContent = '✅';
+      setTimeout(function () { btn.textContent = '💾'; btn.disabled = false; }, 1200);
+    } catch (e) {
+      alert('❌ ' + e.message);
+      btn.textContent = '💾';
+      btn.disabled = false;
+    }
+  }
+
+  async function loadQuotas() {
+    var list = $('aiQuotasList');
+    var summary = $('aiQuotasSummary');
+    if (!list) return;
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px;">Chargement...</p>';
+    try {
+      var data = await api('/api/admin/ai/providers/status');
+      var providers = data.providers || [];
+      if (summary) summary.textContent = providers.length + ' fournisseur(s)';
+      renderQuotas(providers);
+    } catch (e) {
+      list.innerHTML = '<p style="color:var(--red);font-size:13px;">❌ ' + esc(e.message) + '</p>';
+    }
+  }
+
+  function renderQuotas(providers) {
+    var list = $('aiQuotasList');
+    if (!list) return;
+    if (!providers.length) {
+      list.innerHTML = '<p style="color:var(--muted);font-size:13px;">Aucun fournisseur.</p>';
+      return;
+    }
+    list.innerHTML = '<div class="ai-quota-grid">' + providers.map(function (p) {
+      var q = p.quota || {};
+      var dailyLimit = q.daily_limit ? (q.daily_requests + '/' + q.daily_limit) : (q.daily_requests + '');
+      var suspended = q.suspended_until && new Date(q.suspended_until) > new Date();
+      return '<div class="ai-quota-card">'
+        + '<b>' + esc(PROVIDER_LABELS[p.provider_name] || p.provider_name) + '</b>'
+        + '<div class="q-row"><span>Statut</span><b>' + esc(STATUS_LABELS[p.status] || p.status) + '</b></div>'
+        + '<div class="q-row"><span>Requêtes aujourd\'hui</span><b' + (suspended ? ' class="q-warn"' : '') + '>' + esc(dailyLimit) + '</b></div>'
+        + '<div class="q-row"><span>Tokens aujourd\'hui</span><b>' + esc(String(q.daily_tokens || 0)) + '</b></div>'
+        + '<div class="q-row"><span>Requêtes cette heure</span><b>' + esc(String(q.hourly_requests || 0)) + '</b></div>'
+        + (suspended ? '<div class="q-row"><span style="color:#B91C1C;">⚠️ Suspendu jusqu\'à</span><b style="color:#B91C1C;">' + new Date(q.suspended_until).toLocaleTimeString('fr-FR') + '</b></div>' : '')
+        + '<button type="button" data-reset-provider="' + esc(p.provider_name) + '">♻️ Réinitialiser</button>'
+        + '</div>';
+    }).join('') + '</div>';
+    list.querySelectorAll('[data-reset-provider]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('Réinitialiser les compteurs de quota pour ' + btn.dataset.resetProvider + ' ?')) return;
+        btn.disabled = true;
+        api('/api/admin/ai/quota/reset', 'POST', { provider: btn.dataset.resetProvider })
+          .then(function () { AIAdmin.loadQuotas(); })
+          .catch(function (e) { alert('❌ ' + e.message); btn.disabled = false; });
+      });
+    });
+  }
+
+  async function loadSettings() {
+    try {
+      var data = await api('/api/admin/ai/settings');
+      var s = data.settings || {};
+      state.settings = s;
+      if ($('aiSettingFreeOnly')) $('aiSettingFreeOnly').checked = s.free_only_mode !== false;
+      if ($('aiSettingGlobalLimit')) $('aiSettingGlobalLimit').value = s.global_daily_limit || 500;
+      if ($('aiSettingUserLimit')) $('aiSettingUserLimit').value = s.per_user_daily_limit || 50;
+      if ($('aiSettingFallback')) $('aiSettingFallback').value = s.max_fallback_attempts || 3;
+      if ($('aiSettingCacheTtl')) $('aiSettingCacheTtl').value = s.cache_ttl_seconds || 3600;
+    } catch (e) {
+      if ($('aiSettingsStatus')) {
+        $('aiSettingsStatus').textContent = '❌ ' + e.message;
+        $('aiSettingsStatus').style.color = 'var(--red)';
+      }
+    }
+  }
+
+  async function saveSettings() {
+    var status = $('aiSettingsStatus');
+    if (status) { status.textContent = 'Enregistrement...'; status.style.color = 'var(--muted)'; }
+    var payload = {
+      free_only_mode: $('aiSettingFreeOnly').checked,
+      global_daily_limit: parseInt($('aiSettingGlobalLimit').value, 10) || 500,
+      per_user_daily_limit: parseInt($('aiSettingUserLimit').value, 10) || 50,
+      max_fallback_attempts: parseInt($('aiSettingFallback').value, 10) || 3,
+      cache_ttl_seconds: parseInt($('aiSettingCacheTtl').value, 10) || 3600
+    };
+    try {
+      await api('/api/admin/ai/settings', 'POST', payload);
+      if (status) { status.textContent = '✅ Réglages enregistrés.'; status.style.color = 'var(--green)'; }
+      setTimeout(function () { if (status) status.textContent = ''; }, 2500);
+    } catch (e) {
+      if (status) { status.textContent = '❌ ' + e.message; status.style.color = 'var(--red)'; }
+    }
+  }
+
+  async function purgeCache() {
+    if (!confirm('Purger tout le cache IA ? Les réponses mises en cache seront régénérées.')) return;
+    try {
+      await api('/api/admin/ai/cache/purge', 'POST', {});
+      alert('✅ Cache purgé.');
+    } catch (e) {
+      alert('❌ ' + e.message);
+    }
+  }
+
+  function bind() {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+    bindSubtabs();
+    document.querySelectorAll('.admin-tab-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (btn.dataset.atab === 'ai') {
+          AIAdmin.loadProviders();
+        }
+      });
+    });
+  }
+
+  window.AIAdmin = {
+    loadProviders: loadProviders,
+    loadRouting: loadRouting,
+    loadQuotas: loadQuotas,
+    loadSettings: loadSettings,
+    saveSettings: saveSettings,
+    purgeCache: purgeCache
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bind);
+  } else {
+    bind();
   }
 })();
 </script>

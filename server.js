@@ -3,11 +3,9 @@ import express from 'express';
 import OpenAI from 'openai';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-// ← FIX #4 : import express-rate-limit
 import rateLimit from 'express-rate-limit';
-// Détection des consignes écrites dans les sujets (type de réponse, études de cas, QPQ, temps)
 import { detectAndParse, finalizeAiResult } from './instruction-detector.js';
-import { parseQuizText } from './quiz-parser.js';   // extracteur v2 (remplace l'ancienne fonction parseQuizText de ce fichier)
+import { parseQuizText } from './quiz-parser.js';
 import { createPush } from './push.js';
 import { logger } from './logger.js';
 import {
@@ -15,22 +13,25 @@ import {
   adminCreateUserSchema, adminPasswordSchema, adminStatusSchema, adminRoleSchema, generateSchema, parseExistingSchema,
   adminSettingsSchema
 } from './schemas.js';
+// ← AI ENGINE : imports
+import { createAiRouter } from './routes/ai.routes.js';
+import { ai } from './services/ai/index.js';
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
-app.set('trust proxy', 1);   // Render place un proxy devant l'application : sans cela, tous les visiteurs partagent la même « IP » pour les limiteurs
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '10mb' }));
 
 // ==========================================
-// 🔍 JOURNAL DES REQUÊTES (JSON structuré, une ligne par requête API)
+// JOURNAL DES REQUÊTES
 // ==========================================
 app.use((req, res, next) => {
   const started = process.hrtime.bigint();
   res.on('finish', () => {
     const url = req.originalUrl.split('?')[0];
-    if (!url.startsWith('/api') && res.statusCode < 500) return;   // pas de ligne pour chaque fichier statique
+    if (!url.startsWith('/api') && res.statusCode < 500) return;
     const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : (url === '/api/health' ? 'debug' : 'info');
     logger[level]({ method: req.method, path: url, status: res.statusCode, ms: Math.round(Number(process.hrtime.bigint() - started) / 1e6), origin: req.headers.origin || null, ip: req.ip }, 'requête');
   });
@@ -38,7 +39,7 @@ app.use((req, res, next) => {
 });
 
 // ==========================================
-// ✅ CORS
+// CORS
 // ==========================================
 const ALLOWED_ORIGINS = [
   'https://compotestsaas.onrender.com',
@@ -70,22 +71,17 @@ app.use((req, res, next) => {
 });
 
 // ==========================================
-// 🛡️ RATE LIMITING
+// RATE LIMITING
 // ==========================================
 const limiter = (opts) => rateLimit({ windowMs: 60 * 1000, standardHeaders: true, legacyHeaders: false, ...opts });
 const tooMany = (what) => ({ error: `Trop de requêtes${what ? ` ${what}` : ''}, réessaie dans quelques instants.` });
 
-// Limiteur global sur /api/* (sauf /api/health qui doit toujours répondre pour UptimeRobot)
 const globalApiLimiter = limiter({ max: Number(process.env.API_RATE_PER_MIN || 60), skip: (req) => req.originalUrl.split('?')[0] === '/api/health', message: { error: 'Trop de requêtes, réessaie dans une minute.' } });
-// Extraction de questions (sans IA) : inchangé
 const aiLimiter = limiter({ max: 10, message: { error: 'Trop de requêtes IA, réessaie dans une minute.' } });
-// Génération par IA (consomme des tokens) : plus strict, par IP puis par utilisateur
 const generateLimiter = limiter({ max: Number(process.env.AI_RATE_PER_MIN || 5), message: tooMany('IA') });
 const generateUserLimiter = limiter({ windowMs: 60 * 60 * 1000, max: Number(process.env.AI_RATE_PER_HOUR || 30), keyGenerator: (req) => req.user?.id || req.ip, message: { error: 'Limite horaire de génération IA atteinte, réessaie plus tard.' } });
-// Comptes (création, mot de passe, bannissement…) : lecture 30/min, écriture 10/min, par administrateur
 const adminUsersLimiter = limiter({ max: 30, keyGenerator: (req) => req.user?.id || req.ip, message: tooMany('(administration)') });
 const adminUsersWriteLimiter = limiter({ max: 10, skip: (req) => req.method === 'GET', keyGenerator: (req) => `w:${req.user?.id || req.ip}`, message: tooMany('(administration)') });
-// Enregistrement d'appareil pour les notifications : 5 par minute et par IP (réglable : PUSH_SUBSCRIBE_LIMIT)
 const pushSubscribeLimiter = limiter({ max: Number(process.env.PUSH_SUBSCRIBE_LIMIT || 5), message: { error: 'Trop de tentatives d\'activation, réessaie dans une minute.' } });
 
 app.use('/api', globalApiLimiter);
@@ -93,7 +89,7 @@ app.use('/api/generate-post-test', generateLimiter);
 app.use('/api/parse-existing-quiz', aiLimiter);
 
 // ==========================================
-// 🛡️ ROUTE HEALTH CHECK (pour UptimeRobot)
+// HEALTH CHECK
 // ==========================================
 app.get('/api/health', (req, res) => {
   const now = new Date();
@@ -119,7 +115,7 @@ app.get('/manifest.json', (_req, res) => {
 });
 
 app.use((req, res, next) => {
-  if (/^\/(server\.js|package(-lock)?\.json|node_modules\/|generate-icons\.js|optimize-images\.js)/i.test(req.path)) return res.sendStatus(404);
+  if (/^\/(server\.js|package(-lock)?\.json|node_modules\/|generate-icons\.js|optimize-images\.js|services\/|routes\/|migrations\/)/i.test(req.path)) return res.sendStatus(404);
   next();
 });
 
@@ -216,12 +212,6 @@ app.get('/api/quizzes', validate(quizzesQuerySchema, 'query', 'Paramètres de pa
   }
 });
 
-// ==========================================
-// RÉGLAGE GLOBAL DES NOTIFICATIONS (PUBLIC EN LECTURE)
-// ==========================================
-// Lisible sans authentification : push-client.js et index.html doivent savoir si les
-// notifications sont activées pour tous (l'admin bascule via /api/admin/settings/notifications).
-// Si la table app_settings n'existe pas encore, on renvoie false (dégradation douce).
 app.get('/api/settings', async (_req, res) => {
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
@@ -239,7 +229,7 @@ app.get('/api/settings', async (_req, res) => {
 });
 
 // ==========================================
-// MIDDLEWARE D'AUTHENTIFICATION POUR LE RESTE DE /api
+// MIDDLEWARE AUTH POUR LE RESTE DE /api
 // ==========================================
 const push = createPush();
 app.use('/api/push/subscribe', pushSubscribeLimiter);
@@ -248,6 +238,13 @@ app.use('/api', push.router);
 app.use('/api', authenticate);
 app.use('/api/generate-post-test', generateUserLimiter);
 app.use('/api/admin/users', adminUsersLimiter, adminUsersWriteLimiter);
+
+// ==========================================
+// ← AI ENGINE : montage du routeur IA
+// ==========================================
+const aiRouter = createAiRouter({ authenticate, requireAdmin, validate, limiter });
+app.use('/api', aiRouter);
+logger.info('Révisio AI Engine monté sur /api');
 
 // ==========================================
 // ROUTES ADMIN
@@ -369,7 +366,6 @@ app.get('/api/admin/stats', requireAdmin, async (_req, res) => {
   } catch (e) { logger.error({ err: e.message }, 'GET /api/admin/stats'); res.status(500).json({ error: e.message }); }
 });
 
-// Bascule du réglage global des notifications (admin uniquement)
 app.post('/api/admin/settings/notifications', requireAdmin, validate(adminSettingsSchema), async (req, res) => {
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
@@ -394,7 +390,7 @@ app.post('/api/admin/settings/notifications', requireAdmin, validate(adminSettin
 });
 
 // ==========================================
-// IA
+// IA — ANCIENNE ROUTE (conservée en fallback)
 // ==========================================
 function aiClient() {
   if (!process.env.AI_API_KEY) return null;
@@ -420,10 +416,32 @@ app.post('/api/parse-existing-quiz', validate(parseExistingSchema), (req, res) =
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ==========================================
+// ← AI ENGINE : nouvelle route principale de génération
+// L'ancienne route /api/generate-post-test utilise d'abord le moteur IA,
+// puis bascule sur l'ancien client Groq si le moteur n'est pas configuré.
+// ==========================================
 app.post('/api/generate-post-test', validate(generateSchema), async (req, res) => {
-  const client = aiClient();
-  if (!client) return res.status(503).json({ error: 'IA non configurée.' });
   const { text, count = 50 } = req.body;
+
+  // Tentative 1 : Révisio AI Engine
+  try {
+    const result = await ai.generateQuiz(text, { count, userId: req.user?.id });
+    // Validation légère (le schéma Zod du moteur a déjà validé)
+    if (!result || !Array.isArray(result.questions) || result.questions.length === 0) {
+      throw new Error('Le moteur IA n\'a renvoyé aucune question.');
+    }
+    // finalizeAiResult complète la détection déterministe (blocs, QPQ, temps)
+    try { finalizeAiResult(result, text); } catch (err) { logger.warn({ err: err.message }, 'finalizeAiResult ignoré'); }
+    logger.info({ provider: result._provider, questions: result.questions.length, cached: !!result._cached }, 'génération IA (moteur)');
+    return res.json(result);
+  } catch (engineError) {
+    logger.warn({ err: engineError.message }, 'moteur IA indisponible, bascule sur l\'ancien client Groq');
+  }
+
+  // Tentative 2 : ancien client Groq (fallback)
+  const client = aiClient();
+  if (!client) return res.status(503).json({ error: 'IA non configurée (aucun fournisseur actif).' });
   try {
     const response = await client.chat.completions.create({
       model: modelName(), temperature: 0.4, max_tokens: 8000, response_format: { type: 'json_object' },
@@ -436,27 +454,16 @@ Ta mission est d'analyser le texte fourni par l'utilisateur et de déterminer s'
 
 RÈGLES STRICTES :
 
-**CAS 1 : Si le texte contient DÉJÀ des questions (ex: "1. Quelle est...", "Q1 :", "Vrai ou Faux", "a) ... b) ...")**
+**CAS 1 : Si le texte contient DÉJÀ des questions**
 - Tu DOIS extraire et conserver TOUTES les questions existantes.
-- Conserve leurs options (A, B, C, D...) et, si le texte mentionne les réponses (soulignées, en gras, avec "Réponse:", etc.), conserve-les.
-- Si les réponses ne sont pas mentionnées, mets "correct": 0 par défaut (l'admin pourra les corriger).
-- Tu peux ajouter quelques questions supplémentaires de compréhension UNIQUEMENT si le texte contient aussi des passages de cours explicatifs.
-- Les questions d'origine doivent être présentes à 100%.
-- CONSIGNES DU SUJET : si le sujet précise le nombre de réponses attendues (ex : "QCM à réponse unique", "QCU", "QRU", "une seule réponse", "QCD" (Vrai/Faux ou A/B), "2 réponses maximum", "QRM", "QCM à réponses multiples", "une ou plusieurs réponses", "cochez la ou les bonnes réponses", "3 réponses au maximum"...), ajoute à chaque question concernée "max_select" (entier : 1 = réponse unique ou QCD (choix dichotomique Vrai/Faux ou A/B : 2 options, 1 réponse), n = n réponses maximum ; pour "plusieurs réponses" sans nombre, mets le nombre d'options). Une consigne s'applique aux questions qui suivent jusqu'à la prochaine consigne. SANS consigne dans le texte, n'ajoute PAS "max_select".
-- ÉTUDES DE CAS : si le sujet contient des cas ou dossiers (ex : "Étude de cas", "Cas clinique", "Dossier", "Dossier progressif", "Situation clinique", "Observation", "Les questions 4 à 6 se rapportent à ce cas"...), ne recopie PAS l'énoncé dans chaque question : ajoute à la racine un tableau "blocks":[{"id":"b1","title":"Étude de cas 1","case_block":"énoncé complet recopié tel quel"}] et mets "block_id":"b1" sur chaque question qui s'y rapporte. SANS cas dans le texte, n'ajoute ni "blocks" ni "block_id".
-- MODE ET TEMPS : si le sujet indique un fonctionnement question par question (ex : "pas de retour en arrière", "dossier progressif", "une question à la fois"), ajoute "display_mode":"QPQ" ; s'il indique un temps par question, ajoute "seconds_per_question" (en secondes).
+- Conserve leurs options et, si le texte mentionne les réponses, conserve-les.
+- Si les réponses ne sont pas mentionnées, mets "correct": 0 par défaut.
 
-**CAS 2 : Si le texte est un COURS RÉDIGÉ (sans questions)**
-- Génère ${count} nouvelles questions en respectant cette répartition :
-  * ~50% "mcq" (choix unique, "correct" = ENTIER)
-  * ~20% "mcq_multi" (plusieurs bonnes réponses, "correct" = TABLEAU d'entiers)
-  * ~20% "tf" (Vrai/Faux, "options" = ["Vrai", "Faux"], "correct" = 0 ou 1)
-  * ~10% "short" (réponse courte, "correct" = CHAÎNE, pas d'options)
-- Fournis TOUJOURS une "explanation" courte.
+**CAS 2 : Si le texte est un COURS RÉDIGÉ**
+- Génère ${count} nouvelles questions.
 
 **FORMAT DE SORTIE OBLIGATOIRE (JSON valide) :**
 {"questions":[{"type":"mcq","text":"...","options":["A","B","C","D"],"correct":0,"explanation":"..."}]}
-(Champs optionnels, uniquement s'ils sont justifiés par le texte : "max_select" et "block_id" dans une question ; "blocks", "display_mode", "seconds_per_question" à la racine.)
 
 Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
         { role: 'user', content: String(text || '').slice(0, 15000) }
@@ -473,15 +480,16 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
       });
       try { finalizeAiResult(parsed, text); } catch (err) { logger.warn({ err: err.message }, 'finalizeAiResult ignoré'); }
     }
+    logger.info({ provider: 'groq-legacy', questions: parsed.questions?.length }, 'génération IA (fallback Groq)');
     res.json(parsed);
   } catch (e) {
-    logger.error({ err: e.message }, 'erreur API IA');
+    logger.error({ err: e.message }, 'erreur API IA (fallback aussi en échec)');
     res.status(502).json({ error: e.message });
   }
 });
 
 // ==========================================
-// ROUTES QUIZ (CRÉATION, MODIFICATION, SUPPRESSION)
+// ROUTES QUIZ
 // ==========================================
 const sbHeaders = (extra = {}) => ({ apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, ...extra });
 
@@ -542,11 +550,10 @@ app.delete('/api/quizzes/:id', requireAdmin, validate(quizIdParam, 'params'), as
 });
 
 // ==========================================
-// 🧯 ERREURS
+// ERREURS
 // ==========================================
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Route introuvable.' }));
 
-// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   if (err && err.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON invalide.' });
