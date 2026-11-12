@@ -13,9 +13,9 @@ create table if not exists public.ai_providers (
   api_key_encrypted text,
   api_key_iv text,
   api_key_tag text,
-  account_id text,                       -- Cloudflare : identifiant de compte
-  base_url text,                         -- URL de base (optionnelle)
-  model text,                            -- Modèle par défaut pour ce fournisseur
+  account_id text,
+  base_url text,
+  model text,
   extra_config jsonb not null default '{}'::jsonb,
   enabled boolean not null default false,
   is_primary boolean not null default false,
@@ -161,7 +161,6 @@ alter table public.ai_logs enable row level security;
 alter table public.ai_quotas enable row level security;
 alter table public.ai_cache enable row level security;
 alter table public.ai_settings enable row level security;
--- Aucune policy créée : accès service_role uniquement
 
 -- ---------------------------------------------------------------------
 -- 9) Nettoyage automatique du cache expiré
@@ -175,7 +174,6 @@ begin
   return n;
 end $$;
 
--- Planification hebdomadaire (si pg_cron disponible)
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
@@ -187,7 +185,7 @@ end $$;
 -- 10) Seed initial : fournisseurs (désactivés par défaut)
 -- ---------------------------------------------------------------------
 insert into public.ai_providers (provider_name, model, base_url) values
-  ('gemini', 'gemini-2.0-flash', 'https://generativelanguage.googleapis.com/v1beta'),
+  ('gemini', 'gemini-3.8-flash', 'https://generativelanguage.googleapis.com/v1beta'),
   ('groq', 'llama-3.3-70b-versatile', 'https://api.groq.com/openai/v1'),
   ('openrouter', 'meta-llama/llama-3.3-70b-instruct:free', 'https://openrouter.ai/api/v1'),
   ('cloudflare', '@cf/meta/llama-3.1-8b-instruct', null)

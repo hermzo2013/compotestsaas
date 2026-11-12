@@ -77,13 +77,18 @@ export function maskApiKey(plaintext) {
 
 /**
  * Valide le format d'une clé API selon le fournisseur (validation légère, non exhaustive).
+ *
+ * Gemini accepte DEUX formats officiels :
+ *   - Ancien : "AIza..." (39 caractères au total)
+ *   - Nouveau : "AQ.Ab8..." (clés générées depuis Google AI Studio depuis mi-2026)
  */
 export function validateApiKeyFormat(providerName, apiKey) {
   if (!apiKey || typeof apiKey !== 'string') return { valid: false, error: 'Clé vide.' };
   const key = apiKey.trim();
   if (key.length < 10) return { valid: false, error: 'Clé trop courte.' };
   const patterns = {
-    gemini: /^AIza[0-9A-Za-z_-]{35}$/,
+    // Gemini : accepte "AIza..." (ancien) ET "AQ...." (nouveau format officiel)
+    gemini: /^(AIza[0-9A-Za-z_-]{35}|AQ\.[0-9A-Za-z_.-]{20,})$/,
     groq: /^gsk_[0-9A-Za-z]{20,}$/,
     openrouter: /^sk-or-v1-[0-9a-f]{64}$/,
     cloudflare: /^[A-Za-z0-9_-]{40,}$/

@@ -1,6 +1,6 @@
 import { BaseProvider } from './base.provider.js';
 
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = 'gemini-3.8-flash';
 const DEFAULT_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
 export class GeminiProvider extends BaseProvider {
@@ -12,7 +12,7 @@ export class GeminiProvider extends BaseProvider {
 
   async chat(messages, options = {}) {
     const model = options.model || this.model;
-    const url = `${this.baseUrl}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(this.apiKey)}`;
+    const url = `${this.baseUrl}/models/${encodeURIComponent(model)}:generateContent`;
 
     // Conversion du format OpenAI (messages) vers Gemini (contents + systemInstruction)
     const systemParts = [];
@@ -29,12 +29,12 @@ export class GeminiProvider extends BaseProvider {
         for (const c of m.content) {
           if (c.type === 'text') parts.push({ text: c.text });
           else if (c.type === 'image_url') {
-            const url = c.image_url && c.image_url.url;
-            if (url && url.startsWith('data:')) {
-              const match = url.match(/^data:([^;]+);base64,(.+)$/);
+            const imgUrl = c.image_url && c.image_url.url;
+            if (imgUrl && imgUrl.startsWith('data:')) {
+              const match = imgUrl.match(/^data:([^;]+);base64,(.+)$/);
               if (match) parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
-            } else if (url) {
-              parts.push({ fileData: { mimeType: 'image/jpeg', fileUri: url } });
+            } else if (imgUrl) {
+              parts.push({ fileData: { mimeType: 'image/jpeg', fileUri: imgUrl } });
             }
           }
         }
@@ -50,9 +50,13 @@ export class GeminiProvider extends BaseProvider {
     if (options.jsonMode) generationConfig.responseMimeType = 'application/json';
     if (Object.keys(generationConfig).length) body.generationConfig = generationConfig;
 
+    // Authentification via header x-goog-api-key (méthode officielle recommandée par Google)
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': this.apiKey
+      },
       body: JSON.stringify(body),
       signal: options.signal
     });
@@ -82,8 +86,10 @@ export class GeminiProvider extends BaseProvider {
 
   async testConnection() {
     try {
-      const url = `${this.baseUrl}/models?key=${encodeURIComponent(this.apiKey)}`;
-      const res = await fetch(url);
+      const url = `${this.baseUrl}/models`;
+      const res = await fetch(url, {
+        headers: { 'x-goog-api-key': this.apiKey }
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         const msg = data.error && data.error.message ? data.error.message : `HTTP ${res.status}`;
@@ -98,13 +104,14 @@ export class GeminiProvider extends BaseProvider {
   }
 
   supportsVision() {
-    return /gemini-(1\.5|2\.0|2\.5|pro|flash)/i.test(this.model);
+    return /gemini-(1\.5|2\.0|2\.5|3\.|pro|flash)/i.test(this.model);
   }
 
   async listModels() {
     try {
-      const url = `${this.baseUrl}/models?key=${encodeURIComponent(this.apiKey)}`;
-      const res = await fetch(url);
+      const res = await fetch(`${this.baseUrl}/models`, {
+        headers: { 'x-goog-api-key': this.apiKey }
+      });
       if (!res.ok) return [this.model];
       const data = await res.json();
       return (data.models || []).map(m => m.name.replace(/^models\//, ''));
