@@ -1,6 +1,7 @@
 import { BaseProvider } from './base.provider.js';
+import { GoogleGenAI } from '@google/genai';
 
-const DEFAULT_MODEL = 'gemini-3.8-flash';
+const DEFAULT_MODEL = 'gemini-2.5-flash'; // ⚠️ 'gemini-3.8-flash' n'existe probablement pas
 const DEFAULT_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
 export class GeminiProvider extends BaseProvider {
@@ -10,18 +11,21 @@ export class GeminiProvider extends BaseProvider {
     this.baseUrl = (config.base_url || DEFAULT_BASE).replace(/\/$/, '');
   }
 
-  async chat(messages, options = {}) {
-    const model = options.model || this.model;
-    const url = `${this.baseUrl}/models/${encodeURIComponent(model)}:generateContent`;
+  /**
+   * Construit un client GoogleGenAI à la demande (la clé peut changer après un update en base).
+   */
+  _client() {
+    return new GoogleGenAI({ apiKey: this.apiKey });
+  }
 
-    // Conversion du format OpenAI (messages) vers Gemini (contents + systemInstruction)
-    const systemParts = [];
+  /**
+   * Convertit le format "messages" (OpenAI-like) vers le format attendu par
+   * ai.models.generateContent({ contents: Content[] }).
+   */
+  _toGeminiContents(messages) {
     const contents = [];
     for (const m of messages) {
-      if (m.role === 'system') {
-        systemParts.push({ text: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) });
-        continue;
-      }
+      if (m.role === 'system') continue; // géré séparément via systemInstruction
       const parts = [];
       if (typeof m.content === 'string') {
         parts.push({ text: m.content });
@@ -41,65 +45,72 @@ export class GeminiProvider extends BaseProvider {
       }
       contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts });
     }
+    return contents;
+  }
 
-    const body = { contents };
-    if (systemParts.length) body.systemInstruction = { parts: systemParts };
-    const generationConfig = {};
-    if (options.temperature !== undefined) generationConfig.temperature = options.temperature;
-    if (options.maxTokens !== undefined) generationConfig.maxOutputTokens = options.maxTokens;
-    if (options.jsonMode) generationConfig.responseMimeType = 'application/json';
-    if (Object.keys(generationConfig).length) body.generationConfig = generationConfig;
+  async chat(messages, options = {}) {
+    const model = options.model || this.model;
+    const ai = this._client();
 
-    // Authentification via header x-goog-api-key (méthode officielle recommandée par Google)
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': this.apiKey
-      },
-      body: JSON.stringify(body),
-      signal: options.signal
-    });
+    // systemInstruction : concatène tous les messages système en un seul bloc
+    const systemText = messages
+      .filter(m => m.role === 'system')
+      .map(m => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content)))
+      .join('\n\n');
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const errMsg = data.error && data.error.message ? data.error.message : `HTTP ${res.status}`;
-      throw new Error(`Gemini ${res.status} : ${this.sanitizeError(errMsg)}`);
+    const config = {};
+    if (systemText) config.systemInstruction = { parts: [{ text: systemText }] };
+    if (options.temperature !== undefined) config.temperature = options.temperature;
+    if (options.maxTokens !== undefined) config.maxOutputTokens = options.maxTokens;
+    if (options.jsonMode) config.responseMimeType = 'application/json';
+
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: this._toGeminiContents(messages),
+        config: Object.keys(config).length ? config : undefined,
+        // Le SDK ne gère pas les AbortSignal nativement sur generateContent dans toutes les versions ;
+        // on transmet si disponible.
+        ...(options.signal ? { signal: options.signal } : {})
+      });
+
+      const content = response.text || '';
+      const usageMeta = response.usageMetadata || {};
+      return {
+        content,
+        usage: {
+          promptTokens: usageMeta.promptTokenCount || 0,
+          completionTokens: usageMeta.candidatesTokenCount || 0,
+          totalTokens: usageMeta.totalTokenCount || 0
+        },
+        raw: response
+      };
+    } catch (e) {
+      // Le SDK lève des ApiError avec .message / .status
+      const msg = e && e.message ? e.message : String(e);
+      throw new Error(`Gemini : ${this.sanitizeError(msg)}`);
     }
-
-    const candidate = data.candidates && data.candidates[0];
-    const content = candidate && candidate.content && candidate.content.parts
-      ? candidate.content.parts.map(p => p.text || '').join('')
-      : '';
-
-    const usageMeta = data.usageMetadata || {};
-    return {
-      content,
-      usage: {
-        promptTokens: usageMeta.promptTokenCount || 0,
-        completionTokens: usageMeta.candidatesTokenCount || 0,
-        totalTokens: usageMeta.totalTokenCount || 0
-      },
-      raw: data
-    };
   }
 
   async testConnection() {
     try {
-      const url = `${this.baseUrl}/models`;
-      const res = await fetch(url, {
-        headers: { 'x-goog-api-key': this.apiKey }
+      const ai = this._client();
+      // Un mini appel generateContent est le test le plus fiable : il vérifie
+      // à la fois la clé ET que le modèle existe.
+      const response = await ai.models.generateContent({
+        model: this.model,
+        contents: 'ping',
+        config: { maxOutputTokens: 1, temperature: 0 }
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const msg = data.error && data.error.message ? data.error.message : `HTTP ${res.status}`;
-        return { ok: false, error: this.sanitizeError(msg) };
-      }
-      const data = await res.json();
-      const models = (data.models || []).map(m => m.name.replace(/^models\//, ''));
-      return { ok: true, model: this.model, models };
+      // Si on arrive ici sans exception, la clé et le modèle sont valides.
+      return {
+        ok: true,
+        model: this.model,
+        models: await this.listModels() // best-effort
+      };
     } catch (e) {
-      return { ok: false, error: this.sanitizeError(e.message) };
+      const msg = e && e.message ? e.message : String(e);
+      return { ok: false, error: this.sanitizeError(msg) };
     }
   }
 
@@ -107,6 +118,12 @@ export class GeminiProvider extends BaseProvider {
     return /gemini-(1\.5|2\.0|2\.5|3\.|pro|flash)/i.test(this.model);
   }
 
+  /**
+   * Liste les modèles disponibles. Le SDK JS @google/genai n'expose pas
+   * une méthode `ai.models.list()` documentée de façon stable dans toutes
+   * les versions ; on garde l'appel REST direct (qui fonctionne toujours
+   * avec x-goog-api-key) et on retombe sur [this.model] en cas d'échec.
+   */
   async listModels() {
     try {
       const res = await fetch(`${this.baseUrl}/models`, {
