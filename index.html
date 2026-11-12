@@ -4386,13 +4386,22 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
   async function saveKey(form) {
     var provider = form.dataset.form;
     var fd = new FormData(form);
+
+    var apiKeyVal = (fd.get('apiKey') || '').toString().trim();
+    var accountIdVal = (fd.get('accountId') || '').toString().trim();
+    var modelVal = (fd.get('model') || '').toString().trim();
+    var baseUrlVal = (fd.get('baseUrl') || '').toString().trim();
+
     var payload = {
       provider: provider,
-      apiKey: fd.get('apiKey'),
-      accountId: fd.get('accountId') || null,
-      model: fd.get('model') || null,
-      baseUrl: fd.get('baseUrl') || null
+      apiKey: apiKeyVal,
+      accountId: accountIdVal || null,
+      model: modelVal || null,
+      baseUrl: baseUrlVal || null
     };
+
+    console.log('[AIAdmin] saveKey payload =', JSON.stringify(payload));
+
     var statusEl = form.querySelector('.ai-key-form-status');
     var saveBtn = form.querySelector('.btn-save');
     statusEl.textContent = 'Enregistrement et test en cours...';
@@ -4407,6 +4416,7 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
     } catch (e) {
       statusEl.textContent = '❌ ' + e.message;
       statusEl.style.color = 'var(--red)';
+      console.error('[AIAdmin] saveKey error:', e.message);
     } finally {
       saveBtn.disabled = false;
     }

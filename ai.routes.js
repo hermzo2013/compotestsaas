@@ -26,12 +26,29 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
   // ===================================================================
   const ProviderName = z.enum(['gemini', 'groq', 'openrouter', 'cloudflare']);
 
+  // --- Helpers de normalisation ---
+  // Accepte null, undefined, "", ou une URL. Retourne null si vide ou invalide.
+  // Cette fonction est utilisée dans plusieurs schémas pour éviter les faux 400.
+  const optionalUrl = (max = 300) => z.any().optional().nullable().transform((v) => {
+    if (v === undefined || v === null) return null;
+    const s = String(v).trim();
+    if (!s) return null;
+    if (s.length > max) return null;
+    return /^https?:\/\/\S+$/i.test(s) ? s : null;
+  });
+
+  const optionalString = (max) => z.any().optional().nullable().transform((v) => {
+    if (v === undefined || v === null) return null;
+    const s = String(v).trim();
+    return s ? s.slice(0, max) : null;
+  });
+
   const SaveKeySchema = z.object({
     provider: ProviderName,
     apiKey: z.string().min(10).max(500),
-    accountId: z.string().max(200).optional().nullable(),
-    baseUrl: z.string().url().max(300).optional().nullable(),
-    model: z.string().max(200).optional().nullable()
+    accountId: optionalString(200),
+    baseUrl: optionalUrl(300),
+    model: optionalString(200)
   });
 
   const ToggleSchema = z.object({
@@ -48,7 +65,7 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     task: z.string().min(1).max(100),
     primary_provider: ProviderName.nullable(),
     secondary_provider: ProviderName.nullable(),
-    model_override: z.string().max(200).nullable().optional(),
+    model_override: optionalString(200),
     enabled: z.boolean().optional()
   });
 
@@ -91,10 +108,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
   // ROUTES ADMIN — Configuration des fournisseurs
   // ===================================================================
 
-  /**
-   * GET /api/admin/ai/providers
-   * Liste tous les fournisseurs (clés masquées).
-   */
   router.get('/admin/ai/providers',
     authenticate, adminOnly, aiAdminLimiter,
     async (_req, res) => {
@@ -113,7 +126,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
           last_check_at: p.last_check_at,
           last_error: p.last_error,
           updated_at: p.updated_at,
-          // Ne JAMAIS renvoyer la clé ni ses fragments chiffrés
           extra_config: p.extra_config || {}
         }));
         res.json({ providers });
@@ -124,30 +136,21 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     }
   );
 
-  /**
-   * POST /api/admin/ai/providers/key
-   * Enregistre (ou remplace) la clé API d'un fournisseur.
-   * Valide d'abord la clé auprès du fournisseur.
-   */
   router.post('/admin/ai/providers/key',
     authenticate, adminOnly, aiAdminLimiter,
     validate(SaveKeySchema),
     async (req, res) => {
       const { provider, apiKey, accountId, baseUrl, model } = req.body;
       try {
-        // 1) Validation de format
         const fmt = ai.validateApiKeyFormat(provider, apiKey);
         if (!fmt.valid) return res.status(400).json({ error: fmt.error });
 
-        // 2) Cloudflare exige un accountId
         if (provider === 'cloudflare' && !accountId) {
           return res.status(400).json({ error: 'Cloudflare : account_id requis.' });
         }
 
-        // 3) Chiffrement
         const enc = ai.encryptApiKey(apiKey);
 
-        // 4) Sauvegarde (avec statut "configured", pas encore "connected")
         await ai.updateProvider(provider, {
           api_key_encrypted: enc.encrypted,
           api_key_iv: enc.iv,
@@ -160,7 +163,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
           last_error: null
         });
 
-        // 5) Test de connexion immédiat
         const test = await ai.testProviderConnection(provider);
 
         if (test.ok) {
@@ -173,7 +175,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
             available_models: test.models ? test.models.slice(0, 30) : undefined
           });
         } else {
-          // La clé est enregistrée mais le test a échoué : on informe sans supprimer
           res.status(400).json({
             ok: false,
             provider,
@@ -189,10 +190,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     }
   );
 
-  /**
-   * POST /api/admin/ai/providers/toggle
-   * Active/désactive un fournisseur.
-   */
   router.post('/admin/ai/providers/toggle',
     authenticate, adminOnly, aiAdminLimiter,
     validate(ToggleSchema),
@@ -210,10 +207,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     }
   );
 
-  /**
-   * POST /api/admin/ai/providers/set-primary
-   * Définit le fournisseur principal ou secondaire.
-   */
   router.post('/admin/ai/providers/set-primary',
     authenticate, adminOnly, aiAdminLimiter,
     validate(SetPrimarySchema),
@@ -221,7 +214,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
       const { provider, role } = req.body;
       try {
         const config = await ai.loadConfig(true);
-        // Retire l'ancien titulaire du rôle
         const updates = [];
         for (const p of config.providers) {
           if (role === 'primary' && p.is_primary && p.provider_name !== provider) {
@@ -232,7 +224,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
           }
         }
         await Promise.all(updates);
-        // Applique le nouveau rôle
         const patch = {};
         if (role === 'primary') { patch.is_primary = true; patch.is_secondary = false; }
         else if (role === 'secondary') { patch.is_secondary = true; patch.is_primary = false; }
@@ -245,10 +236,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     }
   );
 
-  /**
-   * POST /api/admin/ai/providers/test
-   * Teste la connexion à un fournisseur.
-   */
   router.post('/admin/ai/providers/test',
     authenticate, adminOnly, aiTestLimiter,
     validate(z.object({ provider: ProviderName })),
@@ -262,10 +249,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     }
   );
 
-  /**
-   * GET /api/admin/ai/providers/status
-   * Statut temps réel de tous les fournisseurs.
-   */
   router.get('/admin/ai/providers/status',
     authenticate, adminOnly, aiAdminLimiter,
     async (_req, res) => {
@@ -303,9 +286,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
   // ROUTES ADMIN — Attribution des tâches
   // ===================================================================
 
-  /**
-   * GET /api/admin/ai/routing
-   */
   router.get('/admin/ai/routing',
     authenticate, adminOnly, aiAdminLimiter,
     async (_req, res) => {
@@ -318,9 +298,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     }
   );
 
-  /**
-   * POST /api/admin/ai/routing
-   */
   router.post('/admin/ai/routing',
     authenticate, adminOnly, aiAdminLimiter,
     validate(RoutingSchema),
@@ -403,10 +380,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
   // ROUTES PUBLIQUES (utilisateurs authentifiés)
   // ===================================================================
 
-  /**
-   * POST /api/ai/generate-quiz
-   * Génère un quiz à partir de texte.
-   */
   router.post('/ai/generate-quiz',
     authenticate, aiPublicLimiter,
     validate(PublicGenerateSchema),
@@ -422,10 +395,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     }
   );
 
-  /**
-   * POST /api/ai/assistant
-   * Assistant pédagogique.
-   */
   router.post('/ai/assistant',
     authenticate, aiPublicLimiter,
     validate(PublicAssistantSchema),
@@ -441,10 +410,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     }
   );
 
-  /**
-   * POST /api/ai/explain-answer
-   * Correction + explication d'une réponse.
-   */
   router.post('/ai/explain-answer',
     authenticate, aiPublicLimiter,
     validate(PublicExplainSchema),
@@ -465,9 +430,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     }
   );
 
-  /**
-   * POST /api/ai/summarize-course
-   */
   router.post('/ai/summarize-course',
     authenticate, aiPublicLimiter,
     validate(z.object({ text: z.string().min(50).max(50000) })),
@@ -482,9 +444,6 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     }
   );
 
-  /**
-   * POST /api/ai/analyze-progress
-   */
   router.post('/ai/analyze-progress',
     authenticate, aiPublicLimiter,
     validate(z.object({ history: z.array(z.any()).min(1).max(200) })),
