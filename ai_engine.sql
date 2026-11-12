@@ -28,6 +28,20 @@ create table if not exists public.ai_providers (
   updated_at timestamptz not null default now()
 );
 
+-- 1bis) Migration idempotente : ajout des colonnes si la table existait déjà
+alter table public.ai_providers add column if not exists account_id text;
+alter table public.ai_providers add column if not exists base_url text;
+alter table public.ai_providers add column if not exists model text;
+alter table public.ai_providers add column if not exists extra_config jsonb not null default '{}'::jsonb;
+alter table public.ai_providers add column if not exists enabled boolean not null default false;
+alter table public.ai_providers add column if not exists is_primary boolean not null default false;
+alter table public.ai_providers add column if not exists is_secondary boolean not null default false;
+alter table public.ai_providers add column if not exists status text not null default 'not_configured';
+alter table public.ai_providers add column if not exists last_check_at timestamptz;
+alter table public.ai_providers add column if not exists last_error text;
+alter table public.ai_providers add column if not exists created_at timestamptz not null default now();
+alter table public.ai_providers add column if not exists updated_at timestamptz not null default now();
+
 create unique index if not exists ai_providers_primary_unique
   on public.ai_providers(is_primary) where is_primary = true;
 create unique index if not exists ai_providers_secondary_unique
@@ -46,6 +60,14 @@ create table if not exists public.ai_task_routing (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- 2bis) Migration idempotente pour ai_task_routing
+alter table public.ai_task_routing add column if not exists primary_provider text;
+alter table public.ai_task_routing add column if not exists secondary_provider text;
+alter table public.ai_task_routing add column if not exists model_override text;
+alter table public.ai_task_routing add column if not exists enabled boolean not null default true;
+alter table public.ai_task_routing add column if not exists created_at timestamptz not null default now();
+alter table public.ai_task_routing add column if not exists updated_at timestamptz not null default now();
 
 -- ---------------------------------------------------------------------
 -- 3) Journalisation des appels IA
