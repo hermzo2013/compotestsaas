@@ -103,6 +103,9 @@ export const adminPasswordSchema = z.object({
 }).refine((b) => b.password.length >= 6, { message: 'Mot de passe trop court.' });
 export const adminStatusSchema = z.object({ banned: z.any().transform(Boolean) });
 export const adminRoleSchema = z.object({ is_admin: z.any().transform((v) => v === true) });
+export const adminSettingsSchema = z.object({
+  enabled: z.any().transform((v) => v === true || v === 'true')
+});
 
 // ---------- IA ----------
 const textField = z.any().transform((v) => (v == null ? '' : String(v)));
@@ -161,7 +164,3 @@ export const pushSendSchema = z.object({
 export const pushClickSchema = z.object({ mid: z.string().uuid('Identifiant invalide.') });
 export const pushInboxQuery = z.object({ lang: z.string().max(10).optional() }).passthrough();
 export const pushHistoryIdParam = z.object({ id: z.string().uuid('Identifiant invalide.') });
-// ---------- Réglages globaux ----------
-export const adminSettingsSchema = z.object({
-  enabled: z.any().transform((v) => v === true)
-});
