@@ -57,14 +57,22 @@ export class CloudflareProvider extends BaseProvider {
   async testConnection() {
     try {
       if (!this.accountId) return { ok: false, error: 'account_id manquant.' };
-      const url = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(this.accountId)}/ai/models/search`;
-      const res = await fetch(url, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${this.apiKey}` }
+      // Test réel : un mini appel d'inférence (POST /ai/run/<modèle>), comme chat().
+      // L'ancien test (GET /ai/models/search) est refusé par certains types de jetons
+      // ("Method not allowed for this authentication scheme").
+      const res = await fetch(this.buildUrl(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify({ messages: [{ role: 'user', content: 'ping' }], max_tokens: 1 })
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const msg = data.errors ? data.errors.map(e => e.message).join('; ') : `HTTP ${res.status}`;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        const msg = data.errors && data.errors.length
+          ? data.errors.map(e => `${e.message}${e.code ? ' (code ' + e.code + ')' : ''}`).join('; ')
+          : `HTTP ${res.status}`;
         return { ok: false, error: this.sanitizeError(msg) };
       }
       return { ok: true, model: this.model };
