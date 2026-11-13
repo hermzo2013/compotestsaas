@@ -59,9 +59,8 @@ export class CloudflareProvider extends BaseProvider {
       if (!this.accountId) return { ok: false, error: 'account_id manquant.' };
       const url = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(this.accountId)}/ai/models/search`;
       const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
-        body: JSON.stringify({})
+        method: 'GET',
+        headers: { Authorization: `Bearer ${this.apiKey}` }
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
