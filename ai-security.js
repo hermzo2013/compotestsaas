@@ -84,7 +84,8 @@ export function maskApiKey(plaintext) {
  */
 export function validateApiKeyFormat(providerName, apiKey) {
   if (!apiKey || typeof apiKey !== 'string') return { valid: false, error: 'Clé vide.' };
-  const key = apiKey.trim();
+  // Retire espaces, retours à la ligne et caractères invisibles (copier-coller)
+  const key = apiKey.replace(/[\s\u200B-\u200D\uFEFF\u00A0]/g, '');
   if (key.length < 10) return { valid: false, error: 'Clé trop courte.' };
   const patterns = {
     // Gemini : accepte "AIza..." (ancien) ET "AQ...." (nouveau format officiel)
@@ -95,6 +96,8 @@ export function validateApiKeyFormat(providerName, apiKey) {
   };
   const re = patterns[providerName];
   if (re && !re.test(key)) {
+    const bad = [...key].filter(c => !/[0-9A-Za-z_.-]/.test(c)).map(c => 'U+' + c.codePointAt(0).toString(16));
+    console.warn('[ai-security] clé rejetée', { provider: providerName, longueur: key.length, debut: key.slice(0, 3), caracteres_invalides: bad });
     return { valid: false, error: `Format de clé ${providerName} invalide.` };
   }
   return { valid: true };

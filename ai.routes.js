@@ -140,7 +140,9 @@ export function createAiRouter({ authenticate, requireAdmin, validate, limiter }
     authenticate, adminOnly, aiAdminLimiter,
     validate(SaveKeySchema),
     async (req, res) => {
-      const { provider, apiKey, accountId, baseUrl, model } = req.body;
+      const { provider, accountId, baseUrl, model } = req.body;
+        // Nettoie la clé (espaces / caractères invisibles) avant validation, chiffrement et affichage
+        const apiKey = String(req.body.apiKey || '').replace(/[\s\u200B-\u200D\uFEFF\u00A0]/g, '');
       try {
         const fmt = ai.validateApiKeyFormat(provider, apiKey);
         if (!fmt.valid) return res.status(400).json({ error: fmt.error });
