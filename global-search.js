@@ -79,10 +79,11 @@
       return;
     }
     const term = '%' + q + '%';
+    const safe = async (p) => { try { return await p; } catch (e) { return { data: [] }; } };
     const [quizRes, courseRes, msgRes] = await Promise.all([
-      sb.from('quizzes').select('id,title,subject,level').or('title.ilike.' + term + ',subject.ilike.' + term).limit(10).catch(() => ({ data: [] })),
-      sb.from('courses').select('id,title,level').ilike('title', term).limit(10).catch(() => ({ data: [] })),
-      sb.from('community_posts').select('id,content,author_name,created_at').ilike('content', term).limit(10).catch(() => ({ data: [] }))
+      safe(sb.from('quizzes').select('id,title,subject,level').or('title.ilike.' + term + ',subject.ilike.' + term).limit(10)),
+      safe(sb.from('courses').select('id,title,level').ilike('title', term).limit(10)),
+      safe(sb.from('community_posts').select('id,content,author_name,created_at').ilike('content', term).limit(10))
     ]);
     const quizzes = (quizRes && quizRes.data) || [];
     const courses = (courseRes && courseRes.data) || [];

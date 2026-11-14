@@ -2060,6 +2060,11 @@ let currentUser = null;
 let historyData = JSON.parse(localStorage.getItem('comptest_history') || '[]');
 let isAdmin = false;
 let libraryCache = []; 
+
+// Expose les variables globales (déclarées avec let) aux modules externes via window.*
+['supabaseClient','currentUser','isAdmin','libraryCache'].forEach(function(n){
+  Object.defineProperty(window, n, { configurable: true, get: function(){ return eval(n); } });
+});
 let coursesCache = [];
 let editingQuizId = null;
 let selectedQuizIds = new Set();
