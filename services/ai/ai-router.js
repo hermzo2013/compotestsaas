@@ -214,11 +214,13 @@ export async function testProviderConnection(providerName) {
   try {
     provider = createProvider(providerConfig);
   } catch (e) {
+    log.warn({ provider: providerName, err: e.message }, 'instanciation du fournisseur impossible (test)');
     await updateProviderStatus(providerName, 'auth_error', e.message);
     return { ok: false, error: e.message };
   }
 
   const result = await provider.testConnection();
+  if (!result.ok) log.warn({ provider: providerName, model: provider.model, err: String(result.error || '').slice(0, 400) }, 'test de connexion fournisseur échoué');
   if (result.ok) {
     await updateProviderStatus(providerName, 'connected', null);
   } else {
