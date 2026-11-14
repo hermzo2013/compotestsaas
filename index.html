@@ -206,7 +206,6 @@ body.library-bar-fixed #libraryActionBar.visible ~ #libraryList{
 .course-accordion-body{padding:8px 12px 12px;}
 
 .course-toolbar{display:none;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:#FFFBEB;border-bottom:1px solid #FCD34D;flex-wrap:wrap;position:-webkit-sticky;position:sticky;top:0;z-index:1000;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);}
-/* Fallback fixed (mobile / WebView) : même logique que la bibliothèque */
 body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 !important;left:0 !important;right:0 !important;margin:0 !important;border-radius:0 !important;border-left:0 !important;border-right:0 !important;border-top:0 !important;padding-top:calc(10px + env(safe-area-inset-top)) !important;z-index:1000 !important;}
 .course-toolbar-ph{display:none;}
 .course-toolbar.visible{display:flex;}
@@ -314,7 +313,6 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 /* ==========================================
    🎤 NOTES VOCALES (Communauté)
    ========================================== */
-/* Bouton micro : même gabarit que le trombone */
 .chat-mic-btn {
   background: #ECFDF5; color: var(--navy); border: 1px solid #D1D5DB;
   border-radius: 8px; width: 36px; height: 36px;
@@ -324,7 +322,6 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 }
 .chat-mic-btn:hover { background: #D1FAE5; }
 
-/* Pendant l'enregistrement : bouton rouge qui pulse */
 .chat-mic-btn.recording {
   background: #EF4444; border-color: #EF4444; color: #fff;
   animation: micPulse 1.2s ease-out infinite;
@@ -335,7 +332,6 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
   100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
 }
 
-/* Zone « enregistrement en cours » : 🔴 00:05 ▓▓▓░░ [⏹️ Arrêter] */
 .voice-recorder {
   display: none; align-items: center; gap: 8px;
   background: #FEF2F2; border: 1px solid #FECACA;
@@ -354,7 +350,6 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 }
 .voice-recorder button:hover, .voice-preview button:hover { background: #F3F4F6; }
 
-/* Zone « aperçu » : ▶️ 00:05 [🗑️ Supprimer] */
 .voice-preview {
   display: none; align-items: center; gap: 8px;
   background: #F0FDF4; border: 1px solid #A7F3D0;
@@ -913,6 +908,108 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
   .ai-routing-table select{min-width:80px;font-size:11px;}
 }
 
+/* ==========================================
+   📥 TÉLÉCHARGEMENT ANDROID (bouton, bannière, modale)
+   ========================================== */
+/* Bouton du header */
+.btn-download-apk {
+  background: #F59E0B !important;
+  border-color: #F59E0B !important;
+  color: #fff !important;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-download-apk:hover { background: #D97706 !important; }
+
+/* Bannière sous les onglets */
+#apkBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #ECFDF5, #D1FAE5);
+  border: 1px solid #A7F3D0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(16,185,129,0.08);
+  flex-wrap: wrap;
+}
+#apkBanner .apk-icon { font-size: 28px; flex-shrink: 0; line-height: 1; }
+#apkBanner .apk-text { flex: 1; min-width: 180px; }
+#apkBanner .apk-text b { display: block; color: var(--navy); font-size: 14px; margin-bottom: 2px; }
+#apkBanner .apk-text span { font-size: 12px; color: var(--muted); line-height: 1.4; }
+#apkBanner .apk-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+#apkBanner .apk-download-btn {
+  background: var(--blue-btn); color: #fff; border: 0; border-radius: 10px;
+  padding: 10px 16px; font-size: 13px; font-weight: 800; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+  transition: background .2s, transform .15s; white-space: nowrap;
+}
+#apkBanner .apk-download-btn:hover { background: var(--blue-btn-hover); transform: translateY(-1px); }
+#apkBanner .apk-download-btn:active { transform: translateY(0); }
+#apkBanner .apk-dismiss {
+  background: transparent; border: 0; color: var(--muted); cursor: pointer;
+  font-size: 16px; padding: 4px 6px; flex-shrink: 0; border-radius: 6px;
+}
+#apkBanner .apk-dismiss:hover { background: rgba(0,0,0,0.05); color: var(--ink); }
+
+/* Modale */
+#apkInfoModal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(6,95,70,.6); z-index: 4700;
+  align-items: center; justify-content: center; padding: 20px;
+}
+#apkInfoModal.show { display: flex; }
+.apk-info-content {
+  background: #fff; border-radius: 16px; width: 100%; max-width: 480px;
+  max-height: 90vh; overflow-y: auto; padding: 26px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.apk-info-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px; border-bottom: 1px solid var(--line); padding-bottom: 12px;
+}
+.apk-info-header h2 { margin: 0; font-size: 19px; color: var(--exam-navy); display: flex; align-items: center; gap: 8px; }
+.apk-info-header button {
+  background: transparent; border: 0; font-size: 20px; color: var(--muted);
+  cursor: pointer; width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.apk-info-header button:hover { background: #F3F4F6; }
+.apk-info-section { font-size: 13px; color: var(--ink); line-height: 1.55; margin-bottom: 14px; }
+.apk-info-section h3 {
+  font-size: 14px; font-weight: 800; color: var(--navy);
+  margin: 0 0 8px; display: flex; align-items: center; gap: 6px;
+}
+.apk-info-section ol { margin: 0; padding-left: 20px; }
+.apk-info-section li { margin-bottom: 6px; }
+.apk-info-warning {
+  background: #FFFBEB; border-left: 4px solid #F59E0B; border-radius: 8px;
+  padding: 10px 12px; font-size: 12px; color: #92400E; margin-bottom: 14px; line-height: 1.5;
+}
+.apk-info-footer {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px;
+  padding-top: 14px; border-top: 1px solid var(--line);
+}
+.apk-info-footer button,
+.apk-info-footer a {
+  flex: 1; min-width: 130px; padding: 12px; border-radius: 10px;
+  font-size: 14px; font-weight: 700; text-align: center; text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; transition: background .2s;
+}
+.apk-info-footer .btn-cancel { background: #F3F4F6; color: #374151; border: 1px solid #D1D5DB; }
+.apk-info-footer .btn-cancel:hover { background: #E5E7EB; }
+.apk-info-footer .btn-confirm { background: var(--blue-btn); color: #fff; border: 0; }
+.apk-info-footer .btn-confirm:hover { background: var(--blue-btn-hover); }
+
+/* Masquer si l'app est déjà en mode installé */
+@media (display-mode: standalone) {
+  #apkBanner { display: none !important; }
+}
+
 </style>
 </head><body>
 
@@ -926,6 +1023,7 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
   </div>
   <div class="header-actions">
     <span id="userLabel">Non connecté</span>
+    <button id="apkBtn" class="btn-download-apk" type="button" title="Télécharger la version Android">📥 Télécharger la version Android</button>
     <button id="adminBtn" class="btn-admin" style="display:none">⚙️ Admin</button>
     <button id="bellBtn" style="display:none;align-items:center" aria-label="Mes notifications" title="Mes notifications">📬 Mes notifications <span id="bellBadge" style="display:none;background:#EF4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:6px;font-weight:800">0</span></button>
     <button id="pushBtn" style="display:none">🔔 Activer les notifications</button>
@@ -1003,6 +1101,20 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
     <button class="tab" data-tab="courses">📖 Cours</button>
     <button class="tab" data-tab="history">📊 Mon Historique</button>
   </div>
+
+  <!-- 📥 Bannière de téléchargement de l'app Android (logique dans download-android.js) -->
+  <div id="apkBanner">
+    <span class="apk-icon">📱</span>
+    <div class="apk-text">
+      <b>Télécharger la version Android</b>
+      <span>Application officielle — notifications instantanées, accès hors-ligne aux cours.</span>
+    </div>
+    <div class="apk-actions">
+      <a class="apk-download-btn" href="/Revisio.apk" download="Revisio.apk">📥 Télécharger</a>
+      <button type="button" class="apk-dismiss" data-apk-dismiss title="Masquer">✕</button>
+    </div>
+  </div>
+
   <div id="tab-create" class="tab-content">
     <div class="panel">
       <h1>Importer un document ou une photo</h1>
@@ -1839,21 +1951,19 @@ window.currentQuizToStart = null;
    ========================================== */
 let voiceModulePromise = null;
 
-// Charge community-voice.js une seule fois (cache la promesse)
 function loadVoiceModule() {
   if (!voiceModulePromise) {
     voiceModulePromise = import('/community-voice.js')
       .then(() => window.CommunityVoice)
       .catch((err) => {
         console.error('[CommunityVoice] échec du chargement :', err);
-        voiceModulePromise = null; // autorise une nouvelle tentative
+        voiceModulePromise = null;
         throw new Error('Module vocal indisponible.');
       });
   }
   return voiceModulePromise;
 }
 
-// Handler global du bouton 🎤 (appelé par onclick=)
 window.onVoiceMicClick = async function () {
   try {
     const Voice = await loadVoiceModule();
@@ -2027,7 +2137,7 @@ function handleSession(session) {
     $('clearHistoryBtn').style.display = 'none';
     $('communityWidget').style.display = 'none';
     $('communityPopup').classList.remove('show');
-    if (window.CommunityVoice) CommunityVoice.cancel();   // 🎤 coupe le micro / supprime une note non envoyée
+    if (window.CommunityVoice) CommunityVoice.cancel();
     $('adminCourseForm').classList.add('hide');
     if (unreadCheckInterval) { clearInterval(unreadCheckInterval); unreadCheckInterval = null; }
     updateCommunityBadge(0);
@@ -3081,11 +3191,9 @@ window.uploadAttachment = uploadAttachment;
 // 🎤 LECTEUR AUDIO CUSTOM (style WhatsApp)
 // ==========================================
 
-// Un seul lecteur joue à la fois (comportement WhatsApp)
 let activeAudioEl = null;
 let activeAudioId = null;
 
-// Génère un motif de waveform stable pour un post donné
 function waveBarsFor(postId, count = 28) {
   let seed = 0;
   for (let i = 0; i < postId.length; i++) seed = (seed * 31 + postId.charCodeAt(i)) >>> 0;
@@ -3093,7 +3201,7 @@ function waveBarsFor(postId, count = 28) {
   for (let i = 0; i < count; i++) {
     seed = (seed * 1664525 + 1013904223) >>> 0;
     const v = (seed >>> 16) % 100;
-    bars.push(30 + Math.round((v / 99) * 70)); // hauteur 30-100 %
+    bars.push(30 + Math.round((v / 99) * 70));
   }
   return bars;
 }
@@ -3115,7 +3223,6 @@ function renderAudioPlayer(postId, url, duration) {
   <audio preload="metadata" src="${esc(url)}" data-audio-src="${esc(postId)}" style="display:none"></audio>`;
 }
 
-// Attache les événements après injection dans le DOM
 function bindAudioPlayers() {
   document.querySelectorAll('[data-audio-play]').forEach(btn => {
     if (btn.dataset.bound) return;
@@ -3127,7 +3234,6 @@ function bindAudioPlayers() {
     const durEl = document.querySelector(`[data-audio-dur="${CSS.escape(id)}"]`);
     if (!audio || !wave) return;
 
-    // Résout la durée réelle dès que les métadonnées sont chargées
     const applyDuration = () => {
       if (isFinite(audio.duration) && audio.duration > 0 && durEl) {
         durEl.textContent = fmtVoiceTime(audio.duration);
@@ -3136,7 +3242,6 @@ function bindAudioPlayers() {
     audio.addEventListener('loadedmetadata', applyDuration);
     if (audio.readyState >= 1) applyDuration();
 
-    // Progression : met à jour les barres "jouées"
     const paintProgress = () => {
       const d = audio.duration;
       const pct = (isFinite(d) && d > 0) ? (audio.currentTime / d) : 0;
@@ -3148,7 +3253,6 @@ function bindAudioPlayers() {
     audio.addEventListener('timeupdate', paintProgress);
     audio.addEventListener('seeked', paintProgress);
 
-    // Fin de lecture
     audio.addEventListener('ended', () => {
       btn.textContent = '▶️';
       btn.setAttribute('aria-label', 'Lecture');
@@ -3157,7 +3261,6 @@ function bindAudioPlayers() {
       if (activeAudioEl === audio) { activeAudioEl = null; activeAudioId = null; }
     });
 
-    // Play / pause
     btn.addEventListener('click', () => {
       if (activeAudioEl && activeAudioEl !== audio) {
         activeAudioEl.pause();
@@ -3184,7 +3287,6 @@ function bindAudioPlayers() {
       }
     });
 
-    // Clic sur la waveform → seek
     wave.addEventListener('click', (e) => {
       const rect = wave.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -3196,14 +3298,13 @@ function bindAudioPlayers() {
   });
 }
 
-// Utilitaire : formate une durée (secondes → mm:ss)
 function fmtVoiceTime(sec) {
   sec = Math.max(0, Math.round(Number(sec) || 0));
   return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
 }
 
 // ==========================================
-// 🔔 NOTIFICATION AUTOMATIQUE : prévient tous les abonnés d'un nouveau message
+// 🔔 NOTIFICATION AUTOMATIQUE
 // ==========================================
 async function notifyCommunityPost({ authorName, content, attachmentType }) {
   try {
@@ -3243,7 +3344,6 @@ async function loadCommunity() {
       let attachmentHtml = '';
       if (post.attachment_url) {
         if (post.attachment_type === 'audio') {
-          // 🎤 Note vocale : lecteur custom (style WhatsApp)
           let dur = 0;
           const mHash = String(post.attachment_url).match(/#d=(\d+)/);
           const mName = String(post.attachment_url).match(/_d(\d+)\./);
@@ -3263,7 +3363,6 @@ async function loadCommunity() {
         ${replyContext}${contentHtml}${attachmentHtml}
         <div class="chat-msg-actions">${replyBtn}${deleteBtn}</div></div>`;
     }).join('');
-    // 🎤 Attache les lecteurs audio custom après injection du HTML
     bindAudioPlayers();
   } catch (e) { list.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Erreur réseau : ${esc(e.message)}</p>`; }
 }
@@ -3293,7 +3392,6 @@ async function postMessage() {
   const input = $('communityInput');
   const content = input.value.trim();
 
-  // 🎤 Le module vocal est-il chargé et actif ?
   const Voice = window.CommunityVoice || null;
   if (Voice && Voice.isRecording()) {
     return alert("Arrêtez l'enregistrement (⏹️) avant de publier.");
@@ -3314,7 +3412,6 @@ async function postMessage() {
     let attachmentUrl = null, attachmentType = null;
 
     if (isVoice) {
-      // 🎤 Note vocale : upload du Blob
       btn.textContent = '🎤 Envoi...';
       const blob = Voice.getBlob();
       const dur = Voice.getDuration();
@@ -3350,7 +3447,6 @@ async function postMessage() {
     if (error) {
       alert('Erreur : ' + error.message);
     } else {
-      // 🔔 Notification push à tous les abonnés (sans attendre la réponse serveur)
       notifyCommunityPost({ authorName, content, attachmentType });
       input.value = '';
       $('communityCharCount').textContent = '0';
@@ -4931,4 +5027,5 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
 <script src="/ui-extras.js" defer></script>
 <script src="/admin-extras.js" defer></script>
 <script src="/push-client.js" defer></script>
+<script src="/download-android.js" defer></script>
 </body></html>
