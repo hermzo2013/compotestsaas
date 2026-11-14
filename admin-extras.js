@@ -51,12 +51,56 @@
     if ($('adminUserCount')) $('adminUserCount').textContent = rows.length ? (shown + ' / ' + rows.length + ' compte(s)') : '';
   }
 
+  // Notifications globales : interrupteur « Activer les notifications pour tous les utilisateurs »
+  async function loadGlobalNotifications() {
+    var t = $('globalNotificationsToggle'), st = $('globalNotificationsStatus');
+    if (!t) return;
+    if (st) st.textContent = '…';
+    try {
+      var res = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/settings', { cache: 'no-store' });
+      var d = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(d.error || ('Erreur ' + res.status));
+      t.checked = !!d.notifications_enabled;
+      if (st) st.textContent = t.checked ? 'Activées' : 'Désactivées';
+    } catch (e) {
+      if (st) st.textContent = '❌ ' + e.message;
+    }
+  }
+
+  async function saveGlobalNotifications() {
+    var t = $('globalNotificationsToggle'), st = $('globalNotificationsStatus');
+    if (!t) return;
+    var wanted = t.checked;
+    t.disabled = true;
+    if (st) st.textContent = 'Enregistrement…';
+    try {
+      var s = await supabaseClient.auth.getSession();
+      var token = s && s.data && s.data.session && s.data.session.access_token;
+      if (!token) throw new Error('Session expirée. Reconnecte-toi.');
+      var res = await fetch((typeof API_BASE !== 'undefined' ? API_BASE : '') + '/api/admin/settings/notifications', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: wanted })
+      });
+      var d = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(d.error || ('Erreur ' + res.status));
+      t.checked = !!d.notifications_enabled;
+      if (st) st.textContent = t.checked ? 'Activées ✅' : 'Désactivées';
+    } catch (e) {
+      t.checked = !wanted; // annule le changement affiché
+      if (st) st.textContent = '❌ ' + e.message;
+    } finally {
+      t.disabled = false;
+    }
+  }
+
   function bind() {
     if ($('adminUserSearch')) $('adminUserSearch').addEventListener('input', applyUserFilter);
     if ($('adminUserBannedOnly')) $('adminUserBannedOnly').addEventListener('change', applyUserFilter);
     if ($('statRefreshBtn')) $('statRefreshBtn').addEventListener('click', loadStats);
+    if ($('globalNotificationsToggle')) $('globalNotificationsToggle').addEventListener('change', saveGlobalNotifications);
   }
   bind();
 
-  window.AdminExtras = { loadStats: loadStats, applyUserFilter: applyUserFilter };
+  window.AdminExtras = { loadStats: loadStats, applyUserFilter: applyUserFilter, loadGlobalNotifications: loadGlobalNotifications };
 })();
