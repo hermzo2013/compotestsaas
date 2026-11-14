@@ -6,6 +6,9 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#064E3B">
+<script>
+(function(){try{var t=localStorage.getItem('revisio_theme');if(t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');}}catch(e){}})();
+</script>
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1010,8 +1013,122 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
   #apkBanner { display: none !important; }
 }
 
+/* 🌙 MODE SOMBRE */
+html.dark{color-scheme:dark;--blue:#34D399;--navy:#A7F3D0;--blue-btn:#34D399;--blue-btn-hover:#10B981;--active-bg:#064E3B;--active-text:#D1FAE5;--bg:#0F172A;--ink:#E2E8F0;--muted:#94A3B8;--line:#1E293B;--green:#34D399;--red:#F87171;--lav-1:#34D399;--lav-2:#10B981;--auth-bg:#0F172A;--input-bg:#1E293B;--exam-navy:#065F46;--exam-blue:#34D399}
+html.dark body{background:var(--bg);color:var(--ink)}
+html.dark .panel,html.dark .admin-modal-content,html.dark .edit-modal-content,html.dark .edit-course-modal-content,html.dark .help-modal-content,html.dark .apk-info-content,html.dark .score-card,html.dark .mode-modal-content,html.dark #communityPopup,html.dark .video-modal-content{background:#1E293B;border-color:#334155;color:var(--ink)}
+html.dark header{background:linear-gradient(120deg,#022C22,#065F46)}
+html.dark .app-footer{background:#1E293B;border-color:#334155;color:var(--muted)}
+html.dark input,html.dark select,html.dark textarea{background:#0F172A;border-color:#334155;color:var(--ink)}
+html.dark input:focus,html.dark select:focus,html.dark textarea:focus{background:#1E293B;border-color:var(--lav-1)}
+html.dark button.secondary{background:#064E3B;color:#A7F3D0}
+html.dark button.ghost{background:#1E293B;color:#E2E8F0}
+html.dark button.danger{background:#7F1D1D;color:#FECACA}
+html.dark .history-item,html.dark .course-item,html.dark .chat-msg,html.dark .filebox,html.dark .notice{background:#1E293B;border-color:#334155;color:var(--ink)}
+html.dark .notice{background:#422006;color:#FDE68A}
+html.dark .notice.err{background:#7F1D1D;color:#FECACA}
+html.dark .notice.ok{background:#064E3B;color:#A7F3D0}
+html.dark .tab{color:var(--muted)}html.dark .tab.active{background:var(--active-bg);color:var(--active-text)}
+html.dark .level-filter{background:#1E293B;border-color:#334155;color:var(--muted)}
+html.dark .level-filter.active{background:var(--blue-btn);color:#0F172A;border-color:var(--blue-btn)}
+html.dark .search-bar input{background:#1E293B;border-color:#334155;color:var(--ink)}
+html.dark .auth-container,html.dark .auth-form-container{background:#1E293B}
+html.dark #examView{background:#0F172A}
+html.dark .exam-card,html.dark .case-card{background:#1E293B;border-color:#334155;color:var(--ink)}
+html.dark .exam-opt{background:#0F172A!important;border-color:#334155!important;color:var(--ink)!important}
+html.dark .exam-opt.selected{background:#064E3B!important;border-color:#34D399!important}
+html.dark .exam-actions{background:#1E293B;border-color:#334155}
+html.dark .exam-input{background:#0F172A;border-color:#334155;color:var(--ink)}
+html.dark .community-popup-body{background:#0F172A}
+html.dark .community-popup-footer{background:#1E293B;border-color:#334155}
+html.dark .chat-msg-actions button{background:#064E3B;color:#A7F3D0;border-color:#334155}
+html.dark .chat-attach-btn,html.dark .chat-mic-btn{background:#064E3B;color:#A7F3D0;border-color:#334155}
+html.dark .community-chat-textarea{background:#0F172A;border-color:#334155;color:var(--ink)}
+html.dark .admin-tab-btn{background:#1E293B;color:var(--muted)}
+html.dark .admin-tab-btn.active{background:var(--blue-btn);color:#0F172A}
+html.dark .admin-table td{border-color:#334155}
+html.dark .admin-msg-table th{background:#0F172A}
+html.dark .ai-provider-card{background:#1E293B;border-color:#334155}
+html.dark .ai-key-form,html.dark .ai-quota-card{background:#0F172A;border-color:#334155}
+html.dark #apkBanner{background:linear-gradient(135deg,#064E3B,#065F46);border-color:#334155}
+html.dark .help-field input,html.dark .help-field textarea{background:#0F172A;border-color:#334155;color:var(--ink)}
+html,body,.panel,.history-item,.course-item,.exam-card,input,textarea,select,button{transition:background-color .2s,color .2s,border-color .2s}
+
+/* 📊 PROGRESSION */
+.progress-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.progress-card{background:#F9FAFB;border:1px solid var(--line);border-radius:12px;padding:14px}
+.progress-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.progress-card-head b{font-size:14px;color:var(--navy)}
+.progress-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.progress-badge.weak{background:#FEE2E2;color:#991B1B}
+.progress-badge.ok{background:#FEF3C7;color:#92400E}
+.progress-badge.strong{background:#D1FAE5;color:#065F46}
+.progress-score{font-size:32px;font-weight:900;color:var(--green);line-height:1}
+.progress-score span{font-size:16px;color:var(--muted);font-weight:700}
+.progress-meta{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--muted)}
+.progress-chart-wrap{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto}
+html.dark .progress-card,html.dark .progress-chart-wrap{background:#1E293B;border-color:#334155}
+.progress-chart{width:100%;height:auto;display:block}
+
+/* 🔍 RECHERCHE GLOBALE */
+#globalSearchModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.7);z-index:6500;align-items:flex-start;justify-content:center;padding:80px 20px 20px}
+#globalSearchModal.show{display:flex}
+.global-search-content{background:#fff;border-radius:16px;width:100%;max-width:640px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden}
+.global-search-header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.global-search-icon{font-size:20px}
+.global-search-header input{flex:1;border:0;outline:0;background:transparent;font-size:16px;color:var(--ink);padding:6px 0}
+.global-search-close{background:transparent;border:0;font-size:20px;color:var(--muted);cursor:pointer;padding:6px 10px;border-radius:8px}
+.global-search-results{flex:1;overflow-y:auto;padding:8px 0}
+.global-search-hint{text-align:center;color:var(--muted);padding:24px;font-size:13px}
+.global-search-group{border-bottom:1px solid var(--line);padding:6px 0}
+.global-search-group:last-child{border-bottom:0}
+.global-search-group-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;padding:8px 16px;letter-spacing:.03em}
+.global-search-item{padding:10px 16px;cursor:pointer;border-left:3px solid transparent;transition:background .12s}
+.global-search-item:hover,.global-search-item.active{background:#ECFDF5;border-left-color:var(--green)}
+.global-search-item b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
+.global-search-item span{font-size:12px;color:var(--muted)}
+.global-search-footer{display:flex;gap:14px;padding:8px 16px;background:#F9FAFB;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+html.dark .global-search-content{background:#1E293B}
+html.dark .global-search-item:hover,html.dark .global-search-item.active{background:#064E3B}
+html.dark .global-search-footer{background:#0F172A;border-color:#334155}
+
+/* 💬 COMMENTAIRES */
+.question-comments{margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)}
+.comments-title{font-weight:800;font-size:14px;color:var(--navy);margin-bottom:10px}
+.comments-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.comment-empty{font-size:12px;color:var(--muted);font-style:italic;text-align:center;padding:8px}
+.comment-item{background:#F9FAFB;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.comment-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;font-size:12px}
+.comment-head b{color:var(--navy)}
+.comment-date{color:var(--muted);font-size:11px}
+.comment-del{background:transparent;border:0;cursor:pointer;padding:0 4px;font-size:13px;color:var(--red)}
+.comment-content{font-size:13px;line-height:1.45;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.comment-form{display:flex;gap:8px;align-items:flex-start}
+.comment-input{flex:1;border:1px solid #D1D5DB;border-radius:10px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical;min-height:40px;max-height:100px}
+.comment-submit{background:var(--blue-btn);color:#fff;border:0;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+.comment-status{font-size:11px;color:var(--muted);text-align:right;margin-top:4px;min-height:14px}
+html.dark .comment-item{background:#1E293B;border-color:#334155}
+html.dark .comment-input{background:#0F172A;border-color:#334155;color:var(--ink)}
+
+/* ⏸️ BANDEAU REPRISE */
+.resume-banner{display:none;align-items:center;gap:12px;background:linear-gradient(135deg,#FEF3C7,#FDE68A);border:1px solid #F59E0B;border-radius:14px;padding:12px 16px;margin-bottom:16px;flex-wrap:wrap}
+.resume-icon{font-size:24px;flex-shrink:0}
+.resume-text{flex:1;min-width:180px;display:flex;flex-direction:column;gap:2px}
+.resume-text b{font-size:13px;color:#92400E}
+.resume-text span{font-size:11px;color:#78350F}
+.resume-actions{display:flex;gap:8px;flex-wrap:wrap}
+.resume-actions button{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;border:1px solid}
+.resume-actions .resume-resume{background:#92400E;color:#fff;border-color:#92400E}
+.resume-actions .resume-dismiss{background:transparent;color:#78350F;border-color:#92400E}
+html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);border-color:#F59E0B}
+
+/* ♿ A11Y */
+.skip-link{position:absolute;top:-100px;left:10px;background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;z-index:10000;text-decoration:none;font-weight:700;transition:top .2s}
+.skip-link:focus{top:10px}
+:focus-visible{outline:3px solid #F59E0B;outline-offset:2px;border-radius:6px}
 </style>
 </head><body>
+<a href="#mainApp" class="skip-link">Aller au contenu principal</a>
 
 <div id="sessionWarning" class="notice err hide" style="position:fixed;top:0;left:0;right:0;z-index:5000;border-radius:0;text-align:center;margin:0">
   ⚠️ Ta session a expiré. <a href="#" onclick="supabaseClient.auth.signOut();return false;" style="color:#991B1B;font-weight:800">Reconnecte-toi</a>.
@@ -1024,6 +1141,8 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
   <div class="header-actions">
     <span id="userLabel">Non connecté</span>
     <button id="apkBtn" class="btn-download-apk" type="button" title="Télécharger la version Android">📥 Télécharger la version Android</button>
+    <button id="globalSearchBtn" type="button" aria-label="Recherche globale" title="Rechercher (Ctrl+K)">🔍</button>
+    <button id="darkModeBtn" type="button" aria-label="Activer le mode sombre" aria-pressed="false" title="Basculer le thème">🌙</button>
     <button id="adminBtn" class="btn-admin" style="display:none">⚙️ Admin</button>
     <button id="bellBtn" style="display:none;align-items:center" aria-label="Mes notifications" title="Mes notifications">📬 Mes notifications <span id="bellBadge" style="display:none;background:#EF4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:6px;font-weight:800">0</span></button>
     <button id="pushBtn" style="display:none">🔔 Activer les notifications</button>
@@ -1095,11 +1214,13 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 </section>
 
 <main id="mainApp" class="wrap" style="display:none">
+  <div id="resumeBanner" class="resume-banner" style="display:none"></div>
   <div class="tabs">
     <button class="tab active" data-tab="create">📚 Créer un test</button>
     <button class="tab" data-tab="library">🌍 Bibliothèque</button>
     <button class="tab" data-tab="courses">📖 Cours</button>
     <button class="tab" data-tab="history">📊 Mon Historique</button>
+    <button class="tab" data-tab="progress">📈 Progression</button>
   </div>
 
   <!-- 📥 Bannière de téléchargement de l'app Android (logique dans download-android.js) -->
@@ -1204,6 +1325,9 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
       </div>
       <div id="coursesList"></div>
     </div>
+  </div>
+  <div id="tab-progress" class="tab-content hide">
+    <div id="progressContainer"></div>
   </div>
   <div id="tab-history" class="tab-content hide">
     <div class="panel">
@@ -1376,6 +1500,13 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
           Activer les notifications pour tous les utilisateurs
         </label>
         <span id="globalNotificationsStatus" style="font-size:12px;color:var(--muted);font-weight:700;"></span>
+      </div>
+      <div style="border:1px solid #E5E7EB;border-radius:12px;padding:12px 14px;background:#F0FDF4;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;cursor:pointer;margin:0;">
+          <input type="checkbox" id="reminderToggle" style="width:20px;height:20px;accent-color:#10B981;cursor:pointer;">
+          Rappel si inactif depuis 7 jours
+        </label>
+        <span id="reminderStatus" style="font-size:12px;color:var(--muted);font-weight:700;"></span>
       </div>
       <p style="color:var(--muted);font-size:13px;margin-top:0;">Écris un message : il sera envoyé en notification aux utilisateurs qui ont activé les notifications. Les nouveaux quiz sont notifiés automatiquement.</p>
       <label style="font-weight:700;font-size:13px;">Titre <span id="pushTitleCount" style="color:var(--muted);font-weight:400">0/80</span></label>
@@ -1595,7 +1726,9 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
       <div style="font-size:12px; color:var(--muted); margin-top:5px;">Temps total : <b id="totalTimeLabel">50 min</b></div>
     </div>
 
-    <div class="mode-modal-actions">
+    <div class="mode-modal-actions" style="flex-wrap:wrap">
+      <button class="ghost" type="button" id="exportQuizBtn" style="min-width:100%">📄 Exporter le quiz vierge</button>
+      <button class="ghost" type="button" id="exportCorrectionBtn" style="min-width:100%">📄 Exporter la correction</button>
       <button class="ghost" type="button" onclick="closeModeModal()">Annuler</button>
       <button class="success" type="button" id="startQuizBtn" onclick="startQuizWithMode()">Démarrer</button>
     </div>
@@ -1964,6 +2097,83 @@ function loadVoiceModule() {
   return voiceModulePromise;
 }
 
+/* ===== Loaders dynamiques ===== */
+async function loadModule(name, globalName) {
+  if (window[globalName]) return window[globalName];
+  await import('/' + name + '.js');
+  return window[globalName];
+}
+window.loadModule = loadModule;
+
+/* ===== Mode sombre ===== */
+(function initDarkMode() {
+  const btn = document.getElementById('darkModeBtn');
+  if (!btn) return;
+  const sync = () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    btn.textContent = isDark ? '☀️' : '🌙';
+    btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+    btn.setAttribute('aria-label', isDark ? 'Désactiver le mode sombre' : 'Activer le mode sombre');
+  };
+  sync();
+  btn.addEventListener('click', async () => {
+    try {
+      if (!window.DarkMode) await import('/dark-mode.js');
+      window.DarkMode.toggle();
+      sync();
+    } catch (e) { console.error('[DarkMode]', e); }
+  });
+})();
+
+/* ===== Recherche globale ===== */
+(function initGlobalSearch() {
+  const btn = document.getElementById('globalSearchBtn');
+  if (btn) btn.addEventListener('click', async () => {
+    try {
+      const GS = await loadModule('global-search', 'GlobalSearch');
+      GS.open();
+    } catch (e) { console.error('[GlobalSearch]', e); }
+  });
+})();
+
+/* ===== Export PDF ===== */
+(function initPdfExport() {
+  const btnQuiz = document.getElementById('exportQuizBtn');
+  const btnCorr = document.getElementById('exportCorrectionBtn');
+  const run = async (mode) => {
+    const quiz = window.currentQuizToStart || window.pendingQuiz;
+    if (!quiz || !Array.isArray(quiz.questions)) return alert('Aucun quiz sélectionné.');
+    try {
+      const PE = await loadModule('pdf-export', 'PdfExport');
+      await PE.exportQuiz(quiz, mode);
+    } catch (e) { alert('Erreur export PDF : ' + e.message); }
+  };
+  if (btnQuiz) btnQuiz.addEventListener('click', () => run('vierge'));
+  if (btnCorr) btnCorr.addEventListener('click', () => run('correction'));
+})();
+
+/* ===== Progression ===== */
+(function initProgress() {
+  const tab = document.querySelector('.tab[data-tab="progress"]');
+  if (!tab) return;
+  tab.addEventListener('click', async () => {
+    const container = document.getElementById('progressContainer');
+    if (!container) return;
+    try {
+      const P = await loadModule('progress', 'Progress');
+      await P.render(container);
+    } catch (e) { container.innerHTML = '<p style="color:var(--red)">Erreur : ' + e.message + '</p>'; }
+  });
+})();
+
+/* ===== Bandeau de reprise ===== */
+(async function initResume() {
+  try {
+    const RQ = await loadModule('resume-quiz', 'ResumeQuiz');
+    if (RQ.hasPending()) RQ.showBanner();
+  } catch (e) {}
+})();
+
 window.onVoiceMicClick = async function () {
   try {
     const Voice = await loadVoiceModule();
@@ -2121,6 +2331,13 @@ function handleSession(session) {
     buildWatermark();
     if(isAdmin) loadAdminUsers();
     loadCloudData();
+    // 🆕 Recharger les rappels / reprise dès la connexion
+    (async () => {
+      try {
+        const RQ = await loadModule('resume-quiz', 'ResumeQuiz');
+        if (RQ.hasPending()) RQ.showBanner();
+      } catch (e) {}
+    })();
     checkUnreadReplies();
     if (window.PushUI) { try { window.PushUI.afterLogin(); } catch (e) { console.warn('PushUI:', e); } }
     if (unreadCheckInterval) clearInterval(unreadCheckInterval);
@@ -3541,6 +3758,32 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
     $('atab-' + btn.dataset.atab).classList.remove('hide');
     if (btn.dataset.atab === 'messages') loadAdminMessages();
     if (btn.dataset.atab === 'push' && window.PushUI) window.PushUI.adminLoad();
+    if (btn.dataset.atab === 'push') {
+      (async () => {
+        const toggle = document.getElementById('reminderToggle');
+        if (!toggle) return;
+        const sb = supabaseClient;
+        if (sb) {
+          const { data } = await sb.from('app_settings').select('reminders_enabled').eq('id', 1).maybeSingle();
+          toggle.checked = !data || data.reminders_enabled !== false;
+        }
+        toggle.onchange = async () => {
+          const status = document.getElementById('reminderStatus');
+          try {
+            const { data: { session } } = await sb.auth.getSession();
+            const r = await fetch(API_BASE + '/api/admin/settings/reminders', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+              body: JSON.stringify({ enabled: toggle.checked })
+            });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            if (status) status.textContent = toggle.checked ? '✅ Activé' : '⏸️ Désactivé';
+          } catch (e) {
+            if (status) status.textContent = '❌ Erreur';
+          }
+        };
+      })();
+    }
     if (btn.dataset.atab === 'push' && window.AdminExtras) window.AdminExtras.loadGlobalNotifications();
     if (btn.dataset.atab === 'stats' && window.AdminExtras) window.AdminExtras.loadStats();
   });
@@ -4119,6 +4362,9 @@ function startExam(quiz, options = { mode: 'training' }) {
     caseBlocks: Array.isArray(quiz.blocks) ? quiz.blocks : []
   };
 
+  // 🆕 Reprise : on sauvegarde l'identifiant du quiz dans l'état
+  if (quiz && quiz.id) examState.quizId = quiz.id;
+
   $('examTimerContainer').style.display = 'none';
   $('qpqTimers').classList.remove('show');
   if (examTimer) clearInterval(examTimer);
@@ -4229,6 +4475,9 @@ $('examQuitBtn').addEventListener('click', () => {
 });
 
 function closeExamView() {
+  if (examState && !examState.submitted && examState.quizId && window.ResumeQuiz) {
+    window.ResumeQuiz.save(snapshotExamState());
+  }
   $('examView').style.display = 'none';
   $('scoreView').classList.remove('show');
   document.body.style.overflow = 'auto';
@@ -4323,6 +4572,10 @@ function questionCardHtml(i) {
     </div>`;
   }
 
+  if (isLocked && examState.quizId) {
+    html += '<div class="question-comments" data-quiz-id="' + esc(examState.quizId) + '" data-q-index="' + i + '"></div>';
+  }
+
   html += `</div>`;
   return html;
 }
@@ -4343,6 +4596,47 @@ function paintChoices(i) {
     lab.classList.toggle('disabled-full', full);
   });
 }
+
+function snapshotExamState() {
+  if (!examState) return null;
+  return {
+    quizId: examState.quizId,
+    title: examState.title,
+    currentIndex: examState.currentIndex,
+    answers: examState.answers,
+    locked: examState.locked,
+    mode: examState.mode,
+    timeLeft: examState.timeLeft,
+    questions: examState.questions,
+    blocks: examState.blocks,
+    blockIndex: examState.blockIndex,
+    blockTimeLeft: examState.blockTimeLeft,
+    globalTimeLeft: examState.globalTimeLeft,
+    qpq: examState.qpq,
+    caseBlocks: examState.caseBlocks,
+    submitted: examState.submitted
+  };
+}
+window.snapshotExamState = snapshotExamState;
+
+window.openResumeQuiz = async function (state) {
+  if (!state || !state.questions) return alert('Sauvegarde incomplète.');
+  const quiz = {
+    id: state.quizId, title: state.title,
+    questions: state.questions,
+    blocks: state.caseBlocks || state.blocks || [],
+    display_mode: state.qpq ? 'QPQ' : 'NORMAL',
+    seconds_per_question: 60
+  };
+  startExam(quiz, { mode: state.mode === 'exam' ? 'exam' : 'training', timeLimitSeconds: state.timeLeft });
+  examState.answers = state.answers;
+  examState.locked = state.locked;
+  examState.currentIndex = state.currentIndex;
+  examState.blockIndex = state.blockIndex || 0;
+  examState.blockTimeLeft = state.blockTimeLeft || 0;
+  examState.globalTimeLeft = state.globalTimeLeft || 0;
+  renderExamQuestion();
+};
 
 function bindQuestionCard(i) {
   if (isQuestionLocked(i)) return;
@@ -4368,6 +4662,7 @@ function bindQuestionCard(i) {
   card.querySelectorAll('input[name="q' + i + '"]').forEach(inp => {
     inp.addEventListener('click', () => {
       examState.answers[i] = QuizCore.toggleReponse(examState.answers[i], q, parseInt(inp.value));
+      if (window.ResumeQuiz) window.ResumeQuiz.save(snapshotExamState());
       if (examState.mode === 'training' && mode === 'radio' && examState.answers[i].length > 0) {
         examState.locked[i] = true;
         renderExamQuestion();
@@ -4410,7 +4705,20 @@ function renderExamQuestion() {
   }
   $('examBody').innerHTML = caseHtml + questionCardHtml(i);
   bindQuestionCard(i);
+  if (q && examState && examState.submitted && examState.quizId) {
+    const slot = document.querySelector('.question-comments[data-q-index="' + i + '"]');
+    if (slot) renderCommentsForQuestion(slot, i);
+  }
 }
+
+async function renderCommentsForQuestion(container, i) {
+  try {
+    const QC = await loadModule('question-comments', 'QuestionComments');
+    const quizId = (examState && examState.quizId) || '';
+    await QC.render(container, quizId, i);
+  } catch (e) { container.innerHTML = ''; }
+}
+window.renderCommentsForQuestion = renderCommentsForQuestion;
 
 function renderQpqBlock() {
   const bi = examState.blockIndex;
@@ -4485,6 +4793,7 @@ $('examSubmitBtn').addEventListener('click', async () => {
 });
 
 async function finishExam() {
+  if (examState && examState.quizId && window.ResumeQuiz) window.ResumeQuiz.clear(examState.quizId);
   if (!examState || examState.submitted) return;
   examState.submitted = true;
   $('qpqTimers').classList.remove('show');
@@ -5028,4 +5337,5 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
 <script src="/admin-extras.js" defer></script>
 <script src="/push-client.js" defer></script>
 <script src="/download-android.js" defer></script>
+<script src="/a11y.js" defer></script>
 </body></html>

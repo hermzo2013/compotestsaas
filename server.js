@@ -236,6 +236,31 @@ const push = createPush();
 app.use('/api/push/subscribe', pushSubscribeLimiter);
 app.use('/api', push.router);
 
+// Route admin : toggle reminders
+app.post('/api/admin/settings/reminders', async (req, res, next) => {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token) return res.status(401).json({ error: 'Auth requise.' });
+  try {
+    const u = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }
+    });
+    if (!u.ok) return res.status(401).json({ error: 'Session invalide.' });
+    const user = await u.json();
+    const adminEmail = String(process.env.ADMIN_EMAIL || '').toLowerCase();
+    const isAdmin = user.app_metadata?.is_admin === true || user.app_metadata?.role === 'admin' || (adminEmail && user.email?.toLowerCase() === adminEmail);
+    if (!isAdmin) return res.status(403).json({ error: 'Réservé admin.' });
+    const enabled = !!req.body.enabled;
+    const r = await fetch(`${process.env.SUPABASE_URL}/rest/v1/app_settings?id=eq.1`, {
+      method: 'PATCH',
+      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reminders_enabled: enabled })
+    });
+    if (!r.ok) throw new Error('Erreur PATCH app_settings');
+    res.json({ ok: true, reminders_enabled: enabled });
+  } catch (e) { next(e); }
+});
+
 app.use('/api', authenticate);
 app.use('/api/generate-post-test', generateUserLimiter);
 app.use('/api/admin/users', adminUsersLimiter, adminUsersWriteLimiter);
@@ -598,4 +623,15 @@ if (process.env.NODE_ENV !== 'test') {
   app.listen(port, '0.0.0.0', () => {
     logger.info({ port, env: process.env.NODE_ENV || 'development' }, 'Serveur démarré');
   });
+}
+
+// Cron : rappel inactif quotidien à 10h GMT
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(async () => {
+    const now = new Date();
+    if (now.getUTCHours() === 10) {
+      try { await push.sendReminderToInactive(); }
+      catch (e) { logger.warn({ err: e.message }, 'rappel inactif'); }
+    }
+  }, 3600_000).unref();
 }

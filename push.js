@@ -430,5 +430,50 @@ export function createPush({ env = process.env, clock = Date.now, supabase: inje
     timer.unref?.();
   }
 
-  return { router, notifyNewQuiz, flushQuizzes, getStats, broadcast, ready };
+  // ---------- Rappel 7 jours (inactivité) ----------
+  async function sendReminderToInactive() {
+    await ready;
+    if (!st.sb || (!st.webOk && !st.fcmOk)) return { sent: 0 };
+    const settings = await st.sb.from('app_settings').select('reminders_enabled').eq('id', 1).maybeSingle();
+    if (settings.data && settings.data.reminders_enabled === false) return { sent: 0 };
+
+    const now = clock();
+    const sevenDaysAgo = new Date(now - 7 * 86400_000).toISOString();
+    const oneWeekAgo = new Date(now - 7 * 86400_000).toISOString();
+
+    const { data: subscribers } = await st.sb.from('push_subscriptions').select('user_id').eq('notify_messages', true);
+    const userIds = [...new Set((subscribers || []).map(s => s.user_id))];
+
+    let sent = 0;
+    for (const uid of userIds) {
+      try {
+        const { data: row } = await st.sb.from('comptest_data')
+          .select('last_quiz_completed_at,last_reminder_sent_at')
+          .eq('user_id', uid).maybeSingle();
+        if (!row) continue;
+        if (row.last_reminder_sent_at && row.last_reminder_sent_at > oneWeekAgo) continue;
+        const lastActivity = row.last_quiz_completed_at;
+        if (lastActivity && lastActivity > sevenDaysAgo) continue;
+        const payload = {
+          title: 'Ça fait une semaine ! 👋',
+          body: 'Prêt(e) pour une petite révision ? 📚',
+          url: '/?tab=library',
+          tag: 'reminder-inactive',
+          kind: 'reminder'
+        };
+        const rows = await listTargets('notify_messages');
+        const mine = rows.filter(r => r.user_id === uid);
+        if (mine.length) {
+          await sendGrouped(mine, () => payload);
+          await st.sb.from('comptest_data').update({ last_reminder_sent_at: new Date(now).toISOString() }).eq('user_id', uid);
+          sent += mine.length;
+        }
+      } catch (e) {
+        log.warn({ err: e.message, uid }, 'rappel inactif échoué');
+      }
+    }
+    return { sent };
+  }
+
+  return { router, notifyNewQuiz, flushQuizzes, getStats, broadcast, ready, sendReminderToInactive };
 }
