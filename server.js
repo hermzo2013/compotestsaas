@@ -83,6 +83,7 @@ const generateUserLimiter = limiter({ windowMs: 60 * 60 * 1000, max: Number(proc
 const adminUsersLimiter = limiter({ max: 30, keyGenerator: (req) => req.user?.id || req.ip, message: tooMany('(administration)') });
 const adminUsersWriteLimiter = limiter({ max: 10, skip: (req) => req.method === 'GET', keyGenerator: (req) => `w:${req.user?.id || req.ip}`, message: tooMany('(administration)') });
 const pushSubscribeLimiter = limiter({ max: Number(process.env.PUSH_SUBSCRIBE_LIMIT || 5), message: { error: 'Trop de tentatives d\'activation, réessaie dans une minute.' } });
+const pushBroadcastLimiter = limiter({ max: Number(process.env.PUSH_BROADCAST_LIMIT || 10), keyGenerator: (req) => req.user?.id || req.ip, message: tooMany('(notifications de la communauté)') });
 
 app.use('/api', globalApiLimiter);
 app.use('/api/generate-post-test', generateLimiter);
@@ -238,6 +239,25 @@ app.use('/api', push.router);
 app.use('/api', authenticate);
 app.use('/api/generate-post-test', generateUserLimiter);
 app.use('/api/admin/users', adminUsersLimiter, adminUsersWriteLimiter);
+
+// ==========================================
+// 💬 COMMUNAUTÉ : notification à tous les abonnés (appelée par le front après chaque message publié)
+// authenticate (ci-dessus, via app.use('/api', authenticate)) garantit un utilisateur connecté : req.user.id
+// ==========================================
+app.post('/api/push/broadcast', pushBroadcastLimiter, async (req, res) => {
+  const { title, body, url } = req.body || {};
+  if (typeof title !== 'string' || typeof body !== 'string' || !title.trim() || !body.trim()) {
+    return res.status(400).json({ error: 'Titre et message obligatoires.' });
+  }
+  try {
+    // excludeUserId : l'auteur du message ne reçoit pas sa propre notification
+    const r = await push.broadcast({ title, body, url: typeof url === 'string' ? url : '/?tab=community', excludeUserId: req.user.id });
+    res.json({ ok: true, sent: r.delivered, recipients: r.recipients });
+  } catch (e) {
+    logger.error({ err: e.message }, 'POST /api/push/broadcast');
+    res.status(500).json({ error: 'Erreur serveur notifications.' });
+  }
+});
 
 // ==========================================
 // ← AI ENGINE : montage du routeur IA

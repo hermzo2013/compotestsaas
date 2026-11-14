@@ -311,6 +311,109 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 .chat-attach-preview span {overflow: hidden;text-overflow: ellipsis;white-space: nowrap;flex: 1;}
 .chat-attach-preview button {background: transparent;border: 0;color: var(--red);font-weight: 800;cursor: pointer;padding: 0;font-size: 14px;}
 
+/* ==========================================
+   🎤 NOTES VOCALES (Communauté)
+   ========================================== */
+/* Bouton micro : même gabarit que le trombone */
+.chat-mic-btn {
+  background: #ECFDF5; color: var(--navy); border: 1px solid #D1D5DB;
+  border-radius: 8px; width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px; padding: 0; flex-shrink: 0;
+  transition: background .2s;
+}
+.chat-mic-btn:hover { background: #D1FAE5; }
+
+/* Pendant l'enregistrement : bouton rouge qui pulse */
+.chat-mic-btn.recording {
+  background: #EF4444; border-color: #EF4444; color: #fff;
+  animation: micPulse 1.2s ease-out infinite;
+}
+@keyframes micPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); }
+  70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}
+
+/* Zone « enregistrement en cours » : 🔴 00:05 ▓▓▓░░ [⏹️ Arrêter] */
+.voice-recorder {
+  display: none; align-items: center; gap: 8px;
+  background: #FEF2F2; border: 1px solid #FECACA;
+  border-radius: 10px; padding: 6px 10px; margin-bottom: 6px;
+  font-size: 12px; color: #991B1B; font-weight: 700;
+}
+.voice-rec-dot { animation: micBlink 1s steps(2, start) infinite; }
+@keyframes micBlink { to { visibility: hidden; } }
+.voice-rec-time { font-variant-numeric: tabular-nums; min-width: 40px; }
+.voice-rec-bar { flex: 1; height: 6px; background: #FECACA; border-radius: 3px; overflow: hidden; }
+.voice-rec-bar > div { height: 100%; width: 0; background: #EF4444; border-radius: 3px; transition: width .25s linear; }
+.voice-recorder button, .voice-preview button {
+  background: #fff; border: 1px solid #D1D5DB; border-radius: 8px;
+  padding: 4px 10px; font-size: 11px; font-weight: 800;
+  cursor: pointer; color: var(--navy);
+}
+.voice-recorder button:hover, .voice-preview button:hover { background: #F3F4F6; }
+
+/* Zone « aperçu » : ▶️ 00:05 [🗑️ Supprimer] */
+.voice-preview {
+  display: none; align-items: center; gap: 8px;
+  background: #F0FDF4; border: 1px solid #A7F3D0;
+  border-radius: 10px; padding: 6px 10px; margin-bottom: 6px;
+  font-size: 12px; color: var(--navy); font-weight: 700;
+}
+.voice-preview .voice-play { background: #10B981; color: #fff; border-color: #10B981; }
+.voice-preview .voice-play:hover { background: #059669; }
+.voice-preview .voice-del { margin-left: auto; color: var(--red); border-color: #FECACA; background: #FEF2F2; }
+.voice-preview .voice-del:hover { background: #FEE2E2; }
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-mic-btn.recording, .voice-rec-dot { animation: none; }
+}
+
+/* ==========================================
+   🎤 LECTEUR AUDIO CUSTOM (style WhatsApp)
+   ========================================== */
+.chat-audio-player {
+  margin-top: 6px;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  border-radius: 22px;
+  padding: 6px 14px 6px 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  user-select: none;
+}
+.chat-audio-play {
+  flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%;
+  background: #10B981; color: #fff; border: 0; font-size: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: transform .15s, background .2s; padding: 0; line-height: 1;
+}
+.chat-audio-play:hover { background: #059669; }
+.chat-audio-play:active { transform: scale(.92); }
+.chat-audio-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.chat-audio-wave {
+  display: flex; align-items: center; gap: 2px;
+  height: 22px; cursor: pointer; position: relative;
+}
+.chat-audio-wave .bar {
+  flex: 1; background: #A7F3D0; border-radius: 2px;
+  min-height: 4px; transition: background .12s;
+}
+.chat-audio-wave .bar.played { background: #10B981; }
+.chat-audio-info {
+  display: flex; justify-content: space-between;
+  font-size: 10px; font-weight: 700; color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.chat-audio-info .cur { color: #065F46; }
+@media (max-width: 480px) {
+  .chat-audio-play { width: 34px; height: 34px; font-size: 16px; }
+  .chat-audio-wave { height: 18px; }
+}
+
 @media(max-width: 480px) {
   #communityPopup {width: calc(100vw - 20px);right: 10px !important;bottom: 85px !important;max-height: calc(100vh - 100px);}
   #communityWidget {bottom: 15px !important;right: 15px !important;width: 55px;height: 55px;font-size: 24px;}
@@ -1013,7 +1116,21 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
     <input type="file" id="communityFileInput" accept="image/*,.pdf" style="display:none" onchange="onAttachmentSelected(this)">
     <div class="chat-input-toolbar" id="attachmentToolbar">
       <button type="button" class="chat-attach-btn" onclick="document.getElementById('communityFileInput').click()" title="Joindre un fichier"><i class='bx bx-paperclip'></i></button>
+      <!-- 🎤 Bouton micro : charge community-voice.js à la demande puis démarre -->
+      <button type="button" id="voiceMicBtn" class="chat-mic-btn" onclick="window.onVoiceMicClick && window.onVoiceMicClick()" title="Enregistrer une note vocale">🎤</button>
       <div id="attachmentPreview" class="chat-attach-preview" style="display:none;"><span id="attachmentName"></span><button type="button" onclick="removeAttachment()" title="Retirer">✖</button></div>
+    </div>
+    <!-- 🎤 Zone affichée PENDANT l'enregistrement -->
+    <div id="voiceRecorder" class="voice-recorder">
+      <span class="voice-rec-dot">🔴</span><span id="voiceTimer" class="voice-rec-time">00:00</span>
+      <div class="voice-rec-bar"><div id="voiceBarFill"></div></div>
+      <button type="button" onclick="window.CommunityVoice && CommunityVoice.stop()">⏹️ Arrêter</button>
+    </div>
+    <!-- 🎤 Aperçu APRÈS l'enregistrement (écouter / supprimer avant de publier) -->
+    <div id="voicePreview" class="voice-preview">
+      <button type="button" id="voicePlayBtn" class="voice-play" onclick="window.CommunityVoice && CommunityVoice.togglePreview()" title="Écouter">▶️</button>
+      <span id="voicePreviewDuration">00:00</span>
+      <button type="button" class="voice-del" onclick="window.CommunityVoice && CommunityVoice.cancel()">🗑️ Supprimer</button>
     </div>
     <textarea id="communityInput" class="community-chat-textarea" placeholder="Écrivez votre message..." maxlength="1000"></textarea>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
@@ -1040,7 +1157,7 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
       </div>
       <div class="help-field">
         <label for="helpMessage">Décris ton problème</label>
-        <textarea id="helpMessage" placeholder="Ex. Je n'arrive pas à me connecter, mon matricule suivi de mon nouveau mot de passe souhaité..." required maxlength="2000"></textarea>
+        <textarea id="helpMessage" placeholder="Ex. Je n'arrive pas à me connecter..." required maxlength="2000"></textarea>
       </div>
       <div class="help-modal-footer">
         <button type="button" class="ghost" onclick="closeHelpModal()">Annuler</button>
@@ -1148,7 +1265,6 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
         </label>
         <span id="globalNotificationsStatus" style="font-size:12px;color:var(--muted);font-weight:700;"></span>
       </div>
-      <p style="color:var(--muted);font-size:13px;margin-top:0;">Écris un message : il sera envoyé en notification aux utilisateurs qui ont activé les notifications. Les nouveaux quiz sont notifiés automatiquement.</p>
       <p style="color:var(--muted);font-size:13px;margin-top:0;">Écris un message : il sera envoyé en notification aux utilisateurs qui ont activé les notifications. Les nouveaux quiz sont notifiés automatiquement.</p>
       <label style="font-weight:700;font-size:13px;">Titre <span id="pushTitleCount" style="color:var(--muted);font-weight:400">0/80</span></label>
       <input id="pushTitle" maxlength="80" placeholder="Ex. Nouveau cours disponible" style="width:100%;margin:4px 0 12px;">
@@ -1435,10 +1551,6 @@ const API_BASE = 'https://compotestsaas.onrender.com';
 if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 /* =====================================================================
    RÉVISIO — ÉTAPE 2 : fonctions PURES (aucun accès DOM, Supabase ni timer)
-   - Fonctionne dans le navigateur (window.QuizCore) ET dans Node (module.exports)
-   - Aucune fonction ne modifie ses arguments : elles renvoient de nouvelles valeurs
-   Convention : un "choix" est identifié par son INDEX dans question.options
-   (c'est déjà le cas de `correct` dans ton format actuel).
    ===================================================================== */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -1446,13 +1558,10 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  // ---------------------------------------------------------------
-  // Types
-  // ---------------------------------------------------------------
   const TYPES = Object.freeze({
-    QCD: 'QCD',                    // choix dichotomique : Vrai/Faux ou A/B (2 options, 1 réponse, radio)
-    QCM_UNIQUE: 'QCM_UNIQUE',      // 1 réponse (radio)
-    QCM_MULTIPLE: 'QCM_MULTIPLE'   // plusieurs réponses (checkbox)
+    QCD: 'QCD',
+    QCM_UNIQUE: 'QCM_UNIQUE',
+    QCM_MULTIPLE: 'QCM_MULTIPLE'
   });
 
   const BADGES = Object.freeze({
@@ -1464,26 +1573,16 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
 
   const isInt = (n) => typeof n === 'number' && Number.isInteger(n);
 
-  // ---------------------------------------------------------------
-  // Normalisation : ancien format -> nouveau format (sans migration de données)
-  //   tf         -> QCD (Vrai/Faux), max_select 1, correct [i]
-  //   mcq        -> QCD si exactement 2 options (A/B), sinon QCM_UNIQUE ; max_select 1, correct [i]
-  //   mcq_multi  -> QCM_MULTIPLE, max_select = nb d'options (pas de limite avant), correct [..]
-  //   short      -> inchangé (non géré par toggleReponse)
-  // Un nouveau format est complété (max_select / correct) mais jamais écrasé.
-  // ---------------------------------------------------------------
   function normalizeQuestion(q) {
     if (!q || typeof q !== 'object') return q;
     const options = Array.isArray(q.options) ? q.options : [];
     const asArray = (c) => Array.isArray(c) ? c.slice() : (isInt(c) ? [c] : []);
-
     switch (q.type) {
       case 'tf':
         return { ...q, type: TYPES.QCD, max_select: 1, correct: asArray(q.correct), _legacyType: q.type };
       case 'mcq':
         return { ...q, type: options.length === 2 ? TYPES.QCD : TYPES.QCM_UNIQUE, max_select: 1, correct: asArray(q.correct), _legacyType: q.type };
       case 'mcq_multi': {
-        // la limite fournie par le sujet ("3 réponses maximum") est conservée si elle est cohérente
         const ms = (isInt(q.max_select) && q.max_select >= 2 && q.max_select <= options.length) ? q.max_select : Math.max(2, options.length);
         return { ...q, type: TYPES.QCM_MULTIPLE, max_select: ms, correct: asArray(q.correct), _legacyType: q.type };
       }
@@ -1494,7 +1593,7 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
       case TYPES.QCM_MULTIPLE:
         return { ...q, max_select: isInt(q.max_select) ? q.max_select : Math.max(2, options.length), correct: asArray(q.correct) };
       default:
-        return { ...q }; // 'short' ou inconnu
+        return { ...q };
     }
   }
 
@@ -1502,38 +1601,21 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
     return !!q && (q.type === TYPES.QCD || q.type === TYPES.QCM_UNIQUE || q.type === TYPES.QCM_MULTIPLE);
   }
 
-  /** 'radio' si max_select === 1, sinon 'checkbox' */
   function getSelectionMode(question) {
     return question && question.max_select === 1 ? 'radio' : 'checkbox';
   }
 
-  // ---------------------------------------------------------------
-  // toggleReponse(reponses, question, idChoix)
-  //   reponses : tableau des index déjà cochés POUR CETTE QUESTION
-  //   Renvoie un NOUVEAU tableau (trié, sans doublon). Ne modifie jamais `reponses`.
-  //   - max_select === 1 : radio. Cliquer le choix déjà coché le décoche.
-  //                        Cliquer un autre choix remplace la sélection.
-  //   - max_select  > 1  : checkbox. Ajoute / retire. Si la limite est atteinte,
-  //                        l'ajout est IGNORÉ (le tableau est renvoyé tel quel) :
-  //                        utilise isSelectionFull() pour afficher "maximum atteint".
-  //   - idChoix invalide (hors options, non entier) : aucun changement.
-  // ---------------------------------------------------------------
   function toggleReponse(reponses, question, idChoix) {
     const current = Array.isArray(reponses) ? [...new Set(reponses.filter(isInt))] : [];
     const sortedCopy = (arr) => arr.slice().sort((a, b) => a - b);
-
     if (!question || !isInt(idChoix)) return sortedCopy(current);
     const n = Array.isArray(question.options) ? question.options.length : 0;
     if (idChoix < 0 || idChoix >= n) return sortedCopy(current);
-
     const max = isInt(question.max_select) && question.max_select >= 1 ? question.max_select : 1;
     const already = current.includes(idChoix);
-
-    if (max === 1) {
-      return already ? [] : [idChoix];
-    }
+    if (max === 1) return already ? [] : [idChoix];
     if (already) return sortedCopy(current.filter(x => x !== idChoix));
-    if (current.length >= max) return sortedCopy(current);   // limite atteinte : ignoré
+    if (current.length >= max) return sortedCopy(current);
     return sortedCopy([...current, idChoix]);
   }
 
@@ -1542,14 +1624,10 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
     return max > 1 && Array.isArray(reponses) && reponses.length >= max;
   }
 
-  /** Un choix peut-il être (dé)coché ? Utile pour griser les cases quand le maximum est atteint. */
   function isChoiceDisabled(reponses, question, idChoix) {
     return !(reponses || []).includes(idChoix) && isSelectionFull(reponses, question);
   }
 
-  // ---------------------------------------------------------------
-  // Correction : égalité exacte d'ensembles (comme ton QCM multi actuel)
-  // ---------------------------------------------------------------
   function isReponseCorrecte(question, reponses) {
     if (!isChoiceQuestion(question) || !Array.isArray(question.correct)) return false;
     const a = [...new Set(reponses || [])].sort((x, y) => x - y);
@@ -1557,17 +1635,13 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
     return a.length === b.length && a.every((v, i) => v === b[i]);
   }
 
-  // ---------------------------------------------------------------
-  // Validation côté client (miroir de quiz_question_is_valid en SQL)
-  // Renvoie { valid: boolean, errors: string[] }
-  // ---------------------------------------------------------------
   function validateQuestion(q) {
     const errors = [];
     if (!isChoiceQuestion(q)) return { valid: false, errors: ['Type inconnu ou non géré.'] };
     if (typeof q.text !== 'string' || !q.text.trim()) errors.push('Le texte est vide.');
     const opts = Array.isArray(q.options) ? q.options : [];
     if (opts.length < 2 || opts.length > 10) errors.push('Il faut entre 2 et 10 options.');
-    if (q.type === TYPES.QCD && opts.length !== 2) errors.push('QCD exige exactement 2 options (Vrai/Faux ou A/B).');
+    if (q.type === TYPES.QCD && opts.length !== 2) errors.push('QCD exige exactement 2 options.');
     if (opts.some(o => typeof o !== 'string' || !o.trim())) errors.push('Une option est vide.');
     const ms = q.max_select;
     if (!isInt(ms)) errors.push('max_select doit être un entier.');
@@ -1586,10 +1660,6 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
     return { valid: errors.length === 0, errors };
   }
 
-  // ---------------------------------------------------------------
-  // Formatage
-  // ---------------------------------------------------------------
-  /** 75 -> "01:15" ; 3725 -> "1:02:05" ; valeurs négatives/invalides -> "00:00" */
   function formatTime(totalSeconds) {
     const s = Math.max(0, Math.floor(Number(totalSeconds) || 0));
     const h = Math.floor(s / 3600);
@@ -1599,14 +1669,12 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
     return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
   }
 
-  /** Badge à afficher pour une question (accepte aussi l'ancien format). */
   function getTypeBadge(question) {
     const q = normalizeQuestion(question);
     if (q && q.type === 'short') return BADGES.SHORT;
     return (q && BADGES[q.type]) || BADGES.QCM_UNIQUE;
   }
 
-  /** Consigne affichée sous la question. */
   function formatSelectionHint(question) {
     const ms = question && question.max_select;
     const n = question && Array.isArray(question.options) ? question.options.length : 0;
@@ -1615,30 +1683,16 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
     return '';
   }
 
-  // ---------------------------------------------------------------
-  // Chronos & blocs (mode QPQ)
-  // ---------------------------------------------------------------
-  /** Durée d'un bloc = nb de questions x secondes par question. */
   function computeBlockTimeSeconds(nbQuestions, secondsPerQuestion) {
     const n = Math.max(0, Math.floor(Number(nbQuestions) || 0));
     const spq = Math.max(0, Math.floor(Number(secondsPerQuestion) || 0));
     return n * spq;
   }
 
-  /**
-   * Regroupe les questions d'un quiz en blocs ordonnés.
-   *  - QPQ    : suit quiz.blocks ; chaque question est rattachée via block_id,
-   *             en conservant son ordre d'origine ; globalIndex = position dans quiz.questions.
-   *  - NORMAL : un seul bloc "Questions" contenant tout.
-   * Les questions sans block_id valide en mode QPQ sont ignorées du regroupement
-   * (la contrainte SQL les empêche, mais on reste défensif).
-   * Renvoie : [{ id, title, case_block, questions:[{...q, globalIndex}], timeSeconds }]
-   */
   function groupQuestionsIntoBlocks(quiz) {
     const questions = (quiz && Array.isArray(quiz.questions)) ? quiz.questions : [];
     const spq = quiz && quiz.seconds_per_question;
     const mode = quiz && quiz.display_mode === 'QPQ' ? 'QPQ' : 'NORMAL';
-
     if (mode === 'NORMAL' || !Array.isArray(quiz.blocks) || quiz.blocks.length === 0) {
       const qs = questions.map((q, i) => ({ ...q, globalIndex: i }));
       return [{ id: 'all', title: 'Questions', case_block: null, questions: qs, timeSeconds: computeBlockTimeSeconds(qs.length, spq) }];
@@ -1670,15 +1724,6 @@ if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudfl
   };
 });
 
-
-/* =====================================================================
-   RÉVISIO — Extraction du texte d'un PDF (navigateur, pdf.js 3.x)
-   - regroupe les morceaux de texte par ligne (comme avant)
-   - recolle les mots que pdf.js coupe en deux ("vra i", "cé réales") grâce à l'écart réel entre morceaux
-   - lit les BONNES RÉPONSES COLORÉES (rouge / vert) : un morceau coloré est précédé de "✓ "
-     (la couleur n'existe pas dans getTextContent : on rend la page sur un canvas hors écran
-      et on regarde les pixels sous chaque morceau de texte)
-   ===================================================================== */
 async function detectAnswerColorItems(pdfjsLib, page, items, createCanvas, scale, renderFn) {
   scale = scale || 1.5;
   const viewport = page.getViewport({ scale });
@@ -1701,17 +1746,16 @@ async function detectAnswerColorItems(pdfjsLib, page, items, createCanvas, scale
     let ink = 0, red = 0, green = 0;
     for (let i = 0; i < d.length; i += 4) {
       const r = d[i], g = d[i + 1], b = d[i + 2];
-      if (r + g + b > 690) continue;            // quasi blanc
+      if (r + g + b > 690) continue;
       ink++;
       if (isRed(r, g, b)) red++; else if (isGreen(r, g, b)) green++;
     }
     return ink >= 6 && ((red >= 4 && red / ink >= 0.45) || (green >= 4 && green / ink >= 0.45));
   });
-  canvas.width = 0; canvas.height = 0;          // libère la mémoire
+  canvas.width = 0; canvas.height = 0;
   return flags;
 }
 
-/** Colle les morceaux d'une ligne : espace seulement s'il y a un vrai écart entre deux morceaux */
 function joinPdfLinePieces(pieces) {
   let out = '';
   for (let i = 0; i < pieces.length; i++) {
@@ -1745,7 +1789,7 @@ async function extractPdfText(pdfjsLib, pdf, opts) {
       try {
         flags = await detectAnswerColorItems(pdfjsLib, page, items, createCanvas, 1.5, opts.renderPage ? (ctx, cv, vp) => opts.renderPage(page, p, ctx, cv, vp) : null);
         const colored = flags.filter(Boolean).length, texty = items.filter(i => i.str.trim()).length || 1;
-        if (colored / texty > 0.35) flags = null;      // page presque entièrement colorée : ce n'est pas un marquage de réponses
+        if (colored / texty > 0.35) flags = null;
       } catch (e) { flags = null; }
     }
     const lines = [];
@@ -1764,8 +1808,6 @@ async function extractPdfText(pdfjsLib, pdf, opts) {
   }
   return { text: pages.join('\n'), markedItems };
 }
-
-
 
 let examState = null;
 let supabaseClient = null;
@@ -1791,6 +1833,36 @@ let examTimer = null;
 let totalExamTimeSeconds = 0;
 
 window.currentQuizToStart = null;
+
+/* ==========================================
+   🎤 CHARGEMENT DYNAMIQUE DE community-voice.js
+   ========================================== */
+let voiceModulePromise = null;
+
+// Charge community-voice.js une seule fois (cache la promesse)
+function loadVoiceModule() {
+  if (!voiceModulePromise) {
+    voiceModulePromise = import('/community-voice.js')
+      .then(() => window.CommunityVoice)
+      .catch((err) => {
+        console.error('[CommunityVoice] échec du chargement :', err);
+        voiceModulePromise = null; // autorise une nouvelle tentative
+        throw new Error('Module vocal indisponible.');
+      });
+  }
+  return voiceModulePromise;
+}
+
+// Handler global du bouton 🎤 (appelé par onclick=)
+window.onVoiceMicClick = async function () {
+  try {
+    const Voice = await loadVoiceModule();
+    if (Voice.isRecording()) Voice.stop();
+    else Voice.start();
+  } catch (e) {
+    alert(e.message || "Impossible de charger le module d'enregistrement.");
+  }
+};
 
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
@@ -1955,6 +2027,7 @@ function handleSession(session) {
     $('clearHistoryBtn').style.display = 'none';
     $('communityWidget').style.display = 'none';
     $('communityPopup').classList.remove('show');
+    if (window.CommunityVoice) CommunityVoice.cancel();   // 🎤 coupe le micro / supprime une note non envoyée
     $('adminCourseForm').classList.add('hide');
     if (unreadCheckInterval) { clearInterval(unreadCheckInterval); unreadCheckInterval = null; }
     updateCommunityBadge(0);
@@ -2192,9 +2265,6 @@ function renderCourses() {
 }
 window.renderCourses = renderCourses;
 
-// Barre d'actions des cours : même logique que la bibliothèque.
-// Sticky natif (CSS) ; en mode fallback (body.library-bar-fixed) on passe en position: fixed
-// uniquement pour l'accordéon visible à l'écran, avec un espace réservé pour éviter les sauts.
 function updateCourseToolbarsFixed() {
   if (!document.body.classList.contains('library-bar-fixed')) return;
   document.querySelectorAll('.course-accordion').forEach(acc => {
@@ -2585,7 +2655,6 @@ function renderLibraryList() {
   const searchQuery = $('quizSearch') ? $('quizSearch').value : '';
   const { keyword, level } = parseSearchQuery(searchQuery);
   const hasFilter = currentLibraryFilter !== 'all' || !!level || !!keyword;
-  // Une recherche ou un filtre porte sur tous les quiz : on charge alors les pages restantes
   if (hasFilter && libraryState.hasMore && !libraryState.loadingMore && !libraryState.autoFailed) loadMoreLibrary(true);
   const moreHtml = (!hasFilter && libraryState.hasMore)
     ? `<div style="text-align:center;padding:12px"><button id="libraryMoreBtn" class="ghost" onclick="loadMoreLibrary()">Charger plus (${Math.max(0, libraryState.total - libraryCache.length)} restants)</button></div>` : '';
@@ -2622,7 +2691,6 @@ function renderLibraryList() {
 }
 window.renderLibraryList = renderLibraryList;
 
-// Bibliothèque paginée : 20 quiz par page ; le serveur répond avec { quizzes, page, total, hasMore } (ancien format accepté)
 const LIBRARY_PAGE_SIZE = 20;
 let libraryState = { page: 1, hasMore: false, total: 0, loadingMore: false, autoFailed: false };
 
@@ -2648,7 +2716,7 @@ async function loadMoreLibrary(all = false) {
       libraryState.total = data.total || libraryCache.length;
     } while (all && libraryState.hasMore);
   } catch (e) {
-    libraryState.autoFailed = true;                       // évite de réessayer en boucle
+    libraryState.autoFailed = true;
     console.warn('Chargement de la suite de la bibliothèque impossible :', e.message);
   } finally {
     libraryState.loadingMore = false;
@@ -2688,8 +2756,6 @@ async function deleteSelectedQuizzes() {
   const deleteBtn = $('libraryDeleteBtn');
   if (deleteBtn) deleteBtn.disabled = true;
   try {
-    // Même route serveur que la suppression individuelle (clé service role, non bloquée par RLS).
-    // Un delete direct via supabaseClient peut "réussir" sans rien supprimer si une règle RLS l'interdit.
     const results = await Promise.allSettled(ids.map(id => fetchWithAuth(`/api/quizzes/${id}`, null, 'DELETE')));
     const failed = [];
     results.forEach((r, i) => {
@@ -2729,7 +2795,6 @@ async function moveSelectedQuizzes() {
 }
 window.moveSelectedQuizzes = moveSelectedQuizzes;
 
-// Données d'un quiz utiles à l'examen (questions + blocs + mode d'affichage + temps)
 function quizForExam(q) {
   return {
     title: q.title, questions: q.questions,
@@ -2743,7 +2808,6 @@ function quizForExam(q) {
 function isQpqQuiz(quiz) {
   return !!quiz && quiz.display_mode === 'QPQ' && Array.isArray(quiz.blocks) && quiz.blocks.length > 0;
 }
-// En mode QPQ le mode (entraînement / examen) et le temps par question ne se choisissent pas : un avis les remplace
 function applyModeModalForQuiz(quiz) {
   const qpq = isQpqQuiz(quiz);
   $('modeBtnContainer').classList.toggle('hide', qpq);
@@ -2878,7 +2942,7 @@ window.openEditQuiz = (idx) => {
     if (isMulti) correctArr = Array.isArray(q.correct) ? q.correct : [];
     else if (q.type === 'mcq' || q.type === 'tf') correctArr = [q.correct];
     const typeLabel = { mcq: 'Choix unique', mcq_multi: 'QCM multi', tf: 'Vrai/Faux', short: 'Réponse courte' }[q.type] || 'Choix unique';
-    const canEditOptions = q.type !== 'tf'; // Vrai/Faux : on garde 2 options fixes (texte modifiable)
+    const canEditOptions = q.type !== 'tf';
     let optsHtml = '';
     if (q.type === 'short') {
       optsHtml = `<input type="text" class="edit-short-input" data-q="${qi}" value="${esc(q.correct || '')}" placeholder="Réponse attendue" style="width:100%;padding:10px;border:1px solid #D1D5DB;border-radius:8px">`;
@@ -2894,7 +2958,6 @@ window.openEditQuiz = (idx) => {
       + `</div>`;
   }).join('');
 
-  // Délégation d'événements (réassignée à chaque ouverture, donc sans empilement)
   body.onchange = (e) => {
     const inp = e.target;
     if (!inp.classList || !inp.classList.contains('edit-opt-check')) return;
@@ -2940,9 +3003,8 @@ $('editSaveBtn').addEventListener('click', async () => {
     }
 
     const rows = [...document.querySelectorAll(`#editQuizBody .edit-opt[data-q="${qi}"]`)];
-    if (rows.length === 0) return { ...q, text: newText }; // pas d'options affichées : on ne touche qu'au texte
+    if (rows.length === 0) return { ...q, text: newText };
 
-    // Les nouveaux index sont recalculés d'après l'ordre réel des lignes (gère ajouts / suppressions / options vides)
     const options = [];
     const correctIdx = [];
     rows.forEach(row => {
@@ -2972,13 +3034,21 @@ $('editSaveBtn').addEventListener('click', async () => {
 function toggleCommunityPopup() {
   const popup = $('communityPopup');
   if (!popup) return;
-  if (popup.classList.contains('show')) popup.classList.remove('show');
+  if (popup.classList.contains('show')) {
+    popup.classList.remove('show');
+    if (window.CommunityVoice && CommunityVoice.isRecording()) CommunityVoice.stop();
+  }
   else { popup.classList.add('show'); loadCommunity(); markRepliesAsRead(); }
 }
 window.toggleCommunityPopup = toggleCommunityPopup;
 
 function onAttachmentSelected(input) {
   if (!input.files || input.files.length === 0) return;
+  if (window.CommunityVoice && (CommunityVoice.hasRecording() || CommunityVoice.isRecording())) {
+    alert("Supprimez d'abord la note vocale (🗑️) pour joindre un fichier.");
+    input.value = '';
+    return;
+  }
   const file = input.files[0];
   if (file.size > 5 * 1024 * 1024) { alert("Fichier trop volumineux (5 Mo maximum)."); input.value = ''; return; }
   selectedAttachment = file;
@@ -3007,6 +3077,152 @@ async function uploadAttachment(file) {
 }
 window.uploadAttachment = uploadAttachment;
 
+// ==========================================
+// 🎤 LECTEUR AUDIO CUSTOM (style WhatsApp)
+// ==========================================
+
+// Un seul lecteur joue à la fois (comportement WhatsApp)
+let activeAudioEl = null;
+let activeAudioId = null;
+
+// Génère un motif de waveform stable pour un post donné
+function waveBarsFor(postId, count = 28) {
+  let seed = 0;
+  for (let i = 0; i < postId.length; i++) seed = (seed * 31 + postId.charCodeAt(i)) >>> 0;
+  const bars = [];
+  for (let i = 0; i < count; i++) {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    const v = (seed >>> 16) % 100;
+    bars.push(30 + Math.round((v / 99) * 70)); // hauteur 30-100 %
+  }
+  return bars;
+}
+
+function renderAudioPlayer(postId, url, duration) {
+  const bars = waveBarsFor(postId);
+  const durTxt = duration ? fmtVoiceTime(duration) : '--:--';
+  const barsHtml = bars.map(pct => `<span class="bar" style="height:${pct}%"></span>`).join('');
+  return `<div class="chat-audio-player" data-audio-id="${esc(postId)}">
+    <button type="button" class="chat-audio-play" data-audio-play="${esc(postId)}" aria-label="Lecture">▶️</button>
+    <div class="chat-audio-main">
+      <div class="chat-audio-wave" data-audio-wave="${esc(postId)}">${barsHtml}</div>
+      <div class="chat-audio-info">
+        <span class="cur" data-audio-cur="${esc(postId)}">00:00</span>
+        <span data-audio-dur="${esc(postId)}">${durTxt}</span>
+      </div>
+    </div>
+  </div>
+  <audio preload="metadata" src="${esc(url)}" data-audio-src="${esc(postId)}" style="display:none"></audio>`;
+}
+
+// Attache les événements après injection dans le DOM
+function bindAudioPlayers() {
+  document.querySelectorAll('[data-audio-play]').forEach(btn => {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+    const id = btn.dataset.audioPlay;
+    const audio = document.querySelector(`audio[data-audio-src="${CSS.escape(id)}"]`);
+    const wave = document.querySelector(`[data-audio-wave="${CSS.escape(id)}"]`);
+    const curEl = document.querySelector(`[data-audio-cur="${CSS.escape(id)}"]`);
+    const durEl = document.querySelector(`[data-audio-dur="${CSS.escape(id)}"]`);
+    if (!audio || !wave) return;
+
+    // Résout la durée réelle dès que les métadonnées sont chargées
+    const applyDuration = () => {
+      if (isFinite(audio.duration) && audio.duration > 0 && durEl) {
+        durEl.textContent = fmtVoiceTime(audio.duration);
+      }
+    };
+    audio.addEventListener('loadedmetadata', applyDuration);
+    if (audio.readyState >= 1) applyDuration();
+
+    // Progression : met à jour les barres "jouées"
+    const paintProgress = () => {
+      const d = audio.duration;
+      const pct = (isFinite(d) && d > 0) ? (audio.currentTime / d) : 0;
+      const bars = wave.querySelectorAll('.bar');
+      const playedCount = Math.round(pct * bars.length);
+      bars.forEach((b, i) => b.classList.toggle('played', i < playedCount));
+      if (curEl) curEl.textContent = fmtVoiceTime(audio.currentTime);
+    };
+    audio.addEventListener('timeupdate', paintProgress);
+    audio.addEventListener('seeked', paintProgress);
+
+    // Fin de lecture
+    audio.addEventListener('ended', () => {
+      btn.textContent = '▶️';
+      btn.setAttribute('aria-label', 'Lecture');
+      audio.currentTime = 0;
+      paintProgress();
+      if (activeAudioEl === audio) { activeAudioEl = null; activeAudioId = null; }
+    });
+
+    // Play / pause
+    btn.addEventListener('click', () => {
+      if (activeAudioEl && activeAudioEl !== audio) {
+        activeAudioEl.pause();
+        activeAudioEl.currentTime = 0;
+        const prevBtn = document.querySelector(`[data-audio-play="${CSS.escape(activeAudioId || '')}"]`);
+        if (prevBtn) { prevBtn.textContent = '▶️'; prevBtn.setAttribute('aria-label', 'Lecture'); }
+      }
+      if (audio.paused) {
+        audio.play().then(() => {
+          btn.textContent = '⏸️';
+          btn.setAttribute('aria-label', 'Pause');
+          activeAudioEl = audio;
+          activeAudioId = id;
+        }).catch(err => {
+          console.warn('Lecture audio refusée :', err);
+          btn.textContent = '▶️';
+        });
+      } else {
+        audio.pause();
+        btn.textContent = '▶️';
+        btn.setAttribute('aria-label', 'Lecture');
+        activeAudioEl = null;
+        activeAudioId = null;
+      }
+    });
+
+    // Clic sur la waveform → seek
+    wave.addEventListener('click', (e) => {
+      const rect = wave.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        audio.currentTime = pct * audio.duration;
+        paintProgress();
+      }
+    });
+  });
+}
+
+// Utilitaire : formate une durée (secondes → mm:ss)
+function fmtVoiceTime(sec) {
+  sec = Math.max(0, Math.round(Number(sec) || 0));
+  return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+}
+
+// ==========================================
+// 🔔 NOTIFICATION AUTOMATIQUE : prévient tous les abonnés d'un nouveau message
+// ==========================================
+async function notifyCommunityPost({ authorName, content, attachmentType }) {
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    const token = data && data.session && data.session.access_token;
+    if (!token) return;
+    let body;
+    if (attachmentType === 'audio') body = '🎤 Note vocale';
+    else if (attachmentType) body = '📎 Pièce jointe';
+    else body = content.length > 80 ? content.slice(0, 80) + '…' : content;
+    const res = await fetch(API_BASE + '/api/push/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ title: '💬 Nouveau message de ' + authorName, body, url: '/?tab=community' })
+    });
+    if (!res.ok) console.warn('Notification communauté non envoyée (HTTP ' + res.status + ')');
+  } catch (e) { console.warn('Notification communauté non envoyée :', e); }
+}
+
 async function loadCommunity() {
   if (!supabaseClient) return;
   const list = $('communityList');
@@ -3026,16 +3242,29 @@ async function loadCommunity() {
       }
       let attachmentHtml = '';
       if (post.attachment_url) {
-        if (post.attachment_type === 'image') attachmentHtml = `<div class="chat-attachment"><img src="${esc(post.attachment_url)}" alt="Pièce jointe" onclick="window.open('${esc(post.attachment_url)}', '_blank')"></div>`;
+        if (post.attachment_type === 'audio') {
+          // 🎤 Note vocale : lecteur custom (style WhatsApp)
+          let dur = 0;
+          const mHash = String(post.attachment_url).match(/#d=(\d+)/);
+          const mName = String(post.attachment_url).match(/_d(\d+)\./);
+          if (mHash) dur = parseInt(mHash[1], 10);
+          else if (mName) dur = parseInt(mName[1], 10);
+          attachmentHtml = renderAudioPlayer(post.id, post.attachment_url, dur);
+        }
+        else if (post.attachment_type === 'image') attachmentHtml = `<div class="chat-attachment"><img src="${esc(post.attachment_url)}" alt="Pièce jointe" onclick="window.open('${esc(post.attachment_url)}', '_blank')"></div>`;
         else attachmentHtml = `<div class="chat-attachment"><a href="${esc(post.attachment_url)}" target="_blank" rel="noopener"><i class='bx bx-file'></i> Télécharger le fichier</a></div>`;
       }
+      const hideText = post.attachment_type === 'audio' && post.content === '🎤 Note vocale';
+      const contentHtml = hideText ? '' : `<div class="chat-msg-content">${esc(post.content)}</div>`;
       const replyBtn = !isAuthor ? `<button onclick="startReply('${post.id}', '${post.user_id}', '${esc(post.author_name || 'Anonyme')}')">↩️ Répondre</button>` : '';
       const deleteBtn = canDelete ? `<button class="del" onclick="deleteCommunityPost('${post.id}')">🗑️</button>` : '';
       return `<div class="chat-msg ${isAuthor ? 'is-mine' : ''}">
         <div class="chat-msg-header"><span class="chat-msg-author">👤 ${esc(post.author_name || 'Anonyme')}</span><span class="chat-msg-date">${date}</span></div>
-        ${replyContext}<div class="chat-msg-content">${esc(post.content)}</div>${attachmentHtml}
+        ${replyContext}${contentHtml}${attachmentHtml}
         <div class="chat-msg-actions">${replyBtn}${deleteBtn}</div></div>`;
     }).join('');
+    // 🎤 Attache les lecteurs audio custom après injection du HTML
+    bindAudioPlayers();
   } catch (e) { list.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px;">Erreur réseau : ${esc(e.message)}</p>`; }
 }
 window.loadCommunity = loadCommunity;
@@ -3063,27 +3292,79 @@ async function postMessage() {
   if (!supabaseClient || !currentUser) return;
   const input = $('communityInput');
   const content = input.value.trim();
-  if (!content && !selectedAttachment) return alert("Écrivez un message ou joignez un fichier.");
+
+  // 🎤 Le module vocal est-il chargé et actif ?
+  const Voice = window.CommunityVoice || null;
+  if (Voice && Voice.isRecording()) {
+    return alert("Arrêtez l'enregistrement (⏹️) avant de publier.");
+  }
+  const isVoice = !!(Voice && Voice.hasRecording());
+
+  if (!content && !selectedAttachment && !isVoice) {
+    return alert("Écrivez un message, joignez un fichier ou enregistrez une note vocale.");
+  }
   if (content.length > 1000) return alert("Message trop long (1000 caractères max).");
+
   const btn = $('communityPostBtn');
   const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '⏳...';
+
   try {
     let attachmentUrl = null, attachmentType = null;
-    if (selectedAttachment) {
+
+    if (isVoice) {
+      // 🎤 Note vocale : upload du Blob
+      btn.textContent = '🎤 Envoi...';
+      const blob = Voice.getBlob();
+      const dur = Voice.getDuration();
+      const ext = Voice.extFor(blob.type);
+      const filePath = `${currentUser.id}/voice_${Date.now()}_d${dur}.${ext}`;
+      const { error: upErr } = await supabaseClient.storage
+        .from('community_attachments')
+        .upload(filePath, blob, { contentType: blob.type || 'audio/webm', cacheControl: '3600', upsert: false });
+      if (upErr) throw new Error('Erreur upload vocal : ' + upErr.message);
+      const { data: urlData } = supabaseClient.storage.from('community_attachments').getPublicUrl(filePath);
+      attachmentUrl = urlData.publicUrl + '#d=' + dur;
+      attachmentType = 'audio';
+    } else if (selectedAttachment) {
       btn.textContent = '📎 Envoi...';
       attachmentUrl = await uploadAttachment(selectedAttachment);
       attachmentType = selectedAttachment.type.startsWith('image/') ? 'image' : 'file';
     }
+
     const authorName = currentUser.user_metadata?.full_name || (currentUser.email || '').split('@')[0];
-    const postData = { user_id: currentUser.id, author_name: authorName, content: content || '(pièce jointe)', attachment_url: attachmentUrl, attachment_type: attachmentType };
-    if (replyingTo) { postData.reply_to_id = replyingTo.postId; postData.recipient_id = replyingTo.userId; }
+    const postData = {
+      user_id: currentUser.id,
+      author_name: authorName,
+      content: content || (isVoice ? '🎤 Note vocale' : '(pièce jointe)'),
+      attachment_url: attachmentUrl,
+      attachment_type: attachmentType
+    };
+    if (replyingTo) {
+      postData.reply_to_id = replyingTo.postId;
+      postData.recipient_id = replyingTo.userId;
+    }
+
     const { error } = await supabaseClient.from('community_posts').insert(postData);
-    if (error) alert("Erreur : " + error.message);
-    else { input.value = ''; $('communityCharCount').textContent = '0'; removeAttachment(); cancelReply(); await loadCommunity(); }
-  } catch (e) { alert("Erreur : " + e.message); }
-  finally { btn.disabled = false; btn.textContent = originalText; }
+    if (error) {
+      alert('Erreur : ' + error.message);
+    } else {
+      // 🔔 Notification push à tous les abonnés (sans attendre la réponse serveur)
+      notifyCommunityPost({ authorName, content, attachmentType });
+      input.value = '';
+      $('communityCharCount').textContent = '0';
+      removeAttachment();
+      if (Voice) Voice.cancel();
+      cancelReply();
+      await loadCommunity();
+    }
+  } catch (e) {
+    alert('Erreur : ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
 }
 window.postMessage = postMessage;
 
@@ -3098,6 +3379,23 @@ async function deleteCommunityPost(postId) {
 }
 window.deleteCommunityPost = deleteCommunityPost;
 
+const communitySeenKey = () => 'revisio_community_seen_' + (currentUser ? currentUser.id : '');
+async function markCommunitySeen() {
+  if (!supabaseClient || !currentUser) return;
+  const { data } = await supabaseClient.from('community_posts').select('created_at').order('created_at', { ascending: false }).limit(1);
+  localStorage.setItem(communitySeenKey(), (data && data[0] && data[0].created_at) || '1970-01-01T00:00:00Z');
+}
+
+async function countNewCommunityPosts() {
+  if (!localStorage.getItem(communitySeenKey())) { await markCommunitySeen(); return 0; }
+  const popup = $('communityPopup');
+  if (popup && popup.classList.contains('show')) { await markCommunitySeen(); return 0; }
+  const since = localStorage.getItem(communitySeenKey());
+  const { data, error } = await supabaseClient.from('community_posts').select('id,recipient_id').neq('user_id', currentUser.id).gt('created_at', since).limit(100);
+  if (error) { console.error('Erreur countNewCommunityPosts:', error); return 0; }
+  return (data || []).filter(p => p.recipient_id !== currentUser.id).length;
+}
+
 async function checkUnreadReplies() {
   if (!supabaseClient || !currentUser) return;
   try {
@@ -3106,7 +3404,8 @@ async function checkUnreadReplies() {
     if (error) return console.error('Erreur checkUnreadReplies:', error);
     const unread = (data || []).filter(post => !readIds.includes(post.id));
     unreadRepliesCount = unread.length;
-    updateCommunityBadge(unreadRepliesCount);
+    const newPosts = await countNewCommunityPosts();
+    updateCommunityBadge(unreadRepliesCount + newPosts);
   } catch (e) { console.error('Erreur réseau checkUnreadReplies:', e); }
 }
 window.checkUnreadReplies = checkUnreadReplies;
@@ -3128,6 +3427,7 @@ async function markRepliesAsRead() {
       localStorage.setItem('comptest_read_community', JSON.stringify(newReadIds));
     }
     unreadRepliesCount = 0;
+    await markCommunitySeen();
     updateCommunityBadge(0);
   } catch (e) { console.error('Erreur markRepliesAsRead:', e); }
 }
@@ -3534,7 +3834,6 @@ $('pdfFile').addEventListener('change', async function() {
       } else if (name.endsWith('.pdf')) {
         status.textContent = 'Extraction du PDF...';
         const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
-        // texte + bonnes réponses lues dans les couleurs (rouge/vert) ; les mots coupés par pdf.js sont recollés
         const extracted = await extractPdfText(pdfjsLib, pdf, { onProgress: (p, n) => { status.textContent = `Extraction du PDF... page ${p}/${n}`; } });
         text = extracted.text;
       } else if (name.endsWith('.docx')) {
@@ -3578,11 +3877,10 @@ async function fetchWithAuth(url, body, method = 'POST') {
   const res = await fetch(API_BASE + url, options);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || data.message || `Erreur serveur (${res.status})`);
-  if (method !== 'GET' && /^\/api\/quizzes/.test(url)) window.__quizzesDirty = true;   // le cache du navigateur est ignoré au prochain chargement
+  if (method !== 'GET' && /^\/api\/quizzes/.test(url)) window.__quizzesDirty = true;
   return data;
 }
 
-// Données "riches" renvoyées par le serveur (blocs d'étude de cas, mode QPQ, temps, barème)
 function extrasFromParse(data) {
   const ex = {};
   if (!data) return ex;
@@ -3598,11 +3896,9 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit, extr
   extras = extras || {};
   const level = $('quizLevel').value;
   if (!level) { alert("Veuillez sélectionner un niveau avant de générer ou extraire."); return; }
-  // On ne coupe jamais un quiz à blocs (étude de cas) : un bloc ne doit pas être séparé de ses questions.
   const hasBlocks = Array.isArray(extras.blocks) && extras.blocks.length > 0;
   if (hasBlocks) shouldSplit = false;
   let degraded = false;
-  // Si la base n'a pas encore les colonnes QPQ (quiz_qpq_schema.sql non exécuté), on enregistre quand même le quiz sans elles.
   const postQuiz = async (payload, withExtras) => {
     if (withExtras && Object.keys(extras).length) {
       try { return await fetchWithAuth('/api/quizzes', { ...payload, ...extras }); }
@@ -3630,7 +3926,7 @@ async function saveAndStartQuiz(baseTitle, subject, questions, shouldSplit, extr
       $('analysisStatus').textContent += degraded
         ? ' ✅ Publié (sans les blocs QPQ : exécute quiz_qpq_schema.sql dans Supabase pour les conserver).'
         : ' ✅ Publié !';
-      if (degraded) quizzesToStart[0] = { title: baseTitle, questions, ...extras };   // utilisable maintenant, mais non enregistré avec les blocs
+      if (degraded) quizzesToStart[0] = { title: baseTitle, questions, ...extras };
     } catch (e) {
       console.error('Erreur publication:', e);
       $('analysisStatus').textContent += ' ⚠️ Erreur de publication : ' + e.message;
@@ -3699,10 +3995,8 @@ $('extractTestBtn').addEventListener('click', async () => {
 // 📝 EXAMEN
 // ==========================================
 function startExam(quiz, options = { mode: 'training' }) {
-  // Toutes les questions sont ramenées au format commun de QuizCore (QCD / QCM_UNIQUE / QCM_MULTIPLE / short)
   const questions = (quiz.questions || []).map(q => QuizCore.normalizeQuestion(q));
 
-  // Mode QPQ : regroupement des questions en blocs (étude de cas + questions). Si les blocs sont incohérents, on retombe en mode normal.
   let blocks = null;
   if (options.qpq !== false && quiz.display_mode === 'QPQ') {
     const grouped = QuizCore.groupQuestionsIntoBlocks({ ...quiz, questions, seconds_per_question: quiz.seconds_per_question || 60 });
@@ -3786,7 +4080,6 @@ function updateTimerUI() {
   }
 }
 
-// ---------- QPQ : chronos (bloc + global), passage automatique au bloc suivant ----------
 function updateQpqTimersUI() {
   if (!examState || !examState.qpq) return;
   $('qpqBlockTimerText').textContent = QuizCore.formatTime(examState.blockTimeLeft);
@@ -3811,7 +4104,6 @@ function qpqTick() {
   if (examState.blockTimeLeft <= 0) qpqAdvance(true);
 }
 
-// Valide le bloc courant (définitivement) et passe au suivant ; après le dernier bloc, la copie est soumise.
 function qpqAdvance(auto) {
   if (!examState || !examState.qpq || examState.submitted) return;
   const isLast = examState.blockIndex >= examState.blocks.length - 1;
@@ -3854,7 +4146,6 @@ function closeExamView() {
   examState = null;
 }
 
-// ---------- présentation ----------
 function typeLabel(t) {
   return QuizCore.getTypeBadge({ type: t, options: [] }).label;
 }
@@ -3875,13 +4166,12 @@ function caseCardHtml(title, text, compact) {
   return `<div class="case-card ${compact ? 'compact' : ''}"><div class="case-card-title">📄 ${esc(title || 'Étude de cas')}</div><div class="case-card-text">${esc(text)}</div></div>`;
 }
 
-// Carte d'une question (identique en mode normal et en mode QPQ)
 function questionCardHtml(i) {
   const q = examState.questions[i];
   const ua = examState.answers[i];
   const isLocked = isQuestionLocked(i);
   const isShort = isShortQ(q);
-  const mode = isShort ? null : QuizCore.getSelectionMode(q);       // 'radio' (max_select = 1) ou 'checkbox' (max_select > 1)
+  const mode = isShort ? null : QuizCore.getSelectionMode(q);
   const sel = Array.isArray(ua) ? ua : [];
 
   let html = `<div class="exam-card" data-qi="${i}">
@@ -3899,7 +4189,7 @@ function questionCardHtml(i) {
     q.options.forEach((opt, j) => {
       const isSelected = sel.includes(j);
       const isCorrectOption = Array.isArray(q.correct) && q.correct.includes(j);
-      const full = !isLocked && QuizCore.isChoiceDisabled(sel, q, j);     // maximum de cases atteint
+      const full = !isLocked && QuizCore.isChoiceDisabled(sel, q, j);
 
       let cls = 'exam-opt';
       if (isLocked) {
@@ -3941,7 +4231,6 @@ function questionCardHtml(i) {
   return html;
 }
 
-// Met à jour les cases d'une question sans tout redessiner (garde la position de défilement)
 function paintChoices(i) {
   const q = examState.questions[i];
   const sel = Array.isArray(examState.answers[i]) ? examState.answers[i] : [];
@@ -3981,11 +4270,10 @@ function bindQuestionCard(i) {
 
   const mode = QuizCore.getSelectionMode(q);
   card.querySelectorAll('input[name="q' + i + '"]').forEach(inp => {
-    // "click" (et non "change") : un bouton radio déjà coché ne déclenche pas "change", alors qu'on veut pouvoir le décocher
     inp.addEventListener('click', () => {
       examState.answers[i] = QuizCore.toggleReponse(examState.answers[i], q, parseInt(inp.value));
       if (examState.mode === 'training' && mode === 'radio' && examState.answers[i].length > 0) {
-        examState.locked[i] = true;           // entraînement : un choix unique est corrigé tout de suite
+        examState.locked[i] = true;
         renderExamQuestion();
       } else {
         paintChoices(i);
@@ -4001,7 +4289,6 @@ function bindQuestionCard(i) {
   });
 }
 
-// ---------- affichage ----------
 function renderExamQuestion() {
   if (examState.qpq) return renderQpqBlock();
   const i = examState.currentIndex;
@@ -4020,7 +4307,6 @@ function renderExamQuestion() {
     $('examSubmitBtn').style.display = 'none';
   }
 
-  // Quiz à blocs affiché en mode normal : l'étude de cas reste visible au-dessus de sa question
   let caseHtml = '';
   if (q.block_id !== undefined && q.block_id !== null && examState.caseBlocks.length) {
     const b = examState.caseBlocks.find(x => String(x.id) === String(q.block_id));
@@ -4030,12 +4316,11 @@ function renderExamQuestion() {
   bindQuestionCard(i);
 }
 
-// Mode QPQ : un seul bloc à l'écran, étude de cas en haut (une seule fois), puis ses questions. Jamais de "Précédent" pendant l'épreuve.
 function renderQpqBlock() {
   const bi = examState.blockIndex;
   const nb = examState.blocks.length;
   const b = examState.blocks[bi];
-  const reviewing = examState.submitted;       // après la soumission : correction, navigation libre entre les blocs
+  const reviewing = examState.submitted;
   const isLast = bi === nb - 1;
 
   $('examMeta').textContent = `Bloc ${bi + 1}/${nb} : ${b.title}`;
@@ -4078,7 +4363,7 @@ function checkAnswer(q, ua) {
 $('examNextBtn').addEventListener('click', () => {
   if (!examState) return;
   if (examState.qpq) {
-    if (examState.submitted) {                       // correction : navigation libre
+    if (examState.submitted) {
       if (examState.blockIndex < examState.blocks.length - 1) { examState.blockIndex++; renderQpqBlock(); }
       return;
     }
@@ -4091,7 +4376,7 @@ $('examNextBtn').addEventListener('click', () => {
 $('examPrevBtn').addEventListener('click', () => {
   if (!examState) return;
   if (examState.qpq) {
-    if (examState.submitted && examState.blockIndex > 0) { examState.blockIndex--; renderQpqBlock(); }   // jamais pendant l'épreuve
+    if (examState.submitted && examState.blockIndex > 0) { examState.blockIndex--; renderQpqBlock(); }
     return;
   }
   if(examState.currentIndex > 0) { examState.currentIndex--; renderExamQuestion(); }
@@ -4153,17 +4438,23 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
     });
   }
 
-  // Raccourcis de l'icône (manifest.json) : /?tab=create | library | courses
   var wanted = new URLSearchParams(location.search).get('tab');
-  if (wanted) {
+  if (wanted === 'community') {
+    var cTries = 0, cTimer = setInterval(function () {
+      var w = document.getElementById('communityWidget'), p = document.getElementById('communityPopup');
+      if (w && p && w.style.display === 'flex') {
+        clearInterval(cTimer);
+        if (!p.classList.contains('show') && window.toggleCommunityPopup) window.toggleCommunityPopup();
+      } else if (++cTries > 20) clearInterval(cTimer);
+    }, 500);
+  } else if (wanted) {
     var tries = 0, timer = setInterval(function () {
       var btn = document.querySelector('.tab[data-tab="' + wanted.replace(/[^a-z]/g, '') + '"]');
-      if (btn && btn.offsetParent !== null) { clearInterval(timer); btn.click(); }      // visible = utilisateur connecté
+      if (btn && btn.offsetParent !== null) { clearInterval(timer); btn.click(); }
       else if (++tries > 20) clearInterval(timer);
     }, 500);
   }
 
-  // Invitation à installer (Android/Chrome : beforeinstallprompt ; iPhone : explication manuelle)
   var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   if (standalone) return;
   var KEY = 'revisio_install_dismissed', deferred = null;
@@ -4386,22 +4677,11 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
   async function saveKey(form) {
     var provider = form.dataset.form;
     var fd = new FormData(form);
-
     var apiKeyVal = (fd.get('apiKey') || '').toString().trim();
     var accountIdVal = (fd.get('accountId') || '').toString().trim();
     var modelVal = (fd.get('model') || '').toString().trim();
     var baseUrlVal = (fd.get('baseUrl') || '').toString().trim();
-
-    var payload = {
-      provider: provider,
-      apiKey: apiKeyVal,
-      accountId: accountIdVal || null,
-      model: modelVal || null,
-      baseUrl: baseUrlVal || null
-    };
-
-    console.log('[AIAdmin] saveKey payload =', JSON.stringify(payload));
-
+    var payload = { provider: provider, apiKey: apiKeyVal, accountId: accountIdVal || null, model: modelVal || null, baseUrl: baseUrlVal || null };
     var statusEl = form.querySelector('.ai-key-form-status');
     var saveBtn = form.querySelector('.btn-save');
     statusEl.textContent = 'Enregistrement et test en cours...';
@@ -4416,7 +4696,6 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
     } catch (e) {
       statusEl.textContent = '❌ ' + e.message;
       statusEl.style.color = 'var(--red)';
-      console.error('[AIAdmin] saveKey error:', e.message);
     } finally {
       saveBtn.disabled = false;
     }
@@ -4428,11 +4707,8 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
     btn.innerHTML = '⏳ Test...';
     try {
       var res = await api('/api/admin/ai/providers/test', 'POST', { provider: provider });
-      if (res.ok) {
-        alert('✅ ' + PROVIDER_LABELS[provider] + ' : connexion réussie.\nModèle : ' + (res.model || 'défaut'));
-      } else {
-        alert('❌ ' + PROVIDER_LABELS[provider] + ' : ' + (res.error || 'échec du test.'));
-      }
+      if (res.ok) alert('✅ ' + PROVIDER_LABELS[provider] + ' : connexion réussie.\nModèle : ' + (res.model || 'défaut'));
+      else alert('❌ ' + PROVIDER_LABELS[provider] + ' : ' + (res.error || 'échec du test.'));
       AIAdmin.loadProviders();
     } catch (e) {
       alert('❌ ' + e.message);
