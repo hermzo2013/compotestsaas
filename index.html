@@ -1131,7 +1131,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
 <a href="#mainApp" class="skip-link">Aller au contenu principal</a>
 
 <div id="sessionWarning" class="notice err hide" style="position:fixed;top:0;left:0;right:0;z-index:5000;border-radius:0;text-align:center;margin:0">
-  ⚠️ Ta session a expiré. <a href="#" onclick="supabaseClient.auth.signOut();return false;" style="color:#991B1B;font-weight:800">Reconnecte-toi</a>.
+  ⚠️ Ta session a expiré. <a href="#" onclick="document.getElementById('sessionWarning').classList.add('hide');return false;" style="color:#991B1B;font-weight:800">Reconnecte-toi</a>.
 </div>
 
 <header>
@@ -2072,7 +2072,6 @@ let selectedCourseIds = new Set();
 const ADMIN_EMAIL = "hermzo2013@gmail.com";
 let replyingTo = null;
 let unreadRepliesCount = 0;
-let unreadCheckInterval = null;
 let selectedAttachment = null;
 let currentLibraryFilter = 'all';
 let editingCourseId = null;
@@ -2248,7 +2247,7 @@ function detectStickySupport() {
     return;
   }
   try {
-    supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { storage: localStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false } });
+    supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { storage: localStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false }, global: { fetch: authDiagFetch } });
     console.log('✅ Supabase initialisé :', cfg.SUPABASE_URL);
     detectStickySupport();
     await initAuth();
@@ -2304,19 +2303,105 @@ async function preprocessImageForOCR(file) {
   });
 }
 
+// ===== AUTH SESSION (début) =====
+// Une seule instance Supabase (supabaseClient) ; le renouvellement du jeton est entièrement géré par
+// supabase-js (autoRefreshToken). Aucun refreshSession() manuel : un seul point d'entrée, onAuthStateChange.
+var authInitialHandled = false;
+var userInitiatedSignOut = false;
+
+// Diagnostic : si le serveur refuse un refresh (400), on journalise uniquement le statut et le code d'erreur
+// (ex. refresh_token_not_found, refresh_token_already_used, session_not_found). Jamais de jeton.
+function authDiagFetch(input, init) {
+  return fetch(input, init).then(function (res) {
+    try {
+      var url = typeof input === 'string' ? input : ((input && input.url) || '');
+      if (!res.ok && url.indexOf('/auth/v1/token') !== -1 && url.indexOf('grant_type=refresh_token') !== -1) {
+        res.clone().json().then(function (j) {
+          console.warn('[Auth] Renouvellement de session refusé', {
+            status: res.status,
+            error_code: j && (j.error_code || j.error),
+            message: j && (j.msg || j.message || j.error_description)
+          });
+        }).catch(function () {});
+      }
+    } catch (e) {}
+    return res;
+  });
+}
+
+function computeIsAdmin(user) {
+  return user?.app_metadata?.is_admin === true || user?.app_metadata?.role === 'admin' || Boolean(ADMIN_EMAIL && user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+}
+
+function showSessionExpired() { $('sessionWarning').classList.remove('hide'); }
+
+// Déconnexion de CETTE session uniquement (scope local) : le scope global par défaut révoque les
+// refresh tokens de tous les onglets/appareils, qui obtiennent alors un 400 au prochain renouvellement.
+async function signOutLocal(voluntary) {
+  userInitiatedSignOut = !!voluntary;
+  try { await supabaseClient.auth.signOut({ scope: 'local' }); }
+  catch (e) { console.warn('[Auth] signOut:', e && e.message); }
+}
+
+function routeAuthEvent(event, session) {
+  switch (event) {
+    case 'INITIAL_SESSION':
+      if (authInitialHandled) break;
+      authInitialHandled = true;
+      handleSession(session);
+      break;
+    case 'SIGNED_IN':
+      // supabase-js ré-émet SIGNED_IN quand l'onglet reprend le focus : on ne recharge que si l'utilisateur change
+      if (!currentUser || !session || !session.user || currentUser.id !== session.user.id) {
+        authInitialHandled = true;
+        handleSession(session);
+      }
+      break;
+    case 'TOKEN_REFRESHED':
+      if (session && session.user && currentUser && currentUser.id === session.user.id) {
+        currentUser = session.user;
+        if (computeIsAdmin(session.user) !== isAdmin) handleSession(session);
+      }
+      break;
+    case 'USER_UPDATED':
+      if (session && session.user && currentUser && currentUser.id === session.user.id) handleSession(session);
+      break;
+    case 'SIGNED_OUT': {
+      const wasLoggedIn = !!currentUser;
+      const voluntary = userInitiatedSignOut;
+      userInitiatedSignOut = false;
+      authInitialHandled = true;
+      handleSession(null);
+      if (wasLoggedIn && !voluntary) showSessionExpired(); // expirée / révoquée / déconnectée depuis un autre onglet
+      break;
+    }
+  }
+}
+
+// Appelé quand notre serveur répond « Session expirée » : on vérifie auprès de Supabase avant de déconnecter,
+// pour ne pas déconnecter sur une erreur transitoire (réseau, 5xx, limite de débit).
+async function handleServerAuthFailure() {
+  let definitive = false;
+  try {
+    const { data, error } = await supabaseClient.auth.getUser();
+    if (data && data.user) return false;
+    definitive = !error || error.name === 'AuthSessionMissingError' || [400, 401, 403].includes(error.status);
+  } catch (e) { definitive = false; }
+  if (!definitive) return false;
+  showSessionExpired();
+  await signOutLocal(false);
+  return true;
+}
+
 async function initAuth() {
   if (!supabaseClient) { $('authGate').classList.add('show'); return; }
-  supabaseClient.auth.onAuthStateChange((_event, session) => handleSession(session));
+  // Doc Supabase : ne pas exécuter de code Supabase asynchrone directement dans ce callback → on diffère.
+  supabaseClient.auth.onAuthStateChange((event, session) => { setTimeout(() => routeAuthEvent(event, session), 0); });
+  // Filet de sécurité si INITIAL_SESSION n'est pas émis. getSession() renouvelle seul un jeton expiré.
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if (session) {
-    const { data: refreshed } = await supabaseClient.auth.refreshSession();
-    const finalSession = refreshed?.session || session;
-    const { data: userData } = await supabaseClient.auth.getUser();
-    if (userData?.user) { handleSession({ user: userData.user }); return; }
-    handleSession(finalSession); return;
-  }
-  handleSession(null);
+  if (!authInitialHandled) { authInitialHandled = true; handleSession(session); }
 }
+// ===== AUTH SESSION (fin) =====
 
 function handleSession(session) {
   if (session && session.user) {
@@ -2343,10 +2428,8 @@ function handleSession(session) {
         if (RQ.hasPending()) RQ.showBanner();
       } catch (e) {}
     })();
-    checkUnreadReplies();
+    communityPoller.start(currentUser.id); // vérification immédiate puis sondage contrôlé (voir bloc COMMUNITY POLLING)
     if (window.PushUI) { try { window.PushUI.afterLogin(); } catch (e) { console.warn('PushUI:', e); } }
-    if (unreadCheckInterval) clearInterval(unreadCheckInterval);
-    unreadCheckInterval = setInterval(checkUnreadReplies, 30000);
   } else {
     currentUser = null; isAdmin = false; window.__isAdmin = false;
     $('authGate').classList.add('show');
@@ -2361,7 +2444,7 @@ function handleSession(session) {
     $('communityPopup').classList.remove('show');
     if (window.CommunityVoice) CommunityVoice.cancel();
     $('adminCourseForm').classList.add('hide');
-    if (unreadCheckInterval) { clearInterval(unreadCheckInterval); unreadCheckInterval = null; }
+    communityPoller.stop();
     updateCommunityBadge(0);
     selectedQuizIds.clear();
     updateLibraryActionBar();
@@ -2424,7 +2507,7 @@ $('registerForm').addEventListener('submit', async (e) => {
   finally { btn.disabled = false; btn.textContent = 'S\'inscrire'; }
 });
 
-$('logoutBtn').addEventListener('click', () => { if (supabaseClient) supabaseClient.auth.signOut(); });
+$('logoutBtn').addEventListener('click', () => { if (supabaseClient) signOutLocal(true); });
 $('pwdBtn').addEventListener('click', async () => {
   if (!supabaseClient) return;
   const newPwd = prompt("Entrez votre nouveau mot de passe (6 caractères minimum) :");
@@ -3698,35 +3781,216 @@ async function deleteCommunityPost(postId) {
 window.deleteCommunityPost = deleteCommunityPost;
 
 const communitySeenKey = () => 'revisio_community_seen_' + (currentUser ? currentUser.id : '');
+// ===== COMMUNITY POLLING (début) =====
+// Classification centralisée des erreurs Supabase : network | auth | authorization | server | sql
+function classifySupabaseError(err, status) {
+  var msg = String((err && (err.message || err.msg)) || err || '');
+  var code = String((err && (err.code || err.error_code)) || '');
+  var st = Number(status || (err && err.status) || 0);
+  if ((typeof navigator !== 'undefined' && navigator.onLine === false) ||
+      /failed to fetch|networkerror|network request failed|load failed|connection_closed|fetch failed|timed? ?out/i.test(msg) ||
+      (err && err.name === 'AuthRetryableFetchError')) return 'network';
+  if (st === 401 || /^PGRST30[1-3]$/.test(code) || /jwt/i.test(msg)) return 'auth';
+  if (st === 403 || code === '42501') return 'authorization';
+  if (st === 429 || st >= 500) return 'server';
+  return 'sql';
+}
+
+// Journal technique exploitable : statut, code et message PostgREST uniquement (jamais de jeton ni d'en-têtes).
+function logSupabaseError(scope, kind, err, status) {
+  console.warn('[Supabase]', {
+    scope: scope, kind: kind,
+    status: status || (err && err.status) || null,
+    code: (err && (err.code || err.error_code)) || null,
+    message: String((err && (err.message || err.msg)) || err || '').slice(0, 200)
+  });
+}
+
+function supaFail(scope, err, status, kind) {
+  return { ok: false, scope: scope, kind: kind || classifySupabaseError(err, status), error: err, status: status };
+}
+
 async function markCommunitySeen() {
-  if (!supabaseClient || !currentUser) return;
-  const { data } = await supabaseClient.from('community_posts').select('created_at').order('created_at', { ascending: false }).limit(1);
-  localStorage.setItem(communitySeenKey(), (data && data[0] && data[0].created_at) || '1970-01-01T00:00:00Z');
+  if (!supabaseClient || !currentUser) return { ok: false, kind: 'skipped' };
+  const r = await supabaseClient.from('community_posts').select('created_at').order('created_at', { ascending: false }).limit(1);
+  if (r.error) return supaFail('markCommunitySeen', r.error, r.status); // en cas d'erreur on n'écrase pas la date « vue »
+  localStorage.setItem(communitySeenKey(), (r.data && r.data[0] && r.data[0].created_at) || '1970-01-01T00:00:00Z');
+  return { ok: true };
 }
 
 async function countNewCommunityPosts() {
-  if (!localStorage.getItem(communitySeenKey())) { await markCommunitySeen(); return 0; }
   const popup = $('communityPopup');
-  if (popup && popup.classList.contains('show')) { await markCommunitySeen(); return 0; }
+  if (!localStorage.getItem(communitySeenKey()) || (popup && popup.classList.contains('show'))) {
+    const m = await markCommunitySeen();
+    return m.ok ? { ok: true, count: 0 } : Object.assign({ count: 0 }, m);
+  }
   const since = localStorage.getItem(communitySeenKey());
-  const { data, error } = await supabaseClient.from('community_posts').select('id,recipient_id').neq('user_id', currentUser.id).gt('created_at', since).limit(100);
-  if (error) { console.error('Erreur countNewCommunityPosts:', error); return 0; }
-  return (data || []).filter(p => p.recipient_id !== currentUser.id).length;
+  const r = await supabaseClient.from('community_posts').select('id,recipient_id').neq('user_id', currentUser.id).gt('created_at', since).limit(100);
+  if (r.error) return Object.assign({ count: 0 }, supaFail('countNewCommunityPosts', r.error, r.status));
+  return { ok: true, count: (r.data || []).filter(p => p.recipient_id !== currentUser.id).length };
 }
 
-async function checkUnreadReplies() {
-  if (!supabaseClient || !currentUser) return;
-  try {
-    const readIds = JSON.parse(localStorage.getItem('comptest_read_community') || '[]');
-    const { data, error } = await supabaseClient.from('community_posts').select('id').eq('recipient_id', currentUser.id);
-    if (error) return console.error('Erreur checkUnreadReplies:', error);
-    const unread = (data || []).filter(post => !readIds.includes(post.id));
-    unreadRepliesCount = unread.length;
-    const newPosts = await countNewCommunityPosts();
-    updateCommunityBadge(unreadRepliesCount + newPosts);
-  } catch (e) { console.error('Erreur réseau checkUnreadReplies:', e); }
+// Single-flight : un seul cycle de requêtes à la fois, les appelants simultanés partagent la même promesse.
+var unreadInFlight = null;
+function checkUnreadReplies() {
+  if (!supabaseClient || !currentUser) return Promise.resolve({ ok: false, kind: 'skipped' });
+  if (unreadInFlight) return unreadInFlight;
+  const uid = currentUser.id;
+  unreadInFlight = (async () => {
+    try {
+      let readIds = [];
+      try { readIds = JSON.parse(localStorage.getItem('comptest_read_community') || '[]'); } catch (e) {}
+      const r = await supabaseClient.from('community_posts').select('id').eq('recipient_id', uid);
+      if (r.error) return supaFail('checkUnreadReplies', r.error, r.status);
+      if (!currentUser || currentUser.id !== uid) return { ok: false, kind: 'skipped' };
+      const unread = (r.data || []).filter(post => !readIds.includes(post.id));
+      const n = await countNewCommunityPosts();
+      if (!n.ok) return n;
+      if (!currentUser || currentUser.id !== uid) return { ok: false, kind: 'skipped' };
+      unreadRepliesCount = unread.length;
+      updateCommunityBadge(unreadRepliesCount + n.count);
+      return { ok: true };
+    } catch (e) {
+      return supaFail('checkUnreadReplies', e);
+    } finally { unreadInFlight = null; }
+  })();
+  return unreadInFlight;
 }
 window.checkUnreadReplies = checkUnreadReplies;
+
+// Sondage contrôlé : setTimeout récursif (jamais de setInterval), backoff exponentiel après échec,
+// pause onglet masqué / hors ligne, reprise automatique, nettoyage complet à l'arrêt.
+var communityPollConfig = { base: 30000, max: 300000, minGap: 5000 };
+var communityPoller = (function () {
+  var timer = null, running = false, inFlight = false, failures = 0, lastKind = null, lastRun = 0, listening = false, uid = null;
+  function canRun() { return running && !!currentUser && !document.hidden && navigator.onLine !== false; }
+  function clearTimer() { if (timer) { clearTimeout(timer); timer = null; } }
+  function delay() {
+    if (!failures) return communityPollConfig.base;
+    var d = Math.min(communityPollConfig.max, communityPollConfig.base * Math.pow(2, failures));
+    return d + Math.floor(Math.random() * d * 0.1);
+  }
+  function schedule() { clearTimer(); if (canRun()) timer = setTimeout(tick, delay()); }
+  async function tick() {
+    timer = null;
+    if (!canRun() || inFlight) return;
+    inFlight = true; lastRun = Date.now();
+    try {
+      var r = await checkUnreadReplies();
+      if (!running) return;
+      if (r.ok) { if (failures) console.info('[Communauté] vérifications rétablies'); failures = 0; lastKind = null; }
+      else if (r.kind !== 'skipped') {
+        failures++;
+        if (failures === 1 || r.kind !== lastKind) logSupabaseError(r.scope || 'community-poll', r.kind, r.error, r.status);
+        lastKind = r.kind;
+      }
+    } finally { inFlight = false; schedule(); }
+  }
+  function wake(reset) {
+    if (!running) return;
+    clearTimer();
+    if (reset) failures = 0;
+    if (!reset && Date.now() - lastRun < communityPollConfig.minGap) { schedule(); return; }
+    tick();
+  }
+  function onVisibility() { if (document.hidden) clearTimer(); else wake(false); }
+  function onOnline() { wake(true); }
+  function onOffline() { clearTimer(); }
+  function listen(on) {
+    if (on === listening) return;
+    listening = on;
+    var f = on ? 'addEventListener' : 'removeEventListener';
+    document[f]('visibilitychange', onVisibility);
+    window[f]('online', onOnline);
+    window[f]('offline', onOffline);
+  }
+  return {
+    start: function (userId) {
+      if (running && uid === userId) return;
+      if (running) this.stop();
+      running = true; uid = userId; failures = 0; lastKind = null; lastRun = 0;
+      listen(true); wake(true);
+    },
+    stop: function () { running = false; uid = null; clearTimer(); listen(false); },
+    state: function () { return { running: running, failures: failures, hasTimer: !!timer, inFlight: inFlight, listening: listening }; }
+  };
+})();
+// ===== COMMUNITY POLLING (fin) =====
+
+// ===== REMINDER SETTING (début) =====
+// Lecture de app_settings.reminders_enabled côté navigateur : erreurs différenciées, valeur par défaut (activé)
+// signalée comme NON chargée, nouvelles tentatives bornées.
+var reminderSetting = { timer: null, attempts: 0, loaded: false, bound: false };
+var reminderRetryDelays = [5000, 15000, 45000];
+function reminderStatusText(msg) { var s = document.getElementById('reminderStatus'); if (s) s.textContent = msg; }
+
+async function fetchReminderSetting() {
+  if (!supabaseClient || !currentUser) return { ok: false, kind: 'auth', error: { message: 'pas de session' } };
+  const r = await supabaseClient.from('app_settings').select('reminders_enabled').eq('id', 1).maybeSingle();
+  if (r.error) return supaFail('app_settings.reminders_enabled', r.error, r.status);
+  if (!r.data) return { ok: true, missing: true, value: true };
+  return { ok: true, value: r.data.reminders_enabled !== false };
+}
+
+async function loadReminderSetting(toggle) {
+  var r;
+  try { r = await fetchReminderSetting(); } catch (e) { r = supaFail('app_settings.reminders_enabled', e); }
+  if (r.ok) {
+    reminderSetting.loaded = true;
+    toggle.checked = r.value;
+    if (r.missing) {
+      console.warn('[Rappels] app_settings (id=1) introuvable ou masquée par RLS : valeur par défaut = activé');
+      reminderStatusText('⚠️ Paramètre absent — valeur par défaut : activé');
+    } else reminderStatusText(r.value ? '✅ Activé' : '⏸️ Désactivé');
+    return r;
+  }
+  reminderSetting.loaded = false;
+  toggle.checked = true; // valeur par défaut affichée, explicitement signalée comme non chargée
+  logSupabaseError(r.scope || 'app_settings.reminders_enabled', r.kind, r.error, r.status);
+  var labels = { network: 'réseau', auth: 'session', authorization: 'accès refusé', server: 'serveur', sql: 'erreur base de données' };
+  var retry = reminderRetryDelays[reminderSetting.attempts];
+  if ((r.kind === 'network' || r.kind === 'server' || r.kind === 'auth') && retry !== undefined) {
+    reminderSetting.attempts++;
+    reminderStatusText('⚠️ Non chargé (' + labels[r.kind] + ') — valeur par défaut affichée, nouvelle tentative…');
+    reminderSetting.timer = setTimeout(function () { reminderSetting.timer = null; loadReminderSetting(toggle); }, retry);
+  } else {
+    reminderStatusText('⚠️ Non chargé (' + (labels[r.kind] || r.kind) + ') — valeur par défaut affichée');
+  }
+  return r;
+}
+
+function bindReminderToggle(toggle) {
+  if (reminderSetting.bound) return;
+  reminderSetting.bound = true;
+  toggle.addEventListener('change', async function () {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) throw new Error('Session expirée');
+      const r = await fetch(API_BASE + '/api/admin/settings/reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
+        body: JSON.stringify({ enabled: toggle.checked })
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      reminderSetting.loaded = true;
+      reminderStatusText(toggle.checked ? '✅ Activé' : '⏸️ Désactivé');
+    } catch (e) {
+      toggle.checked = !toggle.checked; // enregistrement refusé : on revient à l'état précédent
+      console.warn('[Rappels] enregistrement du paramètre échoué :', e && e.message);
+      reminderStatusText('❌ Enregistrement impossible');
+    }
+  });
+}
+
+function initReminderSetting() {
+  var toggle = document.getElementById('reminderToggle');
+  if (!toggle) return Promise.resolve();
+  if (reminderSetting.timer) { clearTimeout(reminderSetting.timer); reminderSetting.timer = null; }
+  reminderSetting.attempts = 0;
+  bindReminderToggle(toggle);
+  return loadReminderSetting(toggle);
+}
+// ===== REMINDER SETTING (fin) =====
 
 function updateCommunityBadge(count) {
   const badge = $('communityWidgetBadge');
@@ -3763,32 +4027,7 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
     $('atab-' + btn.dataset.atab).classList.remove('hide');
     if (btn.dataset.atab === 'messages') loadAdminMessages();
     if (btn.dataset.atab === 'push' && window.PushUI) window.PushUI.adminLoad();
-    if (btn.dataset.atab === 'push') {
-      (async () => {
-        const toggle = document.getElementById('reminderToggle');
-        if (!toggle) return;
-        const sb = supabaseClient;
-        if (sb) {
-          const { data } = await sb.from('app_settings').select('reminders_enabled').eq('id', 1).maybeSingle();
-          toggle.checked = !data || data.reminders_enabled !== false;
-        }
-        toggle.onchange = async () => {
-          const status = document.getElementById('reminderStatus');
-          try {
-            const { data: { session } } = await sb.auth.getSession();
-            const r = await fetch(API_BASE + '/api/admin/settings/reminders', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
-              body: JSON.stringify({ enabled: toggle.checked })
-            });
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            if (status) status.textContent = toggle.checked ? '✅ Activé' : '⏸️ Désactivé';
-          } catch (e) {
-            if (status) status.textContent = '❌ Erreur';
-          }
-        };
-      })();
-    }
+    if (btn.dataset.atab === 'push') initReminderSetting();
     if (btn.dataset.atab === 'push' && window.AdminExtras) window.AdminExtras.loadGlobalNotifications();
     if (btn.dataset.atab === 'stats' && window.AdminExtras) window.AdminExtras.loadStats();
   });
@@ -4210,12 +4449,9 @@ $('pdfFile').addEventListener('change', async function() {
 // ==========================================
 async function fetchWithAuth(url, body, method = 'POST') {
   if (!supabaseClient) throw new Error("Supabase non configuré. Vérifie config.js.");
-  let { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session || !session.access_token) {
-    const { data: refreshed, error: refreshErr } = await supabaseClient.auth.refreshSession();
-    if (refreshErr || !refreshed?.session) throw new Error("Session expirée. Reconnecte-toi pour continuer.");
-    session = refreshed.session;
-  }
+  // getSession() renouvelle automatiquement un jeton expiré ; pas de refreshSession() manuel.
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session || !session.access_token) throw new Error("Session expirée. Reconnecte-toi pour continuer.");
   const options = { method, headers: { 'Authorization': `Bearer ${session.access_token}` } };
   if (body) { options.headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(body); }
   const res = await fetch(API_BASE + url, options);
@@ -4303,7 +4539,7 @@ $('generatePostTestBtn').addEventListener('click', async () => {
       $('analysisStatus').textContent = '❌ Aucune question générée.';
     }
   } catch (err) {
-    if (/Session expirée/i.test(err.message)) { $('sessionWarning').classList.remove('hide'); setTimeout(() => supabaseClient.auth.signOut(), 1500); }
+    if (/Session expirée/i.test(err.message)) { handleServerAuthFailure().then(expired => { if (!expired) { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ Erreur d\'authentification temporaire, réessaie.'; } }); }
     else { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ ' + err.message; }
   } finally { btn.innerHTML = original; btn.disabled = false; if (aiSkeleton) aiSkeleton.remove(); }
 });
@@ -4330,7 +4566,7 @@ $('extractTestBtn').addEventListener('click', async () => {
       $('analysisStatus').textContent = '❌ ' + (data.message || 'Aucune question reconnue.');
     }
   } catch (err) {
-    if (/Session expirée/i.test(err.message)) { $('sessionWarning').classList.remove('hide'); setTimeout(() => supabaseClient.auth.signOut(), 1500); }
+    if (/Session expirée/i.test(err.message)) { handleServerAuthFailure().then(expired => { if (!expired) { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ Erreur d\'authentification temporaire, réessaie.'; } }); }
     else { $('analysisStatus').className = 'notice err'; $('analysisStatus').textContent = '❌ ' + err.message; }
   } finally { btn.innerHTML = original; btn.disabled = false; }
 });
