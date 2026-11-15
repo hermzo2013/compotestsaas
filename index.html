@@ -2092,9 +2092,10 @@ let isAdmin = false;
 let libraryCache = []; 
 
 // Expose les variables globales (déclarées avec let) aux modules externes via window.*
-['supabaseClient','currentUser','isAdmin','libraryCache'].forEach(function(n){
-  Object.defineProperty(window, n, { configurable: true, get: function(){ return eval(n); } });
-});
+Object.defineProperty(window, 'supabaseClient', { configurable: true, get: function () { return supabaseClient; } });
+Object.defineProperty(window, 'currentUser',    { configurable: true, get: function () { return currentUser; } });
+Object.defineProperty(window, 'isAdmin',        { configurable: true, get: function () { return isAdmin; } });
+Object.defineProperty(window, 'libraryCache',   { configurable: true, get: function () { return libraryCache; } });
 let coursesCache = [];
 let editingQuizId = null;
 let selectedQuizIds = new Set();

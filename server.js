@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import OpenAI from 'openai';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import rateLimit from 'express-rate-limit';
 import { detectAndParse, finalizeAiResult } from './instruction-detector.js';
@@ -22,13 +23,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
 app.set('trust proxy', (ip) => ip === '127.0.0.1' || ip.startsWith('10.') || ip === '::1'); // 🔒 trust proxy sécurisé
+const SITE_URL = (process.env.SITE_URL || 'https://compotestsaas.onrender.com').replace(/\/+$/, '');
 app.use(express.json({ limit: '10mb' }));
 
 // ==========================================
 // 🔒 SÉCURITÉ : FORCER LE HTTPS EN PRODUCTION
 // ==========================================
 app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https' && req.path !== '/api/health') {
     return res.redirect(301, 'https://' + req.headers.host + req.url);
   }
   next();
@@ -82,16 +84,26 @@ app.use((req, res, next) => {
   res.header(
     'Content-Security-Policy',
     "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "font-src 'self' https://fonts.gstatic.com data:; " +
-    "img-src 'self' data: https:; " +
+    // 'wasm-unsafe-eval' : WebAssembly de Tesseract (OCR). Pas de 'unsafe-eval' : aucun eval() dans l'application.
+    "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://compotestsaas.onrender.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; " +          // unpkg : boxicons.min.css
+    "font-src 'self' https://fonts.gstatic.com https://unpkg.com data:; " +                          // unpkg : polices boxicons
+    "img-src 'self' data: blob: https:; " +
     "media-src 'self' https: blob:; " +
-    "connect-src 'self' https://drumtgglrtmubdvkpwvl.supabase.co https://compotestsaas.onrender.com wss:; " +
+    // jsdelivr + tessdata : worker/core/données de langue de Tesseract et fichiers .map ; blob:/data: : images traitées par l'OCR
+    "connect-src 'self' https://drumtgglrtmubdvkpwvl.supabase.co https://compotestsaas.onrender.com https://cdn.jsdelivr.net https://tessdata.projectnaptha.com https://cdnjs.cloudflare.com https://unpkg.com wss: blob: data:; " +
+    "worker-src 'self' blob:; " +                                                                    // Tesseract crée son worker depuis un blob
     "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com; " +
+    "frame-ancestors 'self'; " +
     "object-src 'none'; " +
     "base-uri 'self';"
   );
+  // En-têtes de sécurité complémentaires
+  if (req.secure || req.headers['x-forwarded-proto'] === 'https') res.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-Frame-Options', 'SAMEORIGIN');
+  res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.header('Permissions-Policy', 'microphone=(self), camera=(), geolocation=(), payment=()');
   next();
 });
 
@@ -152,13 +164,33 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(__dirname, {
+// Liste blanche : seuls les fichiers nécessaires au navigateur sont servis. Le reste du dossier du projet
+// (code serveur, scripts SQL, guides, google-services.json, android/, tests/, …) n'est jamais exposé.
+// Un nouveau fichier front (ex. /mon-module.js) doit être ajouté ici ; tout ce qui est dans icons/ et public/ est public.
+const PUBLIC_FILES = new Set([
+  'index.html', 'config.js', 'sw.js', 'manifest.json', 'offline.html',
+  'favicon.png', 'favicon.ico', 'site.png', 'og-image.png', 'Revisio.apk',
+  'a11y.js', 'admin-extras.js', 'community-voice.js', 'consent.js', 'dark-mode.js', 'download-android.js',
+  'global-search.js', 'pdf-export.js', 'progress.js', 'push-client.js', 'question-comments.js',
+  'resume-quiz.js', 'ui-extras.js'
+]);
+const PUBLIC_DIRS = ['icons/', 'public/'];
+function isPublicAsset(reqPath) {
+  let rel;
+  try { rel = decodeURIComponent(reqPath); } catch { return false; }
+  if (rel.includes('\0') || rel.includes('\\') || rel.split('/').includes('..')) return false;
+  rel = rel.replace(/^\/+/, '');
+  return PUBLIC_FILES.has(rel) || PUBLIC_DIRS.some((d) => rel.startsWith(d) && rel.length > d.length);
+}
+const staticHandler = express.static(__dirname, {
   maxAge: '1d',
   index: false,
+  dotfiles: 'ignore',
   setHeaders: (res, filePath) => {
     if (/[\\/](index\.html|config\.js)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   }
-}));
+});
+app.use((req, res, next) => (isPublicAsset(req.path) ? staticHandler(req, res, next) : next()));
 
 const noCacheHeaders = {
   'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -168,7 +200,32 @@ const noCacheHeaders = {
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html'), { headers: noCacheHeaders }));
 app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html'), { headers: noCacheHeaders }));
 app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
+app.get('/favicon.ico', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'favicon.ico'), (err) => {
+    if (err && !res.headersSent) res.type('image/png').sendFile(path.join(__dirname, 'favicon.png')); // favicon.ico absent : on sert le PNG
+  });
+});
 app.get('/config.js', (_req, res) => res.sendFile(path.join(__dirname, 'config.js'), { headers: { 'Cache-Control': 'no-store' } }));
+
+// ==========================================
+// SEO : robots.txt + sitemap.xml
+// ==========================================
+const fileDate = (...p) => { try { return fs.statSync(path.join(__dirname, ...p)).mtime; } catch { return new Date(); } };
+app.get('/robots.txt', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=3600').type('text/plain')
+    .send(`User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+});
+app.get('/sitemap.xml', (_req, res) => {
+  const pages = [
+    { loc: '/', date: fileDate('index.html'), priority: '1.0' },
+    { loc: '/confidentialite', date: fileDate('public', 'confidentialite.html'), priority: '0.3' },
+    { loc: '/conditions', date: fileDate('public', 'conditions.html'), priority: '0.3' }
+  ];
+  const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    pages.map((p) => `  <url><loc>${SITE_URL}${p.loc}</loc><lastmod>${p.date.toISOString().slice(0, 10)}</lastmod><priority>${p.priority}</priority></url>`).join('\n') +
+    '\n</urlset>\n';
+  res.set('Cache-Control', 'public, max-age=3600').type('application/xml').send(xml);
+});
 
 // ==========================================
 // AUTHENTIFICATION
@@ -267,6 +324,31 @@ app.get('/api/settings', async (_req, res) => {
 const push = createPush();
 app.use('/api/push/subscribe', pushSubscribeLimiter);
 app.use('/api', push.router);
+
+// Route admin : toggle reminders
+app.post('/api/admin/settings/reminders', async (req, res, next) => {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!token) return res.status(401).json({ error: 'Auth requise.' });
+  try {
+    const u = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }
+    });
+    if (!u.ok) return res.status(401).json({ error: 'Session invalide.' });
+    const user = await u.json();
+    const adminEmail = String(process.env.ADMIN_EMAIL || '').toLowerCase();
+    const isAdmin = user.app_metadata?.is_admin === true || user.app_metadata?.role === 'admin' || (adminEmail && user.email?.toLowerCase() === adminEmail);
+    if (!isAdmin) return res.status(403).json({ error: 'Réservé admin.' });
+    const enabled = !!req.body.enabled;
+    const r = await fetch(`${process.env.SUPABASE_URL}/rest/v1/app_settings?id=eq.1`, {
+      method: 'PATCH',
+      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reminders_enabled: enabled })
+    });
+    if (!r.ok) throw new Error('Erreur PATCH app_settings');
+    res.json({ ok: true, reminders_enabled: enabled });
+  } catch (e) { next(e); }
+});
 
 app.use('/api', authenticate);
 app.use('/api/generate-post-test', generateUserLimiter);
@@ -654,4 +736,15 @@ if (process.env.NODE_ENV !== 'test') {
   app.listen(port, '0.0.0.0', () => {
     logger.info({ port, env: process.env.NODE_ENV || 'development' }, 'Serveur démarré');
   });
+}
+
+// Cron : rappel inactif quotidien à 10h GMT
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(async () => {
+    const now = new Date();
+    if (now.getUTCHours() === 10) {
+      try { await push.sendReminderToInactive(); }
+      catch (e) { logger.warn({ err: e.message }, 'rappel inactif'); }
+    }
+  }, 3600_000).unref();
 }
