@@ -21,8 +21,18 @@ const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.PORT || 3000);
 app.disable('x-powered-by');
-app.set('trust proxy', 1);
+app.set('trust proxy', (ip) => ip === '127.0.0.1' || ip.startsWith('10.') || ip === '::1'); // 🔒 trust proxy sécurisé
 app.use(express.json({ limit: '10mb' }));
+
+// ==========================================
+// 🔒 SÉCURITÉ : FORCER LE HTTPS EN PRODUCTION
+// ==========================================
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+    return res.redirect(301, 'https://' + req.headers.host + req.url);
+  }
+  next();
+});
 
 // ==========================================
 // JOURNAL DES REQUÊTES
@@ -39,7 +49,7 @@ app.use((req, res, next) => {
 });
 
 // ==========================================
-// CORS
+// CORS SÉCURISÉ
 // ==========================================
 const ALLOWED_ORIGINS = [
   'https://compotestsaas.onrender.com',
@@ -56,17 +66,32 @@ app.use((req, res, next) => {
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Vary', 'Origin');
-  } else if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Vary', 'Origin');
-  } else {
-    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, apikey, x-client-info, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '86400');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// ==========================================
+// CONTENT SECURITY POLICY (CSP)
+// ==========================================
+app.use((req, res, next) => {
+  res.header(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com data:; " +
+    "img-src 'self' data: https:; " +
+    "media-src 'self' https: blob:; " +
+    "connect-src 'self' https://drumtgglrtmubdvkpwvl.supabase.co https://compotestsaas.onrender.com wss:; " +
+    "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com; " +
+    "object-src 'none'; " +
+    "base-uri 'self';"
+  );
   next();
 });
 
@@ -83,7 +108,8 @@ const generateUserLimiter = limiter({ windowMs: 60 * 60 * 1000, max: Number(proc
 const adminUsersLimiter = limiter({ max: 30, keyGenerator: (req) => req.user?.id || req.ip, message: tooMany('(administration)') });
 const adminUsersWriteLimiter = limiter({ max: 10, skip: (req) => req.method === 'GET', keyGenerator: (req) => `w:${req.user?.id || req.ip}`, message: tooMany('(administration)') });
 const pushSubscribeLimiter = limiter({ max: Number(process.env.PUSH_SUBSCRIBE_LIMIT || 5), message: { error: 'Trop de tentatives d\'activation, réessaie dans une minute.' } });
-const pushBroadcastLimiter = limiter({ max: Number(process.env.PUSH_BROADCAST_LIMIT || 10), keyGenerator: (req) => req.user?.id || req.ip, message: tooMany('(notifications de la communauté)') });
+const quizWriteLimiter = limiter({ max: 10, keyGenerator: (req) => req.user?.id || req.ip, message: { error: 'Trop de modifications de quiz, réessaie dans une minute.' } }); // 🔒 Rate limit écriture quiz
+const broadcastLimiter = limiter({ max: 5, windowMs: 60 * 60 * 1000, keyGenerator: (req) => req.user?.id || req.ip, message: { error: 'Trop de notifications envoyées, réessaie dans une heure.' } });
 
 app.use('/api', globalApiLimiter);
 app.use('/api/generate-post-test', generateLimiter);
@@ -114,6 +140,12 @@ app.get('/manifest.json', (_req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.type('application/manifest+json').sendFile(path.join(__dirname, 'manifest.json'));
 });
+
+// ==========================================
+// 📄 PAGES LÉGALES
+// ==========================================
+app.get('/confidentialite', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'confidentialite.html')));
+app.get('/conditions', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'conditions.html')));
 
 app.use((req, res, next) => {
   if (/^\/(server\.js|package(-lock)?\.json|node_modules\/|generate-icons\.js|optimize-images\.js|services\/|routes\/|migrations\/)/i.test(req.path)) return res.sendStatus(404);
@@ -236,53 +268,9 @@ const push = createPush();
 app.use('/api/push/subscribe', pushSubscribeLimiter);
 app.use('/api', push.router);
 
-// Route admin : toggle reminders
-app.post('/api/admin/settings/reminders', async (req, res, next) => {
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!token) return res.status(401).json({ error: 'Auth requise.' });
-  try {
-    const u = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: process.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` }
-    });
-    if (!u.ok) return res.status(401).json({ error: 'Session invalide.' });
-    const user = await u.json();
-    const adminEmail = String(process.env.ADMIN_EMAIL || '').toLowerCase();
-    const isAdmin = user.app_metadata?.is_admin === true || user.app_metadata?.role === 'admin' || (adminEmail && user.email?.toLowerCase() === adminEmail);
-    if (!isAdmin) return res.status(403).json({ error: 'Réservé admin.' });
-    const enabled = !!req.body.enabled;
-    const r = await fetch(`${process.env.SUPABASE_URL}/rest/v1/app_settings?id=eq.1`, {
-      method: 'PATCH',
-      headers: { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reminders_enabled: enabled })
-    });
-    if (!r.ok) throw new Error('Erreur PATCH app_settings');
-    res.json({ ok: true, reminders_enabled: enabled });
-  } catch (e) { next(e); }
-});
-
 app.use('/api', authenticate);
 app.use('/api/generate-post-test', generateUserLimiter);
 app.use('/api/admin/users', adminUsersLimiter, adminUsersWriteLimiter);
-
-// ==========================================
-// 💬 COMMUNAUTÉ : notification à tous les abonnés (appelée par le front après chaque message publié)
-// authenticate (ci-dessus, via app.use('/api', authenticate)) garantit un utilisateur connecté : req.user.id
-// ==========================================
-app.post('/api/push/broadcast', pushBroadcastLimiter, async (req, res) => {
-  const { title, body, url } = req.body || {};
-  if (typeof title !== 'string' || typeof body !== 'string' || !title.trim() || !body.trim()) {
-    return res.status(400).json({ error: 'Titre et message obligatoires.' });
-  }
-  try {
-    // excludeUserId : l'auteur du message ne reçoit pas sa propre notification
-    const r = await push.broadcast({ title, body, url: typeof url === 'string' ? url : '/?tab=community', excludeUserId: req.user.id });
-    res.json({ ok: true, sent: r.delivered, recipients: r.recipients });
-  } catch (e) {
-    logger.error({ err: e.message }, 'POST /api/push/broadcast');
-    res.status(500).json({ error: 'Erreur serveur notifications.' });
-  }
-});
 
 // ==========================================
 // ← AI ENGINE : montage du routeur IA
@@ -379,6 +367,26 @@ app.delete('/api/admin/users/:id', requireAdmin, validate(userIdParam, 'params')
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+app.get('/api/me', authenticate, async (req, res) => {
+  try {
+    const r = await fetch(`${process.env.SUPABASE_URL.replace(/\/$/, '')}/auth/v1/admin/users/${req.user.id}`, {
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+      }
+    });
+    if (!r.ok) throw new Error('Utilisateur introuvable.');
+    const u = await r.json();
+    res.json({
+      id: u.id,
+      email: u.email,
+      name: u.user_metadata?.full_name || u.email.split('@')[0]
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 async function restCount(query) {
   const base = process.env.SUPABASE_URL.replace(/\/$/, '');
   const response = await fetch(`${base}/rest/v1/${query}`, {
@@ -435,6 +443,23 @@ app.post('/api/admin/settings/notifications', requireAdmin, validate(adminSettin
 });
 
 // ==========================================
+// ROUTE PUSH BROADCAST SÉCURISÉE
+// ==========================================
+app.post('/api/push/broadcast', broadcastLimiter, async (req, res) => {
+  const { title, body, url } = req.body || {};
+  if (!title || !body) return res.status(400).json({ error: 'Titre et message requis.' });
+  if (String(title).length > 80) return res.status(400).json({ error: 'Titre trop long (80 max).' });
+  if (String(body).length > 300) return res.status(400).json({ error: 'Message trop long (300 max).' });
+  try {
+    const sent = await push.broadcast({ title: String(title), body: String(body), url: url || '/' });
+    res.json({ ok: true, sent });
+  } catch (e) {
+    logger.error({ err: e.message }, 'push broadcast');
+    res.status(500).json({ error: 'Envoi impossible.' });
+  }
+});
+
+// ==========================================
 // IA — ANCIENNE ROUTE (conservée en fallback)
 // ==========================================
 function aiClient() {
@@ -463,20 +488,15 @@ app.post('/api/parse-existing-quiz', validate(parseExistingSchema), (req, res) =
 
 // ==========================================
 // ← AI ENGINE : nouvelle route principale de génération
-// L'ancienne route /api/generate-post-test utilise d'abord le moteur IA,
-// puis bascule sur l'ancien client Groq si le moteur n'est pas configuré.
 // ==========================================
 app.post('/api/generate-post-test', validate(generateSchema), async (req, res) => {
   const { text, count = 50 } = req.body;
 
-  // Tentative 1 : Révisio AI Engine
   try {
     const result = await ai.generateQuiz(text, { count, userId: req.user?.id });
-    // Validation légère (le schéma Zod du moteur a déjà validé)
     if (!result || !Array.isArray(result.questions) || result.questions.length === 0) {
       throw new Error('Le moteur IA n\'a renvoyé aucune question.');
     }
-    // finalizeAiResult complète la détection déterministe (blocs, QPQ, temps)
     try { finalizeAiResult(result, text); } catch (err) { logger.warn({ err: err.message }, 'finalizeAiResult ignoré'); }
     logger.info({ provider: result._provider, questions: result.questions.length, cached: !!result._cached }, 'génération IA (moteur)');
     return res.json(result);
@@ -484,7 +504,6 @@ app.post('/api/generate-post-test', validate(generateSchema), async (req, res) =
     logger.warn({ err: engineError.message }, 'moteur IA indisponible, bascule sur l\'ancien client Groq');
   }
 
-  // Tentative 2 : ancien client Groq (fallback)
   const client = aiClient();
   if (!client) return res.status(503).json({ error: 'IA non configurée (aucun fournisseur actif).' });
   try {
@@ -538,7 +557,7 @@ Analyse d'abord silencieusement le texte, puis renvoie UNIQUEMENT le JSON.` },
 // ==========================================
 const sbHeaders = (extra = {}) => ({ apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, ...extra });
 
-app.post('/api/quizzes', validate(createQuizSchema), async (req, res) => {
+app.post('/api/quizzes', quizWriteLimiter, validate(createQuizSchema), async (req, res) => {
   const { title, subject, level, questions } = req.body;
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
@@ -581,10 +600,10 @@ async function updateQuiz(req, res, label) {
     res.json({ quiz: data[0] });
   } catch (e) { logger.error({ err: e.message }, `${label} /api/quizzes/:id`); res.status(500).json({ error: e.message }); }
 }
-app.patch('/api/quizzes/:id', requireAdmin, validate(quizIdParam, 'params'), validate(updateQuizSchema), (req, res) => updateQuiz(req, res, 'PATCH'));
-app.put('/api/quizzes/:id', requireAdmin, validate(quizIdParam, 'params'), validate(updateQuizSchema), (req, res) => updateQuiz(req, res, 'PUT'));
+app.patch('/api/quizzes/:id', quizWriteLimiter, requireAdmin, validate(quizIdParam, 'params'), validate(updateQuizSchema), (req, res) => updateQuiz(req, res, 'PATCH'));
+app.put('/api/quizzes/:id', quizWriteLimiter, requireAdmin, validate(quizIdParam, 'params'), validate(updateQuizSchema), (req, res) => updateQuiz(req, res, 'PUT'));
 
-app.delete('/api/quizzes/:id', requireAdmin, validate(quizIdParam, 'params'), async (req, res) => {
+app.delete('/api/quizzes/:id', quizWriteLimiter, requireAdmin, validate(quizIdParam, 'params'), async (req, res) => {
   try {
     const base = process.env.SUPABASE_URL.replace(/\/$/, '');
     const response = await fetch(`${base}/rest/v1/quizzes?id=eq.${req.params.id}`, { method: 'DELETE', headers: sbHeaders() });
@@ -598,6 +617,18 @@ app.delete('/api/quizzes/:id', requireAdmin, validate(quizIdParam, 'params'), as
 // ERREURS
 // ==========================================
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Route introuvable.' }));
+
+// 🔒 Filtre pour ne pas exposer la clé service role dans les erreurs
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  const msg = String(err?.message || '');
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (key && msg.includes(key)) {
+    logger.error({ path: req.originalUrl.split('?')[0] }, 'erreur contenant la clé service role, réponse filtrée');
+    return res.status(500).json({ error: 'Erreur interne.' });
+  }
+  next(err);
+});
 
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
@@ -623,15 +654,4 @@ if (process.env.NODE_ENV !== 'test') {
   app.listen(port, '0.0.0.0', () => {
     logger.info({ port, env: process.env.NODE_ENV || 'development' }, 'Serveur démarré');
   });
-}
-
-// Cron : rappel inactif quotidien à 10h GMT
-if (process.env.NODE_ENV !== 'test') {
-  setInterval(async () => {
-    const now = new Date();
-    if (now.getUTCHours() === 10) {
-      try { await push.sendReminderToInactive(); }
-      catch (e) { logger.warn({ err: e.message }, 'rappel inactif'); }
-    }
-  }, 3600_000).unref();
 }

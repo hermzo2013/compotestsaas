@@ -2,8 +2,28 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Révisio</title>
+<title>Révisio — Quiz, cours et révisions pour étudiants</title>
+<meta name="description" content="Révisio : révise avec des quiz interactifs, des cours et un suivi de ta progression. Application web et Android pour les étudiants.">
+<link rel="canonical" href="https://compotestsaas.onrender.com/">
+<meta name="robots" content="index,follow">
+<meta name="author" content="NSC-GROUP">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Révisio">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Révisio — Quiz, cours et révisions pour étudiants">
+<meta property="og:description" content="Révise avec des quiz interactifs, des cours et un suivi de ta progression.">
+<meta property="og:url" content="https://compotestsaas.onrender.com/">
+<meta property="og:image" content="https://compotestsaas.onrender.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Logo Révisio sur fond vert : quiz, cours et révisions pour réussir tes examens">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Révisio — Quiz, cours et révisions pour étudiants">
+<meta name="twitter:description" content="Révise avec des quiz interactifs, des cours et un suivi de ta progression.">
+<meta name="twitter:image" content="https://compotestsaas.onrender.com/og-image.png">
 <link rel="icon" type="image/png" href="/favicon.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Révisio","url":"https://compotestsaas.onrender.com/","applicationCategory":"EducationalApplication","operatingSystem":"Web, Android","inLanguage":"fr","image":"https://compotestsaas.onrender.com/og-image.png","publisher":{"@type":"Organization","name":"NSC-GROUP"}}</script>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#064E3B">
 <script>
@@ -1126,6 +1146,12 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
 .skip-link{position:absolute;top:-100px;left:10px;background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;z-index:10000;text-decoration:none;font-weight:700;transition:top .2s}
 .skip-link:focus{top:10px}
 :focus-visible{outline:3px solid #F59E0B;outline-offset:2px;border-radius:6px}
+/* ⚖️ LIENS LÉGAUX */
+.auth-consent{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.4;margin:4px 0 10px;color:var(--muted);text-align:left;cursor:pointer}
+.auth-consent input{width:18px;height:18px;flex:none;padding:0;margin:1px 0 0;accent-color:#10B981}
+.auth-consent a,.auth-legal a,.footer-legal a{color:var(--blue-btn);font-weight:700}
+.auth-legal{font-size:11.5px;color:var(--muted);margin:8px 0 0;text-align:center}
+.footer-legal{margin-top:6px;font-size:12px}
 </style>
 </head><body>
 <a href="#mainApp" class="skip-link">Aller au contenu principal</a>
@@ -1154,25 +1180,26 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
 <section id="authGate">
   <div class="auth-container" id="authContainer">
     <div class="auth-form-container auth-form-login">
-      <img src="https://compotestsaas.onrender.com/site.png" alt="Révisio" class="auth-logo">
+      <img src="https://compotestsaas.onrender.com/site.png" alt="Logo Révisio" class="auth-logo">
       <h2>Bienvenue sur Révisio</h2>
       <form id="loginForm" novalidate>
-        <div class="auth-input-group"><i class='bx bx-user'></i><input type="text" id="loginEmail" placeholder="Matricule ou Email" required autocomplete="username"></div>
-        <div class="auth-input-group"><i class='bx bx-lock-alt'></i><input type="password" id="loginPassword" placeholder="Mot de passe" required autocomplete="current-password"><button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('loginPassword', this)"><i class='bx bx-show'></i></button></div>
+        <div class="auth-input-group"><i class='bx bx-user' aria-hidden="true"></i><input type="text" id="loginEmail" placeholder="Matricule ou Email" required autocomplete="username"></div>
+        <div class="auth-input-group"><i class='bx bx-lock-alt' aria-hidden="true"></i><input type="password" id="loginPassword" placeholder="Mot de passe" required autocomplete="current-password"><button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('loginPassword', this)"><i class='bx bx-show' aria-hidden="true"></i></button></div>
         <a href="#" class="auth-forgot-link" onclick="event.preventDefault(); openHelpModal();">❓ Besoin d'aide ?</a>
         <button type="submit" class="auth-btn" id="loginSubmitBtn">Se connecter</button>
         <div id="loginError" class="auth-error"></div>
       </form>
       <p class="auth-switch-text">Pas encore de compte ? <a href="#" onclick="toggleAuthForm(); return false;">S'inscrire</a></p>
+      <p class="auth-legal"><a href="/conditions" target="_blank" rel="noopener">Conditions</a> · <a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a> · <a href="#" onclick="window.RevisioConsent&amp;&amp;window.RevisioConsent.open();return false;">Cookies</a></p>
     </div>
     <div class="auth-form-container auth-form-register">
-      <img src="https://compotestsaas.onrender.com/site.png" alt="Révisio" class="auth-logo">
+      <img src="https://compotestsaas.onrender.com/site.png" alt="Logo Révisio" class="auth-logo">
       <h2>Inscription</h2>
       <form id="registerForm" novalidate>
-        <div class="auth-input-group"><i class='bx bx-user'></i><input type="text" id="regLastName" placeholder="Nom" required></div>
-        <div class="auth-input-group"><i class='bx bx-user'></i><input type="text" id="regFirstName" placeholder="Prénom" required></div>
-        <div class="auth-input-group"><i class='bx bx-id-card'></i><input type="text" id="regMatricule" placeholder="Matricule" required></div>
-        <div class="auth-input-group"><i class='bx bx-book'></i>
+        <div class="auth-input-group"><i class='bx bx-user' aria-hidden="true"></i><input type="text" id="regLastName" placeholder="Nom" required></div>
+        <div class="auth-input-group"><i class='bx bx-user' aria-hidden="true"></i><input type="text" id="regFirstName" placeholder="Prénom" required></div>
+        <div class="auth-input-group"><i class='bx bx-id-card' aria-hidden="true"></i><input type="text" id="regMatricule" placeholder="Matricule" required></div>
+        <div class="auth-input-group"><i class='bx bx-book' aria-hidden="true"></i>
           <select id="regFiliere" required>
             <option value="" disabled selected>Choisir une filière</option>
             <option value="IDE">IDE</option><option value="SFM">SFM</option>
@@ -1182,7 +1209,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
             <option value="TSS MBM">TSS MBM</option>
           </select>
         </div>
-        <div class="auth-input-group"><i class='bx bx-graduation'></i>
+        <div class="auth-input-group"><i class='bx bx-graduation' aria-hidden="true"></i>
           <select id="regNiveau" required>
             <option value="" disabled selected>Choisir un niveau</option>
             <option value="LICENCE 1">LICENCE 1</option>
@@ -1190,7 +1217,8 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
             <option value="LICENCE 3">LICENCE 3</option>
           </select>
         </div>
-        <div class="auth-input-group"><i class='bx bx-lock-alt'></i><input type="password" id="regPassword" placeholder="Mot de passe" required minlength="6" autocomplete="new-password"><button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('regPassword', this)"><i class='bx bx-show'></i></button></div>
+        <div class="auth-input-group"><i class='bx bx-lock-alt' aria-hidden="true"></i><input type="password" id="regPassword" placeholder="Mot de passe" required minlength="6" autocomplete="new-password"><button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('regPassword', this)"><i class='bx bx-show' aria-hidden="true"></i></button></div>
+        <label class="auth-consent"><input type="checkbox" id="regAccept"><span>J'accepte les <a href="/conditions" target="_blank" rel="noopener">conditions générales</a> et la <a href="/confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
         <button type="submit" class="auth-btn" id="registerSubmitBtn">S'inscrire</button>
         <div id="registerError" class="auth-error"></div>
       </form>
@@ -1278,7 +1306,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
     <div class="panel">
       <h1>🌍 Bibliothèque Publique</h1>
       <p style="color:var(--muted);font-size:14px">Retrouvez ici tous les exercices extraits et partagés par la communauté.</p>
-      <div class="search-bar"><i class='bx bx-search search-icon'></i><input type="text" id="quizSearch" placeholder="🔍 Rechercher un quiz par titre ou niveau (ex: santé L1)..."></div>
+      <div class="search-bar"><i class='bx bx-search search-icon' aria-hidden="true"></i><input type="text" id="quizSearch" placeholder="🔍 Rechercher un quiz par titre ou niveau (ex: santé L1)..."></div>
       <div class="level-filters" id="libraryFilters">
         <button class="level-filter active" data-level="all" onclick="filterLibrary('all')">Tous</button>
         <button class="level-filter" data-level="LICENCE 1" onclick="filterLibrary('LICENCE 1')">LICENCE 1</button>
@@ -1301,7 +1329,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
     <div class="panel">
       <h1>📖 Cours</h1>
       <p style="color:var(--muted);font-size:14px">Retrouvez les cours PDF classés par niveau.</p>
-      <div class="search-bar"><i class='bx bx-search search-icon'></i><input type="text" id="courseSearch" placeholder="🔍 Rechercher un cours par titre ou niveau (ex: cardio L2)..."></div>
+      <div class="search-bar"><i class='bx bx-search search-icon' aria-hidden="true"></i><input type="text" id="courseSearch" placeholder="🔍 Rechercher un cours par titre ou niveau (ex: cardio L2)..."></div>
       <div id="adminCourseForm" class="hide" style="background:#F9FAFB;border-radius:12px;padding:16px;margin-bottom:20px;border:1px solid var(--line)">
         <h3 style="margin-top:0;font-size:16px">➕ Ajouter un cours (Admin)</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1340,7 +1368,9 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
   </div>
 </main>
 
-<footer class="app-footer">dev. par <b>NSC-GROUP</b> ( THC )</footer>
+<footer class="app-footer">dev. par <b>NSC-GROUP</b> ( THC )
+  <div class="footer-legal"><a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a> · <a href="/conditions" target="_blank" rel="noopener">Conditions</a> · <a href="#" onclick="window.RevisioConsent&amp;&amp;window.RevisioConsent.open();return false;">Gérer les cookies</a></div>
+</footer>
 
 <!-- BULLE FLOTTANTE COMMUNAUTÉ -->
 <div id="communityWidget" onclick="toggleCommunityPopup()" title="Ouvrir le chat Communauté">💬<span id="communityWidgetBadge" class="widget-badge" style="display:none">0</span></div>
@@ -1351,7 +1381,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
     <div id="replyingTo" class="community-replying-to" style="display:none;"><span id="replyingToText">Répondre à ...</span><button onclick="cancelReply()" title="Annuler">✖</button></div>
     <input type="file" id="communityFileInput" accept="image/*,.pdf" style="display:none" onchange="onAttachmentSelected(this)">
     <div class="chat-input-toolbar" id="attachmentToolbar">
-      <button type="button" class="chat-attach-btn" onclick="document.getElementById('communityFileInput').click()" title="Joindre un fichier"><i class='bx bx-paperclip'></i></button>
+      <button type="button" class="chat-attach-btn" onclick="document.getElementById('communityFileInput').click()" title="Joindre un fichier"><i class='bx bx-paperclip' aria-hidden="true"></i></button>
       <!-- 🎤 Bouton micro : charge community-voice.js à la demande puis démarre -->
       <button type="button" id="voiceMicBtn" class="chat-mic-btn" onclick="window.onVoiceMicClick && window.onVoiceMicClick()" title="Enregistrer une note vocale">🎤</button>
       <div id="attachmentPreview" class="chat-attach-preview" style="display:none;"><span id="attachmentName"></span><button type="button" onclick="removeAttachment()" title="Retirer">✖</button></div>
@@ -1450,7 +1480,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
         <div style="grid-column:1/-1"><label>Mot de passe</label>
           <div class="auth-input-group" style="margin:0">
             <input id="newPassword" type="password" required minlength="6" placeholder="6 caractères minimum">
-            <button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('newPassword', this)"><i class='bx bx-show'></i></button>
+            <button type="button" class="auth-toggle-password" onpointerdown="togglePasswordVisibility('newPassword', this)"><i class='bx bx-show' aria-hidden="true"></i></button>
           </div>
         </div>
         <button type="submit" style="grid-column:1/-1;margin-top:6px">Créer le compte</button>
@@ -1686,7 +1716,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
       <label for="editCourseFile">Remplacer le PDF (optionnel)</label>
       <input type="file" id="editCourseFile" accept=".pdf">
       <div class="edit-course-hint">Laisse vide pour conserver le PDF actuel.</div>
-      <div class="edit-course-current-file" id="editCourseCurrentFile"><i class='bx bx-file'></i><span id="editCourseCurrentFileName">Fichier actuel</span><a id="editCourseCurrentFileLink" href="#" target="_blank" rel="noopener">Ouvrir</a></div>
+      <div class="edit-course-current-file" id="editCourseCurrentFile"><i class='bx bx-file' aria-hidden="true"></i><span id="editCourseCurrentFileName">Fichier actuel</span><a id="editCourseCurrentFileLink" href="#" target="_blank" rel="noopener">Ouvrir</a></div>
     </div>
     <div class="edit-course-footer">
       <button class="ghost" onclick="closeEditCourse()">Annuler</button>
@@ -1746,7 +1776,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
       <div class="qpq-timer" id="qpqGlobalTimer"><small>Temps global</small><b id="qpqGlobalTimerText">00:00</b></div>
     </div>
     <div id="examTimerContainer">
-      <i class='bx bx-time-five'></i> <span id="examTimerText">00:00</span>
+      <i class='bx bx-time-five' aria-hidden="true"></i> <span id="examTimerText">00:00</span>
     </div>
     <button class="ghost" id="examQuitBtn" style="background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.3)">← Quitter</button>
   </div>
@@ -2487,6 +2517,7 @@ $('registerForm').addEventListener('submit', async (e) => {
   const pwd = $('regPassword').value;
   if (!lastName || !firstName || !matricule || !filiere || !niveau || !pwd) { errEl.textContent = 'Merci de remplir tous les champs.'; return; }
   if (pwd.length < 6) { errEl.textContent = 'Le mot de passe doit contenir au moins 6 caractères.'; return; }
+  if (!$('regAccept').checked) { errEl.textContent = 'Merci d\'accepter les conditions générales et la politique de confidentialité.'; return; }
   const email = matricule.toLowerCase().replace(/\s+/g, '') + '@comptest.local';
   const btn = $('registerSubmitBtn');
   btn.disabled = true;
@@ -2657,16 +2688,16 @@ function renderCourses() {
               </div>
               <div class="course-item-actions">
                 <a href="${esc(c.file_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation();">
-                  <i class='bx bx-download'></i> <span class="hide-mobile">Télécharger</span>
+                  <i class='bx bx-download' aria-hidden="true"></i> <span class="hide-mobile">Télécharger</span>
                 </a>
                 ${c.video_url ? `
                   <button type="button" class="btn-video" onclick="event.stopPropagation(); openVideoModal('${esc(c.video_url).replace(/'/g, "\\'")}', '${esc(c.title).replace(/'/g, "\\'")}');" title="Voir la vidéo">
-                    <i class='bx bx-play-circle'></i> <span class="hide-mobile">Vidéo</span>
+                    <i class='bx bx-play-circle' aria-hidden="true"></i> <span class="hide-mobile">Vidéo</span>
                   </button>
                 ` : ''}
                 ${isAdmin ? `
                   <button type="button" class="btn-edit-course" onclick="event.stopPropagation(); openEditCourse('${c.id}');" title="Modifier ce cours">
-                    <i class='bx bx-edit'></i>
+                    <i class='bx bx-edit' aria-hidden="true"></i>
                   </button>
                 ` : ''}
               </div>
@@ -3656,8 +3687,8 @@ async function loadCommunity() {
           else if (mName) dur = parseInt(mName[1], 10);
           attachmentHtml = renderAudioPlayer(post.id, post.attachment_url, dur);
         }
-        else if (post.attachment_type === 'image') attachmentHtml = `<div class="chat-attachment"><img src="${esc(post.attachment_url)}" alt="Pièce jointe" onclick="window.open('${esc(post.attachment_url)}', '_blank')"></div>`;
-        else attachmentHtml = `<div class="chat-attachment"><a href="${esc(post.attachment_url)}" target="_blank" rel="noopener"><i class='bx bx-file'></i> Télécharger le fichier</a></div>`;
+        else if (post.attachment_type === 'image') attachmentHtml = `<div class="chat-attachment"><img src="${esc(post.attachment_url)}" alt="Image partagée par ${esc(post.author_name || 'un utilisateur')} dans la communauté" loading="lazy" decoding="async" onclick="window.open('${esc(post.attachment_url)}', '_blank')"></div>`;
+        else attachmentHtml = `<div class="chat-attachment"><a href="${esc(post.attachment_url)}" target="_blank" rel="noopener"><i class='bx bx-file' aria-hidden="true"></i> Télécharger le fichier</a></div>`;
       }
       const hideText = post.attachment_type === 'audio' && post.content === '🎤 Note vocale';
       const contentHtml = hideText ? '' : `<div class="chat-msg-content">${esc(post.content)}</div>`;
@@ -5579,4 +5610,5 @@ $('scoreHomeBtn').addEventListener('click', () => closeExamView());
 <script src="/push-client.js" defer></script>
 <script src="/download-android.js" defer></script>
 <script src="/a11y.js" defer></script>
+<script src="/consent.js" defer></script>
 </body></html>
