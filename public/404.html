@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Page introuvable (404) — Révisio</title>
+<meta name="description" content="La page demandée n'existe pas ou a été déplacée. Retourne à l'accueil de Révisio.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#064E3B">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<style>
+:root{--bg:#F2F9F5;--card:#fff;--ink:#1F2937;--muted:#4B5563;--line:#E5E7EB;--green:#047857;--green-dark:#065F46}
+@media (prefers-color-scheme:dark){:root{--bg:#0F172A;--card:#1E293B;--ink:#E2E8F0;--muted:#94A3B8;--line:#334155;--green:#34D399;--green-dark:#6EE7B7}}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+header{background:linear-gradient(120deg,#064E3B,#047857);padding:12px 16px calc(12px) 16px;padding-top:max(12px,env(safe-area-inset-top))}
+header a{display:inline-block}
+header img{display:block;height:44px;width:auto;background:#fff;border-radius:8px;padding:2px}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:36px 26px;max-width:460px;width:100%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+.code{font-size:84px;line-height:1;font-weight:900;color:var(--green);letter-spacing:-2px;margin:0}
+h1{font-size:22px;margin:10px 0 8px}
+p{margin:0 0 22px;color:var(--muted);font-size:15px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 26px;border-radius:12px;background:#047857;color:#fff;font-weight:800;font-size:16px;text-decoration:none}
+.btn:hover{background:#065F46}
+.btn:focus-visible,a:focus-visible{outline:3px solid #F59E0B;outline-offset:3px}
+nav{margin-top:20px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap}
+nav a{color:var(--green);font-weight:700;font-size:14px;text-decoration:underline;padding:12px 10px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:0 16px calc(16px + env(safe-area-inset-bottom,0px))}
+</style>
+</head>
+<body>
+<header><a href="/" aria-label="Révisio, retour à l'accueil"><img src="/site.png" alt="Logo Révisio" width="132" height="44"></a></header>
+<main>
+  <section class="card" aria-labelledby="t">
+    <p class="code" aria-hidden="true">404</p>
+    <h1 id="t">Oups, page introuvable</h1>
+    <p>La page que tu cherches n'existe pas ou a été déplacée. Vérifie l'adresse, ou retourne à l'accueil pour continuer tes révisions.</p>
+    <a class="btn" href="/">Retour à l'accueil</a>
+    <nav aria-label="Pages utiles">
+      <a href="/conditions">Conditions</a>
+      <a href="/confidentialite">Confidentialité</a>
+    </nav>
+  </section>
+</main>
+<footer>Révisio — NSC-GROUP</footer>
+</body>
+</html>
