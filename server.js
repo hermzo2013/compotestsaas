@@ -210,9 +210,9 @@ app.use((req, res, next) => {
 const PUBLIC_FILES = new Set([
   'index.html', 'config.js', 'sw.js', 'manifest.json', 'offline.html',
   'favicon.png', 'favicon.ico', 'site.png', 'og-image.png', 'Revisio.apk',
-  'a11y.js', 'admin-extras.js', 'community-voice.js', 'consent.js', 'dark-mode.js', 'download-android.js',
+  'a11y.js', 'admin-extras.js', 'community-voice.js', 'community.js', 'consent.js', 'dark-mode.js', 'download-android.js',
   'global-search.js', 'pdf-export.js', 'progress.js', 'push-client.js', 'question-comments.js',
-  'resume-quiz.js', 'ui-extras.js'
+  'resume-quiz.js', 'styles.css', 'ui-extras.js'
 ]);
 const PUBLIC_DIRS = ['icons/', 'public/'];
 function isPublicAsset(reqPath) {
