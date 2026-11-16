@@ -85,7 +85,8 @@ input,select,textarea{width:100%;border:1px solid #D1D5DB;border-radius:10px;pad
 input:focus,select:focus,textarea:focus{outline:2px solid rgba(16,185,129,.25);border-color:var(--blue)}
 
 button{border:0;border-radius:10px;background:var(--blue-btn);color:white;font-weight:700;padding:12px 20px;cursor:pointer;font:inherit;transition:.2s}
-button:hover{background:var(--blue-btn-hover);filter:none}
+/* :where() = spécificité 0 : les composants à styles propres (.tab, .level-filter…) ne sont plus écrasés au survol */
+button:where(:not(.tab,.level-filter,.admin-tab-btn,.btn-icon,.auth-btn)):hover{background:var(--blue-btn-hover);filter:none}
 button.secondary{background:#ECFDF5;color:var(--navy)}
 button.secondary:hover{background:#D1FAE5}
 button.ghost{background:#F3F4F6;color:#374151}
@@ -105,15 +106,16 @@ button.danger:hover{background:#FEE2E2}
 
 .tabs{display:flex;gap:5px;margin-bottom:20px;border-bottom:2px solid var(--line);padding-bottom:10px;overflow-x:auto;position:relative}
 .tab{padding:10px 15px;border-radius:8px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);border:0;white-space:nowrap;position:relative}
-.tab:hover{color:var(--navy)}
-.tab.active{background:var(--active-bg);color:var(--active-text)}
+.tab:hover{background:rgba(4,120,87,.08);color:var(--navy)}
+.tab:focus-visible{outline:3px solid #F59E0B;outline-offset:2px}
+.tab.active,.tab.active:hover,.tab.active:focus{background:var(--active-bg,#D1FAE5);color:var(--active-text,#065F46)}
 
 .history-item{background:#F9FAFB;border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .admin-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:15px}
 .admin-table th,.admin-table td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
 .admin-table th{color:var(--muted)}
 .badge-admin{display:inline-block;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:800;padding:2px 6px;border-radius:4px;margin-left:6px}
-.btn-icon{background:transparent;border:0;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.2s}
+.btn-icon{background:transparent;color:var(--ink);border:0;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.2s}
 .btn-icon:hover{background:#FEE2E2}
 
 .search-bar{position:relative;margin-bottom:15px;}
@@ -123,8 +125,8 @@ button.danger:hover{background:#FEE2E2}
 
 .level-filters{display:flex;gap:8px;margin-bottom:15px;flex-wrap:wrap}
 .level-filter{padding:8px 16px;border-radius:20px;background:#F3F4F6;color:var(--muted);border:1px solid var(--line);font-weight:700;font-size:13px;cursor:pointer;transition:.2s}
-.level-filter:hover{background:#E5E7EB}
-.level-filter.active{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
+.level-filter:hover{background:#E5E7EB;color:var(--ink)}
+.level-filter.active,.level-filter.active:hover{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
 .level-badge{display:inline-block;background:#D1FAE5;color:#065F46;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;margin-left:8px;text-transform:uppercase}
 
 /* ==========================================
@@ -456,7 +458,8 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:15px}
 .admin-tabs{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
 .admin-tab-btn{padding:10px 20px;border-radius:8px;background:#F3F4F6;color:var(--muted);font-weight:700;cursor:pointer;border:0}
-.admin-tab-btn.active{background:var(--blue-btn);color:#fff}
+.admin-tab-btn:hover{background:#E5E7EB;color:var(--ink)}
+.admin-tab-btn.active,.admin-tab-btn.active:hover{background:var(--blue-btn);color:#fff}
 
 #editQuizModal{display:none;position:fixed;inset:0;background:rgba(6,95,70,.5);z-index:3500;align-items:center;justify-content:center;padding:20px}
 #editQuizModal.show{display:flex}
@@ -1052,9 +1055,12 @@ html.dark .history-item,html.dark .course-item,html.dark .chat-msg,html.dark .fi
 html.dark .notice{background:#422006;color:#FDE68A}
 html.dark .notice.err{background:#7F1D1D;color:#FECACA}
 html.dark .notice.ok{background:#064E3B;color:#A7F3D0}
-html.dark .tab{color:var(--muted)}html.dark .tab.active{background:var(--active-bg);color:var(--active-text)}
+html.dark .tab{color:var(--muted)}
+html.dark .tab:hover{background:rgba(209,250,229,.08);color:var(--active-text)}
+html.dark .tab.active,html.dark .tab.active:hover,html.dark .tab.active:focus{background:var(--active-bg,#064E3B);color:var(--active-text,#D1FAE5)}
 html.dark .level-filter{background:#1E293B;border-color:#334155;color:var(--muted)}
-html.dark .level-filter.active{background:var(--blue-btn);color:#0F172A;border-color:var(--blue-btn)}
+html.dark .level-filter:hover{background:#334155;color:#F1F5F9}
+html.dark .level-filter.active,html.dark .level-filter.active:hover{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
 html.dark .search-bar input{background:#1E293B;border-color:#334155;color:var(--ink)}
 html.dark .auth-container,html.dark .auth-form-container{background:#1E293B}
 html.dark #examView{background:#0F172A}
@@ -1069,7 +1075,15 @@ html.dark .chat-msg-actions button{background:#064E3B;color:#A7F3D0;border-color
 html.dark .chat-attach-btn,html.dark .chat-mic-btn{background:#064E3B;color:#A7F3D0;border-color:#334155}
 html.dark .community-chat-textarea{background:#0F172A;border-color:#334155;color:var(--ink)}
 html.dark .admin-tab-btn{background:#1E293B;color:var(--muted)}
-html.dark .admin-tab-btn.active{background:var(--blue-btn);color:#0F172A}
+html.dark .admin-tab-btn:hover{background:#334155;color:#F1F5F9}
+html.dark .admin-tab-btn.active,html.dark .admin-tab-btn.active:hover{background:var(--blue-btn);color:#fff}
+html.dark .btn-icon{color:var(--ink)}
+html.dark .btn-icon:hover{background:rgba(248,113,113,.2)}
+html.dark .mode-btn{background:#0F172A;color:var(--ink)}
+html.dark .mode-btn:hover{background:#064E3B;border-color:#34D399}
+html.dark .mode-btn.selected{background:#064E3B;border-color:#34D399}
+html.dark .mode-text b,html.dark .mode-modal-content h2{color:#A7F3D0}
+html.dark .mode-text span{color:#CBD5E1}
 html.dark .admin-table td{border-color:#334155}
 html.dark .admin-msg-table th{background:#0F172A}
 html.dark .ai-provider-card{background:#1E293B;border-color:#334155}
@@ -1172,7 +1186,6 @@ html.dark .auth-btn,html.dark .auth-overlay{background:linear-gradient(135deg,#0
 .auth-forgot-link{display:flex;justify-content:flex-end}
 .header-actions button{background:rgba(0,0,0,.22)}
 .header-actions button:hover{background:rgba(0,0,0,.35)}
-html.dark .level-filter.active{color:#fff}
 @media(pointer:coarse){
   .header-actions button{min-height:44px}
   #globalSearchBtn,#darkModeBtn{min-width:44px}
