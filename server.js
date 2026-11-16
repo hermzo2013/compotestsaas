@@ -3,6 +3,8 @@ import express from 'express';
 import OpenAI from 'openai';
 import path from 'node:path';
 import fs from 'node:fs';
+import zlib from 'node:zlib';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import rateLimit from 'express-rate-limit';
 import { detectAndParse, finalizeAiResult } from './instruction-detector.js';
@@ -142,25 +144,63 @@ app.get('/api/health', (req, res) => {
 });
 
 // ==========================================
+// COMPRESSION (brotli / gzip) + ETag pour les fichiers texte
+// ==========================================
+// Les fichiers texte (HTML, JS, JSON…) sont compressés une seule fois puis gardés en mémoire (recalculés si le
+// fichier change). Le navigateur reçoit ~5x moins d'octets et revalide par ETag (304 sans corps si inchangé).
+const COMPRESSIBLE = /\.(html|js|css|json|svg|xml|txt|webmanifest)$/i;
+const compressedCache = new Map();
+function loadCompressed(filePath) {
+  const st = fs.statSync(filePath);
+  const cached = compressedCache.get(filePath);
+  if (cached && cached.mtimeMs === st.mtimeMs && cached.size === st.size) return cached;
+  const raw = fs.readFileSync(filePath);
+  const big = raw.length > 1024;
+  const entry = {
+    mtimeMs: st.mtimeMs, size: st.size, raw,
+    tag: crypto.createHash('sha1').update(raw).digest('base64url').slice(0, 16),
+    br: big ? zlib.brotliCompressSync(raw, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 6, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: raw.length } }) : null,
+    gz: big ? zlib.gzipSync(raw, { level: 9 }) : null
+  };
+  compressedCache.set(filePath, entry);
+  return entry;
+}
+function serveFile(req, res, filePath, headers = {}) {
+  const ae = String(req.headers['accept-encoding'] || '');
+  const wantsBr = /\bbr\b/.test(ae), wantsGz = /\bgzip\b/.test(ae);
+  if (!COMPRESSIBLE.test(filePath) || (!wantsBr && !wantsGz)) return res.sendFile(filePath, { headers });
+  let e;
+  try { e = loadCompressed(filePath); } catch { return res.sendFile(filePath, { headers }); }
+  const enc = wantsBr && e.br ? 'br' : (wantsGz && e.gz ? 'gzip' : null);
+  const body = enc === 'br' ? e.br : enc === 'gzip' ? e.gz : e.raw;
+  const etag = `W/"${e.tag}${enc ? '-' + enc : ''}"`;
+  res.set({ Vary: 'Accept-Encoding', ETag: etag, ...headers });
+  if (enc) res.set('Content-Encoding', enc);
+  if (!res.get('Content-Type')) res.type(path.extname(filePath));
+  const inm = String(req.headers['if-none-match'] || '').split(',').map((v) => v.trim());
+  if (res.statusCode === 200 && inm.includes(etag)) return res.status(304).end();
+  res.set('Content-Length', String(body.length));
+  return req.method === 'HEAD' ? res.end() : res.end(body);
+}
+
+// ==========================================
 // FICHIERS STATIQUES
 // ==========================================
-app.get('/sw.js', (_req, res) => {
-  res.set({ 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' });
-  res.type('application/javascript').sendFile(path.join(__dirname, 'sw.js'));
+app.get('/sw.js', (req, res) => {
+  serveFile(req, res, path.join(__dirname, 'sw.js'), { 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/', 'Content-Type': 'application/javascript; charset=utf-8' });
 });
-app.get('/manifest.json', (_req, res) => {
-  res.set('Cache-Control', 'no-cache');
-  res.type('application/manifest+json').sendFile(path.join(__dirname, 'manifest.json'));
+app.get('/manifest.json', (req, res) => {
+  serveFile(req, res, path.join(__dirname, 'manifest.json'), { 'Cache-Control': 'no-cache', 'Content-Type': 'application/manifest+json; charset=utf-8' });
 });
 
 // ==========================================
 // 📄 PAGES LÉGALES
 // ==========================================
-app.get('/confidentialite', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'confidentialite.html')));
-app.get('/conditions', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'conditions.html')));
+app.get('/confidentialite', (req, res) => serveFile(req, res, path.join(__dirname, 'public', 'confidentialite.html'), { 'Cache-Control': 'public, max-age=3600' }));
+app.get('/conditions', (req, res) => serveFile(req, res, path.join(__dirname, 'public', 'conditions.html'), { 'Cache-Control': 'public, max-age=3600' }));
 
 app.use((req, res, next) => {
-  if (/^\/(server\.js|package(-lock)?\.json|node_modules\/|generate-icons\.js|optimize-images\.js|services\/|routes\/|migrations\/)/i.test(req.path)) return res.sendStatus(404);
+  if (/^\/(server\.js|package(-lock)?\.json|node_modules\/|generate-icons\.js|optimize-images\.js|services\/|routes\/|migrations\/)/i.test(req.path)) return next(); // jamais servis (liste blanche) : tombe sur la page 404
   next();
 });
 
@@ -188,7 +228,19 @@ const staticHandler = express.static(__dirname, {
   dotfiles: 'ignore',
   setHeaders: (res, filePath) => {
     if (/[\\/](index\.html|config\.js)$/.test(filePath)) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    else if (/\.(png|jpe?g|webp|ico|svg|woff2?)$/i.test(filePath)) res.setHeader('Cache-Control', 'public, max-age=604800'); // images : 7 jours
   }
+});
+app.use((req, res, next) => {
+  if ((req.method === 'GET' || req.method === 'HEAD') && isPublicAsset(req.path) && COMPRESSIBLE.test(req.path)) {
+    const file = path.resolve(__dirname, decodeURIComponent(req.path).replace(/^\/+/, ''));
+    if (file.startsWith(__dirname + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) {
+      const base = path.basename(file);
+      const cache = base === 'index.html' ? 'no-cache' : base === 'config.js' ? 'no-store' : 'public, max-age=86400';
+      return serveFile(req, res, file, { 'Cache-Control': cache });
+    }
+  }
+  next();
 });
 app.use((req, res, next) => (isPublicAsset(req.path) ? staticHandler(req, res, next) : next()));
 
@@ -197,8 +249,8 @@ const noCacheHeaders = {
   'Pragma': 'no-cache',
   'Expires': '0'
 };
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html'), { headers: noCacheHeaders }));
-app.get('/index.html', (_req, res) => res.sendFile(path.join(__dirname, 'index.html'), { headers: noCacheHeaders }));
+app.get('/', (req, res) => serveFile(req, res, path.join(__dirname, 'index.html'), { 'Cache-Control': 'no-cache' }));
+app.get('/index.html', (req, res) => serveFile(req, res, path.join(__dirname, 'index.html'), { 'Cache-Control': 'no-cache' }));
 app.get('/favicon.png', (_req, res) => res.sendFile(path.join(__dirname, 'favicon.png')));
 app.get('/favicon.ico', (_req, res) => {
   res.sendFile(path.join(__dirname, 'favicon.ico'), (err) => {
@@ -701,6 +753,20 @@ app.delete('/api/quizzes/:id', quizWriteLimiter, requireAdmin, validate(quizIdPa
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Route introuvable.' }));
 
 // 🔒 Filtre pour ne pas exposer la clé service role dans les erreurs
+// ==========================================
+// 404 : page personnalisée (navigateur) ou JSON (API)
+// ==========================================
+app.use((req, res) => {
+  if (req.path === '/api' || req.path.startsWith('/api/')) return res.status(404).json({ error: 'Route introuvable.' });
+  if (req.method !== 'GET' && req.method !== 'HEAD') return res.status(404).type('text/plain').send('Introuvable');
+  res.status(404);
+  if (!req.accepts('html')) return res.type('text/plain').send('Introuvable');
+  const file = path.join(__dirname, 'public', '404.html');
+  const headers = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' };
+  if (!fs.existsSync(file)) return res.set(headers).type('html').send('<!doctype html><html lang="fr"><meta charset="utf-8"><title>Page introuvable — Révisio</title><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font-family:system-ui;text-align:center;padding:48px 16px"><h1>404</h1><p>Page introuvable.</p><a href="/">Retour à l\'accueil</a></body></html>');
+  return serveFile(req, res, file, headers);
+});
+
 app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   const msg = String(err?.message || '');

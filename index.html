@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Révisio — Quiz, cours et révisions pour étudiants</title>
 <meta name="description" content="Révisio : révise avec des quiz interactifs, des cours et un suivi de ta progression. Application web et Android pour les étudiants.">
 <link rel="canonical" href="https://compotestsaas.onrender.com/">
@@ -34,26 +34,30 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Révisio">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="preconnect" href="https://drumtgglrtmubdvkpwvl.supabase.co" crossorigin>
+<link rel="preload" as="style" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"></noscript>
 <style>
 /* ==========================================
    PALETTE : Révisio (Vert Santé)
    ========================================== */
 :root{
-  --blue:#10B981;
+  --blue:#047857;
   --navy:#065F46;
-  --blue-btn:#10B981;
-  --blue-btn-hover:#059669;
+  --blue-btn:#047857;
+  --blue-btn-hover:#065F46;
   --active-bg:#D1FAE5;
   --active-text:#065F46;
   --bg:#F2F9F5;
   --ink:#1F2937;
-  --muted:#6B7280;
+  --muted:#4B5563;
   --line:#E5E7EB;
   --green:#10B981;
-  --red:#EF4444;
-  --lav-1:#10B981; 
-  --lav-2:#34D399;
+  --red:#DC2626;
+  --lav-1:#047857;
+  --lav-2:#065F46;
   --auth-bg:#ECFDF5;
   --input-bg:#F9FAFB;
   --exam-navy:#064E3B;
@@ -63,7 +67,7 @@
 html,body{margin:0;padding:0;min-height:100%}
 body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 
-header{background:linear-gradient(120deg,#065F46,#10B981);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+header{background:linear-gradient(120deg,#064E3B,#047857);color:white;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800}
 .brand img{height:50px;width:auto;border-radius:8px;background:#fff;object-fit:contain;padding:2px}
 .brand span{color:#fff}
@@ -936,15 +940,15 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
    ========================================== */
 /* Bouton du header */
 .btn-download-apk {
-  background: #F59E0B !important;
-  border-color: #F59E0B !important;
+  background: #B45309 !important;
+  border-color: #B45309 !important;
   color: #fff !important;
   font-weight: 800;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
-.btn-download-apk:hover { background: #D97706 !important; }
+.btn-download-apk:hover { background: #92400E !important; }
 
 /* Bannière sous les onglets */
 #apkBanner {
@@ -1034,7 +1038,7 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 }
 
 /* 🌙 MODE SOMBRE */
-html.dark{color-scheme:dark;--blue:#34D399;--navy:#A7F3D0;--blue-btn:#34D399;--blue-btn-hover:#10B981;--active-bg:#064E3B;--active-text:#D1FAE5;--bg:#0F172A;--ink:#E2E8F0;--muted:#94A3B8;--line:#1E293B;--green:#34D399;--red:#F87171;--lav-1:#34D399;--lav-2:#10B981;--auth-bg:#0F172A;--input-bg:#1E293B;--exam-navy:#065F46;--exam-blue:#34D399}
+html.dark{color-scheme:dark;--blue:#34D399;--navy:#A7F3D0;--blue-btn:#047857;--blue-btn-hover:#065F46;--active-bg:#064E3B;--active-text:#D1FAE5;--bg:#0F172A;--ink:#E2E8F0;--muted:#94A3B8;--line:#1E293B;--green:#34D399;--red:#F87171;--lav-1:#34D399;--lav-2:#10B981;--auth-bg:#0F172A;--input-bg:#1E293B;--exam-navy:#065F46;--exam-blue:#34D399}
 html.dark body{background:var(--bg);color:var(--ink)}
 html.dark .panel,html.dark .admin-modal-content,html.dark .edit-modal-content,html.dark .edit-course-modal-content,html.dark .help-modal-content,html.dark .apk-info-content,html.dark .score-card,html.dark .mode-modal-content,html.dark #communityPopup,html.dark .video-modal-content{background:#1E293B;border-color:#334155;color:var(--ink)}
 html.dark header{background:linear-gradient(120deg,#022C22,#065F46)}
@@ -1152,6 +1156,38 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
 .auth-consent a,.auth-legal a,.footer-legal a{color:var(--blue-btn);font-weight:700}
 .auth-legal{font-size:11.5px;color:var(--muted);margin:8px 0 0;text-align:center}
 .footer-legal{margin-top:6px;font-size:12px}
+
+/* ♿ CONTRASTE (WCAG AA) */
+.skip-link{background:#064E3B;color:#fff}
+html.dark .app-footer b,html.dark .auth-consent a,html.dark .auth-legal a,html.dark .footer-legal a,html.dark .course-accordion summary::before{color:#34D399}
+html.dark .checkbox-group{background:#0F172A;border-color:#334155}
+html.dark .auth-form-container h2{color:#F1F5F9}
+html.dark #apkBanner .apk-text span,html.dark #apkBanner .apk-dismiss{color:#D1FAE5}
+html.dark .auth-btn,html.dark .auth-overlay{background:linear-gradient(135deg,#047857,#065F46)}
+
+/* 📱 MOBILE : cibles tactiles ≥ 44 px, champs ≥ 16 px (pas de zoom automatique iOS), en-tête propre */
+.auth-btn,.auth-toggle-password,.tab,.level-filter,.apk-download-btn,#quizSearch,#courseSearch,.auth-input-group input{min-height:44px}
+.apk-dismiss{min-width:44px;min-height:44px}
+.auth-switch-text a,.auth-forgot-link,.auth-legal a,.footer-legal a{display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
+.auth-forgot-link{display:flex;justify-content:flex-end}
+.header-actions button{background:rgba(0,0,0,.22)}
+.header-actions button:hover{background:rgba(0,0,0,.35)}
+html.dark .level-filter.active{color:#fff}
+@media(pointer:coarse){
+  .header-actions button{min-height:44px}
+  #globalSearchBtn,#darkModeBtn{min-width:44px}
+}
+@media(max-width:768px){
+  input:not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px}
+}
+@media(max-width:600px){
+  .header-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start}
+  .header-actions span#userLabel{order:0;flex:1 1 auto;min-width:0}
+  #globalSearchBtn,#darkModeBtn{order:1;flex:0 0 44px;width:44px;height:44px;padding:0;font-size:18px}
+  #apkBtn{order:2;flex:1 1 100%}
+  .header-actions button{min-height:44px;font-size:12px}
+  #adminBtn,#bellBtn,#pushBtn,#pwdBtn,#logoutBtn{order:3}
+}
 </style>
 </head><body>
 <a href="#mainApp" class="skip-link">Aller au contenu principal</a>
@@ -1162,7 +1198,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
 
 <header>
   <div class="brand">
-    <img src="https://compotestsaas.onrender.com/site.png" alt="Logo Révisio">
+    <img src="https://compotestsaas.onrender.com/site.png" alt="Logo Révisio" width="150" height="50" decoding="async" fetchpriority="high">
   </div>
   <div class="header-actions">
     <span id="userLabel">Non connecté</span>
@@ -1180,7 +1216,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
 <section id="authGate">
   <div class="auth-container" id="authContainer">
     <div class="auth-form-container auth-form-login">
-      <img src="https://compotestsaas.onrender.com/site.png" alt="Logo Révisio" class="auth-logo">
+      <img src="https://compotestsaas.onrender.com/site.png" alt="Logo Révisio" class="auth-logo" width="180" height="60" decoding="async">
       <h2>Bienvenue sur Révisio</h2>
       <form id="loginForm" novalidate>
         <div class="auth-input-group"><i class='bx bx-user' aria-hidden="true"></i><input type="text" id="loginEmail" placeholder="Matricule ou Email" required autocomplete="username"></div>
@@ -1193,7 +1229,7 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
       <p class="auth-legal"><a href="/conditions" target="_blank" rel="noopener">Conditions</a> · <a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a> · <a href="#" onclick="window.RevisioConsent&amp;&amp;window.RevisioConsent.open();return false;">Cookies</a></p>
     </div>
     <div class="auth-form-container auth-form-register">
-      <img src="https://compotestsaas.onrender.com/site.png" alt="Logo Révisio" class="auth-logo">
+      <img src="https://compotestsaas.onrender.com/site.png" alt="Logo Révisio" class="auth-logo" width="180" height="60" decoding="async">
       <h2>Inscription</h2>
       <form id="registerForm" novalidate>
         <div class="auth-input-group"><i class='bx bx-user' aria-hidden="true"></i><input type="text" id="regLastName" placeholder="Nom" required></div>
@@ -1814,16 +1850,32 @@ html.dark .resume-banner{background:linear-gradient(135deg,#422006,#713F12);bord
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://compotestsaas.onrender.com/config.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
 
 const API_BASE = 'https://compotestsaas.onrender.com';
-if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+// Bibliothèques lourdes (PDF, Word, OCR) chargées uniquement quand l'utilisateur importe un document.
+const LIB_URLS = {
+  pdf: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  mammoth: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
+  tesseract: 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'
+};
+const libPromises = {};
+function loadLib(name) {
+  if (libPromises[name]) return libPromises[name];
+  libPromises[name] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = LIB_URLS[name]; s.async = true;
+    s.onload = () => {
+      if (name === 'pdf' && window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve();
+    };
+    s.onerror = () => { delete libPromises[name]; reject(new Error('Module de lecture indisponible : vérifie ta connexion Internet et réessaie.')); };
+    document.head.appendChild(s);
+  });
+  return libPromises[name];
+}
 /* =====================================================================
    RÉVISIO — ÉTAPE 2 : fonctions PURES (aucun accès DOM, Supabase ni timer)
    ===================================================================== */
@@ -4440,6 +4492,7 @@ $('pdfFile').addEventListener('change', async function() {
       const name = file.name.toLowerCase();
       if (file.type.startsWith('image/') || name.match(/\.(jpg|jpeg|png|webp|bmp)$/)) {
         status.textContent = '🖼️ Préparation de l\'image...';
+        await loadLib('tesseract');
         const processedImage = await preprocessImageForOCR(file);
         status.textContent = '📷 Lecture de l\'image (10-20 sec)...';
         const result = await Tesseract.recognize(processedImage, 'fra', {
@@ -4448,12 +4501,14 @@ $('pdfFile').addEventListener('change', async function() {
         text = result.data.text;
       } else if (name.endsWith('.pdf')) {
         status.textContent = 'Extraction du PDF...';
+        await loadLib('pdf');
         const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
         const extracted = await extractPdfText(pdfjsLib, pdf, { onProgress: (p, n) => { status.textContent = `Extraction du PDF... page ${p}/${n}`; } });
         text = extracted.text;
       } else if (name.endsWith('.docx')) {
         status.textContent = 'Extraction du DOCX (rapide)...';
         try {
+          await loadLib('mammoth');
           const arrayBuffer = await file.arrayBuffer();
           const result = await mammoth.extractRawText({ arrayBuffer });
           text = result.value;
