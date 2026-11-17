@@ -1,0 +1,262 @@
+--- a/index.html
++++ b/index.html
+@@ -1295,4 +1295,5 @@
+   <div class="tabs">
+     <button class="tab" data-tab="create" data-admin-only="1" style="display:none">📚 Créer un test</button>
++    <button class="tab" id="tabBtnImportHtml" data-tab="import-html" data-admin-only="1" style="display:none">🧩 Importer HTML</button>
+     <button class="tab" data-tab="library">🌍 Bibliothèque</button>
+     <button class="tab" data-tab="courses">📖 Cours</button>
+@@ -1350,4 +1351,39 @@
+       </div>
+       <div id="analysisStatus" class="notice hide"></div>
++    </div>
++  </div>
++  <div id="tab-import-html" class="tab-content hide" data-admin-only="1">
++    <div class="panel">
++      <h1>🧩 Importer un HTML et le convertir en quiz</h1>
++      <p style="color:var(--muted);font-size:14px">Colle le code d'une page contenant <code>const ALL_QUESTIONS = [...]</code>, un tableau JSON, ou des blocs <code>&lt;div class="question"&gt;</code>. Le code est analysé comme du texte : il n'est jamais exécuté.</p>
++      <label for="ihHtmlInput">Colle ton code HTML ici</label>
++      <textarea id="ihHtmlInput" style="min-height:220px;font-family:monospace;font-size:13px" spellcheck="false" placeholder="const ALL_QUESTIONS = [ ... ]"></textarea>
++      <div class="filebox" style="margin-top:12px">
++        <input id="ihFile" type="file" accept=".html,.htm,.json,.js,.txt,text/html" style="display:none">
++        <button type="button" class="secondary" id="ihFileBtn">📂 Importer un fichier .html</button>
++        <span id="ihFileName" style="margin-left:10px;font-weight:600;font-size:14px;color:var(--navy)">Aucun fichier</span>
++      </div>
++      <div class="actions">
++        <button type="button" id="ihConvertBtn">🔄 Convertir en Quiz</button>
++        <button type="button" class="ghost" id="ihSampleBtn">🧪 Charger un exemple</button>
++      </div>
++      <div id="ihPreview" class="notice hide" role="status" aria-live="polite"></div>
++      <div id="ihSavePanel" class="hide" style="margin-top:20px">
++        <div class="grid-2">
++          <div><label for="ihTitle">Nom du quiz <span style="color:var(--red)">*</span></label><input id="ihTitle" maxlength="200" placeholder="Ex. Statistiques — Chapitre 3"></div>
++          <div><label for="ihSubject">Matière</label><input id="ihSubject" maxlength="200" placeholder="Ex. Statistiques"></div>
++        </div>
++        <div>
++          <label for="ihLevel">Niveau <span style="color:var(--red)">*</span></label>
++          <select id="ihLevel" required>
++            <option value="" disabled selected>Choisir un niveau</option>
++            <option value="LICENCE 1">LICENCE 1</option>
++            <option value="LICENCE 2">LICENCE 2</option>
++            <option value="LICENCE 3">LICENCE 3</option>
++          </select>
++        </div>
++        <div class="actions"><button type="button" class="success" id="ihCreateBtn">✅ Créer le Quiz</button></div>
++        <div id="ihSaveStatus" class="notice hide" role="status" aria-live="polite"></div>
++      </div>
+     </div>
+   </div>
+@@ -2501,5 +2537,5 @@
+ 
+ // ===== ONGLETS : contrôle d'accès selon le rôle =====
+-const ADMIN_ONLY_TABS = ['create'];     // onglets réservés aux administrateurs
++const ADMIN_ONLY_TABS = ['create', 'import-html'];     // onglets réservés aux administrateurs
+ const DEFAULT_TAB_ADMIN = 'create';     // onglet affiché par défaut pour un admin
+ const DEFAULT_TAB_STUDENT = 'library';  // onglet affiché par défaut pour un étudiant (et repli en cas d'accès refusé)
+@@ -2567,4 +2603,5 @@
+     if(isAdmin) loadAdminUsers();
+     applyRoleToTabs(); // onglet "Créer un test" visible seulement pour les admins + onglet par défaut selon le rôle
++    { const ihBtn = $('tabBtnImportHtml'); if (ihBtn) ihBtn.style.display = isAdmin ? '' : 'none'; } // onglet "Importer HTML" : admins uniquement
+     loadCloudData();
+     // 🆕 Recharger les rappels / reprise dès la connexion
+@@ -3233,5 +3270,6 @@
+   list.innerHTML = filtered.map(q => {
+     const idx = libraryCache.indexOf(q);
+-    const levelBadge = (q.level ? `<span class="level-badge">${esc(q.level.replace('LICENCE ', 'L'))}</span>` : '') + (q.display_mode === 'QPQ' ? ' <span class="level-badge" style="background:#EDE9FE;color:#5B21B6" title="Question par question : un bloc à la fois, sans retour en arrière">QPQ</span>' : '');
++    const levelBadge = (q.level ? `<span class="level-badge">${esc(q.level.replace('LICENCE ', 'L'))}</span>` : '') + (q.display_mode === 'QPQ' ? ' <span class="level-badge" style="background:#EDE9FE;color:#5B21B6" title="Question par question : un bloc à la fois, sans retour en arrière">QPQ</span>' : '')
++      + (q.subject === 'Import HTML' || (Array.isArray(q.questions) && q.questions[0] && q.questions[0].source === 'html') ? ' <span class="level-badge" style="background:#DBEAFE;color:#1E40AF" title="Quiz importé depuis du HTML">HTML</span>' : '');
+     const isChecked = selectedQuizIds.has(q.id) ? 'checked' : '';
+     return `
+@@ -4538,5 +4576,8 @@
+ 
+ document.querySelectorAll('.tab').forEach(tab => {
+-  tab.addEventListener('click', () => activateTab(tab.dataset.tab));
++  tab.addEventListener('click', () => {
++    if (tab.hasAttribute('data-admin-only') && !isAdmin) return; // onglet réservé aux admins : clic ignoré (même si le bouton a été affiché via la console)
++    activateTab(tab.dataset.tab);
++  });
+ });
+ 
+@@ -4545,4 +4586,173 @@
+   if (input) input.addEventListener('input', () => { $('communityCharCount').textContent = input.value.length; });
+ });
++
++// ==========================================
++// 🧩 IMPORT HTML → QUIZ (administrateurs uniquement)
++//    Le parser vit dans /html-quiz-parser.js (chargé à la demande) ; le code collé n'est jamais exécuté.
++// ==========================================
++let importHtmlResult = null;
++const IMPORT_HTML_SAMPLE = [
++  '<!DOCTYPE html>',
++  '<html lang="fr">',
++  '<head>',
++  '<meta charset="UTF-8">',
++  '<title>Statistiques — Quiz de test</title>',
++  '<style>body { font-family: Arial, sans-serif; }</style>',
++  '</head>',
++  '<body>',
++  '<h1>Quiz de statistiques</h1>',
++  '<script>',
++  'const ALL_QUESTIONS = [',
++  '  {',
++  '    id: 1, type: "single",',
++  '    question: "Quelle mesure de tendance centrale est la plus sensible aux valeurs extrêmes ?",',
++  '    options: ["La médiane", "La moyenne", "Le mode", "L\'étendue"],',
++  '    correctAnswers: [1],',
++  '    explanation: "La moyenne prend en compte toutes les valeurs : un point aberrant la déplace fortement."',
++  '  },',
++  '  {',
++  '    id: 2, type: "multiple",',
++  '    question: "Parmi ces mesures, lesquelles sont des mesures de dispersion ?",',
++  '    options: ["La variance", "L\'écart-type", "La médiane", "L\'étendue"],',
++  '    correctAnswers: [0, 1, 3], expectedCount: 3,',
++  '    explanation: "Variance, écart-type et étendue mesurent la dispersion ; la médiane est une mesure de position."',
++  '  },',
++  '  {',
++  '    id: 3, type: "single",',
++  '    question: "Dans une loi normale centrée réduite, quelle est la valeur de la moyenne ?",',
++  '    options: ["0", "1", "−1", "Elle dépend de l\'échantillon"],',
++  '    correctAnswers: [0],',
++  '    explanation: ""',
++  '  },',
++  '  {',
++  '    id: 4,',
++  '    question: "Un test est « significatif » au seuil de 5 % lorsque :",',
++  '    options: ["p < 0,05", "p > 0,05", "p = 1", "p = 0,95"],',
++  '    correctAnswers: [0],',
++  '    explanation: "On rejette H0 quand la valeur p est inférieure au seuil α."',
++  '  },',
++  '  {',
++  '    id: 5, type: "tf",',
++  '    question: "Une corrélation forte entre deux variables prouve qu\'il existe un lien de causalité.",',
++  '    options: ["Vrai", "Faux"],',
++  '    correctAnswers: [1],',
++  '    explanation: "Corrélation n\'est pas causalité : un facteur tiers peut expliquer la relation."',
++  '  }',
++  '];',
++  '<\/script>',
++  '</body>',
++  '</html>'
++].join('\n');
++
++function importHtmlSetNotice(el, cls, html) {
++  el.className = 'notice ' + cls;
++  el.innerHTML = html;
++}
++
++function importHtmlInvalidate() {          // le texte a changé : l'ancienne conversion n'est plus valable
++  importHtmlResult = null;
++  $('ihSavePanel').classList.add('hide');
++  $('ihPreview').classList.add('hide');
++  $('ihSaveStatus').classList.add('hide');
++}
++
++function importHtmlRender(res) {
++  const preview = $('ihPreview');
++  const st = res.stats || {};
++  const n = res.questions.length;
++  const label = { mcq: 'choix unique', mcq_multi: 'choix multiples', tf: 'vrai/faux', short: 'réponse courte' };
++  const types = Object.keys(label).filter(k => st[k]).map(k => st[k] + ' ' + label[k]).join(' • ');
++  const fmt = { js: 'tableau JavaScript', json: 'JSON', html: 'HTML brut' }[res.format] || '';
++  const lim = (arr) => arr.slice(0, 20).map(e => '<li>' + esc(e) + '</li>').join('') + (arr.length > 20 ? '<li>… et ' + (arr.length - 20) + ' autre(s)</li>' : '');
++  let html = n > 0
++    ? '<b>✅ ' + n + ' question' + (n > 1 ? 's' : '') + ' prête' + (n > 1 ? 's' : '') + '</b>' + (fmt ? ' <span style="opacity:.8">(format ' + fmt + ')</span>' : '') + (types ? '<br>' + esc(types) : '')
++    : '<b>⚠️ Aucune question exploitable.</b>';
++  if (res.errors.length) html += '<div style="margin-top:8px"><b>' + res.errors.length + ' erreur(s) — questions ignorées :</b><ul style="margin:4px 0 0 18px">' + lim(res.errors) + '</ul></div>';
++  if (res.warnings && res.warnings.length) html += '<div style="margin-top:8px"><b>' + res.warnings.length + ' avertissement(s) :</b><ul style="margin:4px 0 0 18px">' + lim(res.warnings) + '</ul></div>';
++  importHtmlSetNotice(preview, n > 0 ? (res.errors.length ? '' : 'ok') : 'err', html);
++  $('ihSavePanel').classList.toggle('hide', n === 0);   // « Créer le Quiz » n'apparaît qu'avec au moins 1 question
++}
++
++async function importHtmlConvert() {
++  if (!isAdmin) return;
++  const code = $('ihHtmlInput').value;
++  const btn = $('ihConvertBtn');
++  btn.disabled = true;
++  try {
++    const Parser = await loadModule('html-quiz-parser', 'HtmlQuizParser');
++    const res = Parser.convert(code);
++    importHtmlResult = res.questions.length ? res : null;
++    importHtmlRender(res);
++    if (res.questions.length && !$('ihTitle').value.trim()) {
++      const t = /<title[^>]*>([^<]{1,200})<\/title>/i.exec(code);
++      if (t) $('ihTitle').value = t[1].replace(/\s+/g, ' ').trim();
++    }
++  } catch (e) {
++    importHtmlResult = null;
++    $('ihSavePanel').classList.add('hide');
++    importHtmlSetNotice($('ihPreview'), 'err', '❌ Impossible de charger le convertisseur : ' + esc(e.message || e));
++  } finally { btn.disabled = false; }
++}
++
++async function importHtmlCreate() {
++  if (!isAdmin) return;
++  const status = $('ihSaveStatus');
++  if (!importHtmlResult || !importHtmlResult.questions.length) { importHtmlSetNotice(status, 'err', 'Convertis d\'abord ton code : aucune question à enregistrer.'); return; }
++  const title = $('ihTitle').value.trim();
++  const level = $('ihLevel').value;
++  if (!title) { importHtmlSetNotice(status, 'err', 'Donne un nom au quiz.'); $('ihTitle').focus(); return; }
++  if (!level) { importHtmlSetNotice(status, 'err', 'Choisis un niveau.'); $('ihLevel').focus(); return; }
++  const subject = $('ihSubject').value.trim() || 'Import HTML';
++  const btn = $('ihCreateBtn');
++  btn.disabled = true;
++  importHtmlSetNotice(status, '', 'Enregistrement…');
++  try {
++    // « source: html » sert à afficher le badge HTML dans la bibliothèque, même si la matière est personnalisée
++    const questions = importHtmlResult.questions.map(q => ({ ...q, source: 'html' }));
++    await fetchWithAuth('/api/quizzes', { title, subject, level, questions });
++    importHtmlSetNotice(status, 'ok', '✅ Quiz « ' + esc(title) + ' » créé (' + questions.length + ' question' + (questions.length > 1 ? 's' : '') + ').');
++    importHtmlResult = null;
++    $('ihHtmlInput').value = ''; $('ihTitle').value = ''; $('ihSubject').value = '';
++    $('ihFileName').textContent = 'Aucun fichier';
++    setTimeout(() => { activateTab('library'); }, 700);    // affiche la bibliothèque (rechargée, badge HTML visible)
++  } catch (e) {
++    importHtmlSetNotice(status, 'err', '❌ ' + esc(e.message || 'Erreur lors de l\'enregistrement.'));
++  } finally { btn.disabled = false; }
++}
++
++(function initImportHtmlTab() {
++  const input = $('ihHtmlInput');
++  if (!input) return;
++  input.addEventListener('input', importHtmlInvalidate);
++  $('ihConvertBtn').addEventListener('click', importHtmlConvert);
++  $('ihCreateBtn').addEventListener('click', importHtmlCreate);
++  $('ihSampleBtn').addEventListener('click', () => {
++    if (!isAdmin) return;
++    input.value = IMPORT_HTML_SAMPLE;
++    $('ihFileName').textContent = 'Exemple (5 questions)';
++    importHtmlInvalidate();
++    importHtmlConvert();
++  });
++  $('ihFileBtn').addEventListener('click', () => { if (isAdmin) $('ihFile').click(); });
++  $('ihFile').addEventListener('change', async function () {
++    const f = this.files && this.files[0];
++    this.value = '';
++    if (!f || !isAdmin) return;
++    importHtmlInvalidate();
++    if (f.size > 500 * 1024) {
++      $('ihFileName').textContent = f.name;
++      importHtmlSetNotice($('ihPreview'), 'err', 'Fichier trop volumineux (' + Math.round(f.size / 1024) + ' Ko). Maximum : 500 Ko.');
++      return;
++    }
++    try {
++      input.value = await f.text();
++      $('ihFileName').textContent = f.name;
++      importHtmlConvert();
++    } catch (e) {
++      importHtmlSetNotice($('ihPreview'), 'err', 'Lecture du fichier impossible : ' + esc(e.message || e));
++    }
++  });
++})();
++// ===== IMPORT HTML (fin) =====
+ 
+ // ==========================================
+--- a/server.js
++++ b/server.js
+@@ -212,5 +212,5 @@
+   'favicon.png', 'favicon.ico', 'site.png', 'og-image.png', 'Revisio.apk',
+   'a11y.js', 'admin-extras.js', 'community-voice.js', 'consent.js', 'dark-mode.js', 'download-android.js',
+-  'global-search.js', 'pdf-export.js', 'progress.js', 'push-client.js', 'question-comments.js',
++  'global-search.js', 'html-quiz-parser.js', 'pdf-export.js', 'progress.js', 'push-client.js', 'question-comments.js',
+   'resume-quiz.js', 'ui-extras.js'
+ ]);
