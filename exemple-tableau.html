@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Statistiques descriptives — Tableaux à remplir</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 24px; }
+  table { border-collapse: collapse; }
+  td, th { border: 1px solid #999; padding: 6px 10px; }
+  input { width: 70px; }
+  .solution { display: none; }
+</style>
+</head>
+<body>
+<h1>Exercice N°3 : Tableaux d'effectifs &amp; calculs</h1>
+<p>Formules : f = n / N ; x̄ = Σ(nᵢ × xᵢ) / N ; V = Moyenne des x² − (moyenne)²</p>
+
+<section class="exercice" id="ex1">
+  <h2>Exercice 1 : Nombre d'enfants par famille (15 points)</h2>
+  <p>On a interrogé 12 familles. Résultats bruts : 2, 1, 0, 2, 3, 1, 2, 1, 0, 2, 1, 3</p>
+  <p>Complétez le tableau (fréquences arrondies à 0,01) :</p>
+  <table>
+    <thead><tr><th>Nombre d'enfants xᵢ</th><th>Effectif nᵢ</th><th>Fréquence fᵢ</th><th>Effectif cumulé croissant</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td><input id="q1_1" data-answer="2"></td><td><input id="q1_2" data-answer="0.167" data-tol="0.01"></td><td><input id="q1_3" data-answer="2"></td></tr>
+      <tr><td>1</td><td><input id="q1_4" data-answer="4"></td><td><input id="q1_5" data-answer="0.333" data-tol="0.01"></td><td><input id="q1_6" data-answer="6"></td></tr>
+      <tr><td>2</td><td><input id="q1_7" data-answer="4"></td><td><input id="q1_8" data-answer="0.333" data-tol="0.01"></td><td><input id="q1_9" data-answer="10"></td></tr>
+      <tr><td>3</td><td><input id="q1_10" data-answer="2"></td><td><input id="q1_11" data-answer="0.167" data-tol="0.01"></td><td><input id="q1_12" data-answer="12"></td></tr>
+      <tr><td><b>Total</b></td><td><input id="q1_13" data-answer="12"></td><td><input id="q1_14" data-answer="1" data-tol="0.01"></td><td><input value="—" readonly></td></tr>
+    </tbody>
+  </table>
+  <button onclick="checkEx(1)">Vérifier</button>
+  <div class="solution">Corrigé : N = 12, moyenne = 1,5</div>
+</section>
+
+<section class="exercice" id="ex2">
+  <h2>Exercice 2 : Indicateurs de la série</h2>
+  <p>Avec la série de l'exercice 1, calculez :</p>
+  <table>
+    <tr><th>Indicateur</th><th>Valeur</th></tr>
+    <tr><td>Moyenne x̄</td><td><input id="q2_1" data-answer="1,5" data-tol="0.01"></td></tr>
+    <tr><td>Médiane</td><td><input id="q2_2" data-answer="1.5" data-tol="0.01"></td></tr>
+    <tr><td>Mode (une des deux valeurs)</td><td><input id="q2_3" data-answer="1|2"></td></tr>
+    <tr><td>Variance V</td><td><input id="q2_4" data-answer="0.917" data-tol="0.01"></td></tr>
+    <tr><td>Écart-type σ</td><td><input id="q2_5" data-answer="0.957" data-tol="0.01"></td></tr>
+    <tr><td>Commentaire (ignoré, pas de data-answer)</td><td><input id="q2_6"></td></tr>
+  </table>
+</section>
+
+<section class="exercice" id="ex3">
+  <h2>Exercice 3 : Questions de cours</h2>
+  <div class="q">
+    <p>1. La médiane est :</p>
+    <ul>
+      <li><label><input type="radio" name="r1" data-correct="false"> La valeur la plus fréquente</label></li>
+      <li><label><input type="radio" name="r1" data-correct="true"> La valeur qui partage la série en deux moitiés égales</label></li>
+      <li><label><input type="radio" name="r1" data-correct="false"> La moyenne des écarts</label></li>
+    </ul>
+  </div>
+  <div class="q">
+    <p>2. Quelle mesure est exprimée dans la même unité que les données ?</p>
+    <label><input type="radio" name="r2" data-correct="false"> La variance</label><br>
+    <label><input type="radio" name="r2" data-correct="true"> L'écart-type</label><br>
+    <label><input type="radio" name="r2" data-correct="false"> Le coefficient de variation</label>
+  </div>
+</section>
+
+<script>
+  // Logique de vérification de la page d'origine : ignorée par le convertisseur
+  const SOLUTIONS = [1, 2, 3];
+  function checkEx(n) { document.querySelector('#ex' + n + ' .solution').style.display = 'block'; }
+</script>
+</body>
+</html>

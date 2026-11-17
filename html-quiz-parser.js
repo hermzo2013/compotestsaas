@@ -2,18 +2,24 @@
    RÉVISIO — Convertisseur « HTML → Quiz »  (html-quiz-parser.js)
 
    API :  window.HtmlQuizParser.convert(htmlCode [, options])
-          → { questions: [...], errors: [...], warnings: [...], format: 'js'|'json'|'html'|null, stats: {...} }
+          → { questions: [...], errors: [...], warnings: [...], format: 'js'|'json'|'table'|'html'|null, stats: {...} }
 
    Chaque question produite suit le modèle stocké par Révisio :
      { type: 'mcq'|'mcq_multi'|'tf'|'short', text, options, correct, explanation }
        - mcq / tf   : correct = index (entier)   → même forme que les quiz déjà en base
        - mcq_multi  : correct = [index, ...]     (+ max_select si expectedCount est fourni)
        - short      : correct = "réponse attendue", options = []
+     { type: 'table', text, tableHtml, answers: [{ inputId, expected, tol }], explanation }
+       - table      : UNE question par exercice (toutes les cases <input data-answer> du tableau)
 
    Formats d'entrée reconnus (détection automatique) :
-     1. JS    : const ALL_QUESTIONS = [ ... ]  (au milieu de <script>, CSS, HTML…)
-     2. JSON  : [ {"question": "..."} ]  ou  { "questions": [ ... ] }
-     3. HTML  : <div class="question"> … <li>option</li> … </div>
+     A. JS    : const ALL_QUESTIONS = [ ... ]  (au milieu de <script>, CSS, HTML…)
+     A. JSON  : [ {"question": "..."} ]  ou  { "questions": [ ... ] }
+     B. TABLE : exercices « tableaux à remplir » : <input data-answer="7" data-tol="0.01"> dans des <section>
+                (ou sous des titres « Exercice N ») ; <input type="radio" data-correct="true"> → QCM normal
+     C. HTML  : <div class="question"> … <li>option</li> … </div>
+
+   Dépend de /table-quiz.js (nettoyage HTML) pour le format B : chargez-le avant d'appeler convert().
 
    SÉCURITÉ : le code collé n'est JAMAIS exécuté (ni eval, ni new Function, ni <script> injecté).
    Les littéraux JavaScript sont lus par un petit analyseur sans exécution.
@@ -596,6 +602,200 @@
     return items;
   }
 
+
+  // ---------------------------------------------------------------
+  // 5b. Format B : exercices « tableaux à remplir »
+  //     <input data-answer="7" data-tol="0.01"> → UNE question « table » par exercice
+  //     <input type="radio" data-correct="true"> → question « mcq » normale
+  // ---------------------------------------------------------------
+  var EX_RE = /^\s*(?:exercice|exercise|ex\.?)\s*(?:n\s*°|no\.?|#)?\s*\d+/i;
+  var EX_PARSE_RE = /^\s*(?:exercice|exercise|ex\.?)\s*(?:n\s*°|no\.?|#)?\s*(\d+)\s*[:.\-–—]?\s*([\s\S]*)$/i;
+  var TRUTHY_RE = /^(true|1|yes|oui|vrai|correct)$/i;
+  var SOLUTION_SEL = '[hidden], [style*="display:none"], [style*="display: none"], .solution, .correction, .corrige, .corrigé, .explanation, .explication, .feedback, .score, .result, .resultat, .verif, .verify, [class*="solution"], [class*="correction"], [class*="corrig"], [class*="feedback"]';
+  var DEFAULT_TABLE_EXPLANATION = 'Vérifiez vos calculs.';
+
+  function looksLikeTableDoc(src) {
+    return /<input\b[^>]*\bdata-answer\s*=/i.test(src) || /<input\b[^>]*\bdata-correct\s*=/i.test(src);
+  }
+  function qsa(node, sel) { return Array.prototype.slice.call(node.querySelectorAll(sel)); }
+  function removeNode(n) { if (n && n.parentNode) n.parentNode.removeChild(n); }
+
+  function isExerciseHeading(el) {
+    var tag = el.tagName.toLowerCase();
+    var text = cleanText(el.textContent);
+    if (!text || text.length > 200 || !EX_RE.test(text)) return false;
+    if (/^h[1-6]$|^legend$|^summary$/.test(tag)) return true;
+    if (/title|titre/i.test(el.getAttribute('class') || '')) return true;
+    return text.length < 150 && !el.querySelector('table, input, ul, ol, p, div, h1, h2, h3, h4, h5, h6');   // p / div / strong courts
+  }
+
+  function exerciseTitle(h, k, docTitle) {
+    var t = h ? cleanText(h.textContent) : '';
+    if (!t) return docTitle ? 'Exercice ' + k + ' : ' + docTitle : 'Exercice ' + k;
+    var m = EX_PARSE_RE.exec(t);
+    if (m) { var rest = m[2].replace(/\s+/g, ' ').trim(); return 'Exercice ' + m[1] + (rest ? ' : ' + rest : ''); }
+    return 'Exercice ' + k + ' : ' + t;
+  }
+
+  function lowestCommonAncestor(nodes) {
+    var a = nodes[0].parentElement;
+    while (a && !nodes.every(function (n) { return a.contains(n); })) a = a.parentElement;
+    return a;
+  }
+
+  function optionLabel(input, holder) {
+    var id = input.getAttribute('id'), lab = null;
+    if (id) qsa(holder, 'label[for]').some(function (l) { if (l.getAttribute('for') === id) { lab = l; return true; } return false; });
+    if (!lab) lab = input.closest('label');
+    var src = lab || (input.closest('li') && input.closest('li').querySelectorAll('input').length === 1 ? input.closest('li') : null);
+    if (src) {
+      var c = src.cloneNode(true);
+      qsa(c, 'input, .explanation, .explication').forEach(removeNode);
+      return cleanText(c.textContent);
+    }
+    var t = '';
+    for (var n = input.nextSibling; n; n = n.nextSibling) {
+      if (n.nodeType === 1 && /^(input|br|li|p|div|ul|ol|table)$/i.test(n.tagName)) break;
+      t += n.textContent;
+    }
+    return cleanText(t);
+  }
+
+  /** Boutons radio / cases à cocher avec data-correct → questions mcq / mcq_multi. Retire leurs blocs du holder. */
+  function extractChoiceQuestions(holder, title, out, warnings) {
+    var inputs = qsa(holder, 'input[type="radio"], input[type="checkbox"]');
+    var groups = {}, order = [];
+    inputs.forEach(function (inp) {
+      var key = (inp.getAttribute('type') || '').toLowerCase() + '|' + (inp.getAttribute('name') || 'anonyme');
+      if (!groups[key]) { groups[key] = []; order.push(key); }
+      groups[key].push(inp);
+    });
+    order.forEach(function (key) {
+      var list = groups[key];
+      if (!list.some(function (i) { return i.hasAttribute('data-correct'); })) {
+        warnings.push(title + ' : un groupe de boutons sans data-correct a été ignoré.');
+        return;
+      }
+      var options = [], correct = [];
+      list.forEach(function (inp) {
+        var text = optionLabel(inp, holder);
+        if (!text) return;
+        if (TRUTHY_RE.test((inp.getAttribute('data-correct') || '').trim())) correct.push(options.length);
+        options.push(text);
+      });
+      // bloc de la question : plus haut ancêtre qui ne contient que ce groupe
+      var box = lowestCommonAncestor(list) || holder;
+      while (box.parentElement && box.parentElement !== holder && qsa(box.parentElement, 'input').every(function (i) { return list.indexOf(i) !== -1; }) && !box.parentElement.querySelector('table')) box = box.parentElement;
+      var clone = box.cloneNode(true);
+      var expEl = clone.querySelector('.explanation, .explication, [data-explanation]');
+      var explanation = cleanText(list[0].getAttribute('data-explanation') || (expEl ? (expEl.getAttribute('data-explanation') || expEl.textContent) : '')) || DEFAULT_EXPLANATION;
+      qsa(clone, 'input, label, li, ul, ol, select, .explanation, .explication').forEach(removeNode);
+      var qtext = cleanText(clone.textContent).replace(/^\s*(?:Q(?:uestion)?\s*)?\d{1,3}\s*[.):\-–—]\s+/i, '');
+      if (!qtext) {
+        var prev = box.previousElementSibling;
+        if (prev && !prev.querySelector('input, table')) qtext = cleanText(prev.textContent);
+      }
+      if (!qtext) qtext = title;
+      var label = title + ' (« ' + (qtext.length > 40 ? qtext.slice(0, 40) + '…' : qtext) + ' »)';
+      if (options.length < 2) { out.errors.push(label + ' : au moins 2 options sont nécessaires. Ignorée.'); }
+      else if (!correct.length) { out.errors.push(label + ' : aucune option avec data-correct="true". Ignorée.'); }
+      else {
+        var multi = list[0].getAttribute('type').toLowerCase() === 'checkbox' || correct.length > 1;
+        var q = { type: multi ? 'mcq_multi' : 'mcq', text: qtext, options: options, correct: multi ? correct : correct[0], explanation: explanation };
+        out.items.push({ n: out.items.length + 1, ready: q, warnings: [] });
+      }
+      if (box !== holder) removeNode(box); else qsa(holder, 'input[type="radio"], input[type="checkbox"]').forEach(removeNode);
+    });
+  }
+
+  /** Cases <input data-answer> → une question « table » (HTML du tableau nettoyé + liste des réponses). */
+  function extractTableQuestion(holder, title, explanation, out, warnings) {
+    var TQ = root.TableQuiz;
+    var answerInputs = qsa(holder, 'input').filter(function (i) {
+      var t = (i.getAttribute('type') || 'text').toLowerCase();
+      return i.hasAttribute('data-answer') && t !== 'radio' && t !== 'checkbox' && t !== 'hidden' && t !== 'button' && t !== 'submit';
+    });
+    if (!answerInputs.length) return;
+    var map = new Map(), used = {}, answers = [], seq = 0;
+    answerInputs.forEach(function (inp) {
+      var expected = (inp.getAttribute('data-answer') || '').replace(/\s+/g, ' ').trim();
+      if (!expected) { warnings.push(title + ' : une case avec data-answer vide a été ignorée.'); return; }   // pas de réponse → case ignorée
+      try { expected = expected.normalize('NFC'); } catch (_) { /* ignore */ }
+      var tol = Number(inp.getAttribute('data-tol'));
+      tol = isFinite(tol) && tol > 0 ? tol : 0;
+      var id = (inp.getAttribute('id') || inp.getAttribute('name') || '').trim();
+      if (!/^[A-Za-z0-9_.-]{1,40}$/.test(id) || used[id]) { do { seq++; id = 'c' + seq; } while (used[id]); }
+      used[id] = true;
+      map.set(inp, id);
+      answers.push({ inputId: id, expected: expected, tol: tol });
+    });
+    if (!answers.length) return;
+    var html;
+    try {
+      html = TQ.sanitize(holder, { inputHandler: function (el) { return map.get(el) || null; }, keepValue: true }).replace(/>\s+</g, '><').replace(/\s{2,}/g, ' ').trim();
+    } catch (e) { out.errors.push(title + ' : ' + e.message + ' Ignorée.'); return; }
+    var inCount = (html.match(/<input /g) || []).length;
+    if (inCount !== answers.length) warnings.push(title + ' : ' + answers.length + ' réponses mais ' + inCount + ' cases conservées après nettoyage.');
+    out.items.unshift({ n: 0, ready: { type: 'table', text: title, tableHtml: html, answers: answers, explanation: explanation || DEFAULT_TABLE_EXPLANATION }, warnings: [] });
+  }
+
+  function parseTableDocument(src, errors, warnings) {
+    var out = { items: [], errors: errors };
+    if (!root.TableQuiz) { errors.push('Module table-quiz.js non chargé : impossible de lire les tableaux à remplir.'); return out.items; }
+    var DP = root.DOMParser || (typeof DOMParser !== 'undefined' ? DOMParser : null);
+    if (!DP) { errors.push('Analyse du HTML indisponible dans cet environnement (DOMParser manquant).'); return out.items; }
+    var doc = new DP().parseFromString(src, 'text/html');
+    var docTitle = cleanText(doc.title || '');
+    qsa(doc, 'script, style, noscript, template').forEach(removeNode);
+    var body = doc.body;
+
+    // 1) titres « Exercice N » (on garde les plus externes)
+    var heads = qsa(body, 'h1, h2, h3, h4, h5, h6, legend, summary, p, div, strong, b, span, [class*="title"], [class*="titre"]').filter(isExerciseHeading);
+    heads = heads.filter(function (h) { return !heads.some(function (o) { return o !== h && o.contains(h); }); });
+    var groups = [];
+    function otherHeading(a, h) { return heads.some(function (o) { return o !== h && a.contains(o); }); }
+    heads.forEach(function (H) {
+      var cur = H;
+      while (cur.parentElement && cur.parentElement !== body && !otherHeading(cur.parentElement, H)) cur = cur.parentElement;
+      if (cur !== H) groups.push({ H: H, nodes: [cur] });
+      else {                                                   // structure à plat : tout jusqu'au prochain titre
+        var nodes = [];
+        for (var n = H.nextSibling; n; n = n.nextSibling) { if (n.nodeType === 1 && heads.some(function (h) { return h === n || n.contains(h); })) break; nodes.push(n); }
+        groups.push({ H: H, nodes: nodes });
+      }
+    });
+    // 2) à défaut : <section> / <article> contenant des cases
+    var isAnswerNode = function (el) { return !!el.querySelector('input[data-answer], input[data-correct]'); };
+    if (!groups.some(function (g) { return g.nodes.some(function (n) { return n.nodeType === 1 && (isAnswerNode(n) || n.matches('input[data-answer], input[data-correct]')); }); })) {
+      var secs = qsa(body, 'section, article').filter(isAnswerNode);
+      secs = secs.filter(function (el) { return !secs.some(function (o) { return o !== el && el.contains(o); }); });
+      groups = secs.map(function (sec) { return { H: sec.querySelector('h1, h2, h3, h4, h5, h6, legend, summary'), nodes: [sec] }; });
+    }
+    // 3) à défaut : tout le document = un seul exercice
+    if (!groups.length) groups = [{ H: body.querySelector('h1, h2, h3'), nodes: Array.prototype.slice.call(body.childNodes) }];
+
+    var k = 0;
+    groups.forEach(function (g) {
+      var holder = doc.createElement('div');
+      if (g.H) g.H.setAttribute('data-qh', '1');
+      g.nodes.forEach(function (n) { holder.appendChild(n.cloneNode(true)); });
+      if (g.H) g.H.removeAttribute('data-qh');
+      qsa(holder, '[data-qh]').forEach(removeNode);
+      if (!holder.querySelector('input[data-answer], input[data-correct]')) return;     // exercice sans case à remplir : rien à faire
+      k++;
+      var title = exerciseTitle(g.H, k, docTitle);
+      var expEl = holder.querySelector('.explanation, .explication, [data-explanation]');
+      var explanation = expEl ? cleanText(expEl.getAttribute('data-explanation') || expEl.textContent) : '';
+      var local = { items: [], errors: errors };
+      extractChoiceQuestions(holder, title, local, warnings);          // retire les boutons radio du holder
+      qsa(holder, SOLUTION_SEL).forEach(removeNode);                  // corrections cachées : jamais conservées
+      extractTableQuestion(holder, title, explanation, local, warnings);
+      local.items.forEach(function (it) { out.items.push(it); });
+    });
+    out.items.forEach(function (it, i) { it.n = i + 1; });
+    return out.items;
+  }
+
   // ---------------------------------------------------------------
   // 6. Point d'entrée
   // ---------------------------------------------------------------
@@ -609,7 +809,7 @@
       if (options.indexBase === 1) opt.indexBase = 1;
       if (typeof options.maxBytes === 'number' && options.maxBytes > 0) opt.maxBytes = options.maxBytes;
     }
-    var result = { questions: [], errors: [], warnings: [], format: null, stats: { detected: 0, valid: 0, mcq: 0, mcq_multi: 0, tf: 0, short: 0 } };
+    var result = { questions: [], errors: [], warnings: [], format: null, stats: { detected: 0, valid: 0, mcq: 0, mcq_multi: 0, tf: 0, short: 0, table: 0 } };
     try {
       if (typeof htmlCode !== 'string' || !htmlCode.trim()) { result.errors.push('Aucun code à convertir : colle du HTML ou importe un fichier .html.'); return result; }
       if (byteLength(htmlCode) > opt.maxBytes) {
@@ -634,6 +834,10 @@
           if (j && j.items.length && j.items.some(function (it) { return looksLikeQuestion(it.raw); })) { found = j; errs = errs.concat(e2); result.format = 'json'; }
         }
       }
+      if (!found && looksLikeTableDoc(src)) {                               // format B : tableaux à remplir
+        var tItems = parseTableDocument(src, errs, result.warnings);
+        if (tItems.length) { found = { items: tItems, name: 'TABLE' }; result.format = 'table'; }
+      }
       if (!found && /<[a-z][\s\S]*>/i.test(src)) {
         var blocks = parseHtmlBlocks(src, errs);
         if (blocks.length) { found = { items: blocks, name: 'HTML' }; result.format = 'html'; }
@@ -641,13 +845,13 @@
       result.errors = result.errors.concat(errs);
 
       if (!found) {
-        result.errors.push('Aucune question détectée. Formats acceptés : « const ALL_QUESTIONS = [ … ] », un tableau JSON [{"question": …}], ou des blocs <div class="question"> avec des <li> pour les options.');
+        result.errors.push('Aucune question détectée. Formats acceptés : « const ALL_QUESTIONS = [ … ] », un tableau JSON [{"question": …}], des tableaux à remplir (<input data-answer="…">), ou des blocs <div class="question"> avec des <li> pour les options.');
         return result;
       }
 
       result.stats.detected = found.items.length;
       found.items.forEach(function (it) {
-        var r = normalizeQuestion(it.raw, it.n, opt);
+        var r = it.ready ? { question: it.ready, warnings: it.warnings || [] } : normalizeQuestion(it.raw, it.n, opt);
         if (r.warnings && r.warnings.length) result.warnings = result.warnings.concat(r.warnings);
         if (r.error) { result.errors.push(r.error); return; }
         result.questions.push(r.question);
@@ -661,7 +865,7 @@
     return result;
   }
 
-  var api = { convert: convert, MAX_BYTES: MAX_BYTES, version: '1.0.0', _internal: { LiteralParser: LiteralParser, cleanText: cleanText, normalizeQuestion: normalizeQuestion } };
+  var api = { convert: convert, MAX_BYTES: MAX_BYTES, version: '1.1.0', _internal: { LiteralParser: LiteralParser, cleanText: cleanText, normalizeQuestion: normalizeQuestion } };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.HtmlQuizParser = api;
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));

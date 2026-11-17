@@ -556,6 +556,24 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 .exam-opt.locked input{cursor:default!important}
 .exam-opt span{flex:1!important;text-align:left!important;line-height:1.4!important;word-wrap:break-word!important;display:block!important}
 .exam-input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;margin-top:10px;text-align:left}
+/* ===== Question « tableau à remplir » (type table) ===== */
+.table-quiz{overflow-x:auto;margin:12px 0;-webkit-overflow-scrolling:touch}
+.table-quiz table{border-collapse:collapse;width:100%;font-size:14px;background:#fff}
+.table-quiz th,.table-quiz td{border:1px solid var(--line);padding:6px 8px;text-align:center;vertical-align:middle}
+.table-quiz th{background:#F3F4F6;font-weight:700}
+.table-quiz td input{width:100%;min-width:64px;box-sizing:border-box;padding:7px 6px;border:1.5px solid var(--line);border-radius:6px;text-align:center;font:inherit;margin:0;background:#fff;color:inherit}
+.table-quiz td input:focus{outline:none;border-color:var(--exam-blue)}
+.table-quiz input.correct,.table-quiz td input.correct:disabled{background:#ECFDF5;border-color:var(--green);color:#065F46}
+.table-quiz input.wrong,.table-quiz td input.wrong:disabled{background:#FEF2F2;border-color:var(--red);color:#991B1B}
+.table-quiz .tq-expected{display:block;font-size:11px;font-weight:700;color:var(--red);margin-top:3px}
+.tq-score{font-weight:700;margin-top:4px}
+.table-quiz-host .validate-btn{margin-top:4px}
+html.dark .table-quiz table{background:#1E293B}
+html.dark .table-quiz th{background:#334155;color:var(--ink)}
+html.dark .table-quiz th,html.dark .table-quiz td{border-color:#334155}
+html.dark .table-quiz td input{background:#0F172A;border-color:#475569;color:var(--ink)}
+html.dark .table-quiz input.correct,html.dark .table-quiz td input.correct:disabled{background:#064E3B;border-color:var(--green);color:#D1FAE5}
+html.dark .table-quiz input.wrong,html.dark .table-quiz td input.wrong:disabled{background:#450A0A;border-color:var(--red);color:#FECACA}
 .exam-actions{position:fixed;bottom:0;left:0;right:0;background:#fff;padding:15px 25px;padding-bottom:calc(15px + env(safe-area-inset-bottom));border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;z-index:10;box-shadow:0 -2px 10px rgba(0,0,0,.05)}
 .exam-actions-left{font-size:14px;color:var(--muted);font-weight:bold}
 .exam-actions-right{display:flex;gap:10px}
@@ -3542,10 +3560,12 @@ window.openEditQuiz = (idx) => {
     let correctArr = [];
     if (isMulti) correctArr = Array.isArray(q.correct) ? q.correct : [];
     else if (q.type === 'mcq' || q.type === 'tf') correctArr = [q.correct];
-    const typeLabel = { mcq: 'Choix unique', mcq_multi: 'QCM multi', tf: 'Vrai/Faux', short: 'Réponse courte' }[q.type] || 'Choix unique';
+    const typeLabel = { mcq: 'Choix unique', mcq_multi: 'QCM multi', tf: 'Vrai/Faux', short: 'Réponse courte', table: 'Tableau à remplir' }[q.type] || 'Choix unique';
     const canEditOptions = q.type !== 'tf';
     let optsHtml = '';
-    if (q.type === 'short') {
+    if (q.type === 'table') {
+      optsHtml = '<p style="color:var(--muted);font-size:13px">Tableau à remplir (' + (q.answers || []).length + ' cases) : seul l\'énoncé est modifiable ici.</p>';
+    } else if (q.type === 'short') {
       optsHtml = `<input type="text" class="edit-short-input" data-q="${qi}" value="${esc(q.correct || '')}" placeholder="Réponse attendue" style="width:100%;padding:10px;border:1px solid #D1D5DB;border-radius:8px">`;
     } else {
       const rows = (q.options || []).map((opt, oi) => editOptRowHtml(qi, isMulti, opt, correctArr.includes(oi), canEditOptions)).join('');
@@ -4660,9 +4680,9 @@ function importHtmlRender(res) {
   const preview = $('ihPreview');
   const st = res.stats || {};
   const n = res.questions.length;
-  const label = { mcq: 'choix unique', mcq_multi: 'choix multiples', tf: 'vrai/faux', short: 'réponse courte' };
+  const label = { mcq: 'choix unique', mcq_multi: 'choix multiples', tf: 'vrai/faux', short: 'réponse courte', table: 'tableau(x) à remplir' };
   const types = Object.keys(label).filter(k => st[k]).map(k => st[k] + ' ' + label[k]).join(' • ');
-  const fmt = { js: 'tableau JavaScript', json: 'JSON', html: 'HTML brut' }[res.format] || '';
+  const fmt = { js: 'tableau JavaScript', json: 'JSON', table: 'tableaux à remplir', html: 'HTML brut' }[res.format] || '';
   const lim = (arr) => arr.slice(0, 20).map(e => '<li>' + esc(e) + '</li>').join('') + (arr.length > 20 ? '<li>… et ' + (arr.length - 20) + ' autre(s)</li>' : '');
   let html = n > 0
     ? '<b>✅ ' + n + ' question' + (n > 1 ? 's' : '') + ' prête' + (n > 1 ? 's' : '') + '</b>' + (fmt ? ' <span style="opacity:.8">(format ' + fmt + ')</span>' : '') + (types ? '<br>' + esc(types) : '')
@@ -4679,6 +4699,7 @@ async function importHtmlConvert() {
   const btn = $('ihConvertBtn');
   btn.disabled = true;
   try {
+    await loadModule('table-quiz', 'TableQuiz');   // nettoyage HTML des tableaux (format « tableaux à remplir »)
     const Parser = await loadModule('html-quiz-parser', 'HtmlQuizParser');
     const res = Parser.convert(code);
     importHtmlResult = res.questions.length ? res : null;
@@ -5100,6 +5121,7 @@ function typeLabel(t) {
   return QuizCore.getTypeBadge({ type: t, options: [] }).label;
 }
 function badgeHtml(q) {
+  if (q.type === 'table') return '<span class="exam-type-tag badge-short">TABLEAU</span>';
   const b = QuizCore.getTypeBadge(q);
   return `<span class="exam-type-tag ${b.cssClass}">${esc(b.label)}</span>`;
 }
@@ -5107,7 +5129,7 @@ function selectionHintHtml(q) {
   const h = QuizCore.formatSelectionHint(q);
   return h ? `<div class="exam-hint-select">${esc(h)}</div>` : '';
 }
-function isShortQ(q) { return q.type === 'short' || !q.options || q.options.length === 0; }
+function isShortQ(q) { return q.type === 'short' || (q.type !== 'table' && (!q.options || q.options.length === 0)); }
 function isQuestionLocked(i) {
   return examState.mode === 'exam' ? examState.submitted : (examState.locked[i] || examState.submitted);
 }
@@ -5129,9 +5151,11 @@ function questionCardHtml(i) {
     ${badgeHtml(q)}
     ${isLocked && examState.mode === 'training' ? '<span class="instant-badge">🔒 Verrouillée</span>' : ''}
     <h3>${esc(q.text)}</h3>
-    ${isShort ? '' : selectionHintHtml(q)}`;
+    ${(isShort || q.type === 'table') ? '' : selectionHintHtml(q)}`;
 
-  if (isShort) {
+  if (q.type === 'table') {
+    html += '<div class="table-quiz-host"></div>';   // rempli par renderTableQuestion (table-quiz.js)
+  } else if (isShort) {
     html += `<input type="text" class="exam-input" value="${esc(ua || '')}" ${isLocked ? 'disabled' : ''} placeholder="Votre réponse...">`;
     if (!isLocked && examState.mode === 'training') html += `<button class="validate-btn lock-text" type="button">🔒 Valider ma réponse</button>`;
   } else {
@@ -5165,7 +5189,7 @@ function questionCardHtml(i) {
     html += `<div class="hint-box"><b>Indice :</b> ${esc(q.explanation)}</div>`;
   }
 
-  if (isLocked) {
+  if (isLocked && q.type !== 'table') {   // (le tableau affiche lui-même son score et l'explication)
     const isOk = checkAnswer(q, ua);
     let correctStr = '';
     if (isShort) correctStr = String(q.correct ?? '');
@@ -5243,7 +5267,29 @@ window.openResumeQuiz = async function (state) {
   renderExamQuestion();
 };
 
+function mountTableQuestion(i) {
+  const q = examState.questions[i];
+  const host = document.querySelector(`.exam-card[data-qi="${i}"] .table-quiz-host`);
+  if (!host) return;
+  host.textContent = 'Chargement du tableau…';
+  loadModule('table-quiz', 'TableQuiz').then(() => {
+    if (!examState || !host.isConnected) return;
+    window.renderTableQuestion(q, host, {
+      answer: examState.answers[i],
+      locked: isQuestionLocked(i),
+      mode: examState.mode,
+      onChange: (v) => {
+        examState.answers[i] = v;
+        clearTimeout(mountTableQuestion._t);
+        mountTableQuestion._t = setTimeout(() => { if (window.ResumeQuiz && examState) window.ResumeQuiz.save(snapshotExamState()); }, 500);
+      },
+      onVerify: (v) => { examState.answers[i] = v; examState.locked[i] = true; renderExamQuestion(); }
+    });
+  }).catch(() => { host.textContent = '⚠️ Impossible de charger le tableau. Vérifie ta connexion.'; });
+}
+
 function bindQuestionCard(i) {
+  if (examState.questions[i].type === 'table') return mountTableQuestion(i);
   if (isQuestionLocked(i)) return;
   const q = examState.questions[i];
   const card = document.querySelector(`.exam-card[data-qi="${i}"]`);
@@ -5361,7 +5407,13 @@ function renderQpqBlock() {
   updateQpqTimersUI();
 }
 
+function questionPoints(q, ua) {   // 0..1 ; un tableau rapporte (cases justes / cases totales)
+  if (q.type === 'table') return window.TableQuiz ? window.TableQuiz.score(q, ua) : 0;
+  return checkAnswer(q, ua) ? 1 : 0;
+}
+
 function checkAnswer(q, ua) {
+  if (q.type === 'table') return !!(window.TableQuiz && window.TableQuiz.isPerfect(q, ua));
   if (ua === null || ua === undefined) return false;
   if (q.type === 'short') return String(ua).toLowerCase().trim() === String(q.correct).toLowerCase().trim();
   const sel = Array.isArray(ua) ? ua : [ua];
@@ -5405,8 +5457,9 @@ async function finishExam() {
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
   $('examTimerContainer').style.display = 'none';
 
+  if (examState.questions.some(q => q.type === 'table')) await loadModule('table-quiz', 'TableQuiz').catch(() => {});
   let correctCount = 0;
-  examState.questions.forEach((q, i) => { if (checkAnswer(q, examState.answers[i])) correctCount++; });
+  examState.questions.forEach((q, i) => { correctCount += questionPoints(q, examState.answers[i]); });
   const total = examState.questions.length;
   const scoreSur20 = (correctCount / total * 20);
   const ratio = correctCount / total;
@@ -5414,7 +5467,7 @@ async function finishExam() {
   await saveHistory({ title: examState.title, date: new Date().toISOString(), score: scoreSur20 });
   try { if (window.PushUI) window.PushUI.onQuizCompleted(); } catch (e) {}
 
-  $('scoreCorrect').textContent = correctCount;
+  $('scoreCorrect').textContent = Math.round(correctCount * 10) / 10;
   $('scoreTotal').textContent = total;
   $('scoreSur20').textContent = `Note : ${scoreSur20.toFixed(1)} / 20`;
 
