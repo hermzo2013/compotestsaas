@@ -1,0 +1,132 @@
+--- a.txt	2026-11-17 00:12:03.323044500 +0000
++++ b.txt	2026-11-17 00:12:03.324428837 +0000
+@@ -1293,7 +1293,7 @@
+ <main id="mainApp" class="wrap" style="display:none">
+   <div id="resumeBanner" class="resume-banner" style="display:none"></div>
+   <div class="tabs">
+-    <button class="tab active" data-tab="create">📚 Créer un test</button>
++    <button class="tab" data-tab="create" data-admin-only="1" style="display:none">📚 Créer un test</button>
+     <button class="tab" data-tab="library">🌍 Bibliothèque</button>
+     <button class="tab" data-tab="courses">📖 Cours</button>
+     <button class="tab" data-tab="history">📊 Mon Historique</button>
+@@ -1313,7 +1313,7 @@
+     </div>
+   </div>
+ 
+-  <div id="tab-create" class="tab-content">
++  <div id="tab-create" class="tab-content hide" data-admin-only="1">
+     <div class="panel">
+       <h1>Importer un document ou une photo</h1>
+       <div class="grid-2">
+@@ -2499,6 +2499,55 @@
+ }
+ // ===== AUTH SESSION (fin) =====
+ 
++// ===== ONGLETS : contrôle d'accès selon le rôle =====
++const ADMIN_ONLY_TABS = ['create'];     // onglets réservés aux administrateurs
++const DEFAULT_TAB_ADMIN = 'create';     // onglet affiché par défaut pour un admin
++const DEFAULT_TAB_STUDENT = 'library';  // onglet affiché par défaut pour un étudiant (et repli en cas d'accès refusé)
++let tabsRoleApplied = null;             // 'admin' | 'student' | null : évite de ramener l'utilisateur sur l'onglet par défaut à chaque rafraîchissement de session
++
++function isTabAllowed(name) {
++  return !ADMIN_ONLY_TABS.includes(name) || isAdmin === true;
++}
++
++// Point d'entrée UNIQUE pour changer d'onglet (clic, ?tab=, console...). Refuse les onglets interdits.
++function activateTab(name) {
++  name = String(name || '').replace(/[^a-z-]/g, '');
++  if (!isTabAllowed(name)) name = DEFAULT_TAB_STUDENT;
++  const btn = document.querySelector('.tab[data-tab="' + name + '"]');
++  const target = $('tab-' + name);
++  if (!btn || !target) return false;
++  document.querySelectorAll('.tab').forEach(t => { t.classList.remove('active'); t.removeAttribute('aria-current'); });
++  document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hide'));
++  btn.classList.add('active');
++  btn.setAttribute('aria-current', 'page');
++  target.classList.remove('hide');
++  if (name === 'library') loadLibrary();
++  if (name === 'courses') loadCourses();
++  return true;
++}
++
++// À appeler dans handleSession, une fois isAdmin calculé
++function applyRoleToTabs() {
++  const role = isAdmin ? 'admin' : 'student';
++  document.querySelectorAll('.tab[data-admin-only]').forEach(b => { b.style.display = isAdmin ? '' : 'none'; });
++  document.querySelectorAll('.tab-content[data-admin-only]').forEach(c => { if (!isAdmin) c.classList.add('hide'); });
++  const active = document.querySelector('.tab.active');
++  const activeName = active ? active.dataset.tab : null;
++  // Onglet par défaut : à la connexion / changement de rôle, ou si l'onglet courant n'est plus autorisé
++  if (tabsRoleApplied !== role || !activeName || !isTabAllowed(activeName)) {
++    activateTab(isAdmin ? DEFAULT_TAB_ADMIN : DEFAULT_TAB_STUDENT);
++  }
++  tabsRoleApplied = role;
++}
++
++// À appeler à la déconnexion
++function resetTabsOnLogout() {
++  tabsRoleApplied = null;
++  document.querySelectorAll('.tab[data-admin-only]').forEach(b => { b.style.display = 'none'; });
++  document.querySelectorAll('.tab-content[data-admin-only]').forEach(c => c.classList.add('hide'));
++}
++// ===== ONGLETS (fin) =====
++
+ function handleSession(session) {
+   if (session && session.user) {
+     currentUser = session.user;
+@@ -2516,6 +2565,7 @@
+     if (isAdmin) { $('adminCourseForm').classList.remove('hide'); } else { $('adminCourseForm').classList.add('hide'); }
+     buildWatermark();
+     if(isAdmin) loadAdminUsers();
++    applyRoleToTabs(); // onglet "Créer un test" visible seulement pour les admins + onglet par défaut selon le rôle
+     loadCloudData();
+     // 🆕 Recharger les rappels / reprise dès la connexion
+     (async () => {
+@@ -2528,6 +2578,7 @@
+     if (window.PushUI) { try { window.PushUI.afterLogin(); } catch (e) { console.warn('PushUI:', e); } }
+   } else {
+     currentUser = null; isAdmin = false; window.__isAdmin = false;
++    resetTabsOnLogout();
+     $('authGate').classList.add('show');
+     $('mainApp').style.display = 'none';
+     $('pwdBtn').style.display = 'none';
+@@ -4474,16 +4525,19 @@
+   if (currentUser && supabaseClient) await supabaseClient.from('comptest_data').upsert({ user_id: currentUser.id, history: [], updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+ }
+ 
++// Garde-fou (phase de capture) : bloque tout clic, même programmatique (btn.click() en console),
++// sur un onglet réservé aux admins, et redirige vers la Bibliothèque.
++document.querySelector('#mainApp > .tabs').addEventListener('click', (e) => {
++  const t = e.target.closest ? e.target.closest('.tab') : null;
++  if (t && !isTabAllowed(t.dataset.tab)) {
++    e.preventDefault();
++    e.stopPropagation();
++    activateTab(DEFAULT_TAB_STUDENT);
++  }
++}, true);
++
+ document.querySelectorAll('.tab').forEach(tab => {
+-  tab.addEventListener('click', () => {
+-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+-    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hide'));
+-    tab.classList.add('active');
+-    const target = $('tab-' + tab.dataset.tab);
+-    if (target) target.classList.remove('hide');
+-    if (tab.dataset.tab === 'library') loadLibrary();
+-    if (tab.dataset.tab === 'courses') loadCourses();
+-  });
++  tab.addEventListener('click', () => activateTab(tab.dataset.tab));
+ });
+ 
+ document.addEventListener('DOMContentLoaded', () => {
+@@ -5196,7 +5250,9 @@
+   } else if (wanted) {
+     var tries = 0, timer = setInterval(function () {
+       var btn = document.querySelector('.tab[data-tab="' + wanted.replace(/[^a-z]/g, '') + '"]');
+-      if (btn && btn.offsetParent !== null) { clearInterval(timer); btn.click(); }
++      var appShown = document.getElementById('mainApp') && document.getElementById('mainApp').style.display === 'block';
++      // Si l'onglet demandé est réservé aux admins (?tab=create), le garde-fou redirige vers la Bibliothèque
++      if (btn && appShown) { clearInterval(timer); btn.click(); }
+       else if (++tries > 20) clearInterval(timer);
+     }, 500);
+   }
