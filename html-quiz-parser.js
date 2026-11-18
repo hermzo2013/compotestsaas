@@ -19,6 +19,10 @@
                 (ou sous des titres « Exercice N ») ; <input type="radio" data-correct="true"> → QCM normal
      C. HTML  : <div class="question"> … <li>option</li> … </div>
 
+   Deux écritures des questions à tableau JS/JSON sont acceptées (détection automatique par question) :
+     • historique : { type:"single"|"multiple", question, options, correctAnswers, explanation }
+     • compact    : { type:"QCM"|"QCD", cat, os, theme, q, opts, ans, exp }  → cat/os/theme gardés dans question.meta
+
    Dépend de /table-quiz.js (nettoyage HTML) pour le format B : chargez-le avant d'appeler convert().
 
    SÉCURITÉ : le code collé n'est JAMAIS exécuté (ni eval, ni new Function, ni <script> injecté).
@@ -446,7 +450,13 @@
       else {
         var s = cleanText(typeof it === 'object' ? (it.text || it.label || it.value || '') : it);
         var key = compareKey(s);
-        var byText = key ? texts.findIndex(function (t) { return compareKey(t) === key; }) : -1;
+        var byText = texts.indexOf(s);                                       // 1) texte strictement identique
+        if (byText === -1 && key) {                                          // 2) sinon, texte « proche » (accents, casse, ponctuation) s'il est non ambigu
+          var hits = [];
+          texts.forEach(function (t, k) { if (compareKey(t) === key) hits.push(k); });
+          if (hits.length === 1) byText = hits[0];
+          else if (hits.length > 1) { problems.push('« ' + (s.length > 40 ? s.slice(0, 40) + '…' : s) + ' » correspond à plusieurs options'); return; }
+        }
         if (byText !== -1) idx = byText;
         else if (/^[A-Ja-j]$/.test(s)) idx = LETTERS.indexOf(s.toUpperCase());
         else if (/^\d+$/.test(s)) idx = parseInt(s, 10) - base;
@@ -502,7 +512,7 @@
 
     // ---- Questions à choix ---------------------------------------------
     var list = toOptionList(rawOptions);
-    if (list.texts.length < 2) return { error: label + ' : au moins 2 options sont nécessaires. Ignorée.' };
+    if (list.texts.length < 2) return { error: label + (rawOptions === undefined ? ' : Format non reconnu (ni « options » ni « opts » trouvé). Ignorée.' : ' : au moins 2 options sont nécessaires. Ignorée.') };
     if (list.texts.length > 10) warnings.push(label + ' : ' + list.texts.length + ' options (l\'éditeur de Révisio en attend 10 au maximum).');
     if (type === 'tf' && list.texts.length !== 2) return { error: label + ' : une question Vrai/Faux doit avoir exactement 2 options. Ignorée.' };
 
@@ -545,6 +555,49 @@
     } else q.correct = correct[0];                                           // mcq / tf : entier, comme les quiz existants
 
     return { question: q, warnings: warnings };
+  }
+
+
+  // ---------------------------------------------------------------
+  // 4b. Format compact « Statistique L1 » : { type:"QCM"|"QCD", cat, os, theme, q, opts, ans, exp }
+  //     AJOUT : ne touche pas au format historique { question, options, correctAnswers, explanation }.
+  //     Cette fonction traduit une question compacte vers les clés internes, puis normalizeQuestion()
+  //     (inchangée) fait le reste. Une question de l'ancien format est renvoyée telle quelle.
+  // ---------------------------------------------------------------
+  function isVraiFauxPair(options) {
+    if (!Array.isArray(options) || options.length !== 2) return false;
+    var k = options.map(function (o) { return compareKey(cleanText(o)); }).sort().join('|');
+    return k === 'faux|vrai' || k === 'false|true';
+  }
+
+  /** Renvoie { raw, meta } : raw = objet à passer à normalizeQuestion ; meta = { cat, os, theme } ou null. */
+  function adaptQuestionFormat(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { raw: raw, meta: null };
+    var m = indexKeys(raw);
+    var compact = ('opts' in m) && !('options' in m);                       // ancien format = « options » ; nouveau = « opts »
+    if (!compact) return { raw: raw, meta: null };                           // ← ancien format : AUCUNE modification
+
+    var answers = 'ans' in m ? m.ans : pick(m, CORRECT_KEYS);
+    var count = Array.isArray(answers) ? answers.length : (answers === undefined || answers === null || answers === '' ? 0 : 1);
+    var t = compareKey(m.type);
+    var type;
+    if (t === 'qcd') type = isVraiFauxPair(m.opts) ? 'tf' : 'single';        // QCD Vrai/Faux → tf ; QCD à 2 choix quelconques → mcq
+    else if (t === 'qcm') type = count > 1 ? 'multiple' : 'single';          // QCM → mcq (mcq_multi s'il y a plusieurs bonnes réponses)
+    else type = m.type;                                                      // autre type : laissé à normalizeType()
+
+    var adapted = {
+      question: 'q' in m ? m.q : pick(m, TEXT_KEYS),
+      options: m.opts,
+      correctAnswers: answers,
+      explanation: 'exp' in m ? m.exp : pick(m, EXPLANATION_KEYS),
+      type: type
+    };
+    var ec = pick(m, COUNT_KEYS);
+    if (ec !== undefined) adapted.expectedCount = ec;
+
+    var meta = {};
+    ['cat', 'os', 'theme'].forEach(function (k) { var v = cleanText(m[k]); if (v) meta[k] = v; });
+    return { raw: adapted, meta: Object.keys(meta).length ? meta : null };
   }
 
   // ---------------------------------------------------------------
@@ -851,7 +904,9 @@
 
       result.stats.detected = found.items.length;
       found.items.forEach(function (it) {
-        var r = it.ready ? { question: it.ready, warnings: it.warnings || [] } : normalizeQuestion(it.raw, it.n, opt);
+        var adapted = it.ready ? { raw: null, meta: null } : adaptQuestionFormat(it.raw);   // identité pour l'ancien format
+        var r = it.ready ? { question: it.ready, warnings: it.warnings || [] } : normalizeQuestion(adapted.raw, it.n, opt);
+        if (r.question && adapted.meta) r.question.meta = adapted.meta;          // cat / os / theme conservés pour un affichage futur
         if (r.warnings && r.warnings.length) result.warnings = result.warnings.concat(r.warnings);
         if (r.error) { result.errors.push(r.error); return; }
         result.questions.push(r.question);
@@ -865,7 +920,7 @@
     return result;
   }
 
-  var api = { convert: convert, MAX_BYTES: MAX_BYTES, version: '1.1.0', _internal: { LiteralParser: LiteralParser, cleanText: cleanText, normalizeQuestion: normalizeQuestion } };
+  var api = { convert: convert, MAX_BYTES: MAX_BYTES, version: '1.2.0', _internal: { LiteralParser: LiteralParser, cleanText: cleanText, normalizeQuestion: normalizeQuestion } };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.HtmlQuizParser = api;
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));

@@ -2252,9 +2252,10 @@ function loadVoiceModule() {
 }
 
 /* ===== Loaders dynamiques ===== */
-async function loadModule(name, globalName) {
+async function loadModule(name, globalName, version) {
   if (window[globalName]) return window[globalName];
-  await import('/' + name + '.js');
+  // « version » (optionnelle) contourne le cache navigateur de 24 h : à incrémenter quand le fichier change
+  await import('/' + name + '.js' + (version ? '?v=' + encodeURIComponent(version) : ''));
   return window[globalName];
 }
 window.loadModule = loadModule;
@@ -4699,8 +4700,8 @@ async function importHtmlConvert() {
   const btn = $('ihConvertBtn');
   btn.disabled = true;
   try {
-    await loadModule('table-quiz', 'TableQuiz');   // nettoyage HTML des tableaux (format « tableaux à remplir »)
-    const Parser = await loadModule('html-quiz-parser', 'HtmlQuizParser');
+    await loadModule('table-quiz', 'TableQuiz', '1.0.0');   // nettoyage HTML des tableaux (format « tableaux à remplir »)
+    const Parser = await loadModule('html-quiz-parser', 'HtmlQuizParser', '1.2.0');
     const res = Parser.convert(code);
     importHtmlResult = res.questions.length ? res : null;
     importHtmlRender(res);
@@ -5272,7 +5273,7 @@ function mountTableQuestion(i) {
   const host = document.querySelector(`.exam-card[data-qi="${i}"] .table-quiz-host`);
   if (!host) return;
   host.textContent = 'Chargement du tableau…';
-  loadModule('table-quiz', 'TableQuiz').then(() => {
+  loadModule('table-quiz', 'TableQuiz', '1.0.0').then(() => {
     if (!examState || !host.isConnected) return;
     window.renderTableQuestion(q, host, {
       answer: examState.answers[i],
@@ -5457,7 +5458,7 @@ async function finishExam() {
   if (examTimer) { clearInterval(examTimer); examTimer = null; }
   $('examTimerContainer').style.display = 'none';
 
-  if (examState.questions.some(q => q.type === 'table')) await loadModule('table-quiz', 'TableQuiz').catch(() => {});
+  if (examState.questions.some(q => q.type === 'table')) await loadModule('table-quiz', 'TableQuiz', '1.0.0').catch(() => {});
   let correctCount = 0;
   examState.questions.forEach((q, i) => { correctCount += questionPoints(q, examState.answers[i]); });
   const total = examState.questions.length;
