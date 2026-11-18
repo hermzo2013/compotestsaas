@@ -538,7 +538,8 @@ body.library-bar-fixed .course-toolbar.is-fixed{position:fixed !important;top:0 
 .exam-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:25px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,.02);position:relative;overflow:hidden}
 .exam-card::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;user-select:none;background-image:var(--watermark-svg, none);background-repeat:repeat;background-size:240px 240px}
 .exam-card > *{position:relative;z-index:1}
-.exam-card h3{font-size:17px;margin-top:0;margin-bottom:20px;line-height:1.5;color:#1F2937;text-align:left}
+/* Correctif texte question : --ink = foncé en mode clair, clair en mode sombre (avant : #1F2937 fixe = invisible sur fond sombre) */
+.exam-card h3{font-size:17px;margin-top:0;margin-bottom:20px;line-height:1.5;color:var(--ink);text-align:left}
 .exam-q-num{display:inline-block;background:var(--exam-blue);color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:99px;margin-bottom:12px}
 .exam-type-tag{display:inline-block;background:#D1FAE5;color:#065F46;font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;margin-left:6px;text-transform:uppercase}
 .exam-options{display:flex!important;flex-direction:column!important;gap:12px!important;width:100%!important}
@@ -579,7 +580,7 @@ html.dark .table-quiz input.wrong,html.dark .table-quiz td input.wrong:disabled{
 .exam-actions-right{display:flex;gap:10px}
 .exam-actions-right button#examPrevBtn{background:#ECFDF5;color:var(--navy)}
 .exam-actions-right button#examNextBtn{background:var(--exam-blue);color:#fff}
-.exam-result-box{background:#ECFDF5;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
+.exam-result-box{background:#ECFDF5;color:#1F2937;padding:18px;border-radius:10px;margin-top:20px;border-left:4px solid var(--green);font-size:14px;text-align:left}
 .exam-result-box.wrong{background:#FEF2F2;border-color:var(--red)}
 .exam-explain{font-size:13px;color:#4B5563;margin-top:12px;padding:12px;background:#F9FAFB;border-radius:8px;border-left:2px solid var(--exam-blue)}
 .hint-btn{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;padding:8px 15px;border-radius:8px;font-weight:bold;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-top:15px;transition:0.2s}
@@ -1087,6 +1088,8 @@ html.dark .exam-opt{background:#0F172A!important;border-color:#334155!important;
 html.dark .exam-opt.selected{background:#064E3B!important;border-color:#34D399!important}
 html.dark .exam-actions{background:#1E293B;border-color:#334155}
 html.dark .exam-input{background:#0F172A;border-color:#334155;color:var(--ink)}
+/* Correctif texte question : bouton « Précédent » lisible en mode sombre */
+html.dark .exam-actions-right button#examPrevBtn{background:#064E3B;color:var(--navy)}
 html.dark .community-popup-body{background:#0F172A}
 html.dark .community-popup-footer{background:#1E293B;border-color:#334155}
 html.dark .chat-msg-actions button{background:#064E3B;color:#A7F3D0;border-color:#334155}
