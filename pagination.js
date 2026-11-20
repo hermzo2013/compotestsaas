@@ -7,7 +7,8 @@
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var INSTITUTION = window.REVISIO_INSTITUTION || 'INFAS Agboville';   // pas de colonne "établissement" en base : valeur par défaut modifiable
-  var DEFAULTS = { courses: 10, library: 15 };
+  var DEFAULTS = { courses: 10, library: 5 };
+  var ADMIN_PERPAGE_SELECTOR = false;   // true = réactive le sélecteur admin 10/20/50 par page
   var LEVEL_SHORT = { 'LICENCE 1': 'L1', 'LICENCE 2': 'L2', 'LICENCE 3': 'L3' };
   var SHORT_LEVEL = { L1: 'LICENCE 1', L2: 'LICENCE 2', L3: 'LICENCE 3' };
   var KEEP_UPPER = ['ECG', 'IRM', 'VIH', 'SIDA', 'HTA', 'AVC', 'IDE', 'SFM', 'TSS', 'ORL', 'SNC', 'ATCD', 'PDF', 'QCM', 'SONU'];
@@ -28,7 +29,7 @@
 
   /* ---------- per-page (sélecteur réservé à l'admin) ---------- */
   function perPage(kind) {
-    if (!admin()) return DEFAULTS[kind];
+    if (!admin() || !ADMIN_PERPAGE_SELECTOR) return DEFAULTS[kind];
     var v = state[kind].perPage;
     return [10, 20, 50].indexOf(v) !== -1 || v === DEFAULTS[kind] ? v : DEFAULTS[kind];
   }
@@ -68,15 +69,15 @@
     return { items: items.slice(start, start + pp), total: total, pages: pages, page: s.page, from: total ? start + 1 : 0, to: Math.min(total, start + pp), pp: pp };
   }
   function pagerHtml(kind, p, noun, extra) {
-    var html = '<div class="rv-pager" data-kind="' + kind + '">' +
-      '<div class="rv-pager-info">Affichage : ' + p.from + ' - ' + p.to + ' sur ' + p.total + ' ' + noun + (extra || '') + '</div>';
+    var html = '<div class="rv-pager" data-kind="' + kind + '">';
     if (p.pages > 1) {
       html += '<div class="rv-pager-row">' +
         '<button type="button" class="rv-pbtn" data-pg="prev"' + (p.page <= 1 ? ' disabled' : '') + '>‹ Précédent</button>' +
         '<span class="rv-pnum">Page ' + p.page + ' sur ' + p.pages + '</span>' +
         '<button type="button" class="rv-pbtn" data-pg="next"' + (p.page >= p.pages ? ' disabled' : '') + '>Suivant ›</button></div>';
     }
-    if (admin()) {
+    html += '<div class="rv-pager-info">Affichage : ' + p.from + ' - ' + p.to + ' sur ' + p.total + ' ' + noun + (extra || '') + '</div>';
+    if (admin() && ADMIN_PERPAGE_SELECTOR) {
       html += '<div class="rv-perpage">Afficher : ' + [10, 20, 50].map(function (n) {
         return '<button type="button" data-pp="' + n + '" class="' + (p.pp === n ? 'active' : '') + '">' + n + '</button>';
       }).join('') + ' par page</div>';
@@ -101,7 +102,7 @@
       if (pg && !pg.disabled) {
         state[kind].page += pg.getAttribute('data-pg') === 'next' ? 1 : -1;
         rerender(kind); scrollToList(kind);
-      } else if (pp && admin()) {
+      } else if (pp && admin() && ADMIN_PERPAGE_SELECTOR) {
         state[kind].perPage = parseInt(pp.getAttribute('data-pp'), 10); state[kind].page = 1;
         rerender(kind); scrollToList(kind);
       }
@@ -161,6 +162,7 @@
     var hasVideo = !!c.video_url, hasFile = !!c.file_url;
     var kind = hasFile ? 'PDF' : 'Vidéo';
     var sub = [INSTITUTION, lvl, kind].filter(Boolean).join(' • ') + (hasFile && hasVideo ? ' + Vidéo' : '');
+    var ico = (hasFile ? ' 📄' : '') + (hasVideo ? ' ▶️' : '');
     var main = hasFile
       ? '<a class="rv-btn" href="' + esc(c.file_url) + '" target="_blank" rel="noopener">⬇ Télécharger</a>'
       : '<button type="button" class="rv-btn rv-video" data-video="' + esc(c.id) + '">▶ Voir la vidéo</button>';
@@ -168,8 +170,8 @@
     var adm = admin()
       ? '<button type="button" class="rv-mini" data-edit="' + esc(c.id) + '" title="Modifier" aria-label="Modifier">✏️</button>' : '';
     var chk = admin() ? '<input type="checkbox" data-sel="' + esc(c.id) + '" data-lvl="' + esc(c.level || '') + '"' + (selSet().has(c.id) ? ' checked' : '') + ' aria-label="Sélectionner">' : '';
-    return '<div class="rv-card">' + chk +
-      '<div class="rv-main"><h3 class="rv-title">' + esc(ct.title) + '</h3><div class="rv-sub">' + esc(sub) + '</div>' +
+    return '<div class="rv-card" data-id="' + esc(c.id) + '">' + chk +
+      '<div class="rv-main"><h3 class="rv-title"><span class="rv-t">' + esc(ct.title) + '</span><span class="rv-ico" aria-hidden="true">' + ico.trim() + '</span></h3><div class="rv-sub">' + esc(sub) + '</div>' +
       (ct.code ? '<div class="rv-code">' + esc(ct.code) + '</div>' : '') + '</div>' +
       '<div class="rv-actions">' + extra + adm + main + '</div></div>';
   }
@@ -232,14 +234,16 @@
     var a = admin();
     var checked = (function () { try { return selectedQuizIds.has(q.id) ? 'checked' : ''; } catch (e) { return ''; } })();
     var id = esc(q.id);
-    return '<div class="rv-card rv-lib' + (a ? '' : ' rv-lambda') + '">' +
+    return '<div class="rv-card rv-lib' + (a ? '' : ' rv-lambda') + '" data-id="' + id + '">' +
       (a ? '<input type="checkbox" class="quiz-select-checkbox" data-quiz-id="' + id + '" ' + checked + ' onchange="toggleQuizSelection(\'' + id + '\', this.checked)" aria-label="Sélectionner">' : '') +
       '<div class="rv-main" style="cursor:pointer" onclick="openModeModalByIndex(' + idx + ')">' +
       '<div class="rv-title">' + esc(q.title) + '</div><div class="rv-sub">' + esc(sub) + '</div></div>' +
       '<div class="rv-actions">' +
-      (a ? '<button type="button" class="rv-mini" onclick="event.stopPropagation(); moveQuiz(\'' + id + '\', \'' + esc(q.level || '') + '\')" title="Déplacer">➡️</button>' +
-           '<button type="button" class="rv-mini" onclick="event.stopPropagation(); openEditQuiz(' + idx + ')" title="Modifier">✏️</button>' +
-           '<button type="button" class="rv-mini" onclick="event.stopPropagation(); deleteLibraryQuiz(\'' + id + '\')" title="Supprimer">🗑️</button>' : '') +
+      (a ? '<div class="rv-more"><button type="button" class="rv-mini" data-more aria-label="Plus d\'actions" aria-haspopup="menu">⋯</button>' +
+           '<div class="rv-more-menu" role="menu" hidden>' +
+           '<button type="button" onclick="moveQuiz(\'' + id + '\', \'' + esc(q.level || '') + '\')">➡️ Déplacer</button>' +
+           '<button type="button" onclick="openEditQuiz(' + idx + ')">✏️ Modifier</button>' +
+           '<button type="button" class="danger" onclick="deleteLibraryQuiz(\'' + id + '\')">🗑️ Supprimer</button></div></div>' : '') +
       '<button type="button" class="rv-btn" onclick="event.stopPropagation(); openModeModalByIndex(' + idx + ')">▶️ Lancer</button>' +
       '</div></div>';
   }
@@ -275,7 +279,7 @@
     var data = getHistory();
     list.innerHTML = data.map(function (h, i) { return { h: h, i: i }; }).reverse().map(function (x) {
       var h = x.h, sc = Number(h.score) || 0;
-      return '<div class="rv-hist"><div class="rv-main"><div class="rv-title">' + esc(h.title) + '</div>' +
+      return '<div class="rv-hist" data-id="h' + x.i + '"><div class="rv-main"><div class="rv-title"><span class="rv-t">' + esc(h.title) + '</span></div>' +
         '<div class="rv-sub">' + esc(new Date(h.date).toLocaleString('fr-FR')) + '</div></div>' +
         '<span class="rv-pill ' + pillClass(sc) + '">' + sc.toFixed(1) + '/20</span>' +
         '<button type="button" class="rv-btn" data-redo="' + x.i + '">↻ Refaire</button>' +
@@ -317,6 +321,12 @@
       if (b) b.click();
       state.library.page = urlInit.page;
     }
+    // Menu "…" des cartes (admin)
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-more]');
+      document.querySelectorAll('.rv-more-menu').forEach(function (m) { if (!b || m !== b.nextElementSibling) m.hidden = true; });
+      if (b) { e.stopPropagation(); var m = b.nextElementSibling; if (m) m.hidden = !m.hidden; }
+    });
     // L'URL suit l'onglet actif ; hors cours/bibliothèque, on retire page/niveau/type
     var tabs = document.querySelector('#mainApp > .tabs');
     if (tabs) tabs.addEventListener('click', function () {

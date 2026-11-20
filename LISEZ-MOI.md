@@ -70,3 +70,23 @@ if (window.RevisioPager) { window.RevisioPager.renderHistory(list); return; }
 - Tous les IDs existants sont conservés (`bellBtn`, `pushBtn`, `pwdBtn`, `logoutBtn`, `adminBtn`, `apkBtn`, `userLabel`, `darkModeBtn`, `globalSearchBtn`, `adminCourseForm`…).
 - Syntaxe JS valide (index.html + nouveaux fichiers). Test jsdom : pagination, filtres, retour page 1, URL, titres nettoyés, pastilles, sélecteur admin → OK.
 - **Non testé ici** : rendu visuel sur téléphone et connexion Supabase réelle (pas de navigateur ni de réseau dans mon environnement), et la suite `vitest` du projet (dépendances Windows). À lancer chez toi : `npm test`, puis un contrôle à 360 px.
+
+---
+## Mise à jour (2e mission) — seuls `mobile-ux.css` et `pagination.js` changent
+`index.html`, `server.js`, `sw.js`, `mobile-ux.js` : inchangés. Aucune nouvelle fonction existante modifiée (les 3 lignes de délégation restent les seules).
+
+| Zone | Modification |
+|---|---|
+| Header | Hauteur 56px, padding 8px, logo 24px, avatar et cloche 38px, `position: sticky` |
+| Cours | Icône après le titre, même ligne : 📄 (PDF), ▶️ (vidéo), les deux si les deux existent. Titre sur 2 lignes max, `word-break: normal`, ellipsis, sans majuscules forcées, code interne en petit dessous |
+| Cours | Pagination : boutons « Précédent / Page x sur y / Suivant » puis « Affichage : 1 - 10 sur 33 cours » |
+| Bibliothèque | **5 quiz par page** (constante `DEFAULTS.library` dans `pagination.js`), même ordre d'affichage |
+| Bibliothèque admin | Déplacer / Modifier / Supprimer dans un menu discret « ⋯ » ; rien en mode lambda |
+| Sélecteur admin 10/20/50 | Désactivé (non repris dans cette mission) ; `ADMIN_PERPAGE_SELECTOR = true` le réactive |
+| Navigation | Onglets d'au moins 48px |
+| Chat | Remonté de 90px (au lieu de 100) |
+| Bas de page | `padding-bottom: 110px` sous les listes et les autres onglets |
+| Cartes | Attribut `data-id` sur chaque carte (cours, quiz, historique) |
+
+Vérifié par test jsdom : 5 quiz par page, « Page 1 sur 8 » pour 40 quiz, bouton « Suivant » désactivé en dernière page, retour page 1 au changement de filtre, menu « ⋯ » présent en admin et absent en lambda, icône après le titre.
+Non testé ici : rendu visuel sur téléphone et connexion Supabase.
