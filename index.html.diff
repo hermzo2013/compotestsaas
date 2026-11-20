@@ -1,0 +1,90 @@
+--- /dev/fd/63	2026-11-20 21:51:05.537285807 +0000
++++ /dev/fd/62	2026-11-20 21:51:05.537285807 +0000
+@@ -1245,6 +1245,7 @@
+   .library-item .btn-icon{min-width:44px;min-height:44px;font-size:20px}
+ }
+ </style>
++<link rel="stylesheet" href="/mobile-ux.css">
+ </head><body>
+ <a href="#mainApp" class="skip-link">Aller au contenu principal</a>
+ 
+@@ -1257,15 +1258,22 @@
+     <img src="https://compotestsaas.onrender.com/site.png" alt="Logo Révisio" width="150" height="50" decoding="async" fetchpriority="high">
+   </div>
+   <div class="header-actions">
+-    <span id="userLabel">Non connecté</span>
+-    <button id="apkBtn" class="btn-download-apk" type="button" title="Télécharger la version Android">📥 Télécharger la version Android</button>
+-    <button id="globalSearchBtn" type="button" aria-label="Recherche globale" title="Rechercher (Ctrl+K)">🔍</button>
+-    <button id="darkModeBtn" type="button" aria-label="Activer le mode sombre" aria-pressed="false" title="Basculer le thème">🌙</button>
+-    <button id="adminBtn" class="btn-admin" style="display:none">⚙️ Admin</button>
+     <button id="bellBtn" style="display:none;align-items:center" aria-label="Mes notifications" title="Mes notifications">📬 Mes notifications <span id="bellBadge" style="display:none;background:#EF4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:6px;font-weight:800">0</span></button>
+-    <button id="pushBtn" style="display:none">🔔 Activer les notifications</button>
+-    <button id="pwdBtn" style="display:none">🔑 Mot de passe</button>
+-    <button id="logoutBtn" style="display:none">Déconnexion</button>
++    <div class="profile-wrap">
++      <button id="profileBtn" class="avatar-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Profil"><span id="avatarInitial">?</span></button>
++      <div id="profileMenu" class="profile-menu" role="menu" hidden>
++        <div class="pm-head"><span id="userLabel">Non connecté</span><div class="pm-role" id="pmRole"></div></div>
++        <button type="button" id="pmProfile">👤 Mon profil</button>
++        <button type="button" id="pmInbox">📬 Mes notifications</button>
++        <button id="pushBtn" style="display:none">🔔 Activer les notifications</button>
++        <button id="globalSearchBtn" type="button" aria-label="Recherche globale" title="Rechercher (Ctrl+K)">🔍 Recherche</button>
++        <button id="darkModeBtn" type="button" aria-label="Activer le mode sombre" aria-pressed="false" title="Basculer le thème">🌙 Thème</button>
++        <button id="adminBtn" class="btn-admin" style="display:none">⚙️ Admin</button>
++        <button id="pwdBtn" style="display:none">🔑 Mot de passe</button>
++        <button id="apkBtn" class="btn-download-apk" type="button" title="Télécharger la version Android">📥 Version Android</button>
++        <button id="logoutBtn" style="display:none">Déconnexion</button>
++      </div>
++    </div>
+   </div>
+ </header>
+ 
+@@ -1338,10 +1346,10 @@
+   <div class="tabs">
+     <button class="tab" data-tab="create" data-admin-only="1" style="display:none">📚 Créer un test</button>
+     <button class="tab" id="tabBtnImportHtml" data-tab="import-html" data-admin-only="1" style="display:none">🧩 Importer HTML</button>
+-    <button class="tab" data-tab="library">🌍 Bibliothèque</button>
+-    <button class="tab" data-tab="courses">📖 Cours</button>
+-    <button class="tab" data-tab="history">📊 Mon Historique</button>
+-    <button class="tab" data-tab="progress">📈 Progression</button>
++    <button class="tab" data-tab="library"><i class="tab-ico"></i><span class="tab-lbl">Bibliothèque</span></button>
++    <button class="tab" data-tab="courses"><i class="tab-ico"></i><span class="tab-lbl">Cours</span></button>
++    <button class="tab" data-tab="history"><i class="tab-ico"></i><span class="tab-lbl">Historique</span></button>
++    <button class="tab" data-tab="progress"><i class="tab-ico"></i><span class="tab-lbl">Progression</span></button>
+   </div>
+ 
+   <!-- 📥 Bannière de téléchargement de l'app Android (logique dans download-android.js) -->
+@@ -2859,6 +2867,7 @@
+     list.innerHTML = '<p style="color:var(--muted)">Aucun cours ne correspond à votre recherche.</p>';
+     return;
+   }
++  if (window.RevisioPager) return window.RevisioPager.renderCourses(list, filtered); // pagination.js : cartes + pagination (ancien rendu ci-dessous = repli)
+   const levels = ['LICENCE 1', 'LICENCE 2', 'LICENCE 3'];
+   list.innerHTML = levels.map(levelName => {
+     const levelCourses = filtered.filter(c => c.level === levelName);
+@@ -3321,6 +3330,7 @@
+     updateLibraryActionBar();
+     return;
+   }
++  if (window.RevisioPager) { window.RevisioPager.renderLibrary(list, filtered, moreHtml); updateLibraryActionBar(); return; } // pagination.js (ancien rendu ci-dessous = repli)
+   list.innerHTML = filtered.map(q => {
+     const idx = libraryCache.indexOf(q);
+     const levelBadge = (q.level ? `<span class="level-badge">${esc(q.level.replace('LICENCE ', 'L'))}</span>` : '') + (q.display_mode === 'QPQ' ? ' <span class="level-badge" style="background:#EDE9FE;color:#5B21B6" title="Question par question : un bloc à la fois, sans retour en arrière">QPQ</span>' : '')
+@@ -4590,6 +4600,7 @@
+ function renderHistory() {
+   const list = $('historyList');
+   if (historyData.length === 0) { list.innerHTML = '<p style="color:var(--muted)">Aucun test terminé.</p>'; return; }
++  if (window.RevisioPager) { window.RevisioPager.renderHistory(list); return; } // pagination.js : pastille de note + bouton Refaire (ancien rendu ci-dessous = repli)
+   list.innerHTML = [...historyData].reverse().map((h, revIdx) => {
+     const realIdx = historyData.length - 1 - revIdx;
+     return `<div class="history-item">
+@@ -6033,6 +6044,8 @@
+ <script src="/admin-extras.js" defer></script>
+ <script src="/push-client.js" defer></script>
+ <script src="/download-android.js" defer></script>
++<script src="/pagination.js" defer></script>
++<script src="/mobile-ux.js" defer></script>
+ <script src="/a11y.js" defer></script>
+ <script src="/consent.js" defer></script>
+ </body></html>
+\ No newline at end of file

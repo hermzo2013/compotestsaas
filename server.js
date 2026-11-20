@@ -211,8 +211,8 @@ const PUBLIC_FILES = new Set([
   'index.html', 'config.js', 'sw.js', 'manifest.json', 'offline.html',
   'favicon.png', 'favicon.ico', 'site.png', 'og-image.png', 'Revisio.apk',
   'a11y.js', 'admin-extras.js', 'community-voice.js', 'consent.js', 'dark-mode.js', 'download-android.js',
-  'global-search.js', 'html-quiz-parser.js', 'table-quiz.js', 'pdf-export.js', 'progress.js', 'push-client.js', 'question-comments.js',
-  'resume-quiz.js', 'ui-extras.js'
+  'global-search.js', 'pdf-export.js', 'progress.js', 'push-client.js', 'question-comments.js',
+  'resume-quiz.js', 'ui-extras.js', 'mobile-ux.css', 'mobile-ux.js', 'pagination.js'
 ]);
 const PUBLIC_DIRS = ['icons/', 'public/'];
 function isPublicAsset(reqPath) {

@@ -1,0 +1,233 @@
+/* ============================================================================
+   mobile-ux.css — Refonte UX mobile de Révisio
+   Chargé APRÈS le <style> de index.html : il surcharge ciblé, sans rien supprimer.
+   Utilise les variables existantes (--blue-btn, --bg, --line, --muted…).
+   Sections : 1 Général · 2 Header · 3 Barre du bas flottante · 4 Bouton "+" admin
+              5 Cours · 6 Bibliothèque · 7 Historique · 8 Pagination · 9 Chat · 10 Profil
+   ============================================================================ */
+
+:root{
+  --rv-ink:#1A1A1A;          /* texte principal */
+  --rv-sub:#6B7280;          /* sous-titres */
+  --rv-card:#fff;
+  --rv-shadow:0 2px 10px rgba(0,0,0,.07);
+  --rv-nav-h:64px;           /* hauteur de la barre flottante */
+  --rv-nav-gap:20px;         /* distance au bord bas de l'écran */
+}
+html.dark{ --rv-ink:#F1F5F9; --rv-sub:#94A3B8; --rv-card:#1E293B; --rv-shadow:0 2px 10px rgba(0,0,0,.35); }
+
+/* ---------- 1. GÉNÉRAL ---------- */
+html,body{overflow-x:hidden}
+body{color:var(--rv-ink)}
+#mainApp{padding-bottom:calc(var(--rv-nav-h) + var(--rv-nav-gap) + 40px + env(safe-area-inset-bottom))}
+.panel{max-width:100%}
+.panel h1{font-size:20px}
+.app-footer{display:none !important}            /* déplacé dans Profil > À propos */
+.hide-mobile{display:none}
+@media(min-width:600px){.hide-mobile{display:inline}}
+
+/* ---------- 2. HEADER : une seule barre ---------- */
+header{flex-wrap:nowrap;padding:8px 14px;position:sticky;top:0;z-index:900}
+header .brand img{height:34px;width:auto;display:block}
+.header-actions{flex-wrap:nowrap;gap:6px;margin-left:auto}
+#userLabel{display:block}
+
+/* Cloche : icône seule (#bellBtn garde son id, son badge et ses écouteurs) */
+#bellBtn{position:relative;width:44px;height:44px;padding:0 !important;font-size:0 !important;justify-content:center;border-radius:50% !important;background:rgba(255,255,255,.15) !important}
+#bellBtn::before{content:"🔔";font-size:20px;line-height:1}
+#bellBtn #bellBadge{position:absolute;top:2px;right:2px;font-size:11px !important;min-width:18px;text-align:center}
+
+/* Avatar + menu déroulant */
+.profile-wrap{position:relative}
+.avatar-btn{width:44px;height:44px;border-radius:50% !important;padding:0 !important;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:17px !important;text-transform:uppercase;background:#fff !important;color:var(--navy) !important;border:2px solid rgba(255,255,255,.7) !important}
+.profile-menu{position:absolute;right:0;top:calc(100% + 8px);width:min(300px,calc(100vw - 28px));background:var(--rv-card);color:var(--rv-ink);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.22);padding:8px;z-index:1200}
+.profile-menu[hidden]{display:none}
+.profile-menu .pm-head{padding:10px 12px 12px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.profile-menu #userLabel{max-width:100%;color:var(--rv-ink);font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-menu .pm-role{font-size:12px;color:var(--rv-sub)}
+/* Les anciens gros boutons deviennent des lignes de menu */
+#profileMenu button{display:flex !important;align-items:center;justify-content:flex-start;gap:10px;width:100% !important;height:auto !important;flex:none !important;order:0 !important;min-height:46px;padding:10px 12px !important;margin:0;text-align:left;font-size:14px !important;font-weight:600;background:transparent !important;color:var(--rv-ink) !important;border:0 !important;border-radius:10px !important;cursor:pointer}
+#profileMenu button:hover{background:rgba(4,120,87,.10) !important}
+#profileMenu #logoutBtn{color:var(--red) !important;border-top:1px solid var(--line) !important;border-radius:0 0 10px 10px !important;margin-top:6px}
+#profileMenu button[style*="display: none"],#profileMenu button[style*="display:none"]{display:none !important}
+#profileMenu #apkBtn{display:flex !important}
+html.app-installed #profileMenu #apkBtn{display:none !important}
+
+/* Une seule bannière Android, compacte, fermable (✕) */
+#apkBanner{padding:10px 12px;gap:10px;margin-bottom:12px;flex-wrap:nowrap;position:relative}
+#apkBanner .apk-icon{font-size:22px}
+#apkBanner .apk-text{min-width:0}
+#apkBanner .apk-text span{display:none}
+#apkBanner .apk-actions{flex-wrap:nowrap;align-items:center}
+#apkBanner .apk-download-btn{padding:8px 12px;font-size:12px}
+#apkBanner .apk-dismiss{min-width:44px;min-height:44px;font-size:18px}
+html.apk-dismissed #apkBanner{display:none !important}
+
+/* ---------- 3. BARRE DU BAS FLOTTANTE (style WhatsApp iOS) ---------- */
+.tabs{
+  position:fixed;left:20px;right:20px;
+  bottom:calc(var(--rv-nav-gap) + env(safe-area-inset-bottom));
+  height:var(--rv-nav-h);
+  z-index:1000;margin:0;padding:6px 8px;gap:2px;
+  overflow:visible;
+  border:1px solid rgba(255,255,255,.55);
+  border-radius:30px;
+  background:rgba(255,255,255,.85);
+  -webkit-backdrop-filter:blur(15px);backdrop-filter:blur(15px);
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+  align-items:stretch;justify-content:space-around;
+}
+html.dark .tabs{background:rgba(30,41,59,.85);border:1px solid rgba(255,255,255,.10);box-shadow:0 4px 20px rgba(0,0,0,.4)}
+@media(min-width:768px){
+  .tabs{left:50%;right:auto;transform:translateX(-50%);width:min(560px,calc(100% - 40px))}
+}
+/* Onglets : icône centrée, texte dessous */
+.tabs .tab{flex:1 1 0;min-width:0;max-width:none;min-height:0;height:100%;padding:4px 2px;border-radius:22px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:11px;font-weight:600;line-height:1.1;color:var(--rv-sub);background:transparent;white-space:nowrap;position:relative}
+.tabs .tab .tab-ico{display:block;width:26px;height:26px;background:currentColor;position:relative;
+  -webkit-mask:var(--ico) center/22px 22px no-repeat;mask:var(--ico) center/22px 22px no-repeat}
+.tabs .tab .tab-lbl{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.tabs .tab.active,.tabs .tab.active:hover,.tabs .tab.active:focus{background:transparent;color:var(--blue-btn)}
+html.dark .tabs .tab.active,html.dark .tabs .tab.active:hover{background:transparent;color:#34D399}
+.tabs .tab.active{font-weight:800}
+/* Bulle de l'onglet actif (comme la pastille WhatsApp) */
+.tabs .tab::after{display:none}
+.tabs .tab.active::after{content:"";display:block;position:absolute;top:5px;left:50%;margin-left:7px;width:9px;height:9px;border-radius:50%;
+  background:var(--blue-btn);border:2px solid #fff;left:50%;right:auto;bottom:auto}
+html.dark .tabs .tab.active::after{background:#34D399;border-color:#1E293B}
+.tabs .tab.active .tab-ico{filter:drop-shadow(0 0 0 transparent)}
+/* Icônes (masques SVG, couleur = currentColor) */
+.tab[data-tab="library"]{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='7' rx='1.5'/%3E%3Crect x='14' y='3' width='7' height='7' rx='1.5'/%3E%3Crect x='3' y='14' width='7' height='7' rx='1.5'/%3E%3Crect x='14' y='14' width='7' height='7' rx='1.5'/%3E%3C/svg%3E")}
+.tab[data-tab="courses"]{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 5a2 2 0 0 1 2-2h13v17H6a2 2 0 0 0-2 2z'/%3E%3Cpath d='M4 19V5'/%3E%3Cpath d='M9 8h6'/%3E%3C/svg%3E")}
+.tab[data-tab="history"]{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E")}
+.tab[data-tab="progress"]{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 17l6-6 4 4 8-8'/%3E%3Cpath d='M15 7h6v6'/%3E%3C/svg%3E")}
+/* Onglets admin et profil : jamais dans la barre (ils restent dans le DOM pour activateTab) */
+.tabs .tab[data-admin-only],.tabs .tab[data-tab="profile"]{display:none !important}
+/* Mode ADMIN : on laisse un trou au centre pour le bouton "+" */
+html.is-admin .tabs .tab[data-tab="courses"]{margin-right:36px}
+html.is-admin .tabs .tab[data-tab="history"]{margin-left:36px}
+
+/* ---------- 4. BOUTON CENTRAL "+" (ADMIN) + FEUILLE D'ACTIONS ---------- */
+#fabAdd{display:none;position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(var(--rv-nav-gap) + env(safe-area-inset-bottom) + 14px);
+  width:58px;height:58px;border-radius:50%;border:4px solid var(--bg);padding:0;z-index:1100;
+  background:linear-gradient(135deg,#10B981,var(--blue-btn));color:#fff;font-size:32px;font-weight:300;line-height:1;
+  box-shadow:0 6px 18px rgba(4,120,87,.45);cursor:pointer;align-items:center;justify-content:center}
+html.is-admin #fabAdd{display:inline-flex}
+html.in-exam #fabAdd,html.in-exam .tabs{display:none !important}
+#fabAdd:active{transform:translateX(-50%) scale(.94)}
+.rv-sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:none}
+.rv-sheet-bg.show{display:block}
+.rv-sheet{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:3001;background:var(--rv-card);color:var(--rv-ink);
+  border-radius:22px;padding:10px;box-shadow:0 12px 40px rgba(0,0,0,.3);transform:translateY(130%);transition:transform .22s ease;max-width:520px;margin:0 auto}
+.rv-sheet.show{transform:none}
+.rv-sheet button{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:12px 16px;font-size:16px;font-weight:700;text-align:left;
+  background:transparent;color:var(--rv-ink);border:0;border-radius:14px;cursor:pointer}
+.rv-sheet button:hover{background:rgba(4,120,87,.10)}
+.rv-sheet .rv-sheet-cancel{justify-content:center;color:var(--rv-sub);margin-top:4px;border-top:1px solid var(--line);border-radius:0 0 14px 14px}
+
+/* ---------- 5. COURS ---------- */
+.rv-toolbar{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.rv-chips{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:2px 0 4px}
+.rv-chips::-webkit-scrollbar{display:none}
+.rv-chips .rv-chip{flex:0 0 auto;min-height:40px;padding:0 16px;border-radius:20px;background:#F3F4F6;color:var(--rv-sub);border:1px solid var(--line);font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+.rv-chips .rv-chip:hover{background:#E5E7EB;color:var(--rv-ink)}
+.rv-chips .rv-chip.active,.rv-chips .rv-chip.active:hover{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
+html.dark .rv-chips .rv-chip{background:#1E293B;border-color:#334155;color:var(--rv-sub)}
+html.dark .rv-chips .rv-chip.active{background:var(--blue-btn);color:#fff}
+.rv-chips.rv-chips-type .rv-chip{min-height:36px;font-size:12px}
+.rv-count{font-size:12px;color:var(--rv-sub);margin:2px 2px 8px}
+
+.rv-card{display:flex;align-items:center;gap:12px;background:var(--rv-card);border:1px solid var(--line);border-radius:16px;
+  padding:14px;margin-bottom:12px;box-shadow:var(--rv-shadow);min-width:0}
+.rv-card .rv-main{flex:1;min-width:0}
+.rv-title{margin:0;font-weight:800;font-size:15px;line-height:1.3;color:var(--rv-ink);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.rv-sub{margin-top:3px;font-size:12.5px;line-height:1.3;color:var(--rv-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv-code{margin-top:2px;font-size:11px;color:var(--rv-sub);opacity:.8}
+.rv-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.rv-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;border:0;
+  background:var(--blue-btn);color:#fff !important;font-weight:800;font-size:14px;text-decoration:none;cursor:pointer;white-space:nowrap}
+.rv-btn:hover{background:var(--blue-btn-hover)}
+.rv-btn.rv-video{background:#0EA5E9}.rv-btn.rv-video:hover{background:#0284C7}
+.rv-btn.rv-ghost{background:#F3F4F6;color:var(--rv-ink) !important;border:1px solid var(--line)}
+html.dark .rv-btn.rv-ghost{background:#334155}
+.rv-mini{min-width:44px;min-height:44px;padding:0;font-size:18px;border-radius:12px;border:1px solid var(--line);background:transparent;cursor:pointer}
+.rv-card input[type="checkbox"]{width:20px;height:20px;accent-color:#10B981;flex-shrink:0;margin:0}
+.rv-bulk{display:none;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;margin-bottom:10px;border-radius:12px;background:#FFFBEB;border:1px solid #FCD34D;font-size:12px;font-weight:700;color:#92400E}
+.rv-bulk.show{display:flex}
+.rv-bulk button{min-height:40px;padding:0 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer}
+
+/* Formulaire "Ajouter un cours" : caché sur la page, ouvert en feuille modale (admin) */
+#adminCourseForm{display:none !important}
+#adminCourseForm.rv-open:not(.hide){display:block !important;position:fixed;left:0;right:0;bottom:0;top:auto;max-height:88vh;overflow-y:auto;z-index:3001;
+  margin:0 !important;border-radius:22px 22px 0 0 !important;padding:18px 16px calc(18px + env(safe-area-inset-bottom)) !important;background:var(--rv-card) !important;box-shadow:0 -10px 40px rgba(0,0,0,.3)}
+#adminCourseForm > div[style*="grid"]{grid-template-columns:1fr !important}
+#adminCourseForm > div[style*="grid"] > div{grid-column:1 / -1 !important}
+#adminCourseForm input,#adminCourseForm select{width:100%}
+#adminCourseForm .rv-form-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+#adminCourseForm .rv-form-close{min-width:44px;min-height:44px;border-radius:50%;background:#F3F4F6;color:var(--rv-ink);border:0;font-size:18px;cursor:pointer}
+#fabCourse{display:none;position:fixed;left:20px;z-index:1050;bottom:calc(var(--rv-nav-gap) + var(--rv-nav-h) + 16px + env(safe-area-inset-bottom));
+  min-height:52px;padding:0 20px;border-radius:26px;border:0;background:linear-gradient(135deg,#10B981,var(--blue-btn));color:#fff;font-weight:800;font-size:15px;
+  box-shadow:0 6px 18px rgba(4,120,87,.4);cursor:pointer}
+html.is-admin.on-courses #fabCourse{display:inline-flex;align-items:center;gap:6px}
+html.in-exam #fabCourse{display:none !important}
+
+/* ---------- 6. BIBLIOTHÈQUE : carte compacte (2 lignes) ---------- */
+.rv-lib{padding:10px 12px;margin-bottom:8px;border-radius:14px;gap:10px}
+.rv-lib .rv-title{display:block;-webkit-line-clamp:unset;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.rv-lib .rv-btn{min-height:40px;padding:0 14px;font-size:13px}
+.rv-lib.rv-lambda{padding:8px 12px}                 /* ≈ 40 % plus petite que l'ancienne carte */
+.rv-lib .rv-tags{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}
+#libraryFilters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px}
+#libraryFilters::-webkit-scrollbar{display:none}
+#libraryFilters .level-filter{flex:0 0 auto;white-space:nowrap}
+#tab-library .panel > p:first-of-type,#tab-courses .panel > p:first-of-type{display:none}
+
+/* ---------- 7. HISTORIQUE ---------- */
+.rv-hist{display:flex;align-items:center;gap:10px;background:var(--rv-card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px;box-shadow:var(--rv-shadow)}
+.rv-hist .rv-main{flex:1;min-width:0}
+.rv-pill{flex:0 0 auto;min-width:64px;padding:8px 10px;border-radius:999px;text-align:center;font-weight:800;font-size:15px;color:#fff;white-space:nowrap}
+.rv-pill.red{background:#DC2626}.rv-pill.orange{background:#F59E0B;color:#1A1A1A}.rv-pill.green{background:#059669}
+.rv-hist .rv-btn{min-height:44px;padding:0 14px;font-size:13px}
+
+/* ---------- 8. PAGINATION ---------- */
+.rv-pager{margin:14px 0 6px;display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.rv-pager-info{text-align:center;font-size:13px;color:var(--rv-sub)}
+.rv-pager-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rv-pager-row .rv-pbtn{flex:1 1 0;min-height:48px;min-width:48px;border-radius:14px;border:1px solid var(--line);background:var(--rv-card);color:var(--rv-ink);font-weight:800;font-size:14px;cursor:pointer;box-shadow:var(--rv-shadow)}
+.rv-pager-row .rv-pbtn:hover:not(:disabled){background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
+.rv-pager-row .rv-pbtn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.rv-pager-row .rv-pnum{flex:0 0 auto;font-size:13px;font-weight:700;color:var(--rv-ink);text-align:center;padding:0 4px;white-space:nowrap}
+.rv-perpage{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;color:var(--rv-sub)}
+.rv-perpage button{min-width:44px;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--rv-card);color:var(--rv-ink);font-weight:700;cursor:pointer}
+.rv-perpage button.active{background:var(--blue-btn);color:#fff;border-color:var(--blue-btn)}
+
+/* ---------- 9. CHAT FLOTTANT : 100 px au-dessus du bas ---------- */
+#communityWidget{bottom:calc(100px + env(safe-area-inset-bottom)) !important}
+#communityPopup{bottom:calc(170px + env(safe-area-inset-bottom)) !important;max-height:calc(100vh - 220px) !important}
+@media(max-width:480px){
+  #communityWidget{bottom:calc(100px + env(safe-area-inset-bottom)) !important}
+  #communityPopup{bottom:calc(170px + env(safe-area-inset-bottom)) !important}
+}
+html.is-admin.on-courses #communityWidget{bottom:calc(100px + env(safe-area-inset-bottom)) !important}
+
+/* ---------- 10. PROFIL ---------- */
+.rv-profile-head{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.rv-profile-head .avatar-btn{width:56px;height:56px;font-size:22px;background:var(--blue-btn) !important;color:#fff !important;border:0 !important;cursor:default}
+.rv-about{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--rv-card)}
+.rv-about h3{margin:0;padding:12px 16px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--rv-sub);background:rgba(0,0,0,.03)}
+.rv-about a,.rv-about button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:52px;padding:0 16px;color:var(--rv-ink);text-decoration:none;
+  font-weight:600;font-size:15px;background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;cursor:pointer;text-align:left}
+.rv-about a:hover,.rv-about button:hover{background:rgba(4,120,87,.08)}
+.rv-about .rv-credit{padding:14px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--rv-sub);text-align:center}
+.rv-about .rv-credit b{color:var(--blue-btn)}
+
+/* ---------- Petits écrans (≤ 360 px) ---------- */
+@media(max-width:380px){
+  .tabs{left:12px;right:12px}
+  .tabs .tab{font-size:10px}
+  .rv-btn{padding:0 12px;font-size:13px}
+  .rv-card{padding:12px;gap:8px}
+}
