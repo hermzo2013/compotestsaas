@@ -148,7 +148,9 @@ html.dark .rv-chips .rv-chip.active{background:var(--blue-btn);color:#fff}
   display:flex;align-items:baseline;gap:6px;min-width:0}
 .rv-title .rv-t{min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;
   word-break:normal;overflow-wrap:normal;hyphens:none}
-.rv-title .rv-ico{flex:0 0 auto;font-size:15px;line-height:1}
+.rv-title .rv-ico{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;align-self:center}
+.rv-svg{width:18px;height:18px;display:block;flex:0 0 18px}
+.rv-btn svg{flex:0 0 18px}
 .rv-sub{margin-top:3px;font-size:12.5px;line-height:1.3;color:var(--rv-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rv-code{margin-top:2px;font-size:11px;color:var(--rv-sub);opacity:.8}
 .rv-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}

@@ -1,0 +1,4 @@
+<!-- À ajouter dans AndroidManifest.xml, avec les autres <uses-permission> (déjà présentes : INTERNET) -->
+<uses-permission android:name="android.permission.INTERNET" />
+<!-- Nécessaire UNIQUEMENT si minSdkVersion < 29 (Android 9 et moins) -->
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />

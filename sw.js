@@ -8,7 +8,7 @@
    - Ne touche JAMAIS aux appels /api/*, à Supabase, ni aux requêtes non-GET
    ===================================================================== */
 
-const APP_VERSION = 'revisio-v5';          // ← à incrémenter pour forcer la purge des anciens caches
+const APP_VERSION = 'revisio-v6';          // ← à incrémenter pour forcer la purge des anciens caches
 const SHELL_CACHE = `${APP_VERSION}-shell`;
 const CDN_CACHE   = `${APP_VERSION}-cdn`;
 const DATA_CACHE  = `${APP_VERSION}-data`;   // dernières listes de quiz (consultables hors ligne)

@@ -134,6 +134,31 @@
     }
   }
 
+  /* ---------- Téléchargement : navigateur (fetch + Blob) ou application Android (DownloadManager) ---------- */
+  function isAndroidApp() {
+    try { return !!(window.Android && typeof window.Android.downloadFile === 'function'); } catch (e) { return false; }
+  }
+  window.handleDownload = async function handleDownload(url, filename) {
+    if (!url) { alert("Fichier introuvable, contacte l'admin"); return; }
+    filename = filename || String(url).split('?')[0].split('/').pop() || 'cours.pdf';
+    if (isAndroidApp()) {                                   // WebView Android : pont natif
+      try { window.Android.downloadFile(String(url), String(filename)); } catch (e) { alert('Téléchargement impossible : ' + (e && e.message || e)); }
+      return;
+    }
+    try {                                                   // Navigateur : fetch + Blob + URL.createObjectURL
+      var res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var blob = await res.blob();
+      var href = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = href; a.download = filename; a.style.display = 'none';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(href); }, 4000);
+    } catch (e) {                                           // CORS / réseau : repli = ouverture directe du fichier
+      window.open(url, '_blank', 'noopener');
+    }
+  };
+
   /* ---------- Init ---------- */
   function init() {
     buildProfile(); buildFab(); buildCourseModal(); initMenu();

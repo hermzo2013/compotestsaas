@@ -131,6 +131,19 @@
     return { title: t || String(raw || ''), code: code };
   }
 
+  /* ---------- Icônes SVG inline (les emojis s'affichent en carrés blancs dans certaines WebView Android) ---------- */
+  var SVG_PLAY = '<svg class="rv-svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path style="fill:var(--blue-btn)" d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>';
+  var SVG_DOC = '<svg class="rv-svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="#DC2626" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path fill="#fff" fill-opacity=".5" d="M14 2l6 6h-4a2 2 0 0 1-2-2z"/><path fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" d="M8 13h8M8 17h5"/></svg>';
+  var SVG_DL = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>';
+  var SVG_PLAY_BTN = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>';
+  var SVG_EDIT = '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';
+  /* Nom de fichier : titre propre + extension de l'URL (par défaut .pdf) */
+  function fileName(c) {
+    var ext = (String(c.file_url || '').split('?')[0].match(/\.([A-Za-z0-9]{2,5})$/) || [0, 'pdf'])[1].toLowerCase();
+    var base = cleanTitle(c.title).title.replace(/[\\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 80) || 'cours';
+    return base + '.' + ext;
+  }
+
   /* ============================== COURS ============================== */
   function buildCourseToolbar() {
     var tab = $('tab-courses'), search = $('courseSearch');
@@ -160,18 +173,21 @@
   function courseCard(c) {
     var ct = cleanTitle(c.title), lvl = LEVEL_SHORT[c.level] || c.level || '';
     var hasVideo = !!c.video_url, hasFile = !!c.file_url;
-    var kind = hasFile ? 'PDF' : 'Vidéo';
-    var sub = [INSTITUTION, lvl, kind].filter(Boolean).join(' • ') + (hasFile && hasVideo ? ' + Vidéo' : '');
-    var ico = (hasFile ? ' 📄' : '') + (hasVideo ? ' ▶️' : '');
-    var main = hasFile
-      ? '<a class="rv-btn" href="' + esc(c.file_url) + '" target="_blank" rel="noopener">⬇ Télécharger</a>'
-      : '<button type="button" class="rv-btn rv-video" data-video="' + esc(c.id) + '">▶ Voir la vidéo</button>';
-    var extra = (hasFile && hasVideo) ? '<button type="button" class="rv-mini" data-video="' + esc(c.id) + '" title="Voir la vidéo" aria-label="Voir la vidéo">▶</button>' : '';
-    var adm = admin()
-      ? '<button type="button" class="rv-mini" data-edit="' + esc(c.id) + '" title="Modifier" aria-label="Modifier">✏️</button>' : '';
+    var sub = [INSTITUTION, lvl, hasVideo ? 'Vidéo' : 'PDF'].filter(Boolean).join(' • ');
+    var ico = (hasFile ? SVG_DOC : '') + (hasVideo ? SVG_PLAY : '');          // icône(s) APRÈS le titre, 18 x 18 px
+    var dl = hasFile
+      ? 'handleDownload(' + esc(JSON.stringify(c.file_url)) + ',' + esc(JSON.stringify(fileName(c))) + ')' : '';
+    var main, extra = '';
+    if (hasVideo) {                                                           // vidéo : bouton "Regarder" → openVideoModal (existant)
+      main = '<button type="button" class="rv-btn rv-video" data-video="' + esc(c.id) + '">' + SVG_PLAY_BTN + ' Regarder</button>';
+      if (hasFile) extra = '<button type="button" class="rv-mini" onclick="' + dl + '" title="Télécharger" aria-label="Télécharger">' + SVG_DL + '</button>';
+    } else {
+      main = '<button type="button" class="rv-btn" onclick="' + dl + '">' + SVG_DL + ' Télécharger</button>';
+    }
+    var adm = admin() ? '<button type="button" class="rv-mini" data-edit="' + esc(c.id) + '" title="Modifier" aria-label="Modifier">' + SVG_EDIT + '</button>' : '';
     var chk = admin() ? '<input type="checkbox" data-sel="' + esc(c.id) + '" data-lvl="' + esc(c.level || '') + '"' + (selSet().has(c.id) ? ' checked' : '') + ' aria-label="Sélectionner">' : '';
     return '<div class="rv-card" data-id="' + esc(c.id) + '">' + chk +
-      '<div class="rv-main"><h3 class="rv-title"><span class="rv-t">' + esc(ct.title) + '</span><span class="rv-ico" aria-hidden="true">' + ico.trim() + '</span></h3><div class="rv-sub">' + esc(sub) + '</div>' +
+      '<div class="rv-main"><h3 class="rv-title"><span class="rv-t">' + esc(ct.title) + '</span><span class="rv-ico">' + ico + '</span></h3><div class="rv-sub">' + esc(sub) + '</div>' +
       (ct.code ? '<div class="rv-code">' + esc(ct.code) + '</div>' : '') + '</div>' +
       '<div class="rv-actions">' + extra + adm + main + '</div></div>';
   }
@@ -180,7 +196,7 @@
     if (!admin()) return '';
     var ids = selSet(), n = ids.size;
     return '<div class="rv-bulk' + (n ? ' show' : '') + '" id="rvBulk"><span id="rvBulkCount">' + n + ' sélectionné' + (n > 1 ? 's' : '') + '</span>' +
-      '<span><button type="button" class="btn-move" data-bulk="move">➡️ Déplacer</button> <button type="button" class="btn-delete" data-bulk="delete">🗑️ Supprimer</button></span></div>';
+      '<span><button type="button" class="btn-move" data-bulk="move">Déplacer</button> <button type="button" class="btn-delete" data-bulk="delete">Supprimer</button></span></div>';
   }
   function bindCourseList(list) {
     if (list.__rvCourses) return;
